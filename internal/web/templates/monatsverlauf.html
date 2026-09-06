@@ -36,7 +36,7 @@
     <span data-modus="verbrauchswerte">Verbrauch {{deEUR $jz.VerbrauchSumme}}&nbsp;€ · Fixkosten {{deEUR $jz.FixkostenSumme}}&nbsp;€ · Gesamt {{deEUR $jz.GesamtSumme}}&nbsp;€</span>
     <span data-modus="fixkosten">Verbrauch {{deEUR $jz.VerbrauchSumme}}&nbsp;€ · Fixkosten {{deEUR $jz.FixkostenSumme}}&nbsp;€ · Gesamt {{deEUR $jz.GesamtSumme}}&nbsp;€</span>
     <span data-modus="kombiniert">Verbrauch {{deEUR $jz.VerbrauchSumme}}&nbsp;€ · Fixkosten {{deEUR $jz.FixkostenSumme}}&nbsp;€ · Gesamt {{deEUR $jz.GesamtSumme}}&nbsp;€</span>
-    <span data-modus="abschlag">Endstand: {{with $jz.Endstand}}{{.Label}} {{deEUR .Betrag}}&nbsp;€{{else}}–{{end}}</span>
+    <span data-modus="abschlag">{{with $jz.Endstand}}{{.Label}} {{deEUR .Betrag}}&nbsp;€{{else}}–{{end}}</span>
   </div>
   {{else}}
   {{$m := .Monat}}
