@@ -28,12 +28,7 @@
       <span class="v-pv" title="Nicht dem Netzbezug zugeordnet (PV)">{{kategorieIcon "PV-Anteil"}}{{de0 .PVAnteilKWh}} kWh</span>
     </div>
     {{end}}
-    {{with .Saldo}}
-    <div class="abschlag-value {{.CSSClass}}">
-      <div class="label">{{.Label}}</div>
-      <div class="amount">{{deEUR .Betrag}} €</div>
-    </div>
-    {{end}}
+    {{with .Saldo}}{{template "abschlag-value" .}}{{end}}
   </div>
   {{end}}
   <div class="panel stat-card">

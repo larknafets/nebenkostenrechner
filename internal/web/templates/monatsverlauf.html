@@ -155,3 +155,15 @@
     });
   })();
 {{end}}
+
+{{/* abschlag-value rendert eine Jahressummen-Karte's Guthaben/Nachzahlung-
+     Zeile - geteilt von dashboard.html und widget_layout.html (#104, Rest
+     aus Kandidat 1/2 - der Rest der beiden Karten bleibt bewusst getrennt,
+     nur dieser Block war wortgleich dupliziert). Dot ist der *AbschlagSaldo
+     selbst (Aufrufer wrapped mit {{with .Saldo}}). */}}
+{{define "abschlag-value"}}
+<div class="abschlag-value {{.CSSClass}}">
+  <div class="label">{{.Label}}</div>
+  <div class="amount">{{deEUR .Betrag}} €</div>
+</div>
+{{end}}

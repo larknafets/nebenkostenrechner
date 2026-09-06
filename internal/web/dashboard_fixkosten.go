@@ -107,13 +107,13 @@ func fixkostenGruppen(apartmentID int64, erg *calc.FixkostenErgebnis) []dashboar
 func anzeigeJahr(allPeriods []store.PeriodSummary, fixkostenEingaben []store.FixkostenEingabeSummary) int {
 	var jahr int
 	if len(allPeriods) > 0 {
-		if t, err := time.Parse("2006-01-02", allPeriods[0].ReadingDate); err == nil {
-			jahr = t.Year()
+		if y, ok := store.Abrechnungsmonat(allPeriods[0].ReadingDate).Jahr(); ok {
+			jahr = y
 		}
 	}
 	if len(fixkostenEingaben) > 0 {
-		if t, err := time.Parse("2006-01-02", fixkostenEingaben[0].Monat); err == nil && t.Year() > jahr {
-			jahr = t.Year()
+		if y, ok := store.Abrechnungsmonat(fixkostenEingaben[0].Monat).Jahr(); ok && y > jahr {
+			jahr = y
 		}
 	}
 	if jahr == 0 {
@@ -192,8 +192,8 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 		personenSchnitt = personenSumme / float64(personenAnzahl)
 	}
 	for _, fk := range fixkostenListe {
-		t, err := time.Parse("2006-01-02", fk.Monat)
-		if err != nil || t.Year() != jahr {
+		y, ok := store.Abrechnungsmonat(fk.Monat).Jahr()
+		if !ok || y != jahr {
 			continue
 		}
 		fix += fk.Erg.KostenFor(apartmentID)

@@ -42,12 +42,7 @@
   <div class="muted stat-kategorien">
     {{range .Card.Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{deEUR .Kosten}} €</span>{{end}}
   </div>
-  {{with .Card.Saldo}}
-  <div class="abschlag-value {{.CSSClass}}">
-    <div class="label">{{.Label}}</div>
-    <div class="amount">{{deEUR .Betrag}} €</div>
-  </div>
-  {{end}}
+  {{with .Card.Saldo}}{{template "abschlag-value" .}}{{end}}
 </div>
 {{else}}
 <div class="panel stat-card">
