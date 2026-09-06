@@ -54,7 +54,7 @@
     <div class="grid grid-2">
       {{range .Apartments}}
       {{$key := printf "waerme_wohnung%d" .ID}}
-      <div class="field"><label>{{.Name}} MWh</label><input type="number" step="any" name="{{$key}}" required {{if $.IsEdit}}value="{{index $.EditReadings $key}}"{{end}} {{if $.HasPrevious}}data-prev="{{index $.PreviousReadings $key}}"{{end}} {{if $.HasOutlierBaseline}}data-outlier-avg="{{index $.OutlierAvg $key}}"{{end}}><div class="warning" id="warn-{{$key}}"></div></div>
+      <div class="field"><label>{{.Name}}&nbsp;MWh</label><input type="number" step="any" name="{{$key}}" required {{if $.IsEdit}}value="{{index $.EditReadings $key}}"{{end}} {{if $.HasPrevious}}data-prev="{{index $.PreviousReadings $key}}"{{end}} {{if $.HasOutlierBaseline}}data-outlier-avg="{{index $.OutlierAvg $key}}"{{end}}><div class="warning" id="warn-{{$key}}"></div></div>
       {{end}}
     </div>
   </div>

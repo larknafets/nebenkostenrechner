@@ -47,7 +47,7 @@
       {{if $m.HasVerbrauch}}{{range $m.VerbrauchSegmente}}<div class="cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{deEUR .Kosten}}&nbsp;€"><span>{{deEUR .Kosten}}&nbsp;€</span></div>{{end}}{{else}}<span class="verlauf-none" data-modus="verbrauch">– keine Ablesung</span>{{end}}
     </div>
     <div class="verbrauch-liste" data-modus="verbrauchswerte">
-      {{if $m.HasVerbrauch}}{{range $i2, $seg := $m.VerbrauchSegmente}}{{if $i2}} · {{end}}{{$seg.Label}} <span class="v-{{$seg.Farbe}}">{{de2 $seg.Verbrauch}} {{$seg.Einheit}}{{if $seg.Einheit2}} ({{de2 $seg.Verbrauch2}} {{$seg.Einheit2}}){{end}}</span>{{end}}{{else}}– keine Ablesung{{end}}
+      {{if $m.HasVerbrauch}}{{range $i2, $seg := $m.VerbrauchSegmente}}{{if $i2}} · {{end}}{{$seg.Label}} <span class="v-{{$seg.Farbe}}">{{de2 $seg.Verbrauch}}&nbsp;{{$seg.Einheit}}{{if $seg.Einheit2}} ({{de2 $seg.Verbrauch2}}&nbsp;{{$seg.Einheit2}}){{end}}</span>{{end}}{{else}}– keine Ablesung{{end}}
     </div>
     <div class="bar-track" data-modus="fixkosten">
       {{if $m.HasFixkosten}}{{range $m.FixkostenSegmente}}<div class="{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{deEUR .Kosten}}&nbsp;€"><span>{{deEUR .Kosten}}&nbsp;€</span></div>{{end}}{{else}}<span class="verlauf-none" data-modus="fixkosten">– keine Fixkosten-Eingabe</span>{{end}}
@@ -87,7 +87,7 @@
   <div class="verlauf-row {{if $m.IsCurrent}}is-current{{end}}">
     <span class="month-label">{{$m.Label}}</span>
     <div class="bar-track">
-      {{if $m.HasWert}}{{range $m.Segmente}}<div class="cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{de2 .Verbrauch}} kWh"><span>{{de2 .Verbrauch}} kWh</span></div>{{end}}{{else}}<span class="verlauf-none">– keine Ablesung</span>{{end}}
+      {{if $m.HasWert}}{{range $m.Segmente}}<div class="cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{de2 .Verbrauch}}&nbsp;kWh"><span>{{de2 .Verbrauch}}&nbsp;kWh</span></div>{{end}}{{else}}<span class="verlauf-none">– keine Ablesung</span>{{end}}
     </div>
     <span class="value-label">{{if $m.HasWert}}{{if $.IstErtrag}}+{{end}}{{deEUR $m.EUR}}&nbsp;€{{end}}</span>
   </div>
