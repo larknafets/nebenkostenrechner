@@ -54,7 +54,7 @@ func TestBuildFixkostenPositionRows(t *testing.T) {
 		1:  {KostenpositionID: 1, Logik: store.LogikQM, Typ: store.TypJaehrlich, Jahreswert: 480},
 		10: {KostenpositionID: 10, Logik: store.LogikWohneinheit, Typ: store.TypMonatlich},
 	}
-	values := map[int64]float64{10: 39.90}
+	values := map[int64]store.FixkostenPositionWert{10: {Wert: 39.90}}
 
 	rows, err := buildFixkostenPositionRows(openTestDB(t), kostenpositionen, jahresdaten, values, 2026)
 	if err != nil {

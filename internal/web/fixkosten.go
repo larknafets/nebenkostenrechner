@@ -95,7 +95,7 @@ type fixkostenFormData struct {
 // bekannter Jahreswert/12 - the same fallback calc.Fixkosten already uses
 // for the actual Berechnung, previously missing here in the Formular-
 // Prefill, which silently showed 0 instead.
-func buildFixkostenPositionRows(db *sql.DB, kostenpositionen []store.Kostenposition, jahresdaten map[int64]store.KostenpositionJahr, values map[int64]float64, jahr int) ([]fixkostenPositionRow, error) {
+func buildFixkostenPositionRows(db *sql.DB, kostenpositionen []store.Kostenposition, jahresdaten map[int64]store.KostenpositionJahr, values map[int64]store.FixkostenPositionWert, jahr int) ([]fixkostenPositionRow, error) {
 	rows := make([]fixkostenPositionRow, 0, len(kostenpositionen))
 	for _, kp := range kostenpositionen {
 		kj, ok := jahresdaten[kp.ID]
@@ -110,8 +110,8 @@ func buildFixkostenPositionRows(db *sql.DB, kostenpositionen []store.Kostenposit
 		}
 		if row.IsJaehrlich {
 			row.Value = kj.Jahreswert / 12
-		} else if wert, ok := values[kp.ID]; ok {
-			row.Value = wert
+		} else if w, ok := values[kp.ID]; ok {
+			row.Value = w.Wert
 		} else {
 			letzterJahreswert, ok, err := store.LatestJaehrlichWert(db, kp.ID, jahr)
 			if err != nil {
@@ -167,7 +167,7 @@ func handleFixkostenForm(db *sql.DB) http.HandlerFunc {
 			JahrNotAngelegt: len(jahresdaten) == 0,
 			Jahr:            jahr,
 		}
-		var werte map[int64]float64
+		var werte map[int64]store.FixkostenPositionWert
 		if latest != nil {
 			data.PreviousPersonen = latest.Personen
 			data.PreviousAbschlag = latest.Abschlag
@@ -282,7 +282,7 @@ func parseFixkostenInput(r *http.Request, db *sql.DB, apartments []store.Apartme
 		return store.FixkostenInput{}, fmt.Errorf("kostenpositionen: %w", err)
 	}
 
-	werte := make(map[int64]float64, len(kostenpositionen))
+	werte := make(map[int64]store.FixkostenPositionWert, len(kostenpositionen))
 	for _, kp := range kostenpositionen {
 		kj, ok := jahresdaten[kp.ID]
 		if !ok || kj.Typ != store.TypMonatlich {
@@ -292,7 +292,7 @@ func parseFixkostenInput(r *http.Request, db *sql.DB, apartments []store.Apartme
 		if err != nil {
 			return store.FixkostenInput{}, fmt.Errorf("ungültiger Wert für %s", kp.Label)
 		}
-		werte[kp.ID] = v
+		werte[kp.ID] = store.FixkostenPositionWert{Logik: kj.Logik, Typ: kj.Typ, Wert: v}
 	}
 
 	personen := make(map[int64]int64, len(apartments))

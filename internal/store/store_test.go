@@ -1128,7 +1128,7 @@ func TestEnsureFixkostenWerteLogikTypColumns(t *testing.T) {
 	// Eingabe mit explizitem Internet-Wert.
 	mitWert, err := CreateFixkostenEingabe(db, FixkostenInput{
 		Monat: "2025-01-01",
-		Werte: map[int64]float64{13: 42},
+		Werte: map[int64]FixkostenPositionWert{13: {Wert: 42}},
 	})
 	if err != nil {
 		t.Fatalf("CreateFixkostenEingabe (mit Wert): %v", err)

@@ -182,12 +182,24 @@ func LatestJaehrlichWert(db *sql.DB, kostenpositionID int64, maxJahr int) (wert 
 	return wert, true, nil
 }
 
+// FixkostenPositionWert is one Kostenposition's Logik/Typ/Wert for a single
+// Fixkosten-Eingabe (Issue #105/#106/#107) - lives per Eingabe now, jede
+// Eingabe unabhängig, statt jahresweise in kostenpositionen_jahre. Bei Typ
+// "jährlich" ist Wert ein Jahresgesamtbetrag (durch 12 geteilt für den
+// Monatswert, siehe calc.Fixkosten), bei "monatlich" ein direkter
+// Monatsbetrag.
+type FixkostenPositionWert struct {
+	Logik string
+	Typ   string
+	Wert  float64
+}
+
 // FixkostenInput is one monthly Fixkosten-Eingabe, ready to be persisted.
 type FixkostenInput struct {
-	Monat    string            // YYYY-MM-01, same convention as PeriodInput.ReadingDate
-	Personen map[int64]int64   // apartment id -> Personenzahl - own to Fixkosten, not period_occupancy (Issue #60 Story 8)
-	Werte    map[int64]float64 // kostenposition id -> expliziter Monatswert, only for that Jahr's monatlich-typed Positionen
-	Abschlag map[int64]float64 // apartment id -> Nebenkostenabschlag-Wert - kein Kostenposition, deckt Fixkosten UND Verbräuche gemeinsam ab, siehe nebenkosten_abschlaege
+	Monat    string                          // YYYY-MM-01, same convention as PeriodInput.ReadingDate
+	Personen map[int64]int64                 // apartment id -> Personenzahl - own to Fixkosten, not period_occupancy (Issue #60 Story 8)
+	Werte    map[int64]FixkostenPositionWert // kostenposition id -> Logik/Typ/Wert für diese Eingabe
+	Abschlag map[int64]float64               // apartment id -> Nebenkostenabschlag-Wert - kein Kostenposition, deckt Fixkosten UND Verbräuche gemeinsam ab, siehe nebenkosten_abschlaege
 }
 
 // ErrFixkostenEingabeNotFound is returned by UpdateFixkostenEingabe and
@@ -213,10 +225,10 @@ func insertFixkostenTx(tx *sql.Tx, in FixkostenInput) (eingabeID int64, err erro
 		return 0, fmt.Errorf("fixkosten eingabe id: %w", err)
 	}
 
-	for kostenpositionID, wert := range in.Werte {
+	for kostenpositionID, w := range in.Werte {
 		if _, err := tx.Exec(
-			`INSERT INTO fixkosten_werte (fixkosten_eingabe_id, kostenposition_id, wert) VALUES (?, ?, ?)`,
-			eingabeID, kostenpositionID, wert,
+			`INSERT INTO fixkosten_werte (fixkosten_eingabe_id, kostenposition_id, wert, logik, typ) VALUES (?, ?, ?, ?, ?)`,
+			eingabeID, kostenpositionID, w.Wert, w.Logik, w.Typ,
 		); err != nil {
 			return 0, fmt.Errorf("insert fixkosten wert for kostenposition %d: %w", kostenpositionID, err)
 		}
@@ -285,11 +297,11 @@ func UpdateFixkostenEingabe(db *sql.DB, eingabeID int64, in FixkostenInput) erro
 		return fmt.Errorf("%w: eingabe %d", ErrFixkostenEingabeNotFound, eingabeID)
 	}
 
-	for kostenpositionID, wert := range in.Werte {
+	for kostenpositionID, w := range in.Werte {
 		if _, err := tx.Exec(
-			`INSERT INTO fixkosten_werte (fixkosten_eingabe_id, kostenposition_id, wert) VALUES (?, ?, ?)
-			 ON CONFLICT(fixkosten_eingabe_id, kostenposition_id) DO UPDATE SET wert = excluded.wert`,
-			eingabeID, kostenpositionID, wert,
+			`INSERT INTO fixkosten_werte (fixkosten_eingabe_id, kostenposition_id, wert, logik, typ) VALUES (?, ?, ?, ?, ?)
+			 ON CONFLICT(fixkosten_eingabe_id, kostenposition_id) DO UPDATE SET wert = excluded.wert, logik = excluded.logik, typ = excluded.typ`,
+			eingabeID, kostenpositionID, w.Wert, w.Logik, w.Typ,
 		); err != nil {
 			return fmt.Errorf("update fixkosten wert for kostenposition %d: %w", kostenpositionID, err)
 		}
@@ -382,9 +394,9 @@ func AllFixkostenEingaben(db *sql.DB) ([]FixkostenEingabeSummary, error) {
 type FixkostenEingabeDetails struct {
 	ID       int64
 	Monat    string
-	Personen map[int64]int64   // apartment id -> Personenzahl
-	Werte    map[int64]float64 // kostenposition id -> expliziter Monatswert
-	Abschlag map[int64]float64 // apartment id -> Nebenkostenabschlag-Wert
+	Personen map[int64]int64                 // apartment id -> Personenzahl
+	Werte    map[int64]FixkostenPositionWert // kostenposition id -> Logik/Typ/Wert
+	Abschlag map[int64]float64               // apartment id -> Nebenkostenabschlag-Wert
 }
 
 // GetFixkostenEingabeDetails returns the given Fixkosten-Eingabe with its
@@ -392,7 +404,7 @@ type FixkostenEingabeDetails struct {
 func GetFixkostenEingabeDetails(db *sql.DB, eingabeID int64) (*FixkostenEingabeDetails, error) {
 	f := FixkostenEingabeDetails{
 		Personen: map[int64]int64{},
-		Werte:    map[int64]float64{},
+		Werte:    map[int64]FixkostenPositionWert{},
 		Abschlag: map[int64]float64{},
 	}
 	if err := db.QueryRow(`SELECT id, monat FROM fixkosten_eingaben WHERE id = ?`, eingabeID).Scan(&f.ID, &f.Monat); err != nil {
@@ -402,18 +414,18 @@ func GetFixkostenEingabeDetails(db *sql.DB, eingabeID int64) (*FixkostenEingabeD
 		return nil, fmt.Errorf("query fixkosten eingabe %d: %w", eingabeID, err)
 	}
 
-	werteRows, err := db.Query(`SELECT kostenposition_id, wert FROM fixkosten_werte WHERE fixkosten_eingabe_id = ?`, eingabeID)
+	werteRows, err := db.Query(`SELECT kostenposition_id, wert, logik, typ FROM fixkosten_werte WHERE fixkosten_eingabe_id = ?`, eingabeID)
 	if err != nil {
 		return nil, fmt.Errorf("query fixkosten werte: %w", err)
 	}
 	defer werteRows.Close()
 	for werteRows.Next() {
 		var kostenpositionID int64
-		var wert float64
-		if err := werteRows.Scan(&kostenpositionID, &wert); err != nil {
+		var w FixkostenPositionWert
+		if err := werteRows.Scan(&kostenpositionID, &w.Wert, &w.Logik, &w.Typ); err != nil {
 			return nil, fmt.Errorf("scan fixkosten wert: %w", err)
 		}
-		f.Werte[kostenpositionID] = wert
+		f.Werte[kostenpositionID] = w
 	}
 	if err := werteRows.Err(); err != nil {
 		return nil, err

@@ -194,7 +194,7 @@ func TestLatestJaehrlichWert(t *testing.T) {
 	})
 }
 
-func mustCreateFixkostenEingabe(t *testing.T, db *sql.DB, monat string, werte map[int64]float64) int64 {
+func mustCreateFixkostenEingabe(t *testing.T, db *sql.DB, monat string, werte map[int64]FixkostenPositionWert) int64 {
 	t.Helper()
 	id, err := CreateFixkostenEingabe(db, FixkostenInput{
 		Monat:    monat,
@@ -210,7 +210,10 @@ func mustCreateFixkostenEingabe(t *testing.T, db *sql.DB, monat string, werte ma
 func TestFixkostenEingabe_CRUD_Roundtrip(t *testing.T) {
 	db := openTestDB(t)
 
-	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]float64{10: 12.50, 13: 39.90})
+	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]FixkostenPositionWert{
+		10: {Logik: LogikWohneinheit, Typ: TypMonatlich, Wert: 12.50},
+		13: {Logik: LogikWohneinheit, Typ: TypMonatlich, Wert: 39.90},
+	})
 
 	got, err := GetFixkostenEingabeDetails(db, id)
 	if err != nil {
@@ -222,8 +225,11 @@ func TestFixkostenEingabe_CRUD_Roundtrip(t *testing.T) {
 	if got.Monat != "2026-09-01" {
 		t.Errorf("Monat = %q, want 2026-09-01", got.Monat)
 	}
-	if got.Werte[10] != 12.50 || got.Werte[13] != 39.90 {
-		t.Errorf("Werte = %v, want {10:12.50, 13:39.90}", got.Werte)
+	if got.Werte[10].Wert != 12.50 || got.Werte[13].Wert != 39.90 {
+		t.Errorf("Werte = %v, want {10:{...12.50}, 13:{...39.90}}", got.Werte)
+	}
+	if got.Werte[10].Logik != LogikWohneinheit || got.Werte[10].Typ != TypMonatlich {
+		t.Errorf("Werte[10] Logik/Typ = %s/%s, want %s/%s", got.Werte[10].Logik, got.Werte[10].Typ, LogikWohneinheit, TypMonatlich)
 	}
 	if got.Personen[1] != 2 || got.Personen[2] != 1 {
 		t.Errorf("Personen = %v, want {1:2, 2:1}", got.Personen)
@@ -233,7 +239,10 @@ func TestFixkostenEingabe_CRUD_Roundtrip(t *testing.T) {
 	if err := UpdateFixkostenEingabe(db, id, FixkostenInput{
 		Monat:    "2026-09-02",
 		Personen: map[int64]int64{1: 3, 2: 1},
-		Werte:    map[int64]float64{10: 15.00, 13: 39.90},
+		Werte: map[int64]FixkostenPositionWert{
+			10: {Logik: LogikWohneinheit, Typ: TypMonatlich, Wert: 15.00},
+			13: {Logik: LogikWohneinheit, Typ: TypMonatlich, Wert: 39.90},
+		},
 	}); err != nil {
 		t.Fatalf("UpdateFixkostenEingabe: %v", err)
 	}
@@ -244,8 +253,8 @@ func TestFixkostenEingabe_CRUD_Roundtrip(t *testing.T) {
 	if got.Monat != "2026-09-02" {
 		t.Errorf("Monat after update = %q, want 2026-09-02", got.Monat)
 	}
-	if got.Werte[10] != 15.00 {
-		t.Errorf("Werte[10] after update = %v, want 15.00", got.Werte[10])
+	if got.Werte[10].Wert != 15.00 {
+		t.Errorf("Werte[10].Wert after update = %v, want 15.00", got.Werte[10].Wert)
 	}
 	if got.Personen[1] != 3 {
 		t.Errorf("Personen[1] after update = %v, want 3", got.Personen[1])
@@ -292,7 +301,9 @@ func TestUpdateFixkostenEingabe_NotFound(t *testing.T) {
 
 func TestDeleteFixkostenEingabe(t *testing.T) {
 	db := openTestDB(t)
-	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]float64{10: 12.50})
+	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]FixkostenPositionWert{
+		10: {Logik: LogikWohneinheit, Typ: TypMonatlich, Wert: 12.50},
+	})
 
 	if err := DeleteFixkostenEingabe(db, id); err != nil {
 		t.Fatalf("DeleteFixkostenEingabe: %v", err)
