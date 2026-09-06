@@ -67,6 +67,8 @@ CREATE TABLE IF NOT EXISTS fixkosten_werte (
     fixkosten_eingabe_id  INTEGER NOT NULL REFERENCES fixkosten_eingaben(id),
     kostenposition_id     INTEGER NOT NULL REFERENCES kostenpositionen(id),
     wert                  REAL NOT NULL,
+    logik                 TEXT NOT NULL DEFAULT '',
+    typ                   TEXT NOT NULL DEFAULT '',
     UNIQUE(fixkosten_eingabe_id, kostenposition_id)
 );
 

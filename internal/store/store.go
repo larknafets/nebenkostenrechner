@@ -70,6 +70,11 @@ func Open(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("seed master data: %w", err)
 	}
 
+	if err := ensureFixkostenWerteLogikTypColumns(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("migrate fixkosten_werte logik/typ columns: %w", err)
+	}
+
 	return db, nil
 }
 
@@ -196,6 +201,177 @@ func ensurePeriodsMonatColumn(db *sql.DB) error {
 	}
 	_, err = db.Exec(`UPDATE periods SET monat = substr(reading_date, 1, 7) || '-01' WHERE monat = ''`)
 	return err
+}
+
+// ensureFixkostenWerteLogikTypColumns adds the logik/typ columns to an
+// existing fixkosten_werte table that predates them (Issue #106/#105:
+// Logik/Typ/Wert je Kostenposition wandern von den jahresweisen Stammdaten
+// vollständig in die Fixkosten-Eingabe). Backfills every pre-existing
+// Fixkosten-Eingabe's 14 Kostenpositionen from kostenpositionen_jahre in the
+// same call that adds the columns, same convention as
+// ensurePeriodsMonatColumn's reading_date -> monat backfill. A later re-run
+// finds the columns already present and returns before touching any row.
+func ensureFixkostenWerteLogikTypColumns(db *sql.DB) error {
+	rows, err := db.Query(`PRAGMA table_info(fixkosten_werte)`)
+	if err != nil {
+		return fmt.Errorf("inspect fixkosten_werte columns: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var cid, notnull, pk int
+		var name, ctype string
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			return fmt.Errorf("scan fixkosten_werte column: %w", err)
+		}
+		if name == "logik" {
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	if _, err := db.Exec(`ALTER TABLE fixkosten_werte ADD COLUMN logik TEXT NOT NULL DEFAULT ''`); err != nil {
+		return err
+	}
+	if _, err := db.Exec(`ALTER TABLE fixkosten_werte ADD COLUMN typ TEXT NOT NULL DEFAULT ''`); err != nil {
+		return err
+	}
+
+	return backfillFixkostenWerteLogikTyp(db)
+}
+
+// backfillFixkostenWerteLogikTyp fills every existing Fixkosten-Eingabe's 14
+// Kostenpositionen with the Logik/Typ/Wert that applied to it at its own
+// Monat, read from kostenpositionen_jahre (about to be dropped in a later
+// ticket once nothing reads it anymore) - exactly monatswertFuer's existing
+// jährlich/monatlich/Fallback rules (internal/calc/fixkosten.go), run once
+// here instead of on every Berechnung. A Kostenposition with no
+// kostenpositionen_jahre row for that Jahr (only possible for an Eingabe
+// whose Jahr was never "angelegt", which calc.Fixkosten already refused to
+// compute) falls back to KostenpositionDefaults so it still gets a sane
+// Logik/Typ instead of staying empty.
+func backfillFixkostenWerteLogikTyp(db *sql.DB) error {
+	eingabeRows, err := db.Query(`SELECT id, monat FROM fixkosten_eingaben`)
+	if err != nil {
+		return fmt.Errorf("query fixkosten eingaben: %w", err)
+	}
+	type eingabe struct {
+		id    int64
+		monat string
+	}
+	var eingaben []eingabe
+	for eingabeRows.Next() {
+		var e eingabe
+		if err := eingabeRows.Scan(&e.id, &e.monat); err != nil {
+			eingabeRows.Close()
+			return fmt.Errorf("scan fixkosten eingabe: %w", err)
+		}
+		eingaben = append(eingaben, e)
+	}
+	if err := eingabeRows.Err(); err != nil {
+		eingabeRows.Close()
+		return err
+	}
+	eingabeRows.Close()
+
+	if len(eingaben) == 0 {
+		return nil
+	}
+
+	kostenpositionen, err := Kostenpositionen(db)
+	if err != nil {
+		return fmt.Errorf("kostenpositionen: %w", err)
+	}
+	defaultByID := map[int64]KostenpositionDefault{}
+	for _, kd := range KostenpositionDefaults {
+		defaultByID[kd.ID] = kd
+	}
+
+	jahresdatenCache := map[int]map[int64]KostenpositionJahr{}
+	jahresdatenFor := func(jahr int) (map[int64]KostenpositionJahr, error) {
+		if kj, ok := jahresdatenCache[jahr]; ok {
+			return kj, nil
+		}
+		kj, err := KostenpositionenJahr(db, jahr)
+		if err != nil {
+			return nil, err
+		}
+		jahresdatenCache[jahr] = kj
+		return kj, nil
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	for _, e := range eingaben {
+		jahr, err := JahrFromMonat(e.monat)
+		if err != nil {
+			continue
+		}
+		jahresdaten, err := jahresdatenFor(jahr)
+		if err != nil {
+			return fmt.Errorf("kostenpositionen jahresdaten %d: %w", jahr, err)
+		}
+
+		existingWerte := map[int64]float64{}
+		werteRows, err := db.Query(`SELECT kostenposition_id, wert FROM fixkosten_werte WHERE fixkosten_eingabe_id = ?`, e.id)
+		if err != nil {
+			return fmt.Errorf("query fixkosten werte for eingabe %d: %w", e.id, err)
+		}
+		for werteRows.Next() {
+			var kpID int64
+			var wert float64
+			if err := werteRows.Scan(&kpID, &wert); err != nil {
+				werteRows.Close()
+				return fmt.Errorf("scan fixkosten wert: %w", err)
+			}
+			existingWerte[kpID] = wert
+		}
+		if err := werteRows.Err(); err != nil {
+			werteRows.Close()
+			return err
+		}
+		werteRows.Close()
+
+		for _, kp := range kostenpositionen {
+			var logik, typ string
+			var wert float64
+
+			if kj, ok := jahresdaten[kp.ID]; ok {
+				logik, typ = kj.Logik, kj.Typ
+				if typ == TypJaehrlich {
+					wert = kj.Jahreswert
+				} else if existing, ok := existingWerte[kp.ID]; ok {
+					wert = existing
+				} else if letzter, ok, err := LatestJaehrlichWert(db, kp.ID, jahr); err != nil {
+					return fmt.Errorf("latest jaehrlich wert for %d: %w", kp.ID, err)
+				} else if ok {
+					wert = letzter / 12
+				}
+			} else if kd, ok := defaultByID[kp.ID]; ok {
+				logik, typ = kd.Logik, kd.Typ
+				wert = existingWerte[kp.ID]
+			}
+
+			if _, err := tx.Exec(
+				`INSERT INTO fixkosten_werte (fixkosten_eingabe_id, kostenposition_id, wert, logik, typ)
+				 VALUES (?, ?, ?, ?, ?)
+				 ON CONFLICT(fixkosten_eingabe_id, kostenposition_id) DO UPDATE SET
+				   wert = excluded.wert, logik = excluded.logik, typ = excluded.typ`,
+				e.id, kp.ID, wert, logik, typ,
+			); err != nil {
+				return fmt.Errorf("backfill fixkosten wert eingabe %d position %d: %w", e.id, kp.ID, err)
+			}
+		}
+	}
+
+	return tx.Commit()
 }
 
 type apartmentSeed struct {

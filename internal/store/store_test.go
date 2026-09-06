@@ -1098,3 +1098,125 @@ func TestUpdateStammdaten_Roundtrip(t *testing.T) {
 		}
 	}
 }
+
+// TestEnsureFixkostenWerteLogikTypColumns deckt Issue #106 ab: eine
+// bestehende Installation, deren fixkosten_werte noch keine logik/typ-
+// Spalten hat, bekommt sie angelegt und jede vorhandene Fixkosten-Eingabe
+// wird aus kostenpositionen_jahre rückwirkend befüllt - Jahreswert bei Typ
+// "jährlich", expliziter Wert bzw. letzter bekannter Jahreswert/12-Fallback
+// bei "monatlich" (identisch zu calc.Fixkosten.monatswertFuer, hier aber
+// einmalig zur Migrationszeit statt bei jeder Berechnung).
+func TestEnsureFixkostenWerteLogikTypColumns(t *testing.T) {
+	db := openTestDB(t)
+
+	// Jahr 2025: Grundsteuer (ID 1) jährlich mit Jahreswert 1200, Internet
+	// (ID 13) monatlich.
+	if err := UpsertKostenpositionenJahr(db, 2025, map[int64]KostenpositionJahrInput{
+		1:  {Logik: LogikQM, Typ: TypJaehrlich, Jahreswert: 1200},
+		13: {Logik: LogikWohneinheit, Typ: TypMonatlich},
+	}); err != nil {
+		t.Fatalf("UpsertKostenpositionenJahr 2025: %v", err)
+	}
+	// Jahr 2024: Internet war jährlich mit Jahreswert 480 - Fallback-
+	// Quelle für eine monatliche Eingabe ohne eigenen Wert.
+	if err := UpsertKostenpositionenJahr(db, 2024, map[int64]KostenpositionJahrInput{
+		13: {Logik: LogikWohneinheit, Typ: TypJaehrlich, Jahreswert: 480},
+	}); err != nil {
+		t.Fatalf("UpsertKostenpositionenJahr 2024: %v", err)
+	}
+
+	// Eingabe mit explizitem Internet-Wert.
+	mitWert, err := CreateFixkostenEingabe(db, FixkostenInput{
+		Monat: "2025-01-01",
+		Werte: map[int64]float64{13: 42},
+	})
+	if err != nil {
+		t.Fatalf("CreateFixkostenEingabe (mit Wert): %v", err)
+	}
+	// Eingabe ohne eigenen Internet-Wert - muss auf den 2024er Jahreswert/12
+	// zurückfallen.
+	ohneWert, err := CreateFixkostenEingabe(db, FixkostenInput{Monat: "2025-02-01"})
+	if err != nil {
+		t.Fatalf("CreateFixkostenEingabe (ohne Wert): %v", err)
+	}
+
+	// fixkosten_werte simuliert eine Installation von vor dieser Migration:
+	// logik/typ auf beiden Zeilen zurücksetzen (schema.sql legt sie ab jetzt
+	// direkt mit an, openTestDB hat sie also schon befüllt).
+	if _, err := db.Exec(`UPDATE fixkosten_werte SET logik = '', typ = ''`); err != nil {
+		t.Fatalf("reset logik/typ: %v", err)
+	}
+
+	if err := backfillFixkostenWerteLogikTyp(db); err != nil {
+		t.Fatalf("backfillFixkostenWerteLogikTyp: %v", err)
+	}
+
+	type row struct {
+		logik, typ string
+		wert       float64
+	}
+	get := func(eingabeID, kostenpositionID int64) row {
+		t.Helper()
+		var r row
+		if err := db.QueryRow(
+			`SELECT logik, typ, wert FROM fixkosten_werte WHERE fixkosten_eingabe_id = ? AND kostenposition_id = ?`,
+			eingabeID, kostenpositionID,
+		).Scan(&r.logik, &r.typ, &r.wert); err != nil {
+			t.Fatalf("query fixkosten_werte eingabe=%d position=%d: %v", eingabeID, kostenpositionID, err)
+		}
+		return r
+	}
+
+	if got := get(mitWert, 1); got.logik != LogikQM || got.typ != TypJaehrlich || got.wert != 1200 {
+		t.Errorf("Grundsteuer (mitWert) = %+v, want {qm jaehrlich 1200} (Jahreswert, nicht /12 - das teilt calc.Fixkosten)", got)
+	}
+	if got := get(mitWert, 13); got.logik != LogikWohneinheit || got.typ != TypMonatlich || got.wert != 42 {
+		t.Errorf("Internet (mitWert) = %+v, want {wohneinheit monatlich 42} (expliziter Wert bleibt erhalten)", got)
+	}
+	if got := get(ohneWert, 13); got.logik != LogikWohneinheit || got.typ != TypMonatlich || got.wert != 40 {
+		t.Errorf("Internet (ohneWert) = %+v, want {wohneinheit monatlich 40} (Fallback 480/12 aus 2024)", got)
+	}
+
+	// Idempotent: ein zweiter Aufruf darf nicht fehlschlagen und nichts
+	// verändern.
+	if err := backfillFixkostenWerteLogikTyp(db); err != nil {
+		t.Fatalf("second backfillFixkostenWerteLogikTyp call: %v", err)
+	}
+	if got := get(mitWert, 13); got.wert != 42 {
+		t.Errorf("Internet (mitWert) nach 2. Lauf = %v, want unveraendert 42", got.wert)
+	}
+}
+
+// TestEnsureFixkostenWerteLogikTypColumns_AlteInstallation deckt die
+// eigentliche Spalten-Migration ab (Issue #106): eine Tabelle im Schema von
+// vor #106 (ohne logik/typ) bekommt die Spalten angelegt, und ein zweiter
+// Aufruf schlägt nicht mit "duplicate column" fehl.
+func TestEnsureFixkostenWerteLogikTypColumns_AlteInstallation(t *testing.T) {
+	db, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "old.db"))
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	if _, err := db.Exec(`CREATE TABLE fixkosten_werte (
+		id                   INTEGER PRIMARY KEY,
+		fixkosten_eingabe_id INTEGER NOT NULL,
+		kostenposition_id    INTEGER NOT NULL,
+		wert                 REAL NOT NULL,
+		UNIQUE(fixkosten_eingabe_id, kostenposition_id)
+	)`); err != nil {
+		t.Fatalf("create old-shape fixkosten_werte table: %v", err)
+	}
+	// backfillFixkostenWerteLogikTyp liest fixkosten_eingaben, auch wenn es
+	// (wie hier) keine gibt - Tabelle muss trotzdem existieren.
+	if _, err := db.Exec(`CREATE TABLE fixkosten_eingaben (id INTEGER PRIMARY KEY, monat TEXT NOT NULL)`); err != nil {
+		t.Fatalf("create fixkosten_eingaben table: %v", err)
+	}
+
+	if err := ensureFixkostenWerteLogikTypColumns(db); err != nil {
+		t.Fatalf("ensureFixkostenWerteLogikTypColumns: %v", err)
+	}
+	if err := ensureFixkostenWerteLogikTypColumns(db); err != nil {
+		t.Fatalf("second ensureFixkostenWerteLogikTypColumns call: %v", err)
+	}
+}
