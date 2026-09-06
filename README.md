@@ -13,7 +13,7 @@ Auf der `/stammdaten`-Seite gepflegt - aktuelle Einzelwerte, nicht pro Monat his
 | Wohnung 1 | 116,23 m² | - |
 | Wohnung 2 | 86 m² | - |
 
-Dort auch die 14 Fixkosten-Kostenpositionen, jahresweise gepflegt (Berechnungslogik, Typ jährlich/monatlich, ggf. Jahreswert) - siehe [Fixkosten/Grundgebühren](#fixkostengrundgebühren) unten.
+Die 14 Fixkosten-Kostenpositionen (Berechnungslogik, Typ jährlich/monatlich, Wert) sowie der Nebenkostenabschlag werden dagegen nicht hier, sondern direkt an der jeweiligen Fixkosten-Eingabe gepflegt - siehe [Fixkosten/Grundgebühren](#fixkostengrundgebühren) und [Nebenkostenabschlag](#nebenkostenabschlag-guthabennachzahlung) unten.
 
 Personenzahl ist variabel und wird separat pro Ablesung *und* pro Fixkosten-Eingabe erfasst (zwei unabhängige Werte, nicht gemeinsam versioniert).
 
@@ -129,6 +129,16 @@ Je Anzahl Personen         : Personen_W1 / (Personen_W1 + Personen_W2)         (
 
 Sind bei den letzten drei Logiken beide Werte 0, fällt die Aufteilung auf hälftig zurück (gleiche Regel wie bei der Heizungs-Wärme-Ratio).
 
+### Nebenkostenabschlag (Guthaben/Nachzahlung)
+
+Die monatliche Vorauszahlung je Wohnung, an der jeweiligen Fixkosten-Eingabe erfasst wie ein monatlich-typisierter Wert (vorbelegt von der letzten Eingabe, frei überschreibbar) - deckt Fixkosten UND Verbräuche gemeinsam ab, ist selbst aber keine Kostenposition (keine Berechnungslogik, kein Split, direkter Wert je Wohnung).
+
+```
+Saldo(Monat) = Saldo(Vormonat) + Abschlag(Monat) - (Fixkosten(Monat) + Verbrauch(Monat))
+```
+
+Fortlaufend seit Erfassungsbeginn kumuliert, kein Reset zum Jahreswechsel. Positiv heißt Guthaben, negativ Nachzahlung, exakt 0 Ausgeglichen. Ein Monat ohne Fixkosten-Eingabe lässt den Saldo unverändert, statt ihn verschwinden zu lassen.
+
 ### Rundung
 
 Jede Kostenposition (Strom, Heizung/Warmwasser, Frischwasser, Abwasser, jede der 14 Fixkosten-Positionen) wird einzeln je Wohnung **kaufmännisch auf Cent gerundet** (0,5 Cent immer aufgerundet), erst nach der vollständigen Berechnung mit float-Genauigkeit. Die angezeigte Gesamtsumme je Wohnung kann dadurch um 1-2 Cent von der rechnerisch exakten Summe abweichen - das ist akzeptiert, es gibt keinen Korrekturmechanismus.
@@ -159,11 +169,13 @@ meter_readings(id, period_id -> periods.id, meter_id -> meters.id, zaehlerstand,
 period_occupancy(id, period_id -> periods.id, apartment_id -> apartments.id, personen, UNIQUE(period_id, apartment_id))
 
 kostenpositionen(id, key UNIQUE, label)
-kostenpositionen_jahre(id, kostenposition_id -> kostenpositionen.id, jahr, logik, typ, jahreswert, UNIQUE(kostenposition_id, jahr))
 fixkosten_eingaben(id, monat DATE)
-fixkosten_werte(id, fixkosten_eingabe_id -> fixkosten_eingaben.id, kostenposition_id -> kostenpositionen.id, wert, UNIQUE(fixkosten_eingabe_id, kostenposition_id))
+fixkosten_werte(id, fixkosten_eingabe_id -> fixkosten_eingaben.id, kostenposition_id -> kostenpositionen.id, wert, logik, typ, UNIQUE(fixkosten_eingabe_id, kostenposition_id))
 fixkosten_personen(id, fixkosten_eingabe_id -> fixkosten_eingaben.id, apartment_id -> apartments.id, personen, UNIQUE(fixkosten_eingabe_id, apartment_id))
+nebenkosten_abschlaege(id, fixkosten_eingabe_id -> fixkosten_eingaben.id, apartment_id -> apartments.id, wert, UNIQUE(fixkosten_eingabe_id, apartment_id))
 ```
+
+Logik/Typ/Wert je Kostenposition liegen direkt an `fixkosten_werte` (nicht mehr jahresweise) - jede Fixkosten-Eingabe trägt ihren eigenen, unabhängigen Stand, wie Personen und der Nebenkostenabschlag.
 
 Berechnete Kosten werden nicht persistiert, sondern bei jedem Aufruf live aus den Rohdaten berechnet.
 
