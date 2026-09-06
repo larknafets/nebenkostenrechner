@@ -79,3 +79,10 @@ Der einer Kostenposition für einen konkreten Monat tatsächlich zugerechnete Be
 
 **Flurstück / Flurstücksgröße**:
 Die Grundstücksgröße je Wohnung (`apartments.flurstueck_groesse`), Grundlage der Berechnungslogik "Je anteiliges Flurstück" (z.B. für Deichbeiträge). Wie die Wohnungsgröße ein aktueller Einzelwert, nicht historisiert - auf der Stammdaten-Seite gepflegt.
+
+**Nebenkostenabschlag**:
+Die monatliche Vorauszahlung je Wohnung (Tabelle `nebenkosten_abschlaege`), an der jeweiligen Fixkosten-Eingabe erfasst wie ein monatlich-typisierter Wert, aber keine Kostenposition - deckt Fixkosten UND Verbräuche gemeinsam ab, zählt nicht in die Fixkosten-Summen und hat keine Berechnungslogik (direkter Wert je Wohnung, kein Split).
+_Avoid_: Abschlag ohne "Nebenkosten"-Präfix (zu unspezifisch), Vorauszahlung
+
+**Guthaben / Nachzahlung**:
+Der fortlaufend seit Erfassungsbeginn kumulierte Saldo aus Nebenkostenabschlag minus Fixkosten minus Verbräuche einer Wohnung (kein Reset zum Jahreswechsel). Positiv heißt Guthaben, negativ Nachzahlung, exakt null Ausgeglichen. Im Code der Typ `AbschlagSaldo` (`internal/web/abschlag_saldo.go`).

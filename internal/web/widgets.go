@@ -72,12 +72,7 @@ func handleWidgetJahressumme(db *sql.DB) http.HandlerFunc {
 				a := findApartment(dd.Apartments, apartmentID)
 				c := buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, dd.Jahr, dd.PeriodenKosten, dd.FixkostenListe)
 				verlauf := buildDashboardVerlauf(a.ID, a.Name, dd.PeriodenKosten, dd.FixkostenListe)
-				if betrag, guthaben, nachzahlung, ok := latestAbschlagSaldo(verlauf); ok {
-					c.HasAbschlagSaldo = true
-					c.AbschlagBetrag = betrag
-					c.AbschlagGuthaben = guthaben
-					c.AbschlagNachzahlung = nachzahlung
-				}
+				c.Saldo = latestAbschlagSaldo(verlauf)
 				data.Card = &c
 			}
 		}
@@ -169,12 +164,7 @@ func handleWidgetUebersicht(db *sql.DB) http.HandlerFunc {
 				a := findApartment(dd.Apartments, apartmentID)
 				c := buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, dd.Jahr, dd.PeriodenKosten, dd.FixkostenListe)
 				v := buildDashboardVerlauf(a.ID, a.Name, dd.PeriodenKosten, dd.FixkostenListe)
-				if betrag, guthaben, nachzahlung, ok := latestAbschlagSaldo(v); ok {
-					c.HasAbschlagSaldo = true
-					c.AbschlagBetrag = betrag
-					c.AbschlagGuthaben = guthaben
-					c.AbschlagNachzahlung = nachzahlung
-				}
+				c.Saldo = latestAbschlagSaldo(v)
 				data.Card = &c
 				data.Verlauf = &v
 			}

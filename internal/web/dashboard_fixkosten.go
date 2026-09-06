@@ -145,10 +145,8 @@ type dashboardJahresCard struct {
 	// (kein Jahres-Reset), Stand des jeweils neuesten Monats - siehe
 	// buildDashboardVerlauf, das den Saldo je Monat berechnet; von dort
 	// übernommen (handleDashboard), nicht hier in buildJahresCard berechnet.
-	HasAbschlagSaldo    bool
-	AbschlagBetrag      float64 // Round2'd, immer >= 0 - Vorzeichen steckt in Guthaben/Nachzahlung
-	AbschlagGuthaben    bool
-	AbschlagNachzahlung bool
+	// nil = kein Saldo berechenbar (siehe AbschlagSaldo).
+	Saldo *AbschlagSaldo
 }
 
 // buildJahresCard sums the given apartment's Verbrauch- und Fixkosten-Kosten
@@ -236,13 +234,14 @@ type dashboardMonat struct {
 	// Nebenkostenabschlag-Saldo (5. Modus "abschlag"): fortlaufend kumulierter
 	// Stand bis einschließlich diesem Monat - abschlag(m) - KombiniertGesamt(m)
 	// je Monat aufsummiert seit dem ersten je erfassten Monat, kein Jahres-
-	// Reset. Nur gesetzt, wenn der Monat HasKombiniert ist (fehlende Monate
+	// Reset. nil, wenn der Monat nicht HasKombiniert ist (fehlende Monate
 	// lassen den Saldo unverändert, siehe buildDashboardVerlauf).
-	HasAbschlagSaldo    bool
-	AbschlagBetrag      float64 // Round2'd, immer >= 0
-	AbschlagGuthaben    bool
-	AbschlagNachzahlung bool
-	AbschlagProzent     float64 // 0-50, Anteil vom größten |Saldo| der Reihe - Balken-Halbbreite
+	Saldo *AbschlagSaldo
+
+	// AbschlagProzent (0-50) ist die Balken-Halbbreite - Anteil vom größten
+	// |Saldo| der ganzen Reihe, also eine Eigenschaft der Reihe, nicht des
+	// einzelnen Saldos, deshalb kein Feld auf AbschlagSaldo selbst.
+	AbschlagProzent float64
 }
 
 // dashboardJahreszeile is the Monatsverlauf's per-Jahr summary row (Issue
@@ -256,14 +255,12 @@ type dashboardJahreszeile struct {
 	FixkostenSumme float64
 	GesamtSumme    float64
 
-	// Nebenkostenabschlag-Endstand: der kumulierte Saldo am Jahresende (bzw.
-	// am neuesten erfassten Monat, bei einem laufenden Jahr) - keine Summe,
-	// da der Saldo fortlaufend ist und sich nicht sinnvoll pro Jahr aufaddieren
-	// lässt (siehe #92/#94).
-	HasAbschlagEndstand    bool
-	AbschlagEndstandBetrag float64
-	AbschlagEndstandGut    bool
-	AbschlagEndstandNach   bool
+	// Endstand: der kumulierte Saldo am Jahresende (bzw. am neuesten erfassten
+	// Monat, bei einem laufenden Jahr) - keine Summe, da der Saldo fortlaufend
+	// ist und sich nicht sinnvoll pro Jahr aufaddieren lässt (siehe #92/#94).
+	// Eigener Feldname statt "Saldo" wie bei dashboardMonat, weil hier ein
+	// anderer Zeitpunkt gemeint ist (Jahresende, nicht laufender Monat).
+	Endstand *AbschlagSaldo
 }
 
 // dashboardVerlaufEintrag is one row of a Monatsverlauf column: either a
@@ -446,10 +443,7 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 		if !hatSaldo[i] {
 			continue
 		}
-		monate[i].HasAbschlagSaldo = true
-		monate[i].AbschlagBetrag = math.Abs(saldi[i])
-		monate[i].AbschlagGuthaben = saldi[i] > 0
-		monate[i].AbschlagNachzahlung = saldi[i] < 0
+		monate[i].Saldo = newAbschlagSaldo(saldi[i])
 		if maxAbsSaldo > 0 {
 			monate[i].AbschlagProzent = math.Abs(saldi[i]) / maxAbsSaldo * 50
 		}
@@ -462,20 +456,20 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 }
 
 // latestAbschlagSaldo returns the newest Monat's cumulated Guthaben/
-// Nachzahlung-Saldo in spalte (newest-first) that actually has one -
-// skipping Jahreszeile rows and any leading Monat(e) without HasAbschlagSaldo
-// (e.g. the current month has no Fixkosten-Eingabe/Ablesung yet), so the
+// Nachzahlung-Saldo in spalte (newest-first) that actually has one - nil,
+// skipping Jahreszeile rows and any leading Monat(e) ohne Saldo (e.g. the
+// current month has no Fixkosten-Eingabe/Ablesung yet), so the
 // Jahressummen-Karte keeps showing the last known Stand instead of the
 // Saldo disappearing for a single lückenhaften Monat - the Monatsverlauf's
 // own laufenderSaldo already carries forward the same way.
-func latestAbschlagSaldo(spalte dashboardVerlaufSpalte) (betrag float64, guthaben, nachzahlung, ok bool) {
+func latestAbschlagSaldo(spalte dashboardVerlaufSpalte) *AbschlagSaldo {
 	for _, e := range spalte.Eintraege {
-		if e.Monat == nil || !e.Monat.HasAbschlagSaldo {
+		if e.Monat == nil || e.Monat.Saldo == nil {
 			continue
 		}
-		return e.Monat.AbschlagBetrag, e.Monat.AbschlagGuthaben, e.Monat.AbschlagNachzahlung, true
+		return e.Monat.Saldo
 	}
-	return 0, false, false, false
+	return nil
 }
 
 // walkJahre drives the "insert a Jahreszeile right after every calendar
@@ -512,19 +506,18 @@ func mitJahreszeilen(monate []dashboardMonat) []dashboardVerlaufEintrag {
 	}
 	out := make([]dashboardVerlaufEintrag, 0, len(monate)+4)
 	var vSumme, fSumme float64
-	var endstandBetrag float64
-	var endstandGut, endstandNach, endstandSet bool
+	var endstand *AbschlagSaldo
 	walkJahre(len(monate),
 		func(i int) int { return monate[i].Jahr },
 		func(i int) {
 			m := monate[i]
 			vSumme += m.VerbrauchGesamt
 			fSumme += m.FixkostenGesamt
-			// Endstand = Saldo des neuesten Monats dieses Jahres mit
-			// HasAbschlagSaldo - da monate newest-first durchlaufen wird, ist
-			// das der erste Treffer nach dem letzten flush.
-			if !endstandSet && m.HasAbschlagSaldo {
-				endstandBetrag, endstandGut, endstandNach, endstandSet = m.AbschlagBetrag, m.AbschlagGuthaben, m.AbschlagNachzahlung, true
+			// Endstand = Saldo des neuesten Monats dieses Jahres mit Saldo -
+			// da monate newest-first durchlaufen wird, ist das der erste
+			// Treffer nach dem letzten flush.
+			if endstand == nil && m.Saldo != nil {
+				endstand = m.Saldo
 			}
 			out = append(out, dashboardVerlaufEintrag{Monat: &m})
 		},
@@ -532,10 +525,9 @@ func mitJahreszeilen(monate []dashboardMonat) []dashboardVerlaufEintrag {
 			out = append(out, dashboardVerlaufEintrag{Jahreszeile: &dashboardJahreszeile{
 				Jahr: jahr, IstLaufend: istLaufend,
 				VerbrauchSumme: calc.Round2(vSumme), FixkostenSumme: calc.Round2(fSumme), GesamtSumme: calc.Round2(vSumme + fSumme),
-				HasAbschlagEndstand: endstandSet, AbschlagEndstandBetrag: endstandBetrag,
-				AbschlagEndstandGut: endstandGut, AbschlagEndstandNach: endstandNach,
+				Endstand: endstand,
 			}})
-			endstandBetrag, endstandGut, endstandNach, endstandSet = 0, false, false, false
+			endstand = nil
 			vSumme, fSumme = 0, 0
 		},
 	)

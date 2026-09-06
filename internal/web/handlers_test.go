@@ -484,37 +484,76 @@ func TestBuildDashboardVerlauf_NurFixkosten(t *testing.T) {
 	}
 }
 
+func TestAbschlagSaldo(t *testing.T) {
+	for _, tc := range []struct {
+		name             string
+		wert             float64
+		wantBetrag       float64
+		wantGuthaben     bool
+		wantNachzahlung  bool
+		wantAusgeglichen bool
+		wantLabel        string
+		wantCSSClass     string
+	}{
+		{"positiv -> Guthaben", 128.4, 128.4, true, false, false, "Guthaben", "guthaben"},
+		{"negativ -> Nachzahlung", -61.5, 61.5, false, true, false, "Nachzahlung", "nachzahlung"},
+		{"exakt 0 -> Ausgeglichen", 0, 0, false, false, true, "Ausgeglichen", "ausgeglichen"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := newAbschlagSaldo(tc.wert)
+			if got := s.Betrag(); got != tc.wantBetrag {
+				t.Errorf("Betrag() = %v, want %v", got, tc.wantBetrag)
+			}
+			if got := s.Guthaben(); got != tc.wantGuthaben {
+				t.Errorf("Guthaben() = %v, want %v", got, tc.wantGuthaben)
+			}
+			if got := s.Nachzahlung(); got != tc.wantNachzahlung {
+				t.Errorf("Nachzahlung() = %v, want %v", got, tc.wantNachzahlung)
+			}
+			if got := s.Ausgeglichen(); got != tc.wantAusgeglichen {
+				t.Errorf("Ausgeglichen() = %v, want %v", got, tc.wantAusgeglichen)
+			}
+			if got := s.Label(); got != tc.wantLabel {
+				t.Errorf("Label() = %q, want %q", got, tc.wantLabel)
+			}
+			if got := s.CSSClass(); got != tc.wantCSSClass {
+				t.Errorf("CSSClass() = %q, want %q", got, tc.wantCSSClass)
+			}
+		})
+	}
+}
+
 func TestLatestAbschlagSaldo(t *testing.T) {
 	t.Run("überspringt lückenhaften neuesten Monat und Jahreszeilen", func(t *testing.T) {
 		spalte := dashboardVerlaufSpalte{
 			Eintraege: []dashboardVerlaufEintrag{
-				{Monat: &dashboardMonat{Label: "Jun 26"}}, // neuester Monat ohne Kombiniert-Daten (HasAbschlagSaldo=false)
-				{Monat: &dashboardMonat{Label: "Mai 26", HasAbschlagSaldo: true, AbschlagBetrag: 42, AbschlagGuthaben: true}},
+				{Monat: &dashboardMonat{Label: "Jun 26"}}, // neuester Monat ohne Kombiniert-Daten (Saldo=nil)
+				{Monat: &dashboardMonat{Label: "Mai 26", Saldo: newAbschlagSaldo(42)}},
 				{Jahreszeile: &dashboardJahreszeile{Jahr: 2026}},
-				{Monat: &dashboardMonat{Label: "Apr 26", HasAbschlagSaldo: true, AbschlagBetrag: 99, AbschlagNachzahlung: true}},
+				{Monat: &dashboardMonat{Label: "Apr 26", Saldo: newAbschlagSaldo(-99)}},
 			},
 		}
-		betrag, guthaben, nachzahlung, ok := latestAbschlagSaldo(spalte)
-		if !ok || betrag != 42 || !guthaben || nachzahlung {
-			t.Fatalf("latestAbschlagSaldo = %v/%v/%v/%v, want 42/true/false/true (Mai 26, nicht Jun 26 oder Apr 26)", betrag, guthaben, nachzahlung, ok)
+		got := latestAbschlagSaldo(spalte)
+		if got == nil || got.Betrag() != 42 || !got.Guthaben() {
+			t.Fatalf("latestAbschlagSaldo = %+v, want Betrag 42/Guthaben (Mai 26, nicht Jun 26 oder Apr 26)", got)
 		}
 	})
 
-	t.Run("kein Monat mit Saldo -> ok=false", func(t *testing.T) {
+	t.Run("kein Monat mit Saldo -> nil", func(t *testing.T) {
 		spalte := dashboardVerlaufSpalte{
 			Eintraege: []dashboardVerlaufEintrag{
 				{Monat: &dashboardMonat{Label: "Jun 26"}},
 				{Jahreszeile: &dashboardJahreszeile{Jahr: 2026}},
 			},
 		}
-		if _, _, _, ok := latestAbschlagSaldo(spalte); ok {
-			t.Fatal("ok = true, want false (keine Monat hat HasAbschlagSaldo)")
+		if got := latestAbschlagSaldo(spalte); got != nil {
+			t.Fatalf("latestAbschlagSaldo = %+v, want nil (kein Monat hat einen Saldo)", got)
 		}
 	})
 
-	t.Run("leere Eintraege -> ok=false", func(t *testing.T) {
-		if _, _, _, ok := latestAbschlagSaldo(dashboardVerlaufSpalte{}); ok {
-			t.Fatal("ok = true, want false (keine Eintraege)")
+	t.Run("leere Eintraege -> nil", func(t *testing.T) {
+		if got := latestAbschlagSaldo(dashboardVerlaufSpalte{}); got != nil {
+			t.Fatalf("latestAbschlagSaldo = %+v, want nil (keine Eintraege)", got)
 		}
 	})
 }

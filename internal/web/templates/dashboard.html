@@ -23,10 +23,10 @@
     <div class="muted stat-kategorien">
       {{range .Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{deEUR .Kosten}} €</span>{{end}}
     </div>
-    {{if .HasAbschlagSaldo}}
-    <div class="abschlag-value {{if .AbschlagGuthaben}}guthaben{{else if .AbschlagNachzahlung}}nachzahlung{{else}}ausgeglichen{{end}}">
-      <div class="label">{{if .AbschlagGuthaben}}Guthaben{{else if .AbschlagNachzahlung}}Nachzahlung{{else}}Ausgeglichen{{end}}</div>
-      <div class="amount">{{deEUR .AbschlagBetrag}} €</div>
+    {{with .Saldo}}
+    <div class="abschlag-value {{.CSSClass}}">
+      <div class="label">{{.Label}}</div>
+      <div class="amount">{{deEUR .Betrag}} €</div>
     </div>
     {{end}}
   </div>
@@ -103,7 +103,7 @@
       <span data-modus="verbrauchswerte">Verbrauch {{deEUR $jz.VerbrauchSumme}} € · Fixkosten {{deEUR $jz.FixkostenSumme}} € · Gesamt {{deEUR $jz.GesamtSumme}} €</span>
       <span data-modus="fixkosten">Verbrauch {{deEUR $jz.VerbrauchSumme}} € · Fixkosten {{deEUR $jz.FixkostenSumme}} € · Gesamt {{deEUR $jz.GesamtSumme}} €</span>
       <span data-modus="kombiniert">Verbrauch {{deEUR $jz.VerbrauchSumme}} € · Fixkosten {{deEUR $jz.FixkostenSumme}} € · Gesamt {{deEUR $jz.GesamtSumme}} €</span>
-      <span data-modus="abschlag">{{if $jz.HasAbschlagEndstand}}Endstand: {{if $jz.AbschlagEndstandGut}}Guthaben{{else if $jz.AbschlagEndstandNach}}Nachzahlung{{else}}Ausgeglichen{{end}} {{deEUR $jz.AbschlagEndstandBetrag}} €{{else}}Endstand: –{{end}}</span>
+      <span data-modus="abschlag">Endstand: {{with $jz.Endstand}}{{.Label}} {{deEUR .Betrag}} €{{else}}–{{end}}</span>
     </div>
     {{else}}
     {{$m := .Monat}}
@@ -124,15 +124,13 @@
       </div>
       <div class="bar-track-center" data-modus="abschlag">
         <div class="zero-line"></div>
-        {{if $m.HasAbschlagSaldo}}
-        {{if $m.AbschlagGuthaben}}<div class="fill guthaben" style="width:{{$m.AbschlagProzent}}%"></div>{{else if $m.AbschlagNachzahlung}}<div class="fill nachzahlung" style="width:{{$m.AbschlagProzent}}%"></div>{{end}}
-        {{else}}<span class="verlauf-none" data-modus="abschlag">– keine Daten</span>{{end}}
+        {{with $m.Saldo}}<div class="fill {{.CSSClass}}" style="width:{{$m.AbschlagProzent}}%"></div>{{else}}<span class="verlauf-none" data-modus="abschlag">– keine Daten</span>{{end}}
       </div>
 
       <span class="value-label" data-modus="verbrauch">{{if $m.HasVerbrauch}}{{deEUR $m.VerbrauchGesamt}} €{{end}}</span>
       <span class="value-label" data-modus="fixkosten">{{if $m.HasFixkosten}}{{deEUR $m.FixkostenGesamt}} €{{end}}</span>
       <span class="value-label" data-modus="kombiniert">{{if $m.HasKombiniert}}{{deEUR $m.KombiniertGesamt}} €{{end}}</span>
-      <span class="value-label {{if $m.AbschlagGuthaben}}guthaben{{else if $m.AbschlagNachzahlung}}nachzahlung{{else}}ausgeglichen{{end}}" data-modus="abschlag">{{if $m.HasAbschlagSaldo}}{{if $m.AbschlagGuthaben}}+{{else if $m.AbschlagNachzahlung}}&minus;{{end}}{{deEUR $m.AbschlagBetrag}} €{{end}}</span>
+      <span class="value-label {{with $m.Saldo}}{{.CSSClass}}{{end}}" data-modus="abschlag">{{with $m.Saldo}}{{if .Guthaben}}+{{else if .Nachzahlung}}&minus;{{end}}{{deEUR .Betrag}} €{{end}}</span>
     </div>
     {{end}}
     {{end}}
