@@ -29,7 +29,7 @@ var (
 	wizardTemplate     = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/wizard.html"))
 	ablesungTemplate   = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/ablesung.html"))
 	ablesungenTemplate = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/ablesungen.html"))
-	dashboardTemplate  = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/dashboard.html"))
+	dashboardTemplate  = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/monatsverlauf.html", "templates/dashboard.html"))
 
 	berechnungslogikTemplate = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/berechnungslogik.html"))
 	stammdatenTemplate       = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/stammdaten.html"))
@@ -40,9 +40,9 @@ var (
 
 	// widget-layout Templates (Issue #77 ff.) - eigene Shell statt "layout",
 	// teilen sich nur "styles" (layout.html) mit dem Rest der App.
-	widgetJahressummeTemplate     = template.Must(template.New("widget_layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/widget_layout.html", "templates/widget_jahressumme.html"))
-	widgetVerbrauchswerteTemplate = template.Must(template.New("widget_layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/widget_layout.html", "templates/widget_verbrauchswerte.html"))
-	widgetUebersichtTemplate      = template.Must(template.New("widget_layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/widget_layout.html", "templates/widget_uebersicht.html"))
+	widgetJahressummeTemplate     = template.Must(template.New("widget_layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/monatsverlauf.html", "templates/widget_layout.html", "templates/widget_jahressumme.html"))
+	widgetVerbrauchswerteTemplate = template.Must(template.New("widget_layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/monatsverlauf.html", "templates/widget_layout.html", "templates/widget_verbrauchswerte.html"))
+	widgetUebersichtTemplate      = template.Must(template.New("widget_layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/monatsverlauf.html", "templates/widget_layout.html", "templates/widget_uebersicht.html"))
 )
 
 // meterDisplay describes how one meter's reading is labelled on the
@@ -88,6 +88,11 @@ var templateFuncs = template.FuncMap{
 	"deDatum":       formatDatumDE,
 	"deDatumZeit":   formatDatumZeitDE,
 	"kategorieIcon": kategorieIcon,
+	// logikOptions is a zero-arg func rather than a per-page data field - it's
+	// a fixed, package-global list (see fixkosten.go), so the geteilte
+	// "monatsverlauf-wohnung-body"-Partial (monatsverlauf.html) braucht dafür
+	// keinen eigenen Datentransport von jedem Aufrufer.
+	"logikOptions": func() []logikOption { return logikOptions },
 }
 
 var meterDisplays = []meterDisplay{

@@ -104,8 +104,7 @@ func handleWidgetVerbrauchswerte(db *sql.DB) http.HandlerFunc {
 			HasAnyData    bool
 			Verlauf       *dashboardVerlaufSpalte
 			SimpleVerlauf *dashboardSimpleSpalte
-			LogikOptions  []logikOption
-		}{HasAnyData: dd.HasAnyData, LogikOptions: logikOptions}
+		}{HasAnyData: dd.HasAnyData}
 
 		if dd.HasAnyData {
 			if simple != nil {
@@ -151,8 +150,7 @@ func handleWidgetUebersicht(db *sql.DB) http.HandlerFunc {
 			SimpleCard         *dashboardSimpleCard
 			Verlauf            *dashboardVerlaufSpalte
 			SimpleVerlauf      *dashboardSimpleSpalte
-			LogikOptions       []logikOption
-		}{HasAnyData: dd.HasAnyData, AnzeigeJahr: dd.Jahr, AnzeigeJahrLaufend: dd.Jahr == time.Now().Year(), LogikOptions: logikOptions}
+		}{HasAnyData: dd.HasAnyData, AnzeigeJahr: dd.Jahr, AnzeigeJahrLaufend: dd.Jahr == time.Now().Year()}
 
 		if dd.HasAnyData {
 			if simple != nil {

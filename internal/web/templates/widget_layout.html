@@ -67,142 +67,14 @@
 
 {{define "widget-verbrauchswerte-body"}}
 {{if .Verlauf}}
-<div class="panel verlauf-panel">
-  <div class="verlauf-legend">
-    <span class="legend-item" data-modus="verbrauch"><i class="cat-strom"></i>Strom</span>
-    <span class="legend-item" data-modus="verbrauch"><i class="cat-heizung"></i>Heizung/Warmwasser</span>
-    <span class="legend-item" data-modus="verbrauch"><i class="cat-wasser"></i>Wasser</span>
-    <span class="legend-item" data-modus="verbrauchswerte"><i class="cat-strom"></i>Strom</span>
-    <span class="legend-item" data-modus="verbrauchswerte"><i class="cat-heizung"></i>Heizung/Warmwasser</span>
-    <span class="legend-item" data-modus="verbrauchswerte"><i class="cat-wasser"></i>Wasser</span>
-    {{range .LogikOptions}}<span class="legend-item" data-modus="fixkosten"><i class="logik-{{.Value}}"></i>{{.Label}}</span>{{end}}
-    <span class="legend-item" data-modus="kombiniert"><i class="cat-verbrauch-gesamt"></i>Verbrauch</span>
-    <span class="legend-item" data-modus="kombiniert"><i class="cat-fix"></i>Fixkosten</span>
-    <span class="legend-item" data-modus="abschlag"><i style="background:var(--success)"></i>Guthaben</span>
-    <span class="legend-item" data-modus="abschlag"><i style="background:var(--danger)"></i>Nachzahlung</span>
-    <div class="mode-toggle">
-      <button type="button" data-modus-btn="verbrauch">Verbrauch</button>
-      <button type="button" data-modus-btn="verbrauchswerte">Verbrauchswerte</button>
-      <button type="button" data-modus-btn="fixkosten">Fixkosten</button>
-      <button type="button" data-modus-btn="kombiniert">Kombiniert</button>
-      <button type="button" data-modus-btn="abschlag">Abschlag</button>
-    </div>
-  </div>
-
-  {{range .Verlauf.Eintraege}}
-  {{if .Jahreszeile}}
-  {{$jz := .Jahreszeile}}
-  <div class="verlauf-year-row"><span>Jahr {{$jz.Jahr}}{{if $jz.IstLaufend}} (laufend){{end}}</span>
-    <span data-modus="verbrauch">Verbrauch {{deEUR $jz.VerbrauchSumme}} € · Fixkosten {{deEUR $jz.FixkostenSumme}} € · Gesamt {{deEUR $jz.GesamtSumme}} €</span>
-    <span data-modus="verbrauchswerte">Verbrauch {{deEUR $jz.VerbrauchSumme}} € · Fixkosten {{deEUR $jz.FixkostenSumme}} € · Gesamt {{deEUR $jz.GesamtSumme}} €</span>
-    <span data-modus="fixkosten">Verbrauch {{deEUR $jz.VerbrauchSumme}} € · Fixkosten {{deEUR $jz.FixkostenSumme}} € · Gesamt {{deEUR $jz.GesamtSumme}} €</span>
-    <span data-modus="kombiniert">Verbrauch {{deEUR $jz.VerbrauchSumme}} € · Fixkosten {{deEUR $jz.FixkostenSumme}} € · Gesamt {{deEUR $jz.GesamtSumme}} €</span>
-    <span data-modus="abschlag">Endstand: {{with $jz.Endstand}}{{.Label}} {{deEUR .Betrag}} €{{else}}–{{end}}</span>
-  </div>
-  {{else}}
-  {{$m := .Monat}}
-  <div class="verlauf-row {{if $m.IsCurrent}}is-current{{end}}">
-    <span class="month-label">{{$m.Label}}</span>
-
-    <div class="bar-track" data-modus="verbrauch">
-      {{if $m.HasVerbrauch}}{{range $m.VerbrauchSegmente}}<div class="cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{deEUR .Kosten}} €"><span>{{deEUR .Kosten}} €</span></div>{{end}}{{else}}<span class="verlauf-none" data-modus="verbrauch">– keine Ablesung</span>{{end}}
-    </div>
-    <div class="verbrauch-liste" data-modus="verbrauchswerte">
-      {{if $m.HasVerbrauch}}{{range $i2, $seg := $m.VerbrauchSegmente}}{{if $i2}} · {{end}}{{$seg.Label}} <span class="v-{{$seg.Farbe}}">{{de2 $seg.Verbrauch}} {{$seg.Einheit}}{{if $seg.Einheit2}} ({{de2 $seg.Verbrauch2}} {{$seg.Einheit2}}){{end}}</span>{{end}}{{else}}– keine Ablesung{{end}}
-    </div>
-    <div class="bar-track" data-modus="fixkosten">
-      {{if $m.HasFixkosten}}{{range $m.FixkostenSegmente}}<div class="{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{deEUR .Kosten}} €"><span>{{deEUR .Kosten}} €</span></div>{{end}}{{else}}<span class="verlauf-none" data-modus="fixkosten">– keine Fixkosten-Eingabe</span>{{end}}
-    </div>
-    <div class="bar-track" data-modus="kombiniert">
-      {{if $m.HasKombiniert}}{{range $m.KombiniertSegmente}}<div class="cat-{{.Farbe}}{{if eq .Farbe "fix"}} fix-seg{{end}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{deEUR .Kosten}} €"><span>{{deEUR .Kosten}} €</span></div>{{end}}{{else}}<span class="verlauf-none" data-modus="kombiniert">–</span>{{end}}
-    </div>
-    <div class="bar-track-center" data-modus="abschlag">
-      <div class="zero-line"></div>
-      {{with $m.Saldo}}<div class="fill {{.CSSClass}}" style="width:{{$m.AbschlagProzent}}%"></div>{{else}}<span class="verlauf-none" data-modus="abschlag">– keine Daten</span>{{end}}
-    </div>
-
-    <span class="value-label" data-modus="verbrauch">{{if $m.HasVerbrauch}}{{deEUR $m.VerbrauchGesamt}} €{{end}}</span>
-    <span class="value-label" data-modus="fixkosten">{{if $m.HasFixkosten}}{{deEUR $m.FixkostenGesamt}} €{{end}}</span>
-    <span class="value-label" data-modus="kombiniert">{{if $m.HasKombiniert}}{{deEUR $m.KombiniertGesamt}} €{{end}}</span>
-    <span class="value-label {{with $m.Saldo}}{{.CSSClass}}{{end}}" data-modus="abschlag">{{with $m.Saldo}}{{if .Guthaben}}+{{else if .Nachzahlung}}&minus;{{end}}{{deEUR .Betrag}} €{{end}}</span>
-  </div>
-  {{end}}
-  {{end}}
-</div>
+{{template "monatsverlauf-wohnung-body" .Verlauf}}
 {{else}}
-<div class="panel verlauf-panel">
-  <div class="verlauf-legend">{{if .SimpleVerlauf.IstErtrag}}<span><i class="cat-pv"></i>Einspeisevergütung</span>{{else}}<span><i class="cat-strom"></i>Stromkosten</span><span><i class="cat-pv"></i>PV-Anteil</span>{{end}}</div>
-  {{range .SimpleVerlauf.Eintraege}}
-  {{if .Jahreszeile}}
-  <div class="verlauf-year-row"><span>Jahr {{.Jahreszeile.Jahr}}{{if .Jahreszeile.IstLaufend}} (laufend){{end}}</span><span>{{if $.SimpleVerlauf.IstErtrag}}+{{end}}{{deEUR .Jahreszeile.Summe}} €</span></div>
-  {{else}}
-  {{$m := .Monat}}
-  <div class="verlauf-row {{if $m.IsCurrent}}is-current{{end}}">
-    <span class="month-label">{{$m.Label}}</span>
-    <div class="bar-track">
-      {{if $m.HasWert}}{{range $m.Segmente}}<div class="cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{de2 .Verbrauch}} kWh"><span>{{de2 .Verbrauch}} kWh</span></div>{{end}}{{else}}<span class="verlauf-none">– keine Ablesung</span>{{end}}
-    </div>
-    <span class="value-label">{{if $m.HasWert}}{{if $.SimpleVerlauf.IstErtrag}}+{{end}}{{deEUR $m.EUR}} €{{end}}</span>
-  </div>
-  {{end}}
-  {{end}}
-</div>
+{{template "monatsverlauf-simple-body" .SimpleVerlauf}}
 {{end}}
 {{end}}
 
 {{define "widget-verlauf-script"}}<script>
-  function fitVerlaufBarText() {
-    document.querySelectorAll(".bar-track > div").forEach(function (seg) {
-      var span = seg.querySelector("span");
-      if (!span) return;
-      span.style.display = "";
-      seg.classList.remove("text-hidden");
-      var size = 11;
-      span.style.fontSize = size + "px";
-      while (span.scrollWidth > seg.clientWidth - 4 && size > 7) {
-        size -= 1;
-        span.style.fontSize = size + "px";
-      }
-      if (span.scrollWidth > seg.clientWidth - 4) {
-        span.style.display = "none";
-        seg.classList.add("text-hidden");
-      }
-    });
-  }
-  window.addEventListener("load", fitVerlaufBarText);
-  window.addEventListener("resize", fitVerlaufBarText);
-
-  (function () {
-    var tooltipEl = null;
-    function showTooltip(seg) {
-      var eur = seg.getAttribute("data-eur");
-      if (!eur) return;
-      if (!tooltipEl) {
-        tooltipEl = document.createElement("div");
-        tooltipEl.className = "verlauf-tooltip";
-        document.body.appendChild(tooltipEl);
-      }
-      tooltipEl.textContent = eur;
-      tooltipEl.style.display = "block";
-      var rect = seg.getBoundingClientRect();
-      var top = rect.top - tooltipEl.offsetHeight - 6;
-      var left = rect.left + rect.width / 2 - tooltipEl.offsetWidth / 2;
-      left = Math.max(4, Math.min(left, window.innerWidth - tooltipEl.offsetWidth - 4));
-      tooltipEl.style.top = top + "px";
-      tooltipEl.style.left = left + "px";
-    }
-    function hideTooltip() { if (tooltipEl) tooltipEl.style.display = "none"; }
-    var longPressTimer = null;
-    document.querySelectorAll(".bar-track > div").forEach(function (seg) {
-      seg.addEventListener("mouseenter", function () { if (seg.classList.contains("text-hidden")) showTooltip(seg); });
-      seg.addEventListener("mouseleave", hideTooltip);
-      seg.addEventListener("touchstart", function () {
-        longPressTimer = setTimeout(function () { if (seg.classList.contains("text-hidden")) showTooltip(seg); }, 500);
-      }, { passive: true });
-      seg.addEventListener("touchend", function () { clearTimeout(longPressTimer); hideTooltip(); });
-      seg.addEventListener("touchcancel", function () { clearTimeout(longPressTimer); hideTooltip(); });
-    });
-  })();
+  {{template "monatsverlauf-fit-script"}}
 
   (function () {
     var MODI = ["verbrauch", "verbrauchswerte", "fixkosten", "kombiniert", "abschlag"];
