@@ -16,7 +16,7 @@
     <thead><tr><th style="width:40%">Wohnung</th><th>Personen</th><th>Nebenkostenabschlag</th></tr></thead>
     <tbody>
       {{range .Apartments}}
-      <tr><td>{{.Name}}</td><td>{{index $.Eingabe.Personen .ID}}</td><td>{{deEUR (index $.Eingabe.Abschlag .ID)}} €</td></tr>
+      <tr><td>{{.Name}}</td><td>{{index $.Eingabe.Personen .ID}}</td><td>{{deEUR (index $.Eingabe.Abschlag .ID)}}&nbsp;€</td></tr>
       {{end}}
     </tbody>
   </table>
@@ -25,9 +25,9 @@
     <thead><tr><th style="width:40%">Position</th><th>Logik</th><th>Wohnung 1</th><th>Wohnung 2</th></tr></thead>
     <tbody>
       {{range .Positionen}}
-      <tr><td>{{.Label}}</td><td>{{.LogikLabel}}</td><td>{{deEUR .KostenW1}} €</td><td>{{deEUR .KostenW2}} €</td></tr>
+      <tr><td>{{.Label}}</td><td>{{.LogikLabel}}</td><td>{{deEUR .KostenW1}}&nbsp;€</td><td>{{deEUR .KostenW2}}&nbsp;€</td></tr>
       {{end}}
-      <tr><td colspan="2"><strong>Summe</strong></td><td><strong>{{deEUR .KostenW1}} €</strong></td><td><strong>{{deEUR .KostenW2}} €</strong></td></tr>
+      <tr><td colspan="2"><strong>Summe</strong></td><td><strong>{{deEUR .KostenW1}}&nbsp;€</strong></td><td><strong>{{deEUR .KostenW2}}&nbsp;€</strong></td></tr>
     </tbody>
   </table>
 </div>

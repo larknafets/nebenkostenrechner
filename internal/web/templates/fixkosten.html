@@ -16,8 +16,8 @@
       {{range .Eingaben}}
       <tr>
         <td>{{.Label}}</td>
-        <td>{{deEUR .SummeW1}} €</td>
-        <td>{{deEUR .SummeW2}} €</td>
+        <td>{{deEUR .SummeW1}}&nbsp;€</td>
+        <td>{{deEUR .SummeW2}}&nbsp;€</td>
         <td><a href="{{$.Base}}/fixkosten/{{.ID}}">Details</a></td>
       </tr>
       {{end}}

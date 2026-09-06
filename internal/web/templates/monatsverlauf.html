@@ -32,11 +32,11 @@
   {{if .Jahreszeile}}
   {{$jz := .Jahreszeile}}
   <div class="verlauf-year-row"><span>Jahr {{$jz.Jahr}}{{if $jz.IstLaufend}} (laufend){{end}}</span>
-    <span data-modus="verbrauch">Verbrauch {{deEUR $jz.VerbrauchSumme}} € · Fixkosten {{deEUR $jz.FixkostenSumme}} € · Gesamt {{deEUR $jz.GesamtSumme}} €</span>
-    <span data-modus="verbrauchswerte">Verbrauch {{deEUR $jz.VerbrauchSumme}} € · Fixkosten {{deEUR $jz.FixkostenSumme}} € · Gesamt {{deEUR $jz.GesamtSumme}} €</span>
-    <span data-modus="fixkosten">Verbrauch {{deEUR $jz.VerbrauchSumme}} € · Fixkosten {{deEUR $jz.FixkostenSumme}} € · Gesamt {{deEUR $jz.GesamtSumme}} €</span>
-    <span data-modus="kombiniert">Verbrauch {{deEUR $jz.VerbrauchSumme}} € · Fixkosten {{deEUR $jz.FixkostenSumme}} € · Gesamt {{deEUR $jz.GesamtSumme}} €</span>
-    <span data-modus="abschlag">Endstand: {{with $jz.Endstand}}{{.Label}} {{deEUR .Betrag}} €{{else}}–{{end}}</span>
+    <span data-modus="verbrauch">Verbrauch {{deEUR $jz.VerbrauchSumme}}&nbsp;€ · Fixkosten {{deEUR $jz.FixkostenSumme}}&nbsp;€ · Gesamt {{deEUR $jz.GesamtSumme}}&nbsp;€</span>
+    <span data-modus="verbrauchswerte">Verbrauch {{deEUR $jz.VerbrauchSumme}}&nbsp;€ · Fixkosten {{deEUR $jz.FixkostenSumme}}&nbsp;€ · Gesamt {{deEUR $jz.GesamtSumme}}&nbsp;€</span>
+    <span data-modus="fixkosten">Verbrauch {{deEUR $jz.VerbrauchSumme}}&nbsp;€ · Fixkosten {{deEUR $jz.FixkostenSumme}}&nbsp;€ · Gesamt {{deEUR $jz.GesamtSumme}}&nbsp;€</span>
+    <span data-modus="kombiniert">Verbrauch {{deEUR $jz.VerbrauchSumme}}&nbsp;€ · Fixkosten {{deEUR $jz.FixkostenSumme}}&nbsp;€ · Gesamt {{deEUR $jz.GesamtSumme}}&nbsp;€</span>
+    <span data-modus="abschlag">Endstand: {{with $jz.Endstand}}{{.Label}} {{deEUR .Betrag}}&nbsp;€{{else}}–{{end}}</span>
   </div>
   {{else}}
   {{$m := .Monat}}
@@ -44,26 +44,26 @@
     <span class="month-label">{{$m.Label}}</span>
 
     <div class="bar-track" data-modus="verbrauch">
-      {{if $m.HasVerbrauch}}{{range $m.VerbrauchSegmente}}<div class="cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{deEUR .Kosten}} €"><span>{{deEUR .Kosten}} €</span></div>{{end}}{{else}}<span class="verlauf-none" data-modus="verbrauch">– keine Ablesung</span>{{end}}
+      {{if $m.HasVerbrauch}}{{range $m.VerbrauchSegmente}}<div class="cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{deEUR .Kosten}}&nbsp;€"><span>{{deEUR .Kosten}}&nbsp;€</span></div>{{end}}{{else}}<span class="verlauf-none" data-modus="verbrauch">– keine Ablesung</span>{{end}}
     </div>
     <div class="verbrauch-liste" data-modus="verbrauchswerte">
       {{if $m.HasVerbrauch}}{{range $i2, $seg := $m.VerbrauchSegmente}}{{if $i2}} · {{end}}{{$seg.Label}} <span class="v-{{$seg.Farbe}}">{{de2 $seg.Verbrauch}} {{$seg.Einheit}}{{if $seg.Einheit2}} ({{de2 $seg.Verbrauch2}} {{$seg.Einheit2}}){{end}}</span>{{end}}{{else}}– keine Ablesung{{end}}
     </div>
     <div class="bar-track" data-modus="fixkosten">
-      {{if $m.HasFixkosten}}{{range $m.FixkostenSegmente}}<div class="{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{deEUR .Kosten}} €"><span>{{deEUR .Kosten}} €</span></div>{{end}}{{else}}<span class="verlauf-none" data-modus="fixkosten">– keine Fixkosten-Eingabe</span>{{end}}
+      {{if $m.HasFixkosten}}{{range $m.FixkostenSegmente}}<div class="{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{deEUR .Kosten}}&nbsp;€"><span>{{deEUR .Kosten}}&nbsp;€</span></div>{{end}}{{else}}<span class="verlauf-none" data-modus="fixkosten">– keine Fixkosten-Eingabe</span>{{end}}
     </div>
     <div class="bar-track" data-modus="kombiniert">
-      {{if $m.HasKombiniert}}{{range $m.KombiniertSegmente}}<div class="cat-{{.Farbe}}{{if eq .Farbe "fix"}} fix-seg{{end}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{deEUR .Kosten}} €"><span>{{deEUR .Kosten}} €</span></div>{{end}}{{else}}<span class="verlauf-none" data-modus="kombiniert">–</span>{{end}}
+      {{if $m.HasKombiniert}}{{range $m.KombiniertSegmente}}<div class="cat-{{.Farbe}}{{if eq .Farbe "fix"}} fix-seg{{end}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{deEUR .Kosten}}&nbsp;€"><span>{{deEUR .Kosten}}&nbsp;€</span></div>{{end}}{{else}}<span class="verlauf-none" data-modus="kombiniert">–</span>{{end}}
     </div>
     <div class="bar-track-center" data-modus="abschlag">
       <div class="zero-line"></div>
       {{with $m.Saldo}}<div class="fill {{.CSSClass}}" style="width:{{$m.AbschlagProzent}}%"></div>{{else}}<span class="verlauf-none" data-modus="abschlag">– keine Daten</span>{{end}}
     </div>
 
-    <span class="value-label" data-modus="verbrauch">{{if $m.HasVerbrauch}}{{deEUR $m.VerbrauchGesamt}} €{{end}}</span>
-    <span class="value-label" data-modus="fixkosten">{{if $m.HasFixkosten}}{{deEUR $m.FixkostenGesamt}} €{{end}}</span>
-    <span class="value-label" data-modus="kombiniert">{{if $m.HasKombiniert}}{{deEUR $m.KombiniertGesamt}} €{{end}}</span>
-    <span class="value-label {{with $m.Saldo}}{{.CSSClass}}{{end}}" data-modus="abschlag">{{with $m.Saldo}}{{if .Guthaben}}+{{else if .Nachzahlung}}&minus;{{end}}{{deEUR .Betrag}} €{{end}}</span>
+    <span class="value-label" data-modus="verbrauch">{{if $m.HasVerbrauch}}{{deEUR $m.VerbrauchGesamt}}&nbsp;€{{end}}</span>
+    <span class="value-label" data-modus="fixkosten">{{if $m.HasFixkosten}}{{deEUR $m.FixkostenGesamt}}&nbsp;€{{end}}</span>
+    <span class="value-label" data-modus="kombiniert">{{if $m.HasKombiniert}}{{deEUR $m.KombiniertGesamt}}&nbsp;€{{end}}</span>
+    <span class="value-label {{with $m.Saldo}}{{.CSSClass}}{{end}}" data-modus="abschlag">{{with $m.Saldo}}{{if .Guthaben}}+{{else if .Nachzahlung}}&minus;{{end}}{{deEUR .Betrag}}&nbsp;€{{end}}</span>
   </div>
   {{end}}
   {{end}}
@@ -81,7 +81,7 @@
   <div class="verlauf-legend">{{if .IstErtrag}}<span><i class="cat-pv"></i>Einspeisevergütung</span>{{else}}<span><i class="cat-strom"></i>Stromkosten</span><span><i class="cat-pv"></i>PV-Anteil</span>{{end}}</div>
   {{range .Eintraege}}
   {{if .Jahreszeile}}
-  <div class="verlauf-year-row"><span>Jahr {{.Jahreszeile.Jahr}}{{if .Jahreszeile.IstLaufend}} (laufend){{end}}</span><span>{{if $.IstErtrag}}+{{end}}{{deEUR .Jahreszeile.Summe}} €</span></div>
+  <div class="verlauf-year-row"><span>Jahr {{.Jahreszeile.Jahr}}{{if .Jahreszeile.IstLaufend}} (laufend){{end}}</span><span>{{if $.IstErtrag}}+{{end}}{{deEUR .Jahreszeile.Summe}}&nbsp;€</span></div>
   {{else}}
   {{$m := .Monat}}
   <div class="verlauf-row {{if $m.IsCurrent}}is-current{{end}}">
@@ -89,7 +89,7 @@
     <div class="bar-track">
       {{if $m.HasWert}}{{range $m.Segmente}}<div class="cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{de2 .Verbrauch}} kWh"><span>{{de2 .Verbrauch}} kWh</span></div>{{end}}{{else}}<span class="verlauf-none">– keine Ablesung</span>{{end}}
     </div>
-    <span class="value-label">{{if $m.HasWert}}{{if $.IstErtrag}}+{{end}}{{deEUR $m.EUR}} €{{end}}</span>
+    <span class="value-label">{{if $m.HasWert}}{{if $.IstErtrag}}+{{end}}{{deEUR $m.EUR}}&nbsp;€{{end}}</span>
   </div>
   {{end}}
   {{end}}
@@ -164,6 +164,6 @@
 {{define "abschlag-value"}}
 <div class="abschlag-value {{.CSSClass}}">
   <div class="label">{{.Label}}</div>
-  <div class="amount">{{deEUR .Betrag}} €</div>
+  <div class="amount">{{deEUR .Betrag}}&nbsp;€</div>
 </div>
 {{end}}
