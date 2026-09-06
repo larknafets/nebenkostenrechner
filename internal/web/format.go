@@ -116,6 +116,17 @@ func formatDecimalDE2(x float64) string {
 	return groupThousandsDE(strings.ReplaceAll(strconv.FormatFloat(x, 'f', 2, 64), ".", ","))
 }
 
+// formatFlaecheDE renders a Flächen-Wert (m²) mit Einheit: ab mehr als 999 m²
+// in km² (2 Nachkommastellen, Issue #97 - Flurstücke können deutlich größer
+// als eine Wohnungsgröße sein), sonst wie bisher in m² (ganzzahlig).
+func formatFlaecheDE(m2 float64) string {
+	if m2 > 999 {
+		km2 := m2 / 1_000_000
+		return groupThousandsDE(strings.ReplaceAll(strconv.FormatFloat(km2, 'f', 2, 64), ".", ",")) + " km²"
+	}
+	return formatDecimalDE0(m2) + " m²"
+}
+
 // formatDatumDE renders a period's ReadingDate ("YYYY-MM-DD") in the German
 // DD.MM.YYYY form (Ticket #36). Falls back to the raw string if it isn't a
 // parseable date, same convention as germanPeriodLabel.
