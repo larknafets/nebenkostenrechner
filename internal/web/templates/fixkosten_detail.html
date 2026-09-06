@@ -13,10 +13,10 @@
 
 <div class="panel">
   <table class="letzte">
-    <thead><tr><th>Wohnung</th><th>Personen</th></tr></thead>
+    <thead><tr><th style="width:40%">Wohnung</th><th>Personen</th><th>Nebenkostenabschlag</th></tr></thead>
     <tbody>
       {{range .Apartments}}
-      <tr><td>{{.Name}}</td><td>{{index $.Eingabe.Personen .ID}}</td></tr>
+      <tr><td>{{.Name}}</td><td>{{index $.Eingabe.Personen .ID}}</td><td>{{deEUR (index $.Eingabe.Abschlag .ID)}} €</td></tr>
       {{end}}
     </tbody>
   </table>
@@ -25,7 +25,7 @@
   <p class="muted" style="margin-top:1.25rem">{{.KostenNote}}</p>
   {{else}}
   <table class="letzte" style="margin-top:1.25rem">
-    <thead><tr><th>Position</th><th>Logik</th><th>Wohnung 1</th><th>Wohnung 2</th></tr></thead>
+    <thead><tr><th style="width:40%">Position</th><th>Logik</th><th>Wohnung 1</th><th>Wohnung 2</th></tr></thead>
     <tbody>
       {{range .Positionen}}
       <tr><td>{{.Label}}</td><td>{{.LogikLabel}}</td><td>{{deEUR .KostenW1}} €</td><td>{{deEUR .KostenW2}} €</td></tr>
