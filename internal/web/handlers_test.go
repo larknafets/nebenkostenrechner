@@ -484,6 +484,41 @@ func TestBuildDashboardVerlauf_NurFixkosten(t *testing.T) {
 	}
 }
 
+func TestLatestAbschlagSaldo(t *testing.T) {
+	t.Run("überspringt lückenhaften neuesten Monat und Jahreszeilen", func(t *testing.T) {
+		spalte := dashboardVerlaufSpalte{
+			Eintraege: []dashboardVerlaufEintrag{
+				{Monat: &dashboardMonat{Label: "Jun 26"}}, // neuester Monat ohne Kombiniert-Daten (HasAbschlagSaldo=false)
+				{Monat: &dashboardMonat{Label: "Mai 26", HasAbschlagSaldo: true, AbschlagBetrag: 42, AbschlagGuthaben: true}},
+				{Jahreszeile: &dashboardJahreszeile{Jahr: 2026}},
+				{Monat: &dashboardMonat{Label: "Apr 26", HasAbschlagSaldo: true, AbschlagBetrag: 99, AbschlagNachzahlung: true}},
+			},
+		}
+		betrag, guthaben, nachzahlung, ok := latestAbschlagSaldo(spalte)
+		if !ok || betrag != 42 || !guthaben || nachzahlung {
+			t.Fatalf("latestAbschlagSaldo = %v/%v/%v/%v, want 42/true/false/true (Mai 26, nicht Jun 26 oder Apr 26)", betrag, guthaben, nachzahlung, ok)
+		}
+	})
+
+	t.Run("kein Monat mit Saldo -> ok=false", func(t *testing.T) {
+		spalte := dashboardVerlaufSpalte{
+			Eintraege: []dashboardVerlaufEintrag{
+				{Monat: &dashboardMonat{Label: "Jun 26"}},
+				{Jahreszeile: &dashboardJahreszeile{Jahr: 2026}},
+			},
+		}
+		if _, _, _, ok := latestAbschlagSaldo(spalte); ok {
+			t.Fatal("ok = true, want false (keine Monat hat HasAbschlagSaldo)")
+		}
+	})
+
+	t.Run("leere Eintraege -> ok=false", func(t *testing.T) {
+		if _, _, _, ok := latestAbschlagSaldo(dashboardVerlaufSpalte{}); ok {
+			t.Fatal("ok = true, want false (keine Eintraege)")
+		}
+	})
+}
+
 func TestMitJahreszeilen(t *testing.T) {
 	leer := kosten{Strom: &calc.StromErgebnis{}, Wasser: &calc.WasserErgebnis{KostenFrischwasserW2: 10}, Heizung: &calc.HeizungErgebnis{}}
 
