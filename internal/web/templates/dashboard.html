@@ -22,12 +22,8 @@
     </div>
     <div class="muted stat-kategorien">
       {{range .Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{deEUR .Kosten}} €</span>{{end}}
+      {{if ne .PVAnteilKWh 0.0}}<span class="v-pv" title="Nicht dem Netzbezug zugeordnet (PV)">{{kategorieIcon "PV-Anteil"}}{{de0 .PVAnteilKWh}} kWh</span>{{end}}
     </div>
-    {{if ne .PVAnteilKWh 0.0}}
-    <div class="muted stat-kategorien">
-      <span class="v-pv" title="Nicht dem Netzbezug zugeordnet (PV)">{{kategorieIcon "PV-Anteil"}}{{de0 .PVAnteilKWh}} kWh</span>
-    </div>
-    {{end}}
     {{with .Saldo}}{{template "abschlag-value" .}}{{end}}
   </div>
   {{end}}
