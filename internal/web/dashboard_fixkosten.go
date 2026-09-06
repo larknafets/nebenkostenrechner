@@ -487,65 +487,63 @@ func latestAbschlagSaldo(spalte dashboardVerlaufSpalte) *AbschlagSaldo {
 	return nil
 }
 
-// walkJahre drives the "insert a Jahreszeile right after every calendar
-// Jahr's last (=oldest displayed) row" pattern (Issue #60 Story 27) shared
-// by mitJahreszeilen and buildSimpleVerlauf's Monatsverlauf: n items
-// (newest first), jahrAt(i) gives item i's Jahr. perMonat(i) runs for every
-// item; flush(jahr, istLaufend) runs once right after the last item of each
-// Jahr - triggered by the Jahr changing while walking newest-to-oldest,
-// plus once more after the final (oldest) item, so every Jahr gets exactly
-// one summary row, unlike the old December-only separator. No-op for n==0.
-func walkJahre(n int, jahrAt func(i int) int, perMonat func(i int), flush func(jahr int, istLaufend bool)) {
-	if n == 0 {
-		return
-	}
-	neuestesJahr := jahrAt(0)
-	currentJahr := neuestesJahr
-	for i := 0; i < n; i++ {
-		jahr := jahrAt(i)
-		if jahr != currentJahr {
-			flush(currentJahr, currentJahr == neuestesJahr)
-			currentJahr = jahr
-		}
-		perMonat(i)
-		if i == n-1 {
-			flush(currentJahr, currentJahr == neuestesJahr)
-		}
-	}
+// jahresGruppe ist ein zusammenhängender, newest-first Lauf eines
+// Kalenderjahrs innerhalb einer newest-first sortierten Liste.
+type jahresGruppe[T any] struct {
+	Jahr       int
+	IstLaufend bool
+	Items      []T
 }
 
-// mitJahreszeilen wraps walkJahre for dashboardMonat/dashboardVerlaufEintrag.
+// gruppiereNachJahr zerlegt eine newest-first Liste in aufeinanderfolgende
+// Jahres-Läufe (#103, ersetzt walkJahre) - der Lauf, der items[0] enthält,
+// ist IstLaufend. Reine Gruppierfunktion ohne Callback-Timing-Vertrag:
+// "auch am Ende flushen" ergibt sich automatisch daraus, dass jede Gruppe
+// (auch die letzte) im Ergebnis-Slice steht.
+func gruppiereNachJahr[T any](items []T, jahrVon func(T) int) []jahresGruppe[T] {
+	if len(items) == 0 {
+		return nil
+	}
+	neuestesJahr := jahrVon(items[0])
+	var out []jahresGruppe[T]
+	for _, item := range items {
+		jahr := jahrVon(item)
+		if len(out) == 0 || out[len(out)-1].Jahr != jahr {
+			out = append(out, jahresGruppe[T]{Jahr: jahr, IstLaufend: jahr == neuestesJahr})
+		}
+		g := &out[len(out)-1]
+		g.Items = append(g.Items, item)
+	}
+	return out
+}
+
+// mitJahreszeilen fügt nach jedem Kalenderjahr-Lauf eine Jahreszeile ein
+// (Issue #60 Story 27) - jedes Jahr, auch das noch nicht abgeschlossene
+// neueste (IstLaufend), bekommt genau eine Summary-Row.
 func mitJahreszeilen(monate []dashboardMonat) []dashboardVerlaufEintrag {
 	if len(monate) == 0 {
 		return nil
 	}
 	out := make([]dashboardVerlaufEintrag, 0, len(monate)+4)
-	var vSumme, fSumme float64
-	var endstand *AbschlagSaldo
-	walkJahre(len(monate),
-		func(i int) int { return monate[i].Jahr },
-		func(i int) {
-			m := monate[i]
+	for _, g := range gruppiereNachJahr(monate, func(m dashboardMonat) int { return m.Jahr }) {
+		var vSumme, fSumme float64
+		var endstand *AbschlagSaldo
+		for _, m := range g.Items {
 			vSumme += m.VerbrauchGesamt
 			fSumme += m.FixkostenGesamt
 			// Endstand = Saldo des neuesten Monats dieses Jahres mit Saldo -
-			// da monate newest-first durchlaufen wird, ist das der erste
-			// Treffer nach dem letzten flush.
+			// da g.Items newest-first ist, ist das der erste Treffer.
 			if endstand == nil && m.Saldo != nil {
 				endstand = m.Saldo
 			}
 			out = append(out, dashboardVerlaufEintrag{Monat: &m})
-		},
-		func(jahr int, istLaufend bool) {
-			out = append(out, dashboardVerlaufEintrag{Jahreszeile: &dashboardJahreszeile{
-				Jahr: jahr, IstLaufend: istLaufend,
-				VerbrauchSumme: calc.Round2(vSumme), FixkostenSumme: calc.Round2(fSumme), GesamtSumme: calc.Round2(vSumme + fSumme),
-				Endstand: endstand,
-			}})
-			endstand = nil
-			vSumme, fSumme = 0, 0
-		},
-	)
+		}
+		out = append(out, dashboardVerlaufEintrag{Jahreszeile: &dashboardJahreszeile{
+			Jahr: g.Jahr, IstLaufend: g.IstLaufend,
+			VerbrauchSumme: calc.Round2(vSumme), FixkostenSumme: calc.Round2(fSumme), GesamtSumme: calc.Round2(vSumme + fSumme),
+			Endstand: endstand,
+		}})
+	}
 	return out
 }
 
@@ -783,21 +781,16 @@ func buildSimpleVerlauf(series simpleSeries, periodenKosten []periodKosten) dash
 	}
 
 	var eintraege []dashboardSimpleEintrag
-	var summe float64
-	walkJahre(len(monate),
-		func(i int) int { return monate[i].Jahr },
-		func(i int) {
-			m := monate[i]
+	for _, g := range gruppiereNachJahr(monate, func(m dashboardSimpleMonat) int { return m.Jahr }) {
+		var summe float64
+		for _, m := range g.Items {
 			summe += m.EUR
 			eintraege = append(eintraege, dashboardSimpleEintrag{Monat: &m})
-		},
-		func(jahr int, istLaufend bool) {
-			eintraege = append(eintraege, dashboardSimpleEintrag{Jahreszeile: &dashboardSimpleJahreszeile{
-				Jahr: jahr, IstLaufend: istLaufend, Summe: calc.Round2(summe),
-			}})
-			summe = 0
-		},
-	)
+		}
+		eintraege = append(eintraege, dashboardSimpleEintrag{Jahreszeile: &dashboardSimpleJahreszeile{
+			Jahr: g.Jahr, IstLaufend: g.IstLaufend, Summe: calc.Round2(summe),
+		}})
+	}
 
 	return dashboardSimpleSpalte{ID: id, Name: name, IstErtrag: istErtrag, Eintraege: eintraege}
 }

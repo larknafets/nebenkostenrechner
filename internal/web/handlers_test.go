@@ -609,6 +609,28 @@ func TestLatestAbschlagSaldo(t *testing.T) {
 	})
 }
 
+func TestGruppiereNachJahr(t *testing.T) {
+	if got := gruppiereNachJahr[int](nil, func(int) int { return 0 }); got != nil {
+		t.Fatalf("gruppiereNachJahr(nil) = %+v, want nil", got)
+	}
+
+	items := []int{2026, 2026, 2025, 2025, 2024}
+	got := gruppiereNachJahr(items, func(i int) int { return i })
+	want := []jahresGruppe[int]{
+		{Jahr: 2026, IstLaufend: true, Items: []int{2026, 2026}},
+		{Jahr: 2025, IstLaufend: false, Items: []int{2025, 2025}},
+		{Jahr: 2024, IstLaufend: false, Items: []int{2024}},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("gruppiereNachJahr(%v) = %+v, want %+v", items, got, want)
+	}
+	for i := range want {
+		if got[i].Jahr != want[i].Jahr || got[i].IstLaufend != want[i].IstLaufend || len(got[i].Items) != len(want[i].Items) {
+			t.Errorf("Gruppe %d = %+v, want %+v", i, got[i], want[i])
+		}
+	}
+}
+
 func TestMitJahreszeilen(t *testing.T) {
 	leer := kosten{Strom: &calc.StromErgebnis{}, Wasser: &calc.WasserErgebnis{KostenFrischwasserW2: 10}, Heizung: &calc.HeizungErgebnis{}}
 
