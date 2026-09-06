@@ -359,11 +359,10 @@ func handleDeleteFixkosten(db *sql.DB) http.HandlerFunc {
 // fixkostenListItem is one Fixkosten-Eingabe row in the /fixkosten
 // Übersicht and the detail view's "andere Eingabe anzeigen" dropdown.
 type fixkostenListItem struct {
-	ID       int64
-	Label    string
-	SummeW1  float64
-	SummeW2  float64
-	HasSumme bool // false when the Eingabe's Jahr has no Kostenpositionen (ErrNoKostenpositionenJahr)
+	ID      int64
+	Label   string
+	SummeW1 float64
+	SummeW2 float64
 }
 
 func handleFixkostenListe(db *sql.DB) http.HandlerFunc {
@@ -376,19 +375,15 @@ func handleFixkostenListe(db *sql.DB) http.HandlerFunc {
 
 		items := make([]fixkostenListItem, 0, len(eingaben))
 		for _, e := range eingaben {
-			item := fixkostenListItem{ID: e.ID, Label: germanPeriodLabel(e.Monat)}
 			erg, err := calc.Fixkosten(db, e.ID)
 			if err != nil {
-				if !errors.Is(err, store.ErrNoKostenpositionenJahr) {
-					http.Error(w, "fixkosten: "+err.Error(), http.StatusInternalServerError)
-					return
-				}
-			} else {
-				item.HasSumme = true
-				item.SummeW1 = erg.KostenW1
-				item.SummeW2 = erg.KostenW2
+				http.Error(w, "fixkosten: "+err.Error(), http.StatusInternalServerError)
+				return
 			}
-			items = append(items, item)
+			items = append(items, fixkostenListItem{
+				ID: e.ID, Label: germanPeriodLabel(e.Monat),
+				SummeW1: erg.KostenW1, SummeW2: erg.KostenW2,
+			})
 		}
 
 		data := struct {
@@ -449,31 +444,19 @@ func handleFixkostenDetail(db *sql.DB) http.HandlerFunc {
 			allItems[i] = fixkostenListItem{ID: e.ID, Label: germanPeriodLabel(e.Monat)}
 		}
 
-		var positionen []fixkostenDetailPosition
-		var kostenW1, kostenW2 float64
-		var kostenNote string
 		erg, err := calc.Fixkosten(db, eingabeID)
 		if err != nil {
-			if !errors.Is(err, store.ErrNoKostenpositionenJahr) {
-				http.Error(w, "fixkosten: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			jahr, jahrErr := store.JahrFromMonat(eingabe.Monat)
-			if jahrErr != nil {
-				http.Error(w, jahrErr.Error(), http.StatusInternalServerError)
-				return
-			}
-			kostenNote = fmt.Sprintf("Für Jahr %d sind noch keine Kostenpositionen in den Stammdaten angelegt.", jahr)
-		} else {
-			for _, p := range erg.Positionen {
-				positionen = append(positionen, fixkostenDetailPosition{
-					Label:      p.Label,
-					LogikLabel: logikLabels[p.Logik],
-					KostenW1:   p.KostenW1,
-					KostenW2:   p.KostenW2,
-				})
-			}
-			kostenW1, kostenW2 = erg.KostenW1, erg.KostenW2
+			http.Error(w, "fixkosten: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		positionen := make([]fixkostenDetailPosition, 0, len(erg.Positionen))
+		for _, p := range erg.Positionen {
+			positionen = append(positionen, fixkostenDetailPosition{
+				Label:      p.Label,
+				LogikLabel: logikLabels[p.Logik],
+				KostenW1:   p.KostenW1,
+				KostenW2:   p.KostenW2,
+			})
 		}
 
 		data := struct {
@@ -486,7 +469,6 @@ func handleFixkostenDetail(db *sql.DB) http.HandlerFunc {
 			Positionen  []fixkostenDetailPosition
 			KostenW1    float64
 			KostenW2    float64
-			KostenNote  string
 		}{
 			Base:        requestBase(r),
 			Aktuell:     "fixkosten-detail",
@@ -495,9 +477,8 @@ func handleFixkostenDetail(db *sql.DB) http.HandlerFunc {
 			AllEingaben: allItems,
 			Apartments:  apartments,
 			Positionen:  positionen,
-			KostenW1:    kostenW1,
-			KostenW2:    kostenW2,
-			KostenNote:  kostenNote,
+			KostenW1:    erg.KostenW1,
+			KostenW2:    erg.KostenW2,
 		}
 
 		if err := fixkostenDetailTemplate.ExecuteTemplate(w, "layout", data); err != nil {

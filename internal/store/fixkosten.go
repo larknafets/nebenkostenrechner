@@ -18,7 +18,7 @@ func JahrFromMonat(monat string) (int, error) {
 	return t.Year(), nil
 }
 
-// Logik values for kostenpositionen_jahre.logik - the 4 allocation rules a
+// Logik values for fixkosten_werte.logik - the 4 allocation rules a
 // Kostenposition can be split between Wohnung 1/2 by (Issue #60).
 const (
 	LogikWohneinheit = "wohneinheit"
@@ -27,15 +27,15 @@ const (
 	LogikPersonen    = "personen"
 )
 
-// Typ values for kostenpositionen_jahre.typ.
+// Typ values for fixkosten_werte.typ.
 const (
 	TypJaehrlich = "jaehrlich"
 	TypMonatlich = "monatlich"
 )
 
 // Kostenposition is one of the 14 fixed cost positions (Issue #60) - id/key/
-// label only, app-fixed structure like meters. Logik/Typ/Jahreswert are
-// per-year data, see KostenpositionJahr.
+// label only, app-fixed structure like meters. Logik/Typ/Wert are per-
+// Fixkosten-Eingabe data, see FixkostenPositionWert.
 type Kostenposition struct {
 	ID    int64
 	Key   string
@@ -61,127 +61,6 @@ func Kostenpositionen(db *sql.DB) ([]Kostenposition, error) {
 	return out, rows.Err()
 }
 
-// KostenpositionJahr is one Kostenposition's data for one Jahr - änder-/
-// löschbar, not historized/frozen (Issue #60).
-type KostenpositionJahr struct {
-	KostenpositionID int64
-	Jahr             int
-	Logik            string
-	Typ              string
-	Jahreswert       float64 // only meaningful when Typ == TypJaehrlich
-}
-
-// KostenpositionJahrInput is one Kostenposition's Jahr data, ready to be
-// persisted via UpsertKostenpositionenJahr.
-type KostenpositionJahrInput struct {
-	Logik      string
-	Typ        string
-	Jahreswert float64
-}
-
-// KostenpositionenJahr returns the given Jahr's data, keyed by
-// kostenposition_id. Missing from the map means that Kostenposition has no
-// data for this Jahr yet (e.g. the Jahr was never angelegt).
-func KostenpositionenJahr(db *sql.DB, jahr int) (map[int64]KostenpositionJahr, error) {
-	rows, err := db.Query(
-		`SELECT kostenposition_id, logik, typ, jahreswert FROM kostenpositionen_jahre WHERE jahr = ?`,
-		jahr,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("query kostenpositionen_jahre: %w", err)
-	}
-	defer rows.Close()
-
-	out := map[int64]KostenpositionJahr{}
-	for rows.Next() {
-		kj := KostenpositionJahr{Jahr: jahr}
-		if err := rows.Scan(&kj.KostenpositionID, &kj.Logik, &kj.Typ, &kj.Jahreswert); err != nil {
-			return nil, fmt.Errorf("scan kostenposition_jahr: %w", err)
-		}
-		out[kj.KostenpositionID] = kj
-	}
-	return out, rows.Err()
-}
-
-// KostenpositionenJahre returns every Jahr that has Kostenpositionen-Daten,
-// newest first - the Stammdaten page's year-block listing.
-func KostenpositionenJahre(db *sql.DB) ([]int, error) {
-	rows, err := db.Query(`SELECT DISTINCT jahr FROM kostenpositionen_jahre ORDER BY jahr DESC`)
-	if err != nil {
-		return nil, fmt.Errorf("query kostenpositionen_jahre years: %w", err)
-	}
-	defer rows.Close()
-
-	var out []int
-	for rows.Next() {
-		var jahr int
-		if err := rows.Scan(&jahr); err != nil {
-			return nil, fmt.Errorf("scan jahr: %w", err)
-		}
-		out = append(out, jahr)
-	}
-	return out, rows.Err()
-}
-
-// UpsertKostenpositionenJahr writes every given Kostenposition's Logik/Typ/
-// Jahreswert for jahr in one transaction - covers both "Jahr anlegen" (first
-// write for that jahr) and correcting an existing Jahr (Issue #60).
-func UpsertKostenpositionenJahr(db *sql.DB, jahr int, in map[int64]KostenpositionJahrInput) error {
-	tx, err := db.Begin()
-	if err != nil {
-		return fmt.Errorf("begin tx: %w", err)
-	}
-	defer tx.Rollback()
-
-	for kostenpositionID, kpi := range in {
-		if _, err := tx.Exec(
-			`INSERT INTO kostenpositionen_jahre (kostenposition_id, jahr, logik, typ, jahreswert)
-			 VALUES (?, ?, ?, ?, ?)
-			 ON CONFLICT(kostenposition_id, jahr) DO UPDATE SET
-			   logik = excluded.logik, typ = excluded.typ, jahreswert = excluded.jahreswert`,
-			kostenpositionID, jahr, kpi.Logik, kpi.Typ, kpi.Jahreswert,
-		); err != nil {
-			return fmt.Errorf("upsert kostenposition %d jahr %d: %w", kostenpositionID, jahr, err)
-		}
-	}
-
-	return tx.Commit()
-}
-
-// DeleteKostenpositionenJahr removes every Kostenposition's data for jahr -
-// "Jahr löschen" (Issue #60 Story 16) deletes the whole year, not individual
-// Kostenpositionen rows within it.
-func DeleteKostenpositionenJahr(db *sql.DB, jahr int) error {
-	_, err := db.Exec(`DELETE FROM kostenpositionen_jahre WHERE jahr = ?`, jahr)
-	if err != nil {
-		return fmt.Errorf("delete kostenpositionen_jahre for jahr %d: %w", jahr, err)
-	}
-	return nil
-}
-
-// LatestJaehrlichWert returns the most recent Jahr at or before maxJahr in
-// which kostenpositionID was typ=jaehrlich, and its Jahreswert - the
-// "letzter bekannter Jahreswert" fallback calc.Fixkosten uses for a
-// monatlich-typed Kostenposition with no explicit Monatswert for a given
-// month (Issue #60: a Typ-Wechsel mitten im Jahr leaves later months
-// without an explicit fixkosten_werte row). ok is false if no such Jahr
-// exists, in which case the fallback is 0.
-func LatestJaehrlichWert(db *sql.DB, kostenpositionID int64, maxJahr int) (wert float64, ok bool, err error) {
-	err = db.QueryRow(
-		`SELECT jahreswert FROM kostenpositionen_jahre
-		 WHERE kostenposition_id = ? AND jahr <= ? AND typ = ?
-		 ORDER BY jahr DESC LIMIT 1`,
-		kostenpositionID, maxJahr, TypJaehrlich,
-	).Scan(&wert)
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, false, nil
-	}
-	if err != nil {
-		return 0, false, fmt.Errorf("query latest jaehrlich wert for kostenposition %d: %w", kostenpositionID, err)
-	}
-	return wert, true, nil
-}
-
 // FixkostenPositionWert is one Kostenposition's Logik/Typ/Wert for a single
 // Fixkosten-Eingabe (Issue #105/#106/#107) - lives per Eingabe now, jede
 // Eingabe unabhängig, statt jahresweise in kostenpositionen_jahre. Bei Typ
@@ -205,12 +84,6 @@ type FixkostenInput struct {
 // ErrFixkostenEingabeNotFound is returned by UpdateFixkostenEingabe and
 // DeleteFixkostenEingabe when the given id doesn't exist.
 var ErrFixkostenEingabeNotFound = errors.New("fixkosten eingabe not found")
-
-// ErrNoKostenpositionenJahr is returned by calc.Fixkosten when the given
-// Fixkosten-Eingabe's Jahr has no Kostenpositionen-Jahresdaten yet (the
-// Jahr was never "angelegt" on /stammdaten) - analogous to
-// ErrNoPreviousPeriod's softened-to-a-user-hint handling in the web layer.
-var ErrNoKostenpositionenJahr = errors.New("no kostenpositionen jahresdaten for this jahr")
 
 // insertFixkostenTx inserts one Fixkosten-Eingabe with its Werte/Personen.
 // Shared by CreateFixkostenEingabe and (a future bulk-insert, should one

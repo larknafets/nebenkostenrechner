@@ -21,9 +21,6 @@
     </tbody>
   </table>
 
-  {{if .KostenNote}}
-  <p class="muted" style="margin-top:1.25rem">{{.KostenNote}}</p>
-  {{else}}
   <table class="letzte" style="margin-top:1.25rem">
     <thead><tr><th style="width:40%">Position</th><th>Logik</th><th>Wohnung 1</th><th>Wohnung 2</th></tr></thead>
     <tbody>
@@ -33,7 +30,6 @@
       <tr><td colspan="2"><strong>Summe</strong></td><td><strong>{{deEUR .KostenW1}} €</strong></td><td><strong>{{deEUR .KostenW2}} €</strong></td></tr>
     </tbody>
   </table>
-  {{end}}
 </div>
 
 <div class="btn-row">

@@ -2,7 +2,6 @@ package web
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -47,10 +46,6 @@ func setSegmentPct(segs []dashboardSegment, denom float64) {
 }
 
 // fixkostenKosten is one Fixkosten-Eingabe's Monat and computed Ergebnis.
-// alleFixkostenKosten already drops Eingaben whose Jahr has no
-// Kostenpositionen (store.ErrNoKostenpositionenJahr) - every dashboard view
-// simply doesn't show a month it can't compute, same as Verbrauch silently
-// stopping at the oldest period without a Vorperiode.
 type fixkostenKosten struct {
 	Monat    string
 	Erg      *calc.FixkostenErgebnis
@@ -73,9 +68,6 @@ func alleFixkostenKosten(db *sql.DB) ([]fixkostenKosten, error) {
 	for _, e := range eingaben {
 		erg, err := calc.Fixkosten(db, e.ID)
 		if err != nil {
-			if errors.Is(err, store.ErrNoKostenpositionenJahr) {
-				continue
-			}
 			return nil, fmt.Errorf("fixkosten %d: %w", e.ID, err)
 		}
 		out = append(out, fixkostenKosten{Monat: e.Monat, Erg: erg, Abschlag: abschlaege[e.ID]})

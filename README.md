@@ -111,15 +111,14 @@ Einspeisevergütung = Verbrauch(strom_einspeisung) * Einspeisung_Preis
 
 ### Fixkosten/Grundgebühren
 
-Die 14 festen Kostenpositionen (Grundsteuer, Wohngebäudeversicherung, Deichbeitrag Grund und Boden, Deichbeitrag Bauliche Anlagen, Kreisverband Wesermarsch, Abfallwirtschaft Grundgebühr Haushalt/Personen/Biomüll/Restmüll, Grundgebühr Strom, Grundgebühr Trinkwasser/Abwasser, Grundgebühr Internet, Wärmepumpen-Wartung) werden unabhängig von Strom/Heizung/Wasser auf einer eigenen monatlichen Fixkosten-Eingabe erfasst und berechnet. Jede Position hat pro Jahr (Stammdaten) einen Typ:
+Die 14 festen Kostenpositionen (Grundsteuer, Wohngebäudeversicherung, Deichbeitrag Grund und Boden, Deichbeitrag Bauliche Anlagen, Kreisverband Wesermarsch, Abfallwirtschaft Grundgebühr Haushalt/Personen/Biomüll/Restmüll, Grundgebühr Strom, Grundgebühr Trinkwasser/Abwasser, Grundgebühr Internet, Wärmepumpen-Wartung) werden unabhängig von Strom/Heizung/Wasser auf einer eigenen monatlichen Fixkosten-Eingabe erfasst und berechnet. Jede Position trägt in dieser Eingabe ihre eigene Berechnungslogik, ihren Typ und ihren Wert (vorbelegt von der letzten Eingabe, frei überschreibbar):
 
 ```
-Monatswert("jährlich")  = Jahreswert / 12                       (Stammdaten, im Formular nicht editierbar)
-Monatswert("monatlich") = expliziter Wert der Fixkosten-Eingabe  (fehlt er, z.B. nach Typwechsel:
-                                                                   letzter_bekannter_Jahreswert / 12, sonst 0)
+Monatswert("jährlich")  = Jahreswert / 12          (Jahreswert = erfasster Wert dieser Eingabe)
+Monatswert("monatlich") = erfasster Wert dieser Eingabe
 ```
 
-Aufteilung auf Wohnung 1/2 je nach Berechnungslogik (ebenfalls pro Position/Jahr in den Stammdaten gewählt):
+Aufteilung auf Wohnung 1/2 je nach Berechnungslogik (ebenfalls an der Fixkosten-Eingabe gewählt):
 
 ```
 Je Wohneinheit             : 50 / 50

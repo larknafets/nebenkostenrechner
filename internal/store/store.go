@@ -6,6 +6,7 @@ package store
 import (
 	"database/sql"
 	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -75,7 +76,23 @@ func Open(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("migrate fixkosten_werte logik/typ columns: %w", err)
 	}
 
+	if err := dropKostenpositionenJahreTable(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("drop kostenpositionen_jahre: %w", err)
+	}
+
 	return db, nil
+}
+
+// dropKostenpositionenJahreTable removes kostenpositionen_jahre (Issue
+// #105/#109): its data has already migrated into fixkosten_werte's
+// logik/typ columns (see ensureFixkostenWerteLogikTypColumns, which always
+// runs first) - Logik/Typ/Wert live per Fixkosten-Eingabe now, not
+// jahresweise. IF EXISTS makes this idempotent, same as every other
+// migration here.
+func dropKostenpositionenJahreTable(db *sql.DB) error {
+	_, err := db.Exec(`DROP TABLE IF EXISTS kostenpositionen_jahre`)
+	return err
 }
 
 // ensurePeriodsHeizungGewichtungColumn adds the heizung_waerme_gewichtung
@@ -243,16 +260,68 @@ func ensureFixkostenWerteLogikTypColumns(db *sql.DB) error {
 	return backfillFixkostenWerteLogikTyp(db)
 }
 
+// migrationKostenpositionJahr is kostenpositionen_jahre's shape, read only
+// by backfillFixkostenWerteLogikTyp - kostenpositionen_jahre is dropped
+// right after this migration runs (see dropKostenpositionenJahreTable), so
+// nothing outside this file needs its own exported type/reader anymore.
+type migrationKostenpositionJahr struct {
+	Logik      string
+	Typ        string
+	Jahreswert float64
+}
+
+// kostenpositionenJahrForMigration reads one Jahr's kostenpositionen_jahre
+// rows - the migration-only, unexported remainder of the former public
+// KostenpositionenJahr reader (Issue #109: kostenpositionen_jahre isn't a
+// standalone concept anymore once this migration has run everywhere).
+func kostenpositionenJahrForMigration(db *sql.DB, jahr int) (map[int64]migrationKostenpositionJahr, error) {
+	rows, err := db.Query(`SELECT kostenposition_id, logik, typ, jahreswert FROM kostenpositionen_jahre WHERE jahr = ?`, jahr)
+	if err != nil {
+		return nil, fmt.Errorf("query kostenpositionen_jahre: %w", err)
+	}
+	defer rows.Close()
+
+	out := map[int64]migrationKostenpositionJahr{}
+	for rows.Next() {
+		var id int64
+		var v migrationKostenpositionJahr
+		if err := rows.Scan(&id, &v.Logik, &v.Typ, &v.Jahreswert); err != nil {
+			return nil, fmt.Errorf("scan kostenposition_jahr: %w", err)
+		}
+		out[id] = v
+	}
+	return out, rows.Err()
+}
+
+// latestJaehrlichWertForMigration is the migration-only, unexported
+// remainder of the former public LatestJaehrlichWert (Issue #109).
+func latestJaehrlichWertForMigration(db *sql.DB, kostenpositionID int64, maxJahr int) (wert float64, ok bool, err error) {
+	err = db.QueryRow(
+		`SELECT jahreswert FROM kostenpositionen_jahre
+		 WHERE kostenposition_id = ? AND jahr <= ? AND typ = ?
+		 ORDER BY jahr DESC LIMIT 1`,
+		kostenpositionID, maxJahr, TypJaehrlich,
+	).Scan(&wert)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, false, nil
+	}
+	if err != nil {
+		return 0, false, fmt.Errorf("query latest jaehrlich wert for kostenposition %d: %w", kostenpositionID, err)
+	}
+	return wert, true, nil
+}
+
 // backfillFixkostenWerteLogikTyp fills every existing Fixkosten-Eingabe's 14
 // Kostenpositionen with the Logik/Typ/Wert that applied to it at its own
-// Monat, read from kostenpositionen_jahre (about to be dropped in a later
-// ticket once nothing reads it anymore) - exactly monatswertFuer's existing
-// jährlich/monatlich/Fallback rules (internal/calc/fixkosten.go), run once
-// here instead of on every Berechnung. A Kostenposition with no
-// kostenpositionen_jahre row for that Jahr (only possible for an Eingabe
-// whose Jahr was never "angelegt", which calc.Fixkosten already refused to
-// compute) falls back to KostenpositionDefaults so it still gets a sane
-// Logik/Typ instead of staying empty.
+// Monat, read from kostenpositionen_jahre (dropped right after this
+// migration runs, see dropKostenpositionenJahreTable) - exactly the former
+// monatswertFuer's jährlich/monatlich/Fallback rules
+// (internal/calc/fixkosten.go), run once here instead of on every
+// Berechnung. A Kostenposition with no kostenpositionen_jahre row for that
+// Jahr (only possible for an Eingabe whose Jahr was never "angelegt", which
+// calc.Fixkosten already refused to compute) falls back to
+// KostenpositionDefaults so it still gets a sane Logik/Typ instead of
+// staying empty.
 func backfillFixkostenWerteLogikTyp(db *sql.DB) error {
 	eingabeRows, err := db.Query(`SELECT id, monat FROM fixkosten_eingaben`)
 	if err != nil {
@@ -290,12 +359,12 @@ func backfillFixkostenWerteLogikTyp(db *sql.DB) error {
 		defaultByID[kd.ID] = kd
 	}
 
-	jahresdatenCache := map[int]map[int64]KostenpositionJahr{}
-	jahresdatenFor := func(jahr int) (map[int64]KostenpositionJahr, error) {
+	jahresdatenCache := map[int]map[int64]migrationKostenpositionJahr{}
+	jahresdatenFor := func(jahr int) (map[int64]migrationKostenpositionJahr, error) {
 		if kj, ok := jahresdatenCache[jahr]; ok {
 			return kj, nil
 		}
-		kj, err := KostenpositionenJahr(db, jahr)
+		kj, err := kostenpositionenJahrForMigration(db, jahr)
 		if err != nil {
 			return nil, err
 		}
@@ -349,7 +418,7 @@ func backfillFixkostenWerteLogikTyp(db *sql.DB) error {
 					wert = kj.Jahreswert
 				} else if existing, ok := existingWerte[kp.ID]; ok {
 					wert = existing
-				} else if letzter, ok, err := LatestJaehrlichWert(db, kp.ID, jahr); err != nil {
+				} else if letzter, ok, err := latestJaehrlichWertForMigration(db, kp.ID, jahr); err != nil {
 					return fmt.Errorf("latest jaehrlich wert for %d: %w", kp.ID, err)
 				} else if ok {
 					wert = letzter / 12
@@ -393,10 +462,9 @@ func apartmentID(id int64) *int64 { return &id }
 
 // KostenpositionDefault is one of the 14 fixed Kostenpositionen (Issue #60)
 // - id/key/label are app-fixed structure, seeded like meters. Logik/Typ are
-// only the starting values for a brand-new Kostenpositionen-Jahr that has no
-// previous year to copy from (see web's "Jahr anlegen" handler) - every
-// year afterwards is user-editable data in kostenpositionen_jahre, not
-// reseeded from here.
+// only the starting values for the very first Fixkosten-Eingabe ever
+// created (Issue #105/#108) - every Eingabe afterwards is prefilled from
+// the previous one instead, not reseeded from here.
 type KostenpositionDefault struct {
 	ID    int64
 	Key   string

@@ -1107,44 +1107,80 @@ func TestUpdateStammdaten_Roundtrip(t *testing.T) {
 // bei "monatlich" (identisch zu calc.Fixkosten.monatswertFuer, hier aber
 // einmalig zur Migrationszeit statt bei jeder Berechnung).
 func TestEnsureFixkostenWerteLogikTypColumns(t *testing.T) {
-	db := openTestDB(t)
+	// kostenpositionen_jahre existiert seit #109 nicht mehr im regulären
+	// Schema (openTestDB) - dieser Test simuliert daher direkt per SQL eine
+	// Installation von vor #106/#109, in der es sie noch gab.
+	db, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "old.db"))
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	for _, stmt := range []string{
+		`CREATE TABLE kostenpositionen (id INTEGER PRIMARY KEY, key TEXT NOT NULL UNIQUE, label TEXT NOT NULL)`,
+		`CREATE TABLE kostenpositionen_jahre (
+			id                INTEGER PRIMARY KEY,
+			kostenposition_id INTEGER NOT NULL,
+			jahr              INTEGER NOT NULL,
+			logik             TEXT NOT NULL,
+			typ               TEXT NOT NULL,
+			jahreswert        REAL NOT NULL DEFAULT 0,
+			UNIQUE(kostenposition_id, jahr)
+		)`,
+		`CREATE TABLE fixkosten_eingaben (id INTEGER PRIMARY KEY, monat TEXT NOT NULL)`,
+		`CREATE TABLE fixkosten_werte (
+			id                   INTEGER PRIMARY KEY,
+			fixkosten_eingabe_id INTEGER NOT NULL,
+			kostenposition_id    INTEGER NOT NULL,
+			wert                 REAL NOT NULL,
+			logik                TEXT NOT NULL DEFAULT '',
+			typ                  TEXT NOT NULL DEFAULT '',
+			UNIQUE(fixkosten_eingabe_id, kostenposition_id)
+		)`,
+	} {
+		if _, err := db.Exec(stmt); err != nil {
+			t.Fatalf("create old-shape schema: %v", err)
+		}
+	}
+
+	if _, err := db.Exec(`INSERT INTO kostenpositionen (id, key, label) VALUES (1, 'grundsteuer', 'Grundsteuer'), (13, 'internet', 'Grundgebühr Internet')`); err != nil {
+		t.Fatalf("seed kostenpositionen: %v", err)
+	}
 
 	// Jahr 2025: Grundsteuer (ID 1) jährlich mit Jahreswert 1200, Internet
-	// (ID 13) monatlich.
-	if err := UpsertKostenpositionenJahr(db, 2025, map[int64]KostenpositionJahrInput{
-		1:  {Logik: LogikQM, Typ: TypJaehrlich, Jahreswert: 1200},
-		13: {Logik: LogikWohneinheit, Typ: TypMonatlich},
-	}); err != nil {
-		t.Fatalf("UpsertKostenpositionenJahr 2025: %v", err)
-	}
-	// Jahr 2024: Internet war jährlich mit Jahreswert 480 - Fallback-
-	// Quelle für eine monatliche Eingabe ohne eigenen Wert.
-	if err := UpsertKostenpositionenJahr(db, 2024, map[int64]KostenpositionJahrInput{
-		13: {Logik: LogikWohneinheit, Typ: TypJaehrlich, Jahreswert: 480},
-	}); err != nil {
-		t.Fatalf("UpsertKostenpositionenJahr 2024: %v", err)
+	// (ID 13) monatlich. Jahr 2024: Internet war jährlich mit Jahreswert
+	// 480 - Fallback-Quelle für eine monatliche Eingabe ohne eigenen Wert.
+	if _, err := db.Exec(
+		`INSERT INTO kostenpositionen_jahre (kostenposition_id, jahr, logik, typ, jahreswert) VALUES
+		 (1, 2025, ?, ?, 1200), (13, 2025, ?, ?, 0), (13, 2024, ?, ?, 480)`,
+		LogikQM, TypJaehrlich, LogikWohneinheit, TypMonatlich, LogikWohneinheit, TypJaehrlich,
+	); err != nil {
+		t.Fatalf("seed kostenpositionen_jahre: %v", err)
 	}
 
-	// Eingabe mit explizitem Internet-Wert.
-	mitWert, err := CreateFixkostenEingabe(db, FixkostenInput{
-		Monat: "2025-01-01",
-		Werte: map[int64]FixkostenPositionWert{13: {Wert: 42}},
-	})
+	// Eingabe mit explizitem Internet-Wert (altes Schema: logik/typ leer,
+	// nur wert gesetzt - genau der Zustand von vor dieser Migration).
+	res, err := db.Exec(`INSERT INTO fixkosten_eingaben (monat) VALUES ('2025-01-01')`)
 	if err != nil {
-		t.Fatalf("CreateFixkostenEingabe (mit Wert): %v", err)
+		t.Fatalf("insert fixkosten_eingabe (mit Wert): %v", err)
 	}
+	mitWert, err := res.LastInsertId()
+	if err != nil {
+		t.Fatalf("mitWert id: %v", err)
+	}
+	if _, err := db.Exec(`INSERT INTO fixkosten_werte (fixkosten_eingabe_id, kostenposition_id, wert) VALUES (?, 13, 42)`, mitWert); err != nil {
+		t.Fatalf("insert fixkosten_werte (mit Wert): %v", err)
+	}
+
 	// Eingabe ohne eigenen Internet-Wert - muss auf den 2024er Jahreswert/12
 	// zurückfallen.
-	ohneWert, err := CreateFixkostenEingabe(db, FixkostenInput{Monat: "2025-02-01"})
+	res, err = db.Exec(`INSERT INTO fixkosten_eingaben (monat) VALUES ('2025-02-01')`)
 	if err != nil {
-		t.Fatalf("CreateFixkostenEingabe (ohne Wert): %v", err)
+		t.Fatalf("insert fixkosten_eingabe (ohne Wert): %v", err)
 	}
-
-	// fixkosten_werte simuliert eine Installation von vor dieser Migration:
-	// logik/typ auf beiden Zeilen zurücksetzen (schema.sql legt sie ab jetzt
-	// direkt mit an, openTestDB hat sie also schon befüllt).
-	if _, err := db.Exec(`UPDATE fixkosten_werte SET logik = '', typ = ''`); err != nil {
-		t.Fatalf("reset logik/typ: %v", err)
+	ohneWert, err := res.LastInsertId()
+	if err != nil {
+		t.Fatalf("ohneWert id: %v", err)
 	}
 
 	if err := backfillFixkostenWerteLogikTyp(db); err != nil {

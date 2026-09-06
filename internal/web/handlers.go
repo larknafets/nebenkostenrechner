@@ -136,9 +136,6 @@ func NewMux(db *sql.DB, version, buildDate string) *http.ServeMux {
 	mux.HandleFunc("GET /berechnungslogik", handleBerechnungslogik())
 	mux.HandleFunc("GET /stammdaten", handleStammdatenForm(db))
 	mux.HandleFunc("POST /stammdaten", handleUpdateStammdaten(db))
-	mux.HandleFunc("POST /stammdaten/jahre", handleCreateKostenpositionenJahr(db))
-	mux.HandleFunc("POST /stammdaten/jahre/{jahr}", handleUpdateKostenpositionenJahr(db))
-	mux.HandleFunc("POST /stammdaten/jahre/{jahr}/loeschen", handleDeleteKostenpositionenJahr(db))
 	mux.HandleFunc("GET /fixkosten", handleFixkostenListe(db))
 	mux.HandleFunc("GET /fixkosten/neu", handleFixkostenForm(db))
 	mux.HandleFunc("POST /fixkosten", handleCreateFixkosten(db))
@@ -801,31 +798,14 @@ func handleStammdatenForm(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		kostenpositionen, err := store.Kostenpositionen(db)
-		if err != nil {
-			http.Error(w, "kostenpositionen: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		jahrBloecke, nextJahr, err := buildStammdatenJahrBloecke(db, kostenpositionen)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		data := struct {
-			Base         string
-			Aktuell      string
-			Apartments   []store.Apartment
-			LogikOptions []logikOption
-			JahrBloecke  []stammdatenJahrBlock
-			NextJahr     int
+			Base       string
+			Aktuell    string
+			Apartments []store.Apartment
 		}{
-			Base:         requestBase(r),
-			Aktuell:      "stammdaten",
-			Apartments:   apartments,
-			LogikOptions: logikOptions,
-			JahrBloecke:  jahrBloecke,
-			NextJahr:     nextJahr,
+			Base:       requestBase(r),
+			Aktuell:    "stammdaten",
+			Apartments: apartments,
 		}
 
 		if err := stammdatenTemplate.ExecuteTemplate(w, "layout", data); err != nil {

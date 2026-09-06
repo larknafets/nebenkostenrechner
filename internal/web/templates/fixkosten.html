@@ -16,12 +16,8 @@
       {{range .Eingaben}}
       <tr>
         <td>{{.Label}}</td>
-        {{if .HasSumme}}
         <td>{{deEUR .SummeW1}} €</td>
         <td>{{deEUR .SummeW2}} €</td>
-        {{else}}
-        <td colspan="2" class="muted">Kostenpositionen für dieses Jahr fehlen</td>
-        {{end}}
         <td><a href="{{$.Base}}/fixkosten/{{.ID}}">Details</a></td>
       </tr>
       {{end}}

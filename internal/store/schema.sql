@@ -47,16 +47,6 @@ CREATE TABLE IF NOT EXISTS kostenpositionen (
     label TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS kostenpositionen_jahre (
-    id                 INTEGER PRIMARY KEY,
-    kostenposition_id  INTEGER NOT NULL REFERENCES kostenpositionen(id),
-    jahr               INTEGER NOT NULL,
-    logik              TEXT NOT NULL,
-    typ                TEXT NOT NULL,
-    jahreswert         REAL NOT NULL DEFAULT 0,
-    UNIQUE(kostenposition_id, jahr)
-);
-
 CREATE TABLE IF NOT EXISTS fixkosten_eingaben (
     id    INTEGER PRIMARY KEY,
     monat TEXT NOT NULL
