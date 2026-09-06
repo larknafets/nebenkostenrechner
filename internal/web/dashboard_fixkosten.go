@@ -461,6 +461,23 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 	}
 }
 
+// latestAbschlagSaldo returns the newest Monat's cumulated Guthaben/
+// Nachzahlung-Saldo in spalte (newest-first) that actually has one -
+// skipping Jahreszeile rows and any leading Monat(e) without HasAbschlagSaldo
+// (e.g. the current month has no Fixkosten-Eingabe/Ablesung yet), so the
+// Jahressummen-Karte keeps showing the last known Stand instead of the
+// Saldo disappearing for a single lückenhaften Monat - the Monatsverlauf's
+// own laufenderSaldo already carries forward the same way.
+func latestAbschlagSaldo(spalte dashboardVerlaufSpalte) (betrag float64, guthaben, nachzahlung, ok bool) {
+	for _, e := range spalte.Eintraege {
+		if e.Monat == nil || !e.Monat.HasAbschlagSaldo {
+			continue
+		}
+		return e.Monat.AbschlagBetrag, e.Monat.AbschlagGuthaben, e.Monat.AbschlagNachzahlung, true
+	}
+	return 0, false, false, false
+}
+
 // walkJahre drives the "insert a Jahreszeile right after every calendar
 // Jahr's last (=oldest displayed) row" pattern (Issue #60 Story 27) shared
 // by mitJahreszeilen and buildSimpleVerlauf's Monatsverlauf: n items

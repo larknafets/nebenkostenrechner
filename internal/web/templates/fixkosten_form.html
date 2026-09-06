@@ -20,7 +20,6 @@
     <div class="field"><label>Abschlag {{.Name}} <span class="badge">monatlich</span></label><input type="number" step="any" name="abschlag_{{.ID}}" {{if or $.IsEdit $.PreviousAbschlag}}value="{{index $.PreviousAbschlag .ID}}"{{end}} required></div>
     {{end}}
   </div>
-  <div class="abschlag-divider"></div>
 
   <h3>Personen</h3>
   <div class="grid grid-2">
@@ -28,6 +27,7 @@
     <div class="field"><label>Personen {{.Name}}</label><input type="number" name="personen_{{.ID}}" {{if or $.IsEdit $.PreviousPersonen}}value="{{index $.PreviousPersonen .ID}}"{{end}} required></div>
     {{end}}
   </div>
+  <div class="abschlag-divider"></div>
 
   <h3>Fixkosten</h3>
   <p class="muted">Positionen mit Jahreswert (Badge) sind Jahresgesamtkosten aus den Stammdaten, hier bereits durch 12 geteilt und nicht editierbar - Änderungen dafür auf der Stammdaten-Seite. Alle anderen Positionen sind vorbelegt (letzter erfasster Wert bzw. letzter bekannter Jahreswert/12), aber jeden Monat frei überschreibbar.</p>

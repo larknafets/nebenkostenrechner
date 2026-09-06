@@ -116,14 +116,17 @@ func handleDashboard(db *sql.DB, version, buildDate string) http.HandlerFunc {
 			card := buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, jahr, periodenKosten, fixkostenListe)
 			// Guthaben/Nachzahlung ist fortlaufend kumuliert (kein Jahres-
 			// Reset, siehe #92) - der aktuelle Stand ist daher der Saldo des
-			// neuesten Monats, unabhängig vom angezeigten Jahr, bereits von
-			// buildDashboardVerlauf berechnet statt hier neu aufsummiert.
-			if len(verlauf.Eintraege) > 0 && verlauf.Eintraege[0].Monat != nil {
-				neuester := verlauf.Eintraege[0].Monat
-				card.HasAbschlagSaldo = neuester.HasAbschlagSaldo
-				card.AbschlagBetrag = neuester.AbschlagBetrag
-				card.AbschlagGuthaben = neuester.AbschlagGuthaben
-				card.AbschlagNachzahlung = neuester.AbschlagNachzahlung
+			// neuesten Monats mit HasAbschlagSaldo, unabhängig vom angezeigten
+			// Jahr, bereits von buildDashboardVerlauf berechnet statt hier neu
+			// aufsummiert. Ein lückenhafter neuester Monat (z.B. noch keine
+			// Fixkosten-Eingabe diesen Monat) lässt den Saldo unverändert statt
+			// ihn verschwinden zu lassen - gleiches Prinzip wie der laufende
+			// Saldo im Monatsverlauf selbst.
+			if betrag, guthaben, nachzahlung, ok := latestAbschlagSaldo(verlauf); ok {
+				card.HasAbschlagSaldo = true
+				card.AbschlagBetrag = betrag
+				card.AbschlagGuthaben = guthaben
+				card.AbschlagNachzahlung = nachzahlung
 			}
 			cards = append(cards, card)
 		}
