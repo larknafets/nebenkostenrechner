@@ -2,7 +2,7 @@
 <h1>Stammdaten</h1>
 {{template "nav" .}}
 
-<form method="post" action="{{.Base}}/stammdaten" class="panel">
+<form method="post" action="{{.Base}}/stammdaten" class="panel dirty-form">
   {{range .Apartments}}
   <div class="grid grid-2">
     <div class="field"><label>Wohnungsgröße {{.Name}} (m²)</label><input type="number" step="any" name="qm_{{.ID}}" value="{{.QM}}" required></div>
@@ -11,7 +11,7 @@
   {{end}}
 
   <div class="btn-row">
-    <button type="submit" class="primary">Speichern</button>
+    <button type="submit" class="primary dirty-save" disabled>Speichern</button>
   </div>
 </form>
 
@@ -33,7 +33,7 @@
 </form>
 
 {{range .JahrBloecke}}
-<form method="post" action="{{$.Base}}/stammdaten/jahre/{{.Jahr}}" class="panel" style="margin-top:1rem">
+<form method="post" action="{{$.Base}}/stammdaten/jahre/{{.Jahr}}" class="panel dirty-form" style="margin-top:1rem">
   <h4>Jahr {{.Jahr}}</h4>
   {{range .Positionen}}
   {{$posLogik := .Logik}}
@@ -58,9 +58,18 @@
   </div>
   {{end}}
   <div class="btn-row">
-    <button type="submit" class="primary">Speichern</button>
+    <button type="submit" class="primary dirty-save" disabled>Speichern</button>
     <button type="submit" formaction="{{$.Base}}/stammdaten/jahre/{{.Jahr}}/loeschen" class="danger" onclick="return confirm('Jahr {{.Jahr}} wirklich löschen?');">Jahr {{.Jahr}} löschen</button>
   </div>
 </form>
 {{end}}
+
+<script>
+  document.querySelectorAll(".dirty-form").forEach(function (form) {
+    var save = form.querySelector(".dirty-save");
+    ["input", "change"].forEach(function (ev) {
+      form.addEventListener(ev, function () { save.disabled = false; });
+    });
+  });
+</script>
 {{end}}

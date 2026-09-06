@@ -136,6 +136,7 @@
   .grid-4 { grid-template-columns: repeat(4, 1fr); }
   .jahressummen-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
   button, a.button { display: inline-block; border-radius: 6px; padding: .6rem 1.1rem; font-size: .9rem; cursor: pointer; text-decoration: none; line-height: 1.2; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
   button.primary, a.button.primary { background: var(--accent); color: white; border: none; }
   button.secondary, a.button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
   button.success, a.button.success { background: var(--success); color: white; border: none; }
