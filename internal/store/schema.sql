@@ -77,3 +77,11 @@ CREATE TABLE IF NOT EXISTS fixkosten_personen (
     personen              INTEGER NOT NULL,
     UNIQUE(fixkosten_eingabe_id, apartment_id)
 );
+
+CREATE TABLE IF NOT EXISTS nebenkosten_abschlaege (
+    id                    INTEGER PRIMARY KEY,
+    fixkosten_eingabe_id  INTEGER NOT NULL REFERENCES fixkosten_eingaben(id),
+    apartment_id          INTEGER NOT NULL REFERENCES apartments(id),
+    wert                  REAL NOT NULL,
+    UNIQUE(fixkosten_eingabe_id, apartment_id)
+);

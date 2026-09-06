@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"time"
 
@@ -51,8 +52,9 @@ func setSegmentPct(segs []dashboardSegment, denom float64) {
 // simply doesn't show a month it can't compute, same as Verbrauch silently
 // stopping at the oldest period without a Vorperiode.
 type fixkostenKosten struct {
-	Monat string
-	Erg   *calc.FixkostenErgebnis
+	Monat    string
+	Erg      *calc.FixkostenErgebnis
+	Abschlag map[int64]float64 // apartment id -> Nebenkostenabschlag-Wert, nil/missing entry = kein Wert erfasst
 }
 
 // alleFixkostenKosten returns every computable Fixkosten-Eingabe's Ergebnis,
@@ -61,6 +63,10 @@ func alleFixkostenKosten(db *sql.DB) ([]fixkostenKosten, error) {
 	eingaben, err := store.AllFixkostenEingaben(db)
 	if err != nil {
 		return nil, fmt.Errorf("fixkosten eingaben: %w", err)
+	}
+	abschlaege, err := store.AllAbschlaege(db)
+	if err != nil {
+		return nil, fmt.Errorf("nebenkosten abschlaege: %w", err)
 	}
 
 	out := make([]fixkostenKosten, 0, len(eingaben))
@@ -72,7 +78,7 @@ func alleFixkostenKosten(db *sql.DB) ([]fixkostenKosten, error) {
 			}
 			return nil, fmt.Errorf("fixkosten %d: %w", e.ID, err)
 		}
-		out = append(out, fixkostenKosten{Monat: e.Monat, Erg: erg})
+		out = append(out, fixkostenKosten{Monat: e.Monat, Erg: erg, Abschlag: abschlaege[e.ID]})
 	}
 	return out, nil
 }
@@ -134,6 +140,15 @@ type dashboardJahresCard struct {
 	VerbrauchEUR        float64
 	GesamtEUR           float64
 	Segmente            []dashboardSegment
+
+	// Nebenkostenabschlag-Saldo: fortlaufend seit Erfassungsbeginn kumuliert
+	// (kein Jahres-Reset), Stand des jeweils neuesten Monats - siehe
+	// buildDashboardVerlauf, das den Saldo je Monat berechnet; von dort
+	// übernommen (handleDashboard), nicht hier in buildJahresCard berechnet.
+	HasAbschlagSaldo    bool
+	AbschlagBetrag      float64 // Round2'd, immer >= 0 - Vorzeichen steckt in Guthaben/Nachzahlung
+	AbschlagGuthaben    bool
+	AbschlagNachzahlung bool
 }
 
 // buildJahresCard sums the given apartment's Verbrauch- und Fixkosten-Kosten
@@ -217,6 +232,17 @@ type dashboardMonat struct {
 	HasKombiniert      bool
 	KombiniertSegmente []dashboardSegment
 	KombiniertGesamt   float64
+
+	// Nebenkostenabschlag-Saldo (5. Modus "abschlag"): fortlaufend kumulierter
+	// Stand bis einschließlich diesem Monat - abschlag(m) - KombiniertGesamt(m)
+	// je Monat aufsummiert seit dem ersten je erfassten Monat, kein Jahres-
+	// Reset. Nur gesetzt, wenn der Monat HasKombiniert ist (fehlende Monate
+	// lassen den Saldo unverändert, siehe buildDashboardVerlauf).
+	HasAbschlagSaldo    bool
+	AbschlagBetrag      float64 // Round2'd, immer >= 0
+	AbschlagGuthaben    bool
+	AbschlagNachzahlung bool
+	AbschlagProzent     float64 // 0-50, Anteil vom größten |Saldo| der Reihe - Balken-Halbbreite
 }
 
 // dashboardJahreszeile is the Monatsverlauf's per-Jahr summary row (Issue
@@ -229,6 +255,15 @@ type dashboardJahreszeile struct {
 	VerbrauchSumme float64
 	FixkostenSumme float64
 	GesamtSumme    float64
+
+	// Nebenkostenabschlag-Endstand: der kumulierte Saldo am Jahresende (bzw.
+	// am neuesten erfassten Monat, bei einem laufenden Jahr) - keine Summe,
+	// da der Saldo fortlaufend ist und sich nicht sinnvoll pro Jahr aufaddieren
+	// lässt (siehe #92/#94).
+	HasAbschlagEndstand    bool
+	AbschlagEndstandBetrag float64
+	AbschlagEndstandGut    bool
+	AbschlagEndstandNach   bool
 }
 
 // dashboardVerlaufEintrag is one row of a Monatsverlauf column: either a
@@ -288,6 +323,7 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 		jahr          int
 		verbrauchKats []kategorie
 		fixErg        *calc.FixkostenErgebnis
+		abschlagWert  float64 // 0 wenn kein Wert erfasst (siehe #92: fehlender Wert zählt als 0)
 	}
 	buckets := map[string]*bucket{}
 	var order []string
@@ -314,15 +350,18 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 	for _, fk := range fixkostenListe {
 		if b := ensure(fk.Monat); b != nil && b.fixErg == nil {
 			b.fixErg = fk.Erg
+			b.abschlagWert = fk.Abschlag[apartmentID]
 		}
 	}
 
 	sort.Sort(sort.Reverse(sort.StringSlice(order)))
 
 	monate := make([]dashboardMonat, 0, len(order))
+	abschlagWerte := make([]float64, 0, len(order))
 	for _, key := range order {
 		b := buckets[key]
 		dm := dashboardMonat{Label: b.label, Jahr: b.jahr}
+		abschlagWerte = append(abschlagWerte, b.abschlagWert)
 
 		if b.verbrauchKats != nil {
 			dm.HasVerbrauch = true
@@ -383,6 +422,39 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 		setSegmentPct(monate[i].KombiniertSegmente, maxKombiniert)
 	}
 
+	// Nebenkostenabschlag-Saldo: fortlaufend kumuliert von ältestem zu
+	// neuestem Monat (monate ist newest-first sortiert, daher rückwärts) -
+	// saldo(m) = abschlag(m) - KombiniertGesamt(m), Monate ohne Kombiniert-
+	// Daten lassen den laufenden Saldo unverändert (#94: "keine Daten" statt
+	// eines impliziten Sprungs).
+	var laufenderSaldo float64
+	saldi := make([]float64, len(monate))
+	hatSaldo := make([]bool, len(monate))
+	var maxAbsSaldo float64
+	for i := len(monate) - 1; i >= 0; i-- {
+		if !monate[i].HasKombiniert {
+			continue
+		}
+		laufenderSaldo = calc.Round2(laufenderSaldo + calc.Round2(abschlagWerte[i]-monate[i].KombiniertGesamt))
+		saldi[i] = laufenderSaldo
+		hatSaldo[i] = true
+		if abs := math.Abs(laufenderSaldo); abs > maxAbsSaldo {
+			maxAbsSaldo = abs
+		}
+	}
+	for i := range monate {
+		if !hatSaldo[i] {
+			continue
+		}
+		monate[i].HasAbschlagSaldo = true
+		monate[i].AbschlagBetrag = math.Abs(saldi[i])
+		monate[i].AbschlagGuthaben = saldi[i] > 0
+		monate[i].AbschlagNachzahlung = saldi[i] < 0
+		if maxAbsSaldo > 0 {
+			monate[i].AbschlagProzent = math.Abs(saldi[i]) / maxAbsSaldo * 50
+		}
+	}
+
 	return dashboardVerlaufSpalte{
 		ApartmentID: apartmentID, ApartmentName: apartmentName,
 		Eintraege: mitJahreszeilen(monate),
@@ -423,19 +495,30 @@ func mitJahreszeilen(monate []dashboardMonat) []dashboardVerlaufEintrag {
 	}
 	out := make([]dashboardVerlaufEintrag, 0, len(monate)+4)
 	var vSumme, fSumme float64
+	var endstandBetrag float64
+	var endstandGut, endstandNach, endstandSet bool
 	walkJahre(len(monate),
 		func(i int) int { return monate[i].Jahr },
 		func(i int) {
 			m := monate[i]
 			vSumme += m.VerbrauchGesamt
 			fSumme += m.FixkostenGesamt
+			// Endstand = Saldo des neuesten Monats dieses Jahres mit
+			// HasAbschlagSaldo - da monate newest-first durchlaufen wird, ist
+			// das der erste Treffer nach dem letzten flush.
+			if !endstandSet && m.HasAbschlagSaldo {
+				endstandBetrag, endstandGut, endstandNach, endstandSet = m.AbschlagBetrag, m.AbschlagGuthaben, m.AbschlagNachzahlung, true
+			}
 			out = append(out, dashboardVerlaufEintrag{Monat: &m})
 		},
 		func(jahr int, istLaufend bool) {
 			out = append(out, dashboardVerlaufEintrag{Jahreszeile: &dashboardJahreszeile{
 				Jahr: jahr, IstLaufend: istLaufend,
 				VerbrauchSumme: calc.Round2(vSumme), FixkostenSumme: calc.Round2(fSumme), GesamtSumme: calc.Round2(vSumme + fSumme),
+				HasAbschlagEndstand: endstandSet, AbschlagEndstandBetrag: endstandBetrag,
+				AbschlagEndstandGut: endstandGut, AbschlagEndstandNach: endstandNach,
 			}})
+			endstandBetrag, endstandGut, endstandNach, endstandSet = 0, false, false, false
 			vSumme, fSumme = 0, 0
 		},
 	)

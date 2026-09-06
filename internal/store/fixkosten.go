@@ -187,6 +187,7 @@ type FixkostenInput struct {
 	Monat    string            // YYYY-MM-01, same convention as PeriodInput.ReadingDate
 	Personen map[int64]int64   // apartment id -> Personenzahl - own to Fixkosten, not period_occupancy (Issue #60 Story 8)
 	Werte    map[int64]float64 // kostenposition id -> expliziter Monatswert, only for that Jahr's monatlich-typed Positionen
+	Abschlag map[int64]float64 // apartment id -> Nebenkostenabschlag-Wert - kein Kostenposition, deckt Fixkosten UND Verbräuche gemeinsam ab, siehe nebenkosten_abschlaege
 }
 
 // ErrFixkostenEingabeNotFound is returned by UpdateFixkostenEingabe and
@@ -227,6 +228,15 @@ func insertFixkostenTx(tx *sql.Tx, in FixkostenInput) (eingabeID int64, err erro
 			eingabeID, apartmentID, personen,
 		); err != nil {
 			return 0, fmt.Errorf("insert fixkosten personen for apartment %d: %w", apartmentID, err)
+		}
+	}
+
+	for apartmentID, wert := range in.Abschlag {
+		if _, err := tx.Exec(
+			`INSERT INTO nebenkosten_abschlaege (fixkosten_eingabe_id, apartment_id, wert) VALUES (?, ?, ?)`,
+			eingabeID, apartmentID, wert,
+		); err != nil {
+			return 0, fmt.Errorf("insert nebenkosten abschlag for apartment %d: %w", apartmentID, err)
 		}
 	}
 
@@ -295,6 +305,16 @@ func UpdateFixkostenEingabe(db *sql.DB, eingabeID int64, in FixkostenInput) erro
 		}
 	}
 
+	for apartmentID, wert := range in.Abschlag {
+		if _, err := tx.Exec(
+			`INSERT INTO nebenkosten_abschlaege (fixkosten_eingabe_id, apartment_id, wert) VALUES (?, ?, ?)
+			 ON CONFLICT(fixkosten_eingabe_id, apartment_id) DO UPDATE SET wert = excluded.wert`,
+			eingabeID, apartmentID, wert,
+		); err != nil {
+			return fmt.Errorf("update nebenkosten abschlag for apartment %d: %w", apartmentID, err)
+		}
+	}
+
 	return tx.Commit()
 }
 
@@ -312,6 +332,9 @@ func DeleteFixkostenEingabe(db *sql.DB, eingabeID int64) error {
 	}
 	if _, err := tx.Exec(`DELETE FROM fixkosten_personen WHERE fixkosten_eingabe_id = ?`, eingabeID); err != nil {
 		return fmt.Errorf("delete fixkosten personen: %w", err)
+	}
+	if _, err := tx.Exec(`DELETE FROM nebenkosten_abschlaege WHERE fixkosten_eingabe_id = ?`, eingabeID); err != nil {
+		return fmt.Errorf("delete nebenkosten abschlaege: %w", err)
 	}
 
 	res, err := tx.Exec(`DELETE FROM fixkosten_eingaben WHERE id = ?`, eingabeID)
@@ -361,6 +384,7 @@ type FixkostenEingabeDetails struct {
 	Monat    string
 	Personen map[int64]int64   // apartment id -> Personenzahl
 	Werte    map[int64]float64 // kostenposition id -> expliziter Monatswert
+	Abschlag map[int64]float64 // apartment id -> Nebenkostenabschlag-Wert
 }
 
 // GetFixkostenEingabeDetails returns the given Fixkosten-Eingabe with its
@@ -369,6 +393,7 @@ func GetFixkostenEingabeDetails(db *sql.DB, eingabeID int64) (*FixkostenEingabeD
 	f := FixkostenEingabeDetails{
 		Personen: map[int64]int64{},
 		Werte:    map[int64]float64{},
+		Abschlag: map[int64]float64{},
 	}
 	if err := db.QueryRow(`SELECT id, monat FROM fixkosten_eingaben WHERE id = ?`, eingabeID).Scan(&f.ID, &f.Monat); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -410,7 +435,50 @@ func GetFixkostenEingabeDetails(db *sql.DB, eingabeID int64) (*FixkostenEingabeD
 		return nil, err
 	}
 
+	abschlagRows, err := db.Query(`SELECT apartment_id, wert FROM nebenkosten_abschlaege WHERE fixkosten_eingabe_id = ?`, eingabeID)
+	if err != nil {
+		return nil, fmt.Errorf("query nebenkosten abschlaege: %w", err)
+	}
+	defer abschlagRows.Close()
+	for abschlagRows.Next() {
+		var apartmentID int64
+		var wert float64
+		if err := abschlagRows.Scan(&apartmentID, &wert); err != nil {
+			return nil, fmt.Errorf("scan nebenkosten abschlag: %w", err)
+		}
+		f.Abschlag[apartmentID] = wert
+	}
+	if err := abschlagRows.Err(); err != nil {
+		return nil, err
+	}
+
 	return &f, nil
+}
+
+// AllAbschlaege returns every recorded Nebenkostenabschlag-Wert, keyed by
+// fixkosten_eingabe_id then apartment_id - alleFixkostenKosten's source for
+// attaching Abschlag-Werte to each Monat's Fixkosten-Ergebnis without a
+// per-Eingabe query.
+func AllAbschlaege(db *sql.DB) (map[int64]map[int64]float64, error) {
+	rows, err := db.Query(`SELECT fixkosten_eingabe_id, apartment_id, wert FROM nebenkosten_abschlaege`)
+	if err != nil {
+		return nil, fmt.Errorf("query nebenkosten abschlaege: %w", err)
+	}
+	defer rows.Close()
+
+	out := map[int64]map[int64]float64{}
+	for rows.Next() {
+		var eingabeID, apartmentID int64
+		var wert float64
+		if err := rows.Scan(&eingabeID, &apartmentID, &wert); err != nil {
+			return nil, fmt.Errorf("scan nebenkosten abschlag: %w", err)
+		}
+		if out[eingabeID] == nil {
+			out[eingabeID] = map[int64]float64{}
+		}
+		out[eingabeID][apartmentID] = wert
+	}
+	return out, rows.Err()
 }
 
 // GetLatestFixkostenEingabe returns the most recently dated Fixkosten-

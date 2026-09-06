@@ -110,8 +110,22 @@ func handleDashboard(db *sql.DB, version, buildDate string) http.HandlerFunc {
 		var cards []dashboardJahresCard
 		var verlaufSpalten []dashboardVerlaufSpalte
 		for _, a := range apartments {
-			cards = append(cards, buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, jahr, periodenKosten, fixkostenListe))
-			verlaufSpalten = append(verlaufSpalten, buildDashboardVerlauf(a.ID, a.Name, periodenKosten, fixkostenListe))
+			verlauf := buildDashboardVerlauf(a.ID, a.Name, periodenKosten, fixkostenListe)
+			verlaufSpalten = append(verlaufSpalten, verlauf)
+
+			card := buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, jahr, periodenKosten, fixkostenListe)
+			// Guthaben/Nachzahlung ist fortlaufend kumuliert (kein Jahres-
+			// Reset, siehe #92) - der aktuelle Stand ist daher der Saldo des
+			// neuesten Monats, unabhängig vom angezeigten Jahr, bereits von
+			// buildDashboardVerlauf berechnet statt hier neu aufsummiert.
+			if len(verlauf.Eintraege) > 0 && verlauf.Eintraege[0].Monat != nil {
+				neuester := verlauf.Eintraege[0].Monat
+				card.HasAbschlagSaldo = neuester.HasAbschlagSaldo
+				card.AbschlagBetrag = neuester.AbschlagBetrag
+				card.AbschlagGuthaben = neuester.AbschlagGuthaben
+				card.AbschlagNachzahlung = neuester.AbschlagNachzahlung
+			}
+			cards = append(cards, card)
 		}
 
 		// Wallboxen/PV-Anlage (Ticket #67) - whole-house, rein informative

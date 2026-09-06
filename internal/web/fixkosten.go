@@ -78,6 +78,7 @@ type fixkostenFormData struct {
 	Monat            string // "YYYY-MM", <input type="month"> value
 	Apartments       []store.Apartment
 	PreviousPersonen map[int64]int64
+	PreviousAbschlag map[int64]float64
 	Positionen       []fixkostenPositionRow
 	JahrNotAngelegt  bool
 	Jahr             int
@@ -169,6 +170,7 @@ func handleFixkostenForm(db *sql.DB) http.HandlerFunc {
 		var werte map[int64]float64
 		if latest != nil {
 			data.PreviousPersonen = latest.Personen
+			data.PreviousAbschlag = latest.Abschlag
 			werte = latest.Werte
 		}
 		positionen, err := buildFixkostenPositionRows(db, kostenpositionen, jahresdaten, werte, jahr)
@@ -240,6 +242,7 @@ func handleFixkostenEditForm(db *sql.DB) http.HandlerFunc {
 			Monat:            monatForInput(target.Monat),
 			Apartments:       apartments,
 			PreviousPersonen: target.Personen,
+			PreviousAbschlag: target.Abschlag,
 			Positionen:       positionen,
 			JahrNotAngelegt:  len(jahresdaten) == 0,
 			Jahr:             jahr,
@@ -293,15 +296,22 @@ func parseFixkostenInput(r *http.Request, db *sql.DB, apartments []store.Apartme
 	}
 
 	personen := make(map[int64]int64, len(apartments))
+	abschlag := make(map[int64]float64, len(apartments))
 	for _, a := range apartments {
 		p, err := strconv.ParseInt(r.FormValue("personen_"+strconv.FormatInt(a.ID, 10)), 10, 64)
 		if err != nil {
 			return store.FixkostenInput{}, fmt.Errorf("invalid Personenzahl for apartment %d", a.ID)
 		}
 		personen[a.ID] = p
+
+		v, err := strconv.ParseFloat(r.FormValue("abschlag_"+strconv.FormatInt(a.ID, 10)), 64)
+		if err != nil {
+			return store.FixkostenInput{}, fmt.Errorf("ungültiger Abschlag für %s", a.Name)
+		}
+		abschlag[a.ID] = v
 	}
 
-	return store.FixkostenInput{Monat: monat, Personen: personen, Werte: werte}, nil
+	return store.FixkostenInput{Monat: monat, Personen: personen, Werte: werte, Abschlag: abschlag}, nil
 }
 
 func handleCreateFixkosten(db *sql.DB) http.HandlerFunc {

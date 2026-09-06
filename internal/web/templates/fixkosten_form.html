@@ -14,6 +14,14 @@
     <input type="month" name="monat" value="{{.Monat}}" required>
   </div>
 
+  <h3>Nebenkostenabschlag</h3>
+  <div class="grid grid-2">
+    {{range .Apartments}}
+    <div class="field"><label>Abschlag {{.Name}} <span class="badge">monatlich</span></label><input type="number" step="any" name="abschlag_{{.ID}}" {{if or $.IsEdit $.PreviousAbschlag}}value="{{index $.PreviousAbschlag .ID}}"{{end}} required></div>
+    {{end}}
+  </div>
+  <div class="abschlag-divider"></div>
+
   <h3>Personen</h3>
   <div class="grid grid-2">
     {{range .Apartments}}

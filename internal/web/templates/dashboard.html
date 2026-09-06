@@ -23,6 +23,12 @@
     <div class="muted stat-kategorien">
       {{range .Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{deEUR .Kosten}} €</span>{{end}}
     </div>
+    {{if .HasAbschlagSaldo}}
+    <div class="abschlag-value {{if .AbschlagGuthaben}}guthaben{{else if .AbschlagNachzahlung}}nachzahlung{{else}}ausgeglichen{{end}}">
+      <div class="label">{{if .AbschlagGuthaben}}Guthaben{{else if .AbschlagNachzahlung}}Nachzahlung{{else}}Ausgeglichen{{end}}</div>
+      <div class="amount">{{deEUR .AbschlagBetrag}} €</div>
+    </div>
+    {{end}}
   </div>
   {{end}}
   <div class="panel stat-card">
@@ -78,17 +84,27 @@
       {{range $.LogikOptions}}<span class="legend-item" data-modus="fixkosten"><i class="logik-{{.Value}}"></i>{{.Label}}</span>{{end}}
       <span class="legend-item" data-modus="kombiniert"><i class="cat-verbrauch-gesamt"></i>Verbrauch</span>
       <span class="legend-item" data-modus="kombiniert"><i class="cat-fix"></i>Fixkosten</span>
+      <span class="legend-item" data-modus="abschlag"><i style="background:var(--success)"></i>Guthaben</span>
+      <span class="legend-item" data-modus="abschlag"><i style="background:var(--danger)"></i>Nachzahlung</span>
       <div class="mode-toggle">
         <button type="button" data-modus-btn="verbrauch">Verbrauch</button>
         <button type="button" data-modus-btn="verbrauchswerte">Verbrauchswerte</button>
         <button type="button" data-modus-btn="fixkosten">Fixkosten</button>
         <button type="button" data-modus-btn="kombiniert">Kombiniert</button>
+        <button type="button" data-modus-btn="abschlag">Abschlag</button>
       </div>
     </div>
 
     {{range $spalte.Eintraege}}
     {{if .Jahreszeile}}
-    <div class="verlauf-year-row"><span>Jahr {{.Jahreszeile.Jahr}}{{if .Jahreszeile.IstLaufend}} (laufend){{end}}</span><span>Verbrauch {{deEUR .Jahreszeile.VerbrauchSumme}} € · Fixkosten {{deEUR .Jahreszeile.FixkostenSumme}} € · Gesamt {{deEUR .Jahreszeile.GesamtSumme}} €</span></div>
+    {{$jz := .Jahreszeile}}
+    <div class="verlauf-year-row"><span>Jahr {{$jz.Jahr}}{{if $jz.IstLaufend}} (laufend){{end}}</span>
+      <span data-modus="verbrauch">Verbrauch {{deEUR $jz.VerbrauchSumme}} € · Fixkosten {{deEUR $jz.FixkostenSumme}} € · Gesamt {{deEUR $jz.GesamtSumme}} €</span>
+      <span data-modus="verbrauchswerte">Verbrauch {{deEUR $jz.VerbrauchSumme}} € · Fixkosten {{deEUR $jz.FixkostenSumme}} € · Gesamt {{deEUR $jz.GesamtSumme}} €</span>
+      <span data-modus="fixkosten">Verbrauch {{deEUR $jz.VerbrauchSumme}} € · Fixkosten {{deEUR $jz.FixkostenSumme}} € · Gesamt {{deEUR $jz.GesamtSumme}} €</span>
+      <span data-modus="kombiniert">Verbrauch {{deEUR $jz.VerbrauchSumme}} € · Fixkosten {{deEUR $jz.FixkostenSumme}} € · Gesamt {{deEUR $jz.GesamtSumme}} €</span>
+      <span data-modus="abschlag">{{if $jz.HasAbschlagEndstand}}Endstand: {{if $jz.AbschlagEndstandGut}}Guthaben{{else if $jz.AbschlagEndstandNach}}Nachzahlung{{else}}Ausgeglichen{{end}} {{deEUR $jz.AbschlagEndstandBetrag}} €{{else}}Endstand: –{{end}}</span>
+    </div>
     {{else}}
     {{$m := .Monat}}
     <div class="verlauf-row {{if $m.IsCurrent}}is-current{{end}}">
@@ -106,10 +122,17 @@
       <div class="bar-track" data-modus="kombiniert">
         {{if $m.HasKombiniert}}{{range $m.KombiniertSegmente}}<div class="cat-{{.Farbe}}{{if eq .Farbe "fix"}} fix-seg{{end}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{deEUR .Kosten}} €"><span>{{deEUR .Kosten}} €</span></div>{{end}}{{else}}<span class="verlauf-none" data-modus="kombiniert">–</span>{{end}}
       </div>
+      <div class="bar-track-center" data-modus="abschlag">
+        <div class="zero-line"></div>
+        {{if $m.HasAbschlagSaldo}}
+        {{if $m.AbschlagGuthaben}}<div class="fill guthaben" style="width:{{$m.AbschlagProzent}}%"></div>{{else if $m.AbschlagNachzahlung}}<div class="fill nachzahlung" style="width:{{$m.AbschlagProzent}}%"></div>{{end}}
+        {{else}}<span class="verlauf-none" data-modus="abschlag">– keine Daten</span>{{end}}
+      </div>
 
       <span class="value-label" data-modus="verbrauch">{{if $m.HasVerbrauch}}{{deEUR $m.VerbrauchGesamt}} €{{end}}</span>
       <span class="value-label" data-modus="fixkosten">{{if $m.HasFixkosten}}{{deEUR $m.FixkostenGesamt}} €{{end}}</span>
       <span class="value-label" data-modus="kombiniert">{{if $m.HasKombiniert}}{{deEUR $m.KombiniertGesamt}} €{{end}}</span>
+      <span class="value-label {{if $m.AbschlagGuthaben}}guthaben{{else if $m.AbschlagNachzahlung}}nachzahlung{{else}}ausgeglichen{{end}}" data-modus="abschlag">{{if $m.HasAbschlagSaldo}}{{if $m.AbschlagGuthaben}}+{{else if $m.AbschlagNachzahlung}}&minus;{{end}}{{deEUR $m.AbschlagBetrag}} €{{end}}</span>
     </div>
     {{end}}
     {{end}}
@@ -224,7 +247,7 @@
   // (data-modus="..."), JS zeigt nur die aktive per inline style; das leere
   // style="" lässt die Elemente auf ihr eigenes CSS (flex/block) zurückfallen.
   (function () {
-    var MODI = ["verbrauch", "verbrauchswerte", "fixkosten", "kombiniert"];
+    var MODI = ["verbrauch", "verbrauchswerte", "fixkosten", "kombiniert", "abschlag"];
     var STORAGE_KEY = "dashboardModus";
 
     function applyModus(modus) {
