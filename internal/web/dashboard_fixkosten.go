@@ -286,6 +286,14 @@ type dashboardVerlaufSpalte struct {
 	ApartmentID   int64
 	ApartmentName string
 	Eintraege     []dashboardVerlaufEintrag
+
+	// LatestSaldo ist der neueste Monat mit Saldo (newest-first, überspringt
+	// Jahreszeilen und lückenhafte Monate) - direkt aus der Rückwärtsschleife
+	// in buildDashboardVerlauf gesetzt, statt dass eine 2. Funktion
+	// (latestAbschlagSaldo) hinterher nochmal durch Eintraege läuft, um
+	// denselben Wert wiederzufinden (#99/#102: Duplicated Code). nil = kein
+	// Saldo berechenbar.
+	LatestSaldo *AbschlagSaldo
 }
 
 // groupKostenByMonat merges every periodKosten's kategorien(apartmentID, ...)
@@ -464,27 +472,37 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 		}
 	}
 
+	var latestSaldo *AbschlagSaldo
+	for i := range monate {
+		if monate[i].Saldo != nil {
+			latestSaldo = monate[i].Saldo
+			break
+		}
+	}
+
 	return dashboardVerlaufSpalte{
 		ApartmentID: apartmentID, ApartmentName: apartmentName,
-		Eintraege: mitJahreszeilen(monate),
+		Eintraege:   mitJahreszeilen(monate),
+		LatestSaldo: latestSaldo,
 	}
 }
 
-// latestAbschlagSaldo returns the newest Monat's cumulated Guthaben/
-// Nachzahlung-Saldo in spalte (newest-first) that actually has one - nil,
-// skipping Jahreszeile rows and any leading Monat(e) ohne Saldo (e.g. the
-// current month has no Fixkosten-Eingabe/Ablesung yet), so the
-// Jahressummen-Karte keeps showing the last known Stand instead of the
-// Saldo disappearing for a single lückenhaften Monat - the Monatsverlauf's
-// own laufenderSaldo already carries forward the same way.
-func latestAbschlagSaldo(spalte dashboardVerlaufSpalte) *AbschlagSaldo {
-	for _, e := range spalte.Eintraege {
-		if e.Monat == nil || e.Monat.Saldo == nil {
-			continue
-		}
-		return e.Monat.Saldo
-	}
-	return nil
+// buildEntityView bündelt, was jede apartmentID-basierte Dashboard/Widget-
+// Route ohnehin an einer Stelle braucht: die Jahressumme-Karte, den
+// Monatsverlauf, und den Saldo konsistent zwischen beiden verdrahtet (#99,
+// Kandidat 3) - ersetzt 3 Call-Sites, die das bisher manuell nachbauten
+// (dashboard.go handleDashboard, widgets.go handleWidgetJahressumme/
+// handleWidgetUebersicht). Baut immer den vollen Verlauf, auch wenn ein
+// Aufrufer nur die Karte braucht (#101: kein Nur-Karte-Modus, Speculative
+// Generality vermieden). Nur für die 2 Wohnungen gedacht - Wallboxen/PV-
+// Anlage haben kein Saldo-Konzept und laufen über buildSimpleJahresCard/
+// buildSimpleVerlauf.
+func buildEntityView(dd dashboardData, apartmentID int64) (dashboardJahresCard, dashboardVerlaufSpalte) {
+	a := findApartment(dd.Apartments, apartmentID)
+	verlauf := buildDashboardVerlauf(a.ID, a.Name, dd.PeriodenKosten, dd.FixkostenListe)
+	card := buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, dd.Jahr, dd.PeriodenKosten, dd.FixkostenListe)
+	card.Saldo = verlauf.LatestSaldo
+	return card, verlauf
 }
 
 // jahresGruppe ist ein zusammenhängender, newest-first Lauf eines

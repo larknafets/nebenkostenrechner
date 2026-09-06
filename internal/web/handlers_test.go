@@ -528,10 +528,10 @@ func TestBuildDashboardVerlauf_AbschlagSaldo_UeberspringtMonatOhneFixkosten(t *t
 		t.Fatalf("Jan.Saldo = %+v, want Betrag 80/Guthaben (Abschlag 100 - Fixkosten 20)", jan.Saldo)
 	}
 
-	// latestAbschlagSaldo muss den lückenhaften Feb überspringen und den
-	// Jan-Saldo liefern, nicht fälschlich einen aus Feb abgeleiteten Wert.
-	if got := latestAbschlagSaldo(spalte); got == nil || got.Betrag() != 80 {
-		t.Fatalf("latestAbschlagSaldo = %+v, want Betrag 80 (aus Jan, Feb uebersprungen)", got)
+	// LatestSaldo muss den lückenhaften Feb überspringen und den Jan-Saldo
+	// liefern, nicht fälschlich einen aus Feb abgeleiteten Wert.
+	if got := spalte.LatestSaldo; got == nil || got.Betrag() != 80 {
+		t.Fatalf("LatestSaldo = %+v, want Betrag 80 (aus Jan, Feb uebersprungen)", got)
 	}
 }
 
@@ -574,37 +574,40 @@ func TestAbschlagSaldo(t *testing.T) {
 	}
 }
 
-func TestLatestAbschlagSaldo(t *testing.T) {
-	t.Run("überspringt lückenhaften neuesten Monat und Jahreszeilen", func(t *testing.T) {
-		spalte := dashboardVerlaufSpalte{
-			Eintraege: []dashboardVerlaufEintrag{
-				{Monat: &dashboardMonat{Label: "Jun 26"}}, // neuester Monat ohne Kombiniert-Daten (Saldo=nil)
-				{Monat: &dashboardMonat{Label: "Mai 26", Saldo: newAbschlagSaldo(42)}},
-				{Jahreszeile: &dashboardJahreszeile{Jahr: 2026}},
-				{Monat: &dashboardMonat{Label: "Apr 26", Saldo: newAbschlagSaldo(-99)}},
-			},
+// TestBuildDashboardVerlauf_LatestSaldo deckt #99/#102 ab: LatestSaldo wird
+// direkt in buildDashboardVerlauf gesetzt (aus derselben Rückwärtsschleife,
+// die auch die Monat-Salden berechnet), statt über eine 2. Funktion
+// (latestAbschlagSaldo, entfallen) hinterher nochmal ermittelt zu werden.
+func TestBuildDashboardVerlauf_LatestSaldo(t *testing.T) {
+	fix := &calc.FixkostenErgebnis{
+		Positionen: []calc.FixkostenPosition{{Key: "abfall_haushalt", Label: "Abfallwirtschaft Grundgebühr Haushalt", Logik: store.LogikWohneinheit, KostenW1: 15, KostenW2: 20}},
+		KostenW1:   15, KostenW2: 20,
+	}
+
+	t.Run("nimmt neuesten Monat mit Saldo, ueberspringt luecken", func(t *testing.T) {
+		verbrauch := kosten{Strom: &calc.StromErgebnis{KostenW2: 20}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
+		periods := []periodKosten{{ReadingDate: "2026-02-01", Monat: "2026-02-01", K: verbrauch}} // Feb: nur Ablesung, kein Saldo
+		fixkostenListe := []fixkostenKosten{
+			{Monat: "2026-01-01", Erg: fix, Abschlag: map[int64]float64{2: 100}},
 		}
-		got := latestAbschlagSaldo(spalte)
-		if got == nil || got.Betrag() != 42 || !got.Guthaben() {
-			t.Fatalf("latestAbschlagSaldo = %+v, want Betrag 42/Guthaben (Mai 26, nicht Jun 26 oder Apr 26)", got)
+		spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, fixkostenListe)
+		if got := spalte.LatestSaldo; got == nil || got.Betrag() != 80 || !got.Guthaben() {
+			t.Fatalf("LatestSaldo = %+v, want Betrag 80/Guthaben (aus Jan, Feb uebersprungen)", got)
 		}
 	})
 
-	t.Run("kein Monat mit Saldo -> nil", func(t *testing.T) {
-		spalte := dashboardVerlaufSpalte{
-			Eintraege: []dashboardVerlaufEintrag{
-				{Monat: &dashboardMonat{Label: "Jun 26"}},
-				{Jahreszeile: &dashboardJahreszeile{Jahr: 2026}},
-			},
-		}
-		if got := latestAbschlagSaldo(spalte); got != nil {
-			t.Fatalf("latestAbschlagSaldo = %+v, want nil (kein Monat hat einen Saldo)", got)
+	t.Run("kein Monat mit Fixkosten-Eingabe -> nil", func(t *testing.T) {
+		verbrauch := kosten{Strom: &calc.StromErgebnis{KostenW2: 20}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
+		periods := []periodKosten{{ReadingDate: "2026-02-01", Monat: "2026-02-01", K: verbrauch}}
+		spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, nil)
+		if got := spalte.LatestSaldo; got != nil {
+			t.Fatalf("LatestSaldo = %+v, want nil (keine Fixkosten-Eingabe)", got)
 		}
 	})
 
-	t.Run("leere Eintraege -> nil", func(t *testing.T) {
-		if got := latestAbschlagSaldo(dashboardVerlaufSpalte{}); got != nil {
-			t.Fatalf("latestAbschlagSaldo = %+v, want nil (keine Eintraege)", got)
+	t.Run("leere Eingabe -> nil", func(t *testing.T) {
+		if got := buildDashboardVerlauf(2, "Wohnung 2", nil, nil).LatestSaldo; got != nil {
+			t.Fatalf("LatestSaldo = %+v, want nil", got)
 		}
 	})
 }

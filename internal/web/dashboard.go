@@ -105,25 +105,14 @@ func handleDashboard(db *sql.DB, version, buildDate string) http.HandlerFunc {
 			}
 			return
 		}
-		apartments, periodenKosten, fixkostenListe, jahr := dd.Apartments, dd.PeriodenKosten, dd.FixkostenListe, dd.Jahr
+		apartments, periodenKosten, jahr := dd.Apartments, dd.PeriodenKosten, dd.Jahr
 
 		var cards []dashboardJahresCard
 		var verlaufSpalten []dashboardVerlaufSpalte
 		for _, a := range apartments {
-			verlauf := buildDashboardVerlauf(a.ID, a.Name, periodenKosten, fixkostenListe)
-			verlaufSpalten = append(verlaufSpalten, verlauf)
-
-			card := buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, jahr, periodenKosten, fixkostenListe)
-			// Guthaben/Nachzahlung ist fortlaufend kumuliert (kein Jahres-
-			// Reset, siehe #92) - der aktuelle Stand ist daher der Saldo des
-			// neuesten Monats mit Saldo, unabhängig vom angezeigten Jahr,
-			// bereits von buildDashboardVerlauf berechnet statt hier neu
-			// aufsummiert. Ein lückenhafter neuester Monat (z.B. noch keine
-			// Fixkosten-Eingabe diesen Monat) lässt den Saldo unverändert statt
-			// ihn verschwinden zu lassen - gleiches Prinzip wie der laufende
-			// Saldo im Monatsverlauf selbst.
-			card.Saldo = latestAbschlagSaldo(verlauf)
+			card, verlauf := buildEntityView(dd, a.ID)
 			cards = append(cards, card)
+			verlaufSpalten = append(verlaufSpalten, verlauf)
 		}
 
 		// Wallboxen/PV-Anlage (Ticket #67) - whole-house, rein informative

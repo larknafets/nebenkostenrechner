@@ -69,10 +69,7 @@ func handleWidgetJahressumme(db *sql.DB) http.HandlerFunc {
 				c := buildSimpleJahresCard(*simple, dd.Jahr, dd.PeriodenKosten)
 				data.SimpleCard = &c
 			} else {
-				a := findApartment(dd.Apartments, apartmentID)
-				c := buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, dd.Jahr, dd.PeriodenKosten, dd.FixkostenListe)
-				verlauf := buildDashboardVerlauf(a.ID, a.Name, dd.PeriodenKosten, dd.FixkostenListe)
-				c.Saldo = latestAbschlagSaldo(verlauf)
+				c, _ := buildEntityView(dd, apartmentID)
 				data.Card = &c
 			}
 		}
@@ -159,10 +156,7 @@ func handleWidgetUebersicht(db *sql.DB) http.HandlerFunc {
 				v := buildSimpleVerlauf(*simple, dd.PeriodenKosten)
 				data.SimpleVerlauf = &v
 			} else {
-				a := findApartment(dd.Apartments, apartmentID)
-				c := buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, dd.Jahr, dd.PeriodenKosten, dd.FixkostenListe)
-				v := buildDashboardVerlauf(a.ID, a.Name, dd.PeriodenKosten, dd.FixkostenListe)
-				c.Saldo = latestAbschlagSaldo(v)
+				c, v := buildEntityView(dd, apartmentID)
 				data.Card = &c
 				data.Verlauf = &v
 			}
