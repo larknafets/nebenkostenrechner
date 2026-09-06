@@ -484,6 +484,57 @@ func TestBuildDashboardVerlauf_NurFixkosten(t *testing.T) {
 	}
 }
 
+// TestBuildDashboardVerlauf_AbschlagSaldo_UeberspringtMonatOhneFixkosten deckt
+// einen Bug ab: ein Monat mit nur einer Ablesung (HasVerbrauch), aber ohne
+// Fixkosten-Eingabe (kein abschlagWert erfasst), wurde fälschlich als
+// HasKombiniert=true fürs Saldo mitgezählt und dabei Abschlag=0 angenommen -
+// statt wie ein Monat ohne Daten übersprungen zu werden.
+func TestBuildDashboardVerlauf_AbschlagSaldo_UeberspringtMonatOhneFixkosten(t *testing.T) {
+	fix := &calc.FixkostenErgebnis{
+		Positionen: []calc.FixkostenPosition{{Key: "abfall_haushalt", Label: "Abfallwirtschaft Grundgebühr Haushalt", Logik: store.LogikWohneinheit, KostenW1: 15, KostenW2: 20}},
+		KostenW1:   15, KostenW2: 20,
+	}
+	verbrauch := kosten{
+		Strom:   &calc.StromErgebnis{KostenW2: 20},
+		Wasser:  &calc.WasserErgebnis{},
+		Heizung: &calc.HeizungErgebnis{},
+	}
+	periods := []periodKosten{{ReadingDate: "2026-02-01", Monat: "2026-02-01", K: verbrauch}} // Feb: nur Ablesung, keine Fixkosten-Eingabe
+	fixkostenListe := []fixkostenKosten{
+		{Monat: "2026-01-01", Erg: fix, Abschlag: map[int64]float64{2: 100}}, // Jan: Fixkosten-Eingabe mit Abschlag
+	}
+
+	spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, fixkostenListe)
+	if len(spalte.Eintraege) != 3 { // Feb, Jan, Jahreszeile 2026
+		t.Fatalf("want 3 Eintraege (Feb+Jan+Jahreszeile), got %d: %+v", len(spalte.Eintraege), spalte.Eintraege)
+	}
+
+	feb := spalte.Eintraege[0].Monat
+	if feb == nil || feb.Label == "" {
+		t.Fatal("Eintraege[0] should be Feb")
+	}
+	if !feb.HasVerbrauch || feb.HasFixkosten {
+		t.Fatalf("Feb: HasVerbrauch/HasFixkosten = %v/%v, want true/false", feb.HasVerbrauch, feb.HasFixkosten)
+	}
+	if feb.Saldo != nil {
+		t.Errorf("Feb.Saldo = %+v, want nil (keine Fixkosten-Eingabe, kein erfasster Abschlagwert)", feb.Saldo)
+	}
+
+	jan := spalte.Eintraege[1].Monat
+	if jan == nil {
+		t.Fatal("Eintraege[1] should be Jan")
+	}
+	if jan.Saldo == nil || jan.Saldo.Betrag() != 80 || !jan.Saldo.Guthaben() {
+		t.Fatalf("Jan.Saldo = %+v, want Betrag 80/Guthaben (Abschlag 100 - Fixkosten 20)", jan.Saldo)
+	}
+
+	// latestAbschlagSaldo muss den lückenhaften Feb überspringen und den
+	// Jan-Saldo liefern, nicht fälschlich einen aus Feb abgeleiteten Wert.
+	if got := latestAbschlagSaldo(spalte); got == nil || got.Betrag() != 80 {
+		t.Fatalf("latestAbschlagSaldo = %+v, want Betrag 80 (aus Jan, Feb uebersprungen)", got)
+	}
+}
+
 func TestAbschlagSaldo(t *testing.T) {
 	for _, tc := range []struct {
 		name             string

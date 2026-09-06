@@ -421,15 +421,19 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 
 	// Nebenkostenabschlag-Saldo: fortlaufend kumuliert von ältestem zu
 	// neuestem Monat (monate ist newest-first sortiert, daher rückwärts) -
-	// saldo(m) = abschlag(m) - KombiniertGesamt(m), Monate ohne Kombiniert-
-	// Daten lassen den laufenden Saldo unverändert (#94: "keine Daten" statt
-	// eines impliziten Sprungs).
+	// saldo(m) = abschlag(m) - KombiniertGesamt(m). Gate ist HasFixkosten,
+	// nicht HasKombiniert: abschlagWert kommt ausschließlich aus einer
+	// Fixkosten-Eingabe (siehe die fixErg==nil-Bedingung oben) - ein Monat
+	// mit nur einer Ablesung, aber (noch) ohne Fixkosten-Eingabe, hat keinen
+	// erfassten Abschlagwert und würde sonst fälschlich mit Abschlag=0
+	// gerechnet, statt wie ein Monat ohne Daten übersprungen zu werden
+	// (#94: "keine Daten" statt eines impliziten Sprungs).
 	var laufenderSaldo float64
 	saldi := make([]float64, len(monate))
 	hatSaldo := make([]bool, len(monate))
 	var maxAbsSaldo float64
 	for i := len(monate) - 1; i >= 0; i-- {
-		if !monate[i].HasKombiniert {
+		if !monate[i].HasFixkosten {
 			continue
 		}
 		laufenderSaldo = calc.Round2(laufenderSaldo + calc.Round2(abschlagWerte[i]-monate[i].KombiniertGesamt))
