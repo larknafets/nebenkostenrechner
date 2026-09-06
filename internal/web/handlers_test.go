@@ -704,6 +704,31 @@ func TestBuildJahresCard(t *testing.T) {
 	}
 }
 
+func TestBuildJahresCard_PVAnteilKWh(t *testing.T) {
+	kMitPV := func(pv float64) kosten {
+		return kosten{
+			Strom:   &calc.StromErgebnis{PVAnteilW2KWh: pv},
+			Wasser:  &calc.WasserErgebnis{},
+			Heizung: &calc.HeizungErgebnis{},
+		}
+	}
+	periods := []periodKosten{
+		{ReadingDate: "2026-09-01", Monat: "2026-09-01", K: kMitPV(30)},
+		{ReadingDate: "2026-08-01", Monat: "2026-08-01", K: kMitPV(12)},
+		{ReadingDate: "2025-09-01", Monat: "2025-09-01", K: kMitPV(999)}, // anderes Jahr
+	}
+
+	w2 := buildJahresCard(2, "Wohnung 2", 86, 120.5, 2026, periods, nil)
+	if w2.PVAnteilKWh != 42 {
+		t.Errorf("Wohnung 2 PVAnteilKWh = %v, want 42 (30+12, 2025er ausgeschlossen)", w2.PVAnteilKWh)
+	}
+
+	w1 := buildJahresCard(1, "Wohnung 1", 116.23, 200, 2026, periods, nil)
+	if w1.PVAnteilKWh != 0 {
+		t.Errorf("Wohnung 1 PVAnteilKWh = %v, want 0 (kein eigener Stromzähler, kein PV-Anteil)", w1.PVAnteilKWh)
+	}
+}
+
 func TestBuildJahresCard_PersonenSchnittOhneAblesung(t *testing.T) {
 	card := buildJahresCard(1, "Wohnung 1", 116.23, 200, 2026, nil, nil)
 	if card.PersonenSchnitt != 0 {

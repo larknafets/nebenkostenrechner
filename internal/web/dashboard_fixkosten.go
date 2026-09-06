@@ -141,6 +141,12 @@ type dashboardJahresCard struct {
 	GesamtEUR           float64
 	Segmente            []dashboardSegment
 
+	// PVAnteilKWh ist die Jahressumme von StromErgebnis.PVAnteilW2KWh ("Nicht
+	// dem Netzbezug zugeordnet (PV)", CONTEXT.md) - nur für Wohnung 2 gesetzt
+	// (Issue #98), da Wohnung 1 keinen eigenen Stromzähler hat. 0 = Zeile wird
+	// ausgeblendet.
+	PVAnteilKWh float64
+
 	// Nebenkostenabschlag-Saldo: fortlaufend seit Erfassungsbeginn kumuliert
 	// (kein Jahres-Reset), Stand des jeweils neuesten Monats - siehe
 	// buildDashboardVerlauf, das den Saldo je Monat berechnet; von dort
@@ -155,6 +161,7 @@ type dashboardJahresCard struct {
 // Nachkommastelle, 0 if the year has no Ablesung yet).
 func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apartmentFlurstueck float64, jahr int, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten) dashboardJahresCard {
 	var strom, heizung, wasser, fix float64
+	var pvAnteilKWh float64
 	var personenSumme float64
 	var personenAnzahl int
 	for _, pk := range periodenKosten {
@@ -171,6 +178,9 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 			case kategorieKindWasser:
 				wasser += kat.Kosten
 			}
+		}
+		if apartmentID == 2 && pk.K.Strom != nil {
+			pvAnteilKWh += pk.K.Strom.PVAnteilW2KWh
 		}
 		if p, ok := pk.Personen[apartmentID]; ok {
 			personenSumme += float64(p)
@@ -207,6 +217,7 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 		ApartmentFlurstueck: apartmentFlurstueck, PersonenSchnitt: personenSchnitt,
 		FixkostenEUR: fix, StromEUR: strom, HeizungEUR: heizung, WasserEUR: wasser,
 		VerbrauchEUR: verbrauch, GesamtEUR: gesamt, Segmente: segs,
+		PVAnteilKWh: pvAnteilKWh,
 	}
 }
 
