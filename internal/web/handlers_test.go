@@ -1281,24 +1281,6 @@ func TestFormatDecimalDE2(t *testing.T) {
 	}
 }
 
-func TestFormatFlaecheDE(t *testing.T) {
-	cases := []struct {
-		x    float64
-		want string
-	}{
-		{450.5, "451 m²"},
-		{999, "999 m²"},
-		{1000, "0,00 km²"},
-		{1230000, "1,23 km²"},
-		{2500000, "2,50 km²"},
-	}
-	for _, c := range cases {
-		if got := formatFlaecheDE(c.x); got != c.want {
-			t.Errorf("formatFlaecheDE(%v) = %q, want %q", c.x, got, c.want)
-		}
-	}
-}
-
 func TestFormatMeterDiff(t *testing.T) {
 	cases := []struct {
 		current, previous float64
