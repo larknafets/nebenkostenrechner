@@ -2,12 +2,6 @@
 <h1>{{if .IsEdit}}Fixkosten-Eingabe korrigieren{{else}}Fixkosten-Eingabe erfassen{{end}}</h1>
 {{template "nav" .}}
 
-{{if .JahrNotAngelegt}}
-<div class="panel" style="border-color:#e6a700">
-  <p>Für Jahr {{.Jahr}} sind noch keine Kostenpositionen in den Stammdaten angelegt.</p>
-  <p><a href="{{.Base}}/stammdaten">Jetzt in den Stammdaten anlegen</a>, dann diese Seite neu laden.</p>
-</div>
-{{else}}
 <form method="post" action="{{.FormAction}}" class="panel">
   <div class="field" style="max-width:220px">
     <label>Monat</label>
@@ -30,30 +24,34 @@
   <div class="abschlag-divider"></div>
 
   <h3>Fixkosten</h3>
-  <p class="muted">Positionen mit Jahreswert (Badge) sind Jahresgesamtkosten aus den Stammdaten, hier bereits durch 12 geteilt und nicht editierbar - Änderungen dafür auf der Stammdaten-Seite. Alle anderen Positionen sind vorbelegt (letzter erfasster Wert bzw. letzter bekannter Jahreswert/12), aber jeden Monat frei überschreibbar.</p>
-  <table class="letzte">
-    <thead><tr><th>Position</th><th>Logik</th><th>Wert (EUR/Monat)</th></tr></thead>
-    <tbody>
-      {{range .Positionen}}
-      <tr>
-        <td>{{.Label}}{{if .IsJaehrlich}} <span class="badge">Jahreswert · Stammdaten</span>{{end}}</td>
-        <td>{{.LogikLabel}}</td>
-        <td>
-          {{if .IsJaehrlich}}
-          <input type="number" step="any" value="{{.Value}}" disabled title="Kommt aus den Jahres-Stammdaten, dort ändern">
-          {{else}}
-          <input type="number" step="any" name="wert_{{.ID}}" value="{{.Value}}" required>
-          {{end}}
-        </td>
-      </tr>
-      {{end}}
-    </tbody>
-  </table>
+  <p class="muted">Bei Typ "jährlich" ist der Wert ein Jahresgesamtbetrag (wird für die Berechnung durch 12 geteilt), bei "monatlich" ein direkter Monatsbetrag. Alle Felder sind vorbelegt (letzte erfasste Eingabe bzw. Standardwerte bei der allerersten), aber jeden Monat frei überschreibbar.</p>
+  {{range .Positionen}}
+  {{$posLogik := .Logik}}
+  {{$posTyp := .Typ}}
+  <div class="grid grid-4" style="align-items:end;margin-bottom:.5rem">
+    <div class="field" style="margin-bottom:0"><label>{{.Label}}</label></div>
+    <div class="field" style="margin-bottom:0">
+      <label>Berechnungslogik</label>
+      <select name="logik_{{.ID}}">
+        {{range logikOptions}}
+        <option value="{{.Value}}" {{if eq .Value $posLogik}}selected{{end}}>{{.Label}}</option>
+        {{end}}
+      </select>
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label>Typ</label>
+      <select name="typ_{{.ID}}">
+        <option value="jaehrlich" {{if eq $posTyp "jaehrlich"}}selected{{end}}>jährlich</option>
+        <option value="monatlich" {{if eq $posTyp "monatlich"}}selected{{end}}>monatlich</option>
+      </select>
+    </div>
+    <div class="field" style="margin-bottom:0"><label>Wert (EUR)</label><input type="number" step="any" name="wert_{{.ID}}" value="{{.Wert}}" required></div>
+  </div>
+  {{end}}
 
   <div class="btn-row">
     <button type="submit" class="primary">Speichern</button>
     <a href="{{.Base}}/fixkosten" class="button secondary">Abbrechen</a>
   </div>
 </form>
-{{end}}
 {{end}}

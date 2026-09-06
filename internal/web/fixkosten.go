@@ -56,14 +56,14 @@ func monatForInput(monat string) string {
 }
 
 // fixkostenPositionRow is one Kostenposition's row on the Fixkosten-Formular
-// - jährlich Positionen are read-only (Monatswert computed from Stammdaten),
-// monatlich Positionen are editable, prefilled from Value.
+// - Logik/Typ/Wert sind für jede Position editierbar (Issue #105/#108),
+// keine Jahr-basierte Sonderbehandlung mehr.
 type fixkostenPositionRow struct {
-	ID          int64
-	Label       string
-	LogikLabel  string
-	IsJaehrlich bool
-	Value       float64
+	ID    int64
+	Label string
+	Logik string
+	Typ   string
+	Wert  float64
 }
 
 // fixkostenFormData is the Fixkosten-Formular's template data - shared by
@@ -80,50 +80,32 @@ type fixkostenFormData struct {
 	PreviousPersonen map[int64]int64
 	PreviousAbschlag map[int64]float64
 	Positionen       []fixkostenPositionRow
-	JahrNotAngelegt  bool
-	Jahr             int
 }
 
-// buildFixkostenPositionRows assembles one row per Kostenposition for the
-// given Jahr, using values (explizite Werte, keyed by kostenposition id) to
-// prefill monatlich rows - the latest Eingabe's Werte in "neu" mode, the
-// Eingabe's own Werte in "bearbeiten" mode.
-//
-// A monatlich Position without an explicit Wert in values (Issue #69: the
-// Position was jährlich at the time that Eingabe was saved, so
-// parseFixkostenInput never wrote a Wert for it) falls back to the letzter
-// bekannter Jahreswert/12 - the same fallback calc.Fixkosten already uses
-// for the actual Berechnung, previously missing here in the Formular-
-// Prefill, which silently showed 0 instead.
-func buildFixkostenPositionRows(db *sql.DB, kostenpositionen []store.Kostenposition, jahresdaten map[int64]store.KostenpositionJahr, values map[int64]store.FixkostenPositionWert, jahr int) ([]fixkostenPositionRow, error) {
+// buildFixkostenPositionRows assembles one row per Kostenposition, using
+// values (Logik/Typ/Wert je Position, aus der letzten Eingabe in "neu"-Modus
+// bzw. der eigenen Eingabe in "bearbeiten"-Modus) zur Vorbelegung. Eine
+// Position ohne Eintrag in values (die allererste jemals angelegte
+// Fixkosten-Eingabe) fällt auf KostenpositionDefaults zurück - dieselben
+// Startwerte, die früher eine frisch angelegte Kostenpositionen-Jahr-Zeile
+// bekam.
+func buildFixkostenPositionRows(kostenpositionen []store.Kostenposition, values map[int64]store.FixkostenPositionWert) []fixkostenPositionRow {
+	defaultByID := map[int64]store.KostenpositionDefault{}
+	for _, kd := range store.KostenpositionDefaults {
+		defaultByID[kd.ID] = kd
+	}
+
 	rows := make([]fixkostenPositionRow, 0, len(kostenpositionen))
 	for _, kp := range kostenpositionen {
-		kj, ok := jahresdaten[kp.ID]
-		if !ok {
-			continue
-		}
-		row := fixkostenPositionRow{
-			ID:          kp.ID,
-			Label:       kp.Label,
-			LogikLabel:  logikLabels[kj.Logik],
-			IsJaehrlich: kj.Typ == store.TypJaehrlich,
-		}
-		if row.IsJaehrlich {
-			row.Value = kj.Jahreswert / 12
-		} else if w, ok := values[kp.ID]; ok {
-			row.Value = w.Wert
-		} else {
-			letzterJahreswert, ok, err := store.LatestJaehrlichWert(db, kp.ID, jahr)
-			if err != nil {
-				return nil, fmt.Errorf("latest jaehrlich wert for %s: %w", kp.Label, err)
-			}
-			if ok {
-				row.Value = letzterJahreswert / 12
-			}
+		row := fixkostenPositionRow{ID: kp.ID, Label: kp.Label}
+		if w, ok := values[kp.ID]; ok {
+			row.Logik, row.Typ, row.Wert = w.Logik, w.Typ, w.Wert
+		} else if kd, ok := defaultByID[kp.ID]; ok {
+			row.Logik, row.Typ = kd.Logik, kd.Typ
 		}
 		rows = append(rows, row)
 	}
-	return rows, nil
+	return rows
 }
 
 // handleFixkostenForm serves the "neu" Fixkosten-Formular, prefilled from
@@ -145,27 +127,19 @@ func handleFixkostenForm(db *sql.DB) http.HandlerFunc {
 		}
 
 		monat := time.Now().Format("2006-01")
-		jahr := time.Now().Year()
 
 		kostenpositionen, err := store.Kostenpositionen(db)
 		if err != nil {
 			http.Error(w, "kostenpositionen: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		jahresdaten, err := store.KostenpositionenJahr(db, jahr)
-		if err != nil {
-			http.Error(w, "kostenpositionen jahresdaten: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
 
 		data := fixkostenFormData{
-			Base:            requestBase(r),
-			Aktuell:         "fixkosten",
-			FormAction:      requestBase(r) + "/fixkosten",
-			Monat:           monat,
-			Apartments:      apartments,
-			JahrNotAngelegt: len(jahresdaten) == 0,
-			Jahr:            jahr,
+			Base:       requestBase(r),
+			Aktuell:    "fixkosten",
+			FormAction: requestBase(r) + "/fixkosten",
+			Monat:      monat,
+			Apartments: apartments,
 		}
 		var werte map[int64]store.FixkostenPositionWert
 		if latest != nil {
@@ -173,12 +147,7 @@ func handleFixkostenForm(db *sql.DB) http.HandlerFunc {
 			data.PreviousAbschlag = latest.Abschlag
 			werte = latest.Werte
 		}
-		positionen, err := buildFixkostenPositionRows(db, kostenpositionen, jahresdaten, werte, jahr)
-		if err != nil {
-			http.Error(w, "fixkosten position rows: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		data.Positionen = positionen
+		data.Positionen = buildFixkostenPositionRows(kostenpositionen, werte)
 
 		if err := fixkostenFormTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -212,27 +181,13 @@ func handleFixkostenEditForm(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		jahr, err := store.JahrFromMonat(target.Monat)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
 		kostenpositionen, err := store.Kostenpositionen(db)
 		if err != nil {
 			http.Error(w, "kostenpositionen: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		jahresdaten, err := store.KostenpositionenJahr(db, jahr)
-		if err != nil {
-			http.Error(w, "kostenpositionen jahresdaten: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
 
-		positionen, err := buildFixkostenPositionRows(db, kostenpositionen, jahresdaten, target.Werte, jahr)
-		if err != nil {
-			http.Error(w, "fixkosten position rows: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
+		positionen := buildFixkostenPositionRows(kostenpositionen, target.Werte)
 
 		data := fixkostenFormData{
 			Base:             requestBase(r),
@@ -244,8 +199,6 @@ func handleFixkostenEditForm(db *sql.DB) http.HandlerFunc {
 			PreviousPersonen: target.Personen,
 			PreviousAbschlag: target.Abschlag,
 			Positionen:       positionen,
-			JahrNotAngelegt:  len(jahresdaten) == 0,
-			Jahr:             jahr,
 		}
 
 		if err := fixkostenFormTemplate.ExecuteTemplate(w, "layout", data); err != nil {
@@ -255,28 +208,15 @@ func handleFixkostenEditForm(db *sql.DB) http.HandlerFunc {
 }
 
 // parseFixkostenInput parses a Fixkosten-Formular (shared by
-// handleCreateFixkosten and handleUpdateFixkosten). Werte are only read for
-// monatlich-typed Kostenpositionen in the Monat's Jahr - jährlich rows are
-// disabled inputs and never submitted, and re-deriving Typ from the DB
-// (rather than trusting the submitted form) keeps a stale/tampered form
-// from writing a Wert for a jährlich position.
+// handleCreateFixkosten and handleUpdateFixkosten) - Logik/Typ/Wert werden
+// für alle 14 Kostenpositionen gelesen (Issue #105/#108), jede Eingabe trägt
+// ihren eigenen unabhängigen Stand.
 func parseFixkostenInput(r *http.Request, db *sql.DB, apartments []store.Apartment) (store.FixkostenInput, error) {
 	monat, err := parseFixkostenMonat(r.FormValue("monat"))
 	if err != nil {
 		return store.FixkostenInput{}, err
 	}
 
-	jahr, err := store.JahrFromMonat(monat)
-	if err != nil {
-		return store.FixkostenInput{}, err
-	}
-	jahresdaten, err := store.KostenpositionenJahr(db, jahr)
-	if err != nil {
-		return store.FixkostenInput{}, fmt.Errorf("kostenpositionen jahresdaten: %w", err)
-	}
-	if len(jahresdaten) == 0 {
-		return store.FixkostenInput{}, fmt.Errorf("für Jahr %d sind noch keine Kostenpositionen in den Stammdaten angelegt", jahr)
-	}
 	kostenpositionen, err := store.Kostenpositionen(db)
 	if err != nil {
 		return store.FixkostenInput{}, fmt.Errorf("kostenpositionen: %w", err)
@@ -284,15 +224,23 @@ func parseFixkostenInput(r *http.Request, db *sql.DB, apartments []store.Apartme
 
 	werte := make(map[int64]store.FixkostenPositionWert, len(kostenpositionen))
 	for _, kp := range kostenpositionen {
-		kj, ok := jahresdaten[kp.ID]
-		if !ok || kj.Typ != store.TypMonatlich {
-			continue
+		idStr := strconv.FormatInt(kp.ID, 10)
+
+		logik := r.FormValue("logik_" + idStr)
+		if _, ok := logikLabels[logik]; !ok {
+			return store.FixkostenInput{}, fmt.Errorf("ungültige Berechnungslogik für %s", kp.Label)
 		}
-		v, err := strconv.ParseFloat(r.FormValue(fmt.Sprintf("wert_%d", kp.ID)), 64)
+
+		typ := r.FormValue("typ_" + idStr)
+		if typ != store.TypJaehrlich && typ != store.TypMonatlich {
+			return store.FixkostenInput{}, fmt.Errorf("ungültiger Typ für %s", kp.Label)
+		}
+
+		v, err := strconv.ParseFloat(r.FormValue("wert_"+idStr), 64)
 		if err != nil {
 			return store.FixkostenInput{}, fmt.Errorf("ungültiger Wert für %s", kp.Label)
 		}
-		werte[kp.ID] = store.FixkostenPositionWert{Logik: kj.Logik, Typ: kj.Typ, Wert: v}
+		werte[kp.ID] = store.FixkostenPositionWert{Logik: logik, Typ: typ, Wert: v}
 	}
 
 	personen := make(map[int64]int64, len(apartments))

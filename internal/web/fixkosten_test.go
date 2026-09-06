@@ -48,83 +48,46 @@ func TestBuildFixkostenPositionRows(t *testing.T) {
 	kostenpositionen := []store.Kostenposition{
 		{ID: 1, Key: "grundsteuer", Label: "Grundsteuer"},
 		{ID: 10, Key: "strom_grundpreis", Label: "Grundgebühr Strom"},
-		{ID: 2, Key: "gebaeudevers", Label: "Wohngebäudeversicherung"}, // no Jahresdaten -> must be skipped
 	}
-	jahresdaten := map[int64]store.KostenpositionJahr{
-		1:  {KostenpositionID: 1, Logik: store.LogikQM, Typ: store.TypJaehrlich, Jahreswert: 480},
-		10: {KostenpositionID: 10, Logik: store.LogikWohneinheit, Typ: store.TypMonatlich},
+	values := map[int64]store.FixkostenPositionWert{
+		1:  {Logik: store.LogikQM, Typ: store.TypJaehrlich, Wert: 480},
+		10: {Logik: store.LogikWohneinheit, Typ: store.TypMonatlich, Wert: 39.90},
 	}
-	values := map[int64]store.FixkostenPositionWert{10: {Wert: 39.90}}
 
-	rows, err := buildFixkostenPositionRows(openTestDB(t), kostenpositionen, jahresdaten, values, 2026)
-	if err != nil {
-		t.Fatalf("buildFixkostenPositionRows: %v", err)
-	}
+	rows := buildFixkostenPositionRows(kostenpositionen, values)
 
 	if len(rows) != 2 {
-		t.Fatalf("len(rows) = %d, want 2 (Position ohne Jahresdaten wird uebersprungen)", len(rows))
+		t.Fatalf("len(rows) = %d, want 2", len(rows))
 	}
-
-	if rows[0].ID != 1 || !rows[0].IsJaehrlich || rows[0].Value != 40 {
-		t.Errorf("rows[0] = %+v, want id:1 IsJaehrlich:true Value:40 (480/12)", rows[0])
+	if rows[0].ID != 1 || rows[0].Logik != store.LogikQM || rows[0].Typ != store.TypJaehrlich || rows[0].Wert != 480 {
+		t.Errorf("rows[0] = %+v, want id:1 Logik:%s Typ:%s Wert:480", rows[0], store.LogikQM, store.TypJaehrlich)
 	}
-	if rows[0].LogikLabel != logikLabels[store.LogikQM] {
-		t.Errorf("rows[0].LogikLabel = %q, want %q", rows[0].LogikLabel, logikLabels[store.LogikQM])
-	}
-
-	if rows[1].ID != 10 || rows[1].IsJaehrlich || rows[1].Value != 39.90 {
-		t.Errorf("rows[1] = %+v, want id:10 IsJaehrlich:false Value:39.90 (aus values, nicht /12)", rows[1])
+	if rows[1].ID != 10 || rows[1].Logik != store.LogikWohneinheit || rows[1].Typ != store.TypMonatlich || rows[1].Wert != 39.90 {
+		t.Errorf("rows[1] = %+v, want id:10 Logik:%s Typ:%s Wert:39.90", rows[1], store.LogikWohneinheit, store.TypMonatlich)
 	}
 }
 
-func TestBuildFixkostenPositionRows_MonatlichOhneWert(t *testing.T) {
-	kostenpositionen := []store.Kostenposition{{ID: 10, Key: "strom_grundpreis", Label: "Grundgebühr Strom"}}
-	jahresdaten := map[int64]store.KostenpositionJahr{
-		10: {KostenpositionID: 10, Logik: store.LogikWohneinheit, Typ: store.TypMonatlich},
+// TestBuildFixkostenPositionRows_OhneVorherigeEingabe deckt #105/#108 ab:
+// die allererste jemals angelegte Fixkosten-Eingabe hat keine values, fällt
+// aber nicht auf leere Logik/Typ zurück, sondern auf
+// store.KostenpositionDefaults - dieselben Startwerte, die früher eine
+// frisch angelegte Kostenpositionen-Jahr-Zeile bekam.
+func TestBuildFixkostenPositionRows_OhneVorherigeEingabe(t *testing.T) {
+	kostenpositionen := []store.Kostenposition{
+		{ID: 1, Key: "grundsteuer", Label: "Grundsteuer"},
+		{ID: 13, Key: "internet", Label: "Grundgebühr Internet"},
 	}
 
-	rows, err := buildFixkostenPositionRows(openTestDB(t), kostenpositionen, jahresdaten, nil, 2026)
-	if err != nil {
-		t.Fatalf("buildFixkostenPositionRows: %v", err)
-	}
+	rows := buildFixkostenPositionRows(kostenpositionen, nil)
 
-	if len(rows) != 1 {
-		t.Fatalf("len(rows) = %d, want 1", len(rows))
+	if len(rows) != 2 {
+		t.Fatalf("len(rows) = %d, want 2", len(rows))
 	}
-	if rows[0].Value != 0 {
-		t.Errorf("Value ohne Vorwert und ohne Jahreswert-Historie = %v, want 0", rows[0].Value)
+	if rows[0].Logik != store.LogikQM || rows[0].Typ != store.TypJaehrlich || rows[0].Wert != 0 {
+		t.Errorf("Grundsteuer ohne Vorwert = %+v, want Logik:%s Typ:%s Wert:0 (aus KostenpositionDefaults)", rows[0], store.LogikQM, store.TypJaehrlich)
 	}
-}
-
-// TestBuildFixkostenPositionRows_TypWechselFallback reproduces Issue #69:
-// eine Position war 2025 "jährlich" mit Jahreswert 1200, wechselt 2026 auf
-// "monatlich" - ohne expliziten Wert in values (weil die letzte Eingabe zum
-// Zeitpunkt "jährlich" war und parseFixkostenInput sie damals übersprungen
-// hat) muss die Vorbelegung auf den letzten bekannten Jahreswert/12
-// zurückfallen, nicht auf 0.
-func TestBuildFixkostenPositionRows_TypWechselFallback(t *testing.T) {
-	db := openTestDB(t)
-	if err := store.UpsertKostenpositionenJahr(db, 2025, map[int64]store.KostenpositionJahrInput{
-		10: {Logik: store.LogikWohneinheit, Typ: store.TypJaehrlich, Jahreswert: 1200},
-	}); err != nil {
-		t.Fatalf("seed 2025 kostenpositionen_jahr: %v", err)
-	}
-
-	kostenpositionen := []store.Kostenposition{{ID: 10, Key: "strom_grundpreis", Label: "Grundgebühr Strom"}}
-	jahresdaten := map[int64]store.KostenpositionJahr{
-		10: {KostenpositionID: 10, Logik: store.LogikWohneinheit, Typ: store.TypMonatlich},
-	}
-
-	rows, err := buildFixkostenPositionRows(db, kostenpositionen, jahresdaten, nil, 2026)
-	if err != nil {
-		t.Fatalf("buildFixkostenPositionRows: %v", err)
-	}
-
-	if len(rows) != 1 {
-		t.Fatalf("len(rows) = %d, want 1", len(rows))
-	}
-	if rows[0].Value != 100 {
-		t.Errorf("Value = %v, want 100 (letzter bekannter Jahreswert 1200 / 12)", rows[0].Value)
+	if rows[1].Logik != store.LogikWohneinheit || rows[1].Typ != store.TypMonatlich || rows[1].Wert != 0 {
+		t.Errorf("Internet ohne Vorwert = %+v, want Logik:%s Typ:%s Wert:0 (aus KostenpositionDefaults)", rows[1], store.LogikWohneinheit, store.TypMonatlich)
 	}
 }
 
