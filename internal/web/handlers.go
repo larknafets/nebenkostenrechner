@@ -92,6 +92,13 @@ var templateFuncs = template.FuncMap{
 	// die Anzeige - html/template dereferenziert einen nil-Pointer sonst
 	// mit einem harten Fehler statt einfach 0 zu zeigen.
 	"orZero": store.OrZero,
+	// hasReading/hasPersonen (Ticket #131): ob der Wizard einen Meter-/
+	// Personen-Wert im vervollständigenden EditReadings/PreviousPersonen
+	// prefillen darf - "index" allein liefert für einen fehlenden Key
+	// stillschweigend den Zero-Value zurück, was "nicht erfasst" nicht von
+	// einer echten 0 unterscheiden könnte.
+	"hasReading":  func(m map[string]float64, k string) bool { _, ok := m[k]; return ok },
+	"hasPersonen": func(m map[int64]int64, id int64) bool { _, ok := m[id]; return ok },
 	// logikOptions is a zero-arg func rather than a per-page data field - it's
 	// a fixed, package-global list (see fixkosten.go), so the geteilte
 	// "monatsverlauf-wohnung-body"-Partial (monatsverlauf.html) braucht dafür
@@ -225,6 +232,16 @@ type wizardData struct {
 	PreviousAbwasserPreis     float64
 	PreviousEinspeisungPreis  float64
 	PreviousPersonen          map[int64]int64
+	// PreviousXErfasst (Ticket #131): ob der jeweilige Preis in einem
+	// vervollständigten Teilstand überhaupt schon gesetzt war - Previous*
+	// oben ist immer ein reiner float64 (store.OrZero-koalesziert), der
+	// "fehlt" und "0" nicht mehr unterscheiden kann; der Wizard braucht
+	// diese Unterscheidung aber fürs value=-Prefill (leer statt "0") und
+	// die Live-Fortschrittsanzeige.
+	PreviousStrompreisErfasst        bool
+	PreviousFrischwasserPreisErfasst bool
+	PreviousAbwasserPreisErfasst     bool
+	PreviousEinspeisungPreisErfasst  bool
 	// PreviousHeizungGewichtung always has a valid value (defaulting to
 	// 0.7, Ticket #27's default) since the radio group needs exactly one
 	// option checked - unlike the blank-when-absent price fields above,
@@ -326,12 +343,21 @@ func handleWizardForm(a auth) http.HandlerFunc {
 		}
 		if previousPeriod != nil {
 			// store.OrZero: previousPeriod ist Teilstand-fähig (Ticket
-			// #128), diese Prefill-Felder unterscheiden "fehlt" noch nicht
-			// von "0" - das bleibt #129 vorbehalten.
+			// #128) - hier aber immer vollständig, da eine neue Ablesung
+			// nicht angelegt werden kann, während die vorherige noch ein
+			// Teilstand ist (openTeilstandID/redirectIfOpenTeilstand,
+			// Ticket #129). Die Erfasst-Flags unten sind entsprechend immer
+			// true, direkt aus derselben Quelle berechnet statt hart auf
+			// true gesetzt, damit sie korrekt bleiben, falls sich diese
+			// Invariante je ändert.
 			data.PreviousStrompreis = store.OrZero(previousPeriod.Strompreis)
 			data.PreviousFrischwasserPreis = store.OrZero(previousPeriod.FrischwasserPreis)
 			data.PreviousAbwasserPreis = store.OrZero(previousPeriod.AbwasserPreis)
 			data.PreviousEinspeisungPreis = store.OrZero(previousPeriod.EinspeisungPreis)
+			data.PreviousStrompreisErfasst = previousPeriod.Strompreis != nil
+			data.PreviousFrischwasserPreisErfasst = previousPeriod.FrischwasserPreis != nil
+			data.PreviousAbwasserPreisErfasst = previousPeriod.AbwasserPreis != nil
+			data.PreviousEinspeisungPreisErfasst = previousPeriod.EinspeisungPreis != nil
 			data.PreviousPersonen = previousPeriod.PersonenByApartment
 			data.PreviousHeizungGewichtung = previousPeriod.HeizungWaermeGewichtung
 		}
@@ -429,6 +455,12 @@ func handleEditWizardForm(a auth) http.HandlerFunc {
 			PreviousEinspeisungPreis:  store.OrZero(target.EinspeisungPreis),
 			PreviousPersonen:          target.PersonenByApartment,
 			PreviousHeizungGewichtung: target.HeizungWaermeGewichtung,
+			// Ticket #131: target kann ein Teilstand sein - diese Flags
+			// lassen den Wizard "fehlt" von "0" unterscheiden.
+			PreviousStrompreisErfasst:        target.Strompreis != nil,
+			PreviousFrischwasserPreisErfasst: target.FrischwasserPreis != nil,
+			PreviousAbwasserPreisErfasst:     target.AbwasserPreis != nil,
+			PreviousEinspeisungPreisErfasst:  target.EinspeisungPreis != nil,
 		}
 		if len(recent) > 0 {
 			data.HasPrevious = true
@@ -709,9 +741,10 @@ func periodListItems(periods []store.PeriodSummary) []periodListItem {
 // values - the Ablesungen-Übersicht's table, which has room for its own
 // column per field (unlike the dropdown's single-line option).
 type periodOverviewRow struct {
-	ID          int64
-	ReadingDate string
-	Zeitraum    string
+	ID           int64
+	ReadingDate  string
+	Zeitraum     string
+	IstTeilstand bool
 }
 
 // periodMonatGroup is every Ablesung of one Abrechnungsmonat (Issue #86),
@@ -726,8 +759,11 @@ type periodMonatGroup struct {
 // periodOverviewGroups builds one periodMonatGroup per distinct Monat,
 // newest first, same order/predecessor rule as periodListItems for each
 // row's Zeitraum. periods must already be newest-first (store.AllPeriods'
-// own order).
-func periodOverviewGroups(periods []store.PeriodSummary) []periodMonatGroup {
+// own order). teilstandID marks that one row IstTeilstand (Ticket #131,
+// pass 0 when there's no open Teilstand) - only the newest period can ever
+// be one (enforced at creation, Ticket #129), so the caller only needs to
+// know that single id rather than checking every row's completeness.
+func periodOverviewGroups(periods []store.PeriodSummary, teilstandID int64) []periodMonatGroup {
 	var out []periodMonatGroup
 	var currentMonat string
 	for i, p := range periods {
@@ -737,7 +773,7 @@ func periodOverviewGroups(periods []store.PeriodSummary) []periodMonatGroup {
 		} else {
 			zeitraum = "keine Vorperiode"
 		}
-		row := periodOverviewRow{ID: p.ID, ReadingDate: formatDatumDE(p.ReadingDate), Zeitraum: zeitraum}
+		row := periodOverviewRow{ID: p.ID, ReadingDate: formatDatumDE(p.ReadingDate), Zeitraum: zeitraum, IstTeilstand: teilstandID != 0 && p.ID == teilstandID}
 
 		if len(out) > 0 && p.Monat == currentMonat {
 			out[len(out)-1].Rows = append(out[len(out)-1].Rows, row)
@@ -761,6 +797,14 @@ func handleAblesungenListe(a auth) http.HandlerFunc {
 			http.Error(w, "periods: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+		teilstandID, hasOpenTeilstand, err := openTeilstandID(db)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !hasOpenTeilstand {
+			teilstandID = 0
+		}
 
 		importedCount, _ := strconv.Atoi(r.URL.Query().Get("imported"))
 
@@ -773,7 +817,7 @@ func handleAblesungenListe(a auth) http.HandlerFunc {
 		}{
 			navData:       a.NavData(r),
 			Aktuell:       "ablesungen",
-			MonatGruppen:  periodOverviewGroups(periods),
+			MonatGruppen:  periodOverviewGroups(periods, teilstandID),
 			ImportedCount: importedCount,
 			Warnings:      r.URL.Query()["warning"],
 		}
@@ -848,24 +892,39 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 
 		// Diff is each Zähler's absolute change since the previous Ablesung
 		// ("+23,00" / "-5,00"), formatted ready-to-print - empty for the
-		// oldest period (no Vorperiode to diff against).
+		// oldest period (no Vorperiode to diff against). Erfasst (Ticket
+		// #131) is whether this Meter überhaupt eine Row hat - anders als
+		// Value (immer 0 für einen fehlenden Zählerstand, da Go's Map-
+		// Zugriff keine "fehlt"-Unterscheidung kennt).
 		var meters []struct {
-			Label string
-			Value float64
-			Unit  string
-			Diff  string
+			Label   string
+			Value   float64
+			Unit    string
+			Diff    string
+			Erfasst bool
 		}
 		for _, m := range meterDisplays {
+			_, erfasst := period.Readings[m.Key]
 			entry := struct {
-				Label string
-				Value float64
-				Unit  string
-				Diff  string
-			}{Label: m.Label, Value: period.Readings[m.Key], Unit: m.Unit}
+				Label   string
+				Value   float64
+				Unit    string
+				Diff    string
+				Erfasst bool
+			}{Label: m.Label, Value: period.Readings[m.Key], Unit: m.Unit, Erfasst: erfasst}
 			if len(vorperiode) > 0 {
 				entry.Diff = formatMeterDiff(period.Readings[m.Key], vorperiode[0].Readings[m.Key])
 			}
 			meters = append(meters, entry)
+		}
+
+		// PersonenErfasst (Ticket #131): welche Wohnungen für diese Periode
+		// eine Personenzahl haben - period.PersonenByApartment selbst
+		// unterscheidet eine fehlende Wohnung nicht von "0 Personen".
+		personenErfasst := make(map[int64]bool, len(apartments))
+		for _, ap := range apartments {
+			_, ok := period.PersonenByApartment[ap.ID]
+			personenErfasst[ap.ID] = ok
 		}
 
 		k, err := berechneKosten(db, period.ID)
@@ -874,39 +933,63 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			return
 		}
 
+		complete, err := store.PeriodComplete(db, period.ID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		istTeilstand := !complete
+
 		data := struct {
 			navData
-			Aktuell       string
-			Period        *store.LatestPeriod
-			AllPeriods    []periodListItem
-			Apartments    []store.Apartment
-			Personen      map[int64]int64
-			ZeitraumStart string
-			Meters        []struct {
-				Label string
-				Value float64
-				Unit  string
-				Diff  string
+			Aktuell         string
+			Period          *store.LatestPeriod
+			AllPeriods      []periodListItem
+			Apartments      []store.Apartment
+			Personen        map[int64]int64
+			PersonenErfasst map[int64]bool
+			ZeitraumStart   string
+			Meters          []struct {
+				Label   string
+				Value   float64
+				Unit    string
+				Diff    string
+				Erfasst bool
 			}
-			Strom       *calc.StromErgebnis
-			Wasser      *calc.WasserErgebnis
-			Heizung     *calc.HeizungErgebnis
-			Einspeisung *calc.EinspeisungErgebnis
-			KostenNote  string
+			Strom                   *calc.StromErgebnis
+			Wasser                  *calc.WasserErgebnis
+			Heizung                 *calc.HeizungErgebnis
+			Einspeisung             *calc.EinspeisungErgebnis
+			KostenNote              string
+			IstTeilstand            bool
+			MonatErfasst            bool
+			MonatLabel              string
+			StrompreisErfasst       bool
+			FrischwasserErfasst     bool
+			AbwasserErfasst         bool
+			EinspeisungPreisErfasst bool
 		}{
-			navData:       a.NavData(r),
-			Aktuell:       "ablesungen-detail",
-			Period:        period,
-			AllPeriods:    periodListItems(allPeriods),
-			Apartments:    apartments,
-			Personen:      period.PersonenByApartment,
-			ZeitraumStart: zeitraumStart,
-			Meters:        meters,
-			Strom:         k.Strom,
-			Wasser:        k.Wasser,
-			Heizung:       k.Heizung,
-			Einspeisung:   k.Einspeisung,
-			KostenNote:    k.KostenNote,
+			navData:                 a.NavData(r),
+			Aktuell:                 "ablesungen-detail",
+			Period:                  period,
+			AllPeriods:              periodListItems(allPeriods),
+			Apartments:              apartments,
+			Personen:                period.PersonenByApartment,
+			PersonenErfasst:         personenErfasst,
+			ZeitraumStart:           zeitraumStart,
+			Meters:                  meters,
+			Strom:                   k.Strom,
+			Wasser:                  k.Wasser,
+			Heizung:                 k.Heizung,
+			Einspeisung:             k.Einspeisung,
+			KostenNote:              k.KostenNote,
+			IstTeilstand:            istTeilstand,
+			MonatErfasst:            period.Monat != "",
+			MonatLabel:              germanPeriodLabel(period.Monat),
+			StrompreisErfasst:       period.Strompreis != nil,
+			FrischwasserErfasst:     period.FrischwasserPreis != nil,
+			AbwasserErfasst:         period.AbwasserPreis != nil,
+			EinspeisungPreisErfasst: period.EinspeisungPreis != nil,
 		}
 
 		if err := ablesungTemplate.ExecuteTemplate(w, "layout", data); err != nil {

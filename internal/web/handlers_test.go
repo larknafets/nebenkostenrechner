@@ -1144,7 +1144,7 @@ func TestPeriodOverviewGroups(t *testing.T) {
 		{ID: 1, ReadingDate: "2026-08-01", Monat: "2026-08-01"},
 	}
 
-	groups := periodOverviewGroups(periods)
+	groups := periodOverviewGroups(periods, 0)
 	if len(groups) != 3 {
 		t.Fatalf("len(groups) = %d, want 3 (Okt, Sept, Aug)", len(groups))
 	}
@@ -1795,5 +1795,198 @@ func TestLoadDashboardData_NurTeilstand_HasAnyDataFalse(t *testing.T) {
 	}
 	if dd.HasAnyData {
 		t.Error("HasAnyData = true, want false (einziger Datensatz ist ein Teilstand)")
+	}
+}
+
+// --- Ticket #131 (Teilstand): Anzeige + geführter Wizard ---
+
+// TestPeriodOverviewGroups_MarksTeilstand verifies AC1: periodOverviewGroups
+// marks exactly the row named by teilstandID, none of the others -
+// teilstandID=0 means "keiner ist offen".
+func TestPeriodOverviewGroups_MarksTeilstand(t *testing.T) {
+	periods := []store.PeriodSummary{
+		{ID: 2, ReadingDate: "2026-10-01", Monat: "2026-10-01"},
+		{ID: 1, ReadingDate: "2026-09-01", Monat: "2026-09-01"},
+	}
+
+	groups := periodOverviewGroups(periods, 2)
+	if !groups[0].Rows[0].IstTeilstand {
+		t.Error("neueste Periode (id=2) sollte IstTeilstand=true haben")
+	}
+	if groups[1].Rows[0].IstTeilstand {
+		t.Error("aeltere Periode (id=1) sollte IstTeilstand=false haben")
+	}
+
+	none := periodOverviewGroups(periods, 0)
+	if none[0].Rows[0].IstTeilstand || none[1].Rows[0].IstTeilstand {
+		t.Error("teilstandID=0 sollte keine Zeile markieren")
+	}
+}
+
+// TestHandleAblesungenListe_TeilstandBadge verifies AC1 at the handler
+// level: the Ablesungen-Liste shows an "unvollständig"-Hinweis for a
+// Teilstand row.
+func TestHandleAblesungenListe_TeilstandBadge(t *testing.T) {
+	db := openTestDB(t)
+	a := newAuth("", nil)
+
+	if _, err := store.CreatePeriod(db, store.PeriodInput{
+		ReadingDate:             "2026-11-01",
+		HeizungWaermeGewichtung: 0.7,
+	}); err != nil {
+		t.Fatalf("CreatePeriod (Teilstand): %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/ablesungen", nil)
+	w := httptest.NewRecorder()
+	handleAblesungenListe(a)(w, requestWithDB(req, db))
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusOK, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "unvollständig") {
+		t.Error("Ablesungen-Liste zeigt keinen 'unvollständig'-Hinweis für den Teilstand")
+	}
+}
+
+// TestHandleAblesungDetail_TeilstandZeigtOffeneFelder verifies AC2: the
+// detail page shows a Teilstand badge and marks its missing values as
+// still open, while an already-entered value (strom_gesamt) shows
+// normally, not as "noch offen".
+func TestHandleAblesungDetail_TeilstandZeigtOffeneFelder(t *testing.T) {
+	db := openTestDB(t)
+	a := newAuth("", nil)
+
+	id, err := store.CreatePeriod(db, store.PeriodInput{
+		ReadingDate:             "2026-11-01",
+		HeizungWaermeGewichtung: 0.7,
+		Readings:                map[string]float64{"strom_gesamt": 12345},
+	})
+	if err != nil {
+		t.Fatalf("CreatePeriod (Teilstand): %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/ablesungen/"+strconv.FormatInt(id, 10), nil)
+	req.SetPathValue("id", strconv.FormatInt(id, 10))
+	w := httptest.NewRecorder()
+	handleAblesungDetail(a)(w, requestWithDB(req, db))
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusOK, w.Body.String())
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "unvollständig") {
+		t.Error("Detailseite zeigt kein 'unvollständig'-Badge")
+	}
+	if !strings.Contains(body, "noch offen") {
+		t.Error("Detailseite markiert keine fehlenden Werte als 'noch offen'")
+	}
+	if !strings.Contains(body, "12.345,00") {
+		t.Error("Detailseite zeigt den bereits erfassten Zählerstand nicht normal an")
+	}
+}
+
+// TestHandleAblesungDetail_VollstaendigKeinBadge verifies the badge/"noch
+// offen"-Markierung only appears for a Teilstand, not for an already
+// complete Ablesung.
+func TestHandleAblesungDetail_VollstaendigKeinBadge(t *testing.T) {
+	db := openTestDB(t)
+	a := newAuth("", nil)
+
+	id, err := store.CreatePeriod(db, seedPeriodInputAt("2026-11-01"))
+	if err != nil {
+		t.Fatalf("CreatePeriod: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/ablesungen/"+strconv.FormatInt(id, 10), nil)
+	req.SetPathValue("id", strconv.FormatInt(id, 10))
+	w := httptest.NewRecorder()
+	handleAblesungDetail(a)(w, requestWithDB(req, db))
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusOK, w.Body.String())
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "unvollständig") {
+		t.Error("vollständige Ablesung zeigt fälschlich ein 'unvollständig'-Badge")
+	}
+	if strings.Contains(body, "noch offen") {
+		t.Error("vollständige Ablesung zeigt fälschlich 'noch offen'-Markierungen")
+	}
+}
+
+// TestHandleAblesungDetail_TeilstandButtonOhneLogin verifies AC5's
+// Erreichbarkeit: even without a login cookie (and with LOGIN_PASSWORD
+// set), the detail page of a Teilstand offers a way to vervollständigen -
+// otherwise an anonymous visitor would have no visible path to the
+// bearbeiten-Route Ticket #130 already ungated for them.
+func TestHandleAblesungDetail_TeilstandButtonOhneLogin(t *testing.T) {
+	db := openTestDB(t)
+	a := newAuth("geheim", nil)
+
+	id, err := store.CreatePeriod(db, store.PeriodInput{
+		ReadingDate:             "2026-11-01",
+		HeizungWaermeGewichtung: 0.7,
+	})
+	if err != nil {
+		t.Fatalf("CreatePeriod (Teilstand): %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/ablesungen/"+strconv.FormatInt(id, 10), nil)
+	req.SetPathValue("id", strconv.FormatInt(id, 10))
+	w := httptest.NewRecorder()
+	handleAblesungDetail(a)(w, requestWithDB(req, db))
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusOK, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "Ablesung vervollständigen") {
+		t.Error("Teilstand-Detailseite ohne Login zeigt keinen Vervollständigen-Button")
+	}
+}
+
+// TestHandleEditWizardForm_TeilstandBlankNotZero verifies the wizard's
+// value=-Prefill (Ticket #131): a meter/price/Personen that was never
+// entered on a Teilstand must render as a blank field, not a misleading
+// "0" - the sparse-map Zero-Value trap hasReading/hasPersonen/the
+// PreviousXErfasst flags guard against.
+func TestHandleEditWizardForm_TeilstandBlankNotZero(t *testing.T) {
+	db := openTestDB(t)
+	a := newAuth("", nil)
+
+	id, err := store.CreatePeriod(db, store.PeriodInput{
+		ReadingDate:             "2026-11-01",
+		HeizungWaermeGewichtung: 0.7,
+		Strompreis:              store.Float64(0.22),
+		Readings:                map[string]float64{"strom_gesamt": 100},
+		Personen:                map[int64]int64{1: 2},
+	})
+	if err != nil {
+		t.Fatalf("CreatePeriod (Teilstand): %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/ablesungen/"+strconv.FormatInt(id, 10)+"/bearbeiten", nil)
+	req.SetPathValue("id", strconv.FormatInt(id, 10))
+	w := httptest.NewRecorder()
+	handleEditWizardForm(a)(w, requestWithDB(req, db))
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusOK, w.Body.String())
+	}
+	body := w.Body.String()
+	if strings.Contains(body, `name="strom_wohnung2" value="0"`) {
+		t.Error(`ein nie erfasster Zähler zeigt value="0" statt leer`)
+	}
+	if strings.Contains(body, `name="frischwasser_preis" value="0"`) {
+		t.Error(`ein nie erfasster Preis zeigt value="0" statt leer`)
+	}
+	if strings.Contains(body, `name="personen_2" value="0"`) {
+		t.Error(`eine nie erfasste Personenzahl zeigt value="0" statt leer`)
+	}
+	if !strings.Contains(body, `name="strom_gesamt" value="100"`) {
+		t.Error("ein bereits erfasster Zähler wird nicht korrekt vorbelegt")
+	}
+	if !strings.Contains(body, `name="strompreis" value="0.22"`) {
+		t.Error("ein bereits erfasster Preis wird nicht korrekt vorbelegt")
 	}
 }

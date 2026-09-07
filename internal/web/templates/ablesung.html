@@ -1,5 +1,5 @@
 {{define "content"}}
-<h1>Ablesung {{deDatum .Period.ReadingDate}}</h1>
+<h1>Ablesung {{deDatum .Period.ReadingDate}}{{if .IstTeilstand}} <span class="badge badge-warning">unvollständig</span>{{end}}</h1>
 {{template "nav" .}}
 
 <div class="field" style="max-width:220px">
@@ -14,13 +14,19 @@
 <div class="panel">
   <p><strong>Ablesedatum:</strong> {{deDatum .Period.ReadingDate}}</p>
   <p><strong>Zeitraum:</strong> {{if .ZeitraumStart}}{{deDatum .ZeitraumStart}} – {{deDatum .Period.ReadingDate}}{{else}}bis {{deDatum .Period.ReadingDate}} (keine Vorperiode){{end}}</p>
-  <p><strong>Preise:</strong> Strom {{deEUR (orZero .Period.Strompreis)}}&nbsp;EUR/kWh · Frischwasser {{deEUR (orZero .Period.FrischwasserPreis)}}&nbsp;EUR/m³ · Abwasser {{deEUR (orZero .Period.AbwasserPreis)}}&nbsp;EUR/m³ · Einspeisung {{deEUR (orZero .Period.EinspeisungPreis)}}&nbsp;EUR/kWh</p>
+  <p><strong>Abrechnungsmonat:</strong> {{if .MonatErfasst}}{{.MonatLabel}}{{else}}<span class="text-warning">noch offen</span>{{end}}</p>
+  <p><strong>Preise:</strong>
+    Strom {{if .StrompreisErfasst}}{{deEUR (orZero .Period.Strompreis)}}&nbsp;EUR/kWh{{else}}<span class="text-warning">noch offen</span>{{end}} ·
+    Frischwasser {{if .FrischwasserErfasst}}{{deEUR (orZero .Period.FrischwasserPreis)}}&nbsp;EUR/m³{{else}}<span class="text-warning">noch offen</span>{{end}} ·
+    Abwasser {{if .AbwasserErfasst}}{{deEUR (orZero .Period.AbwasserPreis)}}&nbsp;EUR/m³{{else}}<span class="text-warning">noch offen</span>{{end}} ·
+    Einspeisung {{if .EinspeisungPreisErfasst}}{{deEUR (orZero .Period.EinspeisungPreis)}}&nbsp;EUR/kWh{{else}}<span class="text-warning">noch offen</span>{{end}}
+  </p>
 
   <table class="letzte">
     <thead><tr><th>Zähler</th><th>Stand</th></tr></thead>
     <tbody>
       {{range .Meters}}
-      <tr><td>{{.Label}}</td><td>{{de2 .Value}}&nbsp;{{.Unit}}{{if .Diff}} ({{.Diff}}&nbsp;{{.Unit}}){{end}}</td></tr>
+      <tr><td>{{.Label}}</td><td>{{if .Erfasst}}{{de2 .Value}}&nbsp;{{.Unit}}{{if .Diff}} ({{.Diff}}&nbsp;{{.Unit}}){{end}}{{else}}<span class="text-warning">noch offen</span>{{end}}</td></tr>
       {{end}}
     </tbody>
   </table>
@@ -29,7 +35,7 @@
     <thead><tr><th>Wohnung</th><th>Personen</th><th>Wohnungsgröße</th></tr></thead>
     <tbody>
       {{range .Apartments}}
-      <tr><td>{{.Name}}</td><td>{{index $.Personen .ID}}</td><td>{{de .QM}}&nbsp;m²</td></tr>
+      <tr><td>{{.Name}}</td><td>{{if index $.PersonenErfasst .ID}}{{index $.Personen .ID}}{{else}}<span class="text-warning">noch offen</span>{{end}}</td><td>{{de .QM}}&nbsp;m²</td></tr>
       {{end}}
     </tbody>
   </table>
@@ -99,13 +105,15 @@
   {{end}}
 </div>
 
-{{if .IsLoggedIn}}
+{{if or .IsLoggedIn .IstTeilstand}}
 <div class="btn-row">
-  <a href="{{.Base}}/ablesungen/neu" class="button success">Neue Ablesung</a>
-  <a href="{{.Base}}/ablesungen/{{.Period.ID}}/bearbeiten" class="button secondary">Ablesung korrigieren</a>
+  {{if .IsLoggedIn}}<a href="{{.Base}}/ablesungen/neu" class="button success">Neue Ablesung</a>{{end}}
+  <a href="{{.Base}}/ablesungen/{{.Period.ID}}/bearbeiten" class="button secondary">{{if .IstTeilstand}}Ablesung vervollständigen{{else}}Ablesung korrigieren{{end}}</a>
+  {{if .IsLoggedIn}}
   <form method="post" action="{{.Base}}/ablesungen/{{.Period.ID}}/loeschen" onsubmit="return confirm('Ablesung vom {{deDatum .Period.ReadingDate}} wirklich löschen?');">
     <button type="submit" class="danger">Ablesung löschen</button>
   </form>
+  {{end}}
 </div>
 {{end}}
 {{end}}

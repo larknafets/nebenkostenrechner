@@ -29,7 +29,7 @@
       {{range $i, $row := $group.Rows}}
       <tr>
         {{if eq $i 0}}<td rowspan="{{len $group.Rows}}" style="vertical-align:top; font-weight:600">{{$group.MonatLabel}}</td>{{end}}
-        <td>{{$row.ReadingDate}}</td><td>{{$row.Zeitraum}}</td><td><a href="{{$.Base}}/ablesungen/{{$row.ID}}">Details</a></td>
+        <td>{{$row.ReadingDate}}{{if $row.IstTeilstand}} <span class="badge badge-warning">unvollständig</span>{{end}}</td><td>{{$row.Zeitraum}}</td><td><a href="{{$.Base}}/ablesungen/{{$row.ID}}">Details</a></td>
       </tr>
       {{end}}
       {{end}}
