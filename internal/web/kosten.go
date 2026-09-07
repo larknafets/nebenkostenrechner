@@ -18,6 +18,18 @@ type kosten struct {
 }
 
 func berechneKosten(db *sql.DB, periodID int64) (kosten, error) {
+	// Teilstand (Ticket #129): eine unvollständige Ablesung fließt nicht in
+	// die Berechnung ein - sonst würden fehlende Zählerstände/Preise
+	// stillschweigend als 0 gerechnet und einen falschen Kostenbetrag
+	// zeigen, statt "noch nicht berechenbar".
+	complete, err := store.PeriodComplete(db, periodID)
+	if err != nil {
+		return kosten{}, fmt.Errorf("period complete: %w", err)
+	}
+	if !complete {
+		return kosten{KostenNote: "Diese Ablesung ist ein Teilstand - Kosten werden erst berechnet, sobald sie vollständig ist."}, nil
+	}
+
 	strom, err := calc.Strom(db, periodID)
 	if errors.Is(err, store.ErrNoPreviousPeriod) {
 		return kosten{KostenNote: "Kosten können erst ab der zweiten Ablesung berechnet werden (Verbrauch braucht eine Vorperiode)."}, nil

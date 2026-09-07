@@ -88,6 +88,10 @@ var templateFuncs = template.FuncMap{
 	"deDatum":       formatDatumDE,
 	"deDatumZeit":   formatDatumZeitDE,
 	"kategorieIcon": kategorieIcon,
+	// orZero unwraps a Teilstand-fähiges *float64-Feld (Ticket #129) für
+	// die Anzeige - html/template dereferenziert einen nil-Pointer sonst
+	// mit einem harten Fehler statt einfach 0 zu zeigen.
+	"orZero": store.OrZero,
 	// logikOptions is a zero-arg func rather than a per-page data field - it's
 	// a fixed, package-global list (see fixkosten.go), so the geteilte
 	// "monatsverlauf-wohnung-body"-Partial (monatsverlauf.html) braucht dafür
@@ -228,9 +232,56 @@ type wizardData struct {
 	NoPeriods bool
 }
 
+// openTeilstandID returns the id of the chronologically newest period, if
+// it's a Teilstand - 0/false if there's no period yet or the newest one is
+// already complete. Only the newest period may ever be incomplete (Ticket
+// #129), so this is the one check that decides whether anlegen einer
+// weiteren neuen Ablesung blockiert werden muss, statt eine zweite offene
+// Ablesung zuzulassen.
+func openTeilstandID(db *sql.DB) (id int64, ok bool, err error) {
+	latest, err := store.GetLatestPeriod(db)
+	if err != nil {
+		return 0, false, fmt.Errorf("latest period: %w", err)
+	}
+	if latest == nil {
+		return 0, false, nil
+	}
+	complete, err := store.PeriodComplete(db, latest.ID)
+	if err != nil {
+		return 0, false, fmt.Errorf("period complete: %w", err)
+	}
+	return latest.ID, !complete, nil
+}
+
+// redirectIfOpenTeilstand redirects to the open Teilstand's
+// Vervollständigung and reports whether it did - the shared "block a
+// second open Ablesung" check for both handleWizardForm (GET) and
+// handleCreateAblesung (POST). Callers must return immediately when this
+// reports true (or a non-nil err, which it has already turned into a 500).
+func redirectIfOpenTeilstand(w http.ResponseWriter, r *http.Request, db *sql.DB) (redirected bool) {
+	teilstandID, hasOpenTeilstand, err := openTeilstandID(db)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return true
+	}
+	if !hasOpenTeilstand {
+		return false
+	}
+	http.Redirect(w, r, fmt.Sprintf("%s/ablesungen/%d/bearbeiten", requestBase(r), teilstandID), http.StatusFound)
+	return true
+}
+
 func handleWizardForm(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
+
+		// Teilstand (Ticket #129): solange die neueste Ablesung noch offen
+		// ist, führt "Neue Ablesung" stattdessen zu deren Vervollständigung
+		// - keine zweite offene Ablesung parallel.
+		if redirectIfOpenTeilstand(w, r, db) {
+			return
+		}
+
 		apartments, err := store.Apartments(db)
 		if err != nil {
 			http.Error(w, "apartments: "+err.Error(), http.StatusInternalServerError)
@@ -388,20 +439,39 @@ func (m monatInput) toStored() string {
 	return string(m)
 }
 
+// parseOptionalFloat parses a Teilstand-fähiges Formularfeld (Ticket #129):
+// bewusst leer gelassen (raw == "") ist kein Fehler, nur nil - ein
+// tatsächlich eingetippter, aber ungültiger Wert (z.B. Text statt Zahl)
+// bleibt ein Fehler.
+func parseOptionalFloat(raw string) (*float64, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	v, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		return nil, err
+	}
+	return &v, nil
+}
+
 func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.PeriodInput, error) {
 	readings := make(map[string]float64, len(store.MeterKeys))
 	for _, key := range store.MeterKeys {
-		v, err := strconv.ParseFloat(r.FormValue(key), 64)
+		raw := r.FormValue(key)
+		if raw == "" {
+			continue // Teilstand (Ticket #129): bewusst leer gelassen
+		}
+		v, err := strconv.ParseFloat(raw, 64)
 		if err != nil {
 			return store.PeriodInput{}, fmt.Errorf("invalid value for %s", key)
 		}
 		readings[key] = v
 	}
 
-	strompreis, err1 := strconv.ParseFloat(r.FormValue("strompreis"), 64)
-	frischwasserPreis, err2 := strconv.ParseFloat(r.FormValue("frischwasser_preis"), 64)
-	abwasserPreis, err3 := strconv.ParseFloat(r.FormValue("abwasser_preis"), 64)
-	einspeisungPreis, err4 := strconv.ParseFloat(r.FormValue("einspeisung_preis"), 64)
+	strompreis, err1 := parseOptionalFloat(r.FormValue("strompreis"))
+	frischwasserPreis, err2 := parseOptionalFloat(r.FormValue("frischwasser_preis"))
+	abwasserPreis, err3 := parseOptionalFloat(r.FormValue("abwasser_preis"))
+	einspeisungPreis, err4 := parseOptionalFloat(r.FormValue("einspeisung_preis"))
 	if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
 		return store.PeriodInput{}, fmt.Errorf("invalid price value")
 	}
@@ -414,7 +484,11 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 	personen := make(map[int64]int64, len(apartments))
 	for _, a := range apartments {
 		idStr := strconv.FormatInt(a.ID, 10)
-		p, err := strconv.ParseInt(r.FormValue("personen_"+idStr), 10, 64)
+		raw := r.FormValue("personen_" + idStr)
+		if raw == "" {
+			continue // Teilstand (Ticket #129): bewusst leer gelassen
+		}
+		p, err := strconv.ParseInt(raw, 10, 64)
 		if err != nil {
 			return store.PeriodInput{}, fmt.Errorf("invalid Personenzahl for apartment %s", idStr)
 		}
@@ -424,11 +498,11 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 	return store.PeriodInput{
 		ReadingDate:             r.FormValue("reading_date"),
 		Monat:                   monatInput(r.FormValue("monat")).toStored(),
-		Strompreis:              store.Float64(strompreis),
-		FrischwasserPreis:       store.Float64(frischwasserPreis),
-		AbwasserPreis:           store.Float64(abwasserPreis),
+		Strompreis:              strompreis,
+		FrischwasserPreis:       frischwasserPreis,
+		AbwasserPreis:           abwasserPreis,
 		HeizungWaermeGewichtung: heizungGewichtung,
-		EinspeisungPreis:        store.Float64(einspeisungPreis),
+		EinspeisungPreis:        einspeisungPreis,
 		Readings:                readings,
 		Personen:                personen,
 	}, nil
@@ -439,6 +513,13 @@ func handleCreateAblesung() http.HandlerFunc {
 		db := dbFromContext(r.Context())
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// Teilstand (Ticket #129): siehe redirectIfOpenTeilstand - eine
+		// zweite offene Ablesung darf nicht entstehen, auch nicht über
+		// einen direkten POST (z.B. veraltetes Formular).
+		if redirectIfOpenTeilstand(w, r, db) {
 			return
 		}
 

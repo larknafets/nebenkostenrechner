@@ -38,6 +38,22 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 	if err != nil {
 		return dashboardData{}, fmt.Errorf("all periods: %w", err)
 	}
+	// Teilstand (Ticket #129): nur die neueste Periode kann unvollständig
+	// sein (durchgesetzt beim Anlegen, siehe handleCreateAblesung) - bleibt
+	// hier komplett außen vor (kein Jahressummen-/Monatsverlauf-Eintrag),
+	// bis sie komplettiert ist. Ohne das würde berechneKosten's eigener
+	// Teilstand-KostenNote-Guard weiter unten sonst die ganze Historie
+	// verdecken: die Schleife läuft newest->oldest und bricht beim ersten
+	// KostenNote ab.
+	if len(allPeriods) > 0 {
+		complete, err := store.PeriodComplete(db, allPeriods[0].ID)
+		if err != nil {
+			return dashboardData{}, fmt.Errorf("period complete: %w", err)
+		}
+		if !complete {
+			allPeriods = allPeriods[1:]
+		}
+	}
 	fixkostenEingaben, err := store.AllFixkostenEingaben(db)
 	if err != nil {
 		return dashboardData{}, fmt.Errorf("fixkosten eingaben: %w", err)

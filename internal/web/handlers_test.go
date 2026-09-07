@@ -1441,3 +1441,359 @@ func TestHandleUpdateAblesung_ErrorMapping(t *testing.T) {
 		}
 	})
 }
+
+// --- Ticket #129 (Teilstand): Wizard-Ebene ---
+
+// teilstandFormValues builds a form where readingDate is set but every
+// other field is left empty (Teilstand, Ticket #129) - the counterpart to
+// periodFormValues' fully-filled set.
+func teilstandFormValues(readingDate string) url.Values {
+	v := url.Values{}
+	v.Set("reading_date", readingDate)
+	v.Set("heizung_gewichtung", "0.7") // bleibt immer zwingend
+	return v
+}
+
+// TestParsePeriodInput_TeilstandLeereFelderErlaubt verifies AC2: fields
+// left empty aren't an error - Readings/Personen simply don't get an
+// entry, prices/Monat stay nil/"".
+func TestParsePeriodInput_TeilstandLeereFelderErlaubt(t *testing.T) {
+	apartments := []store.Apartment{{ID: 1, Name: "Wohnung 1"}, {ID: 2, Name: "Wohnung 2"}}
+
+	form := url.Values{
+		"reading_date":       {"2026-11-01"},
+		"strom_gesamt":       {"12345"}, // 1 von 10 Metern ausgefüllt
+		"personen_1":         {"2"},     // 1 von 2 Wohnungen ausgefüllt
+		"heizung_gewichtung": {"0.7"},
+		// monat, strompreis/frischwasser_preis/abwasser_preis/
+		// einspeisung_preis, alle übrigen Meter, personen_2: bewusst leer
+	}
+
+	r, err := http.NewRequest(http.MethodPost, "/ablesungen", strings.NewReader(form.Encode()))
+	if err != nil {
+		t.Fatalf("NewRequest: %v", err)
+	}
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	in, err := parsePeriodInput(r, apartments)
+	if err != nil {
+		t.Fatalf("parsePeriodInput mit Teilstand-Formular: %v", err)
+	}
+	if in.Monat != "" {
+		t.Errorf("Monat = %q, want \"\" (leer gelassen)", in.Monat)
+	}
+	if in.Strompreis != nil || in.FrischwasserPreis != nil || in.AbwasserPreis != nil || in.EinspeisungPreis != nil {
+		t.Errorf("Preise = %v/%v/%v/%v, want alle nil", in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.EinspeisungPreis)
+	}
+	if len(in.Readings) != 1 || in.Readings["strom_gesamt"] != 12345 {
+		t.Errorf("Readings = %v, want nur {strom_gesamt: 12345}", in.Readings)
+	}
+	if len(in.Personen) != 1 || in.Personen[1] != 2 {
+		t.Errorf("Personen = %v, want nur {1: 2}", in.Personen)
+	}
+}
+
+// TestParsePeriodInput_UngueltigerWertBleibtFehler verifies AC2's other
+// half: a field that was actually typed into but doesn't parse (not just
+// left empty) must still be a hard error, even while every other field is
+// legitimately empty.
+func TestParsePeriodInput_UngueltigerWertBleibtFehler(t *testing.T) {
+	apartments := []store.Apartment{{ID: 1, Name: "Wohnung 1"}, {ID: 2, Name: "Wohnung 2"}}
+
+	cases := []struct {
+		name string
+		form url.Values
+	}{
+		{"ungueltiger Zaehlerstand", url.Values{"reading_date": {"2026-11-01"}, "heizung_gewichtung": {"0.7"}, "strom_gesamt": {"abc"}}},
+		{"ungueltiger Preis", url.Values{"reading_date": {"2026-11-01"}, "heizung_gewichtung": {"0.7"}, "strompreis": {"abc"}}},
+		{"ungueltige Personenzahl", url.Values{"reading_date": {"2026-11-01"}, "heizung_gewichtung": {"0.7"}, "personen_1": {"abc"}}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			r, err := http.NewRequest(http.MethodPost, "/ablesungen", strings.NewReader(c.form.Encode()))
+			if err != nil {
+				t.Fatalf("NewRequest: %v", err)
+			}
+			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+			if _, err := parsePeriodInput(r, apartments); err == nil {
+				t.Error("parsePeriodInput: want Fehler für tatsächlich ungültigen Wert, got nil")
+			}
+		})
+	}
+}
+
+// TestHandleCreateAblesung_TeilstandPersistiert verifies AC3: a Teilstand
+// submission is created and correctly stored as incomplete.
+func TestHandleCreateAblesung_TeilstandPersistiert(t *testing.T) {
+	db := openTestDB(t)
+
+	form := teilstandFormValues("2026-11-01")
+	req := httptest.NewRequest(http.MethodPost, "/ablesungen", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	w := httptest.NewRecorder()
+	handleCreateAblesung()(w, requestWithDB(req, db))
+
+	if w.Code != http.StatusFound {
+		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())
+	}
+
+	all, err := store.AllPeriods(db)
+	if err != nil {
+		t.Fatalf("AllPeriods: %v", err)
+	}
+	if len(all) != 1 {
+		t.Fatalf("len(AllPeriods) = %d, want 1", len(all))
+	}
+	complete, err := store.PeriodComplete(db, all[0].ID)
+	if err != nil {
+		t.Fatalf("PeriodComplete: %v", err)
+	}
+	if complete {
+		t.Error("PeriodComplete = true, want false (Teilstand)")
+	}
+}
+
+// TestHandleUpdateAblesung_Teilstand_Vervollstaendigen verifies AC3's
+// other half - "POST /ablesungen/{id} (Bearbeiten) ... persistieren einen
+// Teilstand korrekt über den Store": vervollständigen über den bestehenden
+// Bearbeiten-Handler funktioniert genauso wie das erstmalige Anlegen -
+// vorher gesetzte Felder bleiben (die COALESCE-Logik aus Ticket #128),
+// neu mitgegebene werden übernommen, und am Ende ist die Ablesung
+// vollständig.
+func TestHandleUpdateAblesung_Teilstand_Vervollstaendigen(t *testing.T) {
+	db := openTestDB(t)
+
+	id, err := store.CreatePeriod(db, store.PeriodInput{
+		ReadingDate:             "2026-11-01",
+		Strompreis:              store.Float64(0.22),
+		HeizungWaermeGewichtung: 0.7,
+		Readings:                map[string]float64{"strom_gesamt": 100},
+	})
+	if err != nil {
+		t.Fatalf("CreatePeriod (Teilstand seed): %v", err)
+	}
+
+	// Vervollständigen: Monat + restliche Felder nachtragen, Strompreis
+	// diesmal leer gelassen (muss den schon gesetzten Wert nicht löschen).
+	form := url.Values{}
+	form.Set("reading_date", "2026-11-01")
+	form.Set("monat", "2026-11")
+	form.Set("heizung_gewichtung", "0.7")
+	form.Set("frischwasser_preis", "1.46")
+	form.Set("abwasser_preis", "4.87")
+	form.Set("einspeisung_preis", "0.08")
+	form.Set("personen_1", "2")
+	form.Set("personen_2", "1")
+	for _, key := range store.MeterKeys {
+		if key == "strom_gesamt" {
+			continue // schon gesetzt, bleibt unangetastet
+		}
+		form.Set(key, "0")
+	}
+
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/ablesungen/%d", id), strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetPathValue("id", strconv.FormatInt(id, 10))
+
+	w := httptest.NewRecorder()
+	handleUpdateAblesung()(w, requestWithDB(req, db))
+
+	if w.Code != http.StatusFound {
+		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())
+	}
+
+	complete, err := store.PeriodComplete(db, id)
+	if err != nil {
+		t.Fatalf("PeriodComplete: %v", err)
+	}
+	if !complete {
+		t.Error("PeriodComplete = false, want true (vollständig vervollständigt)")
+	}
+
+	got, err := store.GetPeriodDetails(db, id)
+	if err != nil {
+		t.Fatalf("GetPeriodDetails: %v", err)
+	}
+	if store.OrZero(got.Strompreis) != 0.22 {
+		t.Errorf("Strompreis = %v, want 0.22 (aus dem Teilstand erhalten, nicht überschrieben)", store.OrZero(got.Strompreis))
+	}
+	if got.Readings["strom_gesamt"] != 100 {
+		t.Errorf("Readings[strom_gesamt] = %v, want 100 (aus dem Teilstand erhalten)", got.Readings["strom_gesamt"])
+	}
+}
+
+// TestHandleCreateAblesung_BlocksWhileTeilstandOpen verifies AC4 for the
+// POST path: a second creation attempt while the newest Ablesung is still
+// a Teilstand redirects to its Vervollständigung instead of creating a
+// second open Ablesung.
+func TestHandleCreateAblesung_BlocksWhileTeilstandOpen(t *testing.T) {
+	db := openTestDB(t)
+
+	teilstandID, err := store.CreatePeriod(db, store.PeriodInput{
+		ReadingDate:             "2026-11-01",
+		HeizungWaermeGewichtung: 0.7,
+	})
+	if err != nil {
+		t.Fatalf("CreatePeriod (Teilstand seed): %v", err)
+	}
+
+	form := periodFormValues("2026-12-01", "2026-12")
+	req := httptest.NewRequest(http.MethodPost, "/ablesungen", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	w := httptest.NewRecorder()
+	handleCreateAblesung()(w, requestWithDB(req, db))
+
+	if w.Code != http.StatusFound {
+		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())
+	}
+	wantLoc := fmt.Sprintf("/ablesungen/%d/bearbeiten", teilstandID)
+	if loc := w.Header().Get("Location"); loc != wantLoc {
+		t.Errorf("Location = %q, want %q", loc, wantLoc)
+	}
+
+	all, err := store.AllPeriods(db)
+	if err != nil {
+		t.Fatalf("AllPeriods: %v", err)
+	}
+	if len(all) != 1 {
+		t.Errorf("len(AllPeriods) = %d, want 1 (keine zweite Ablesung angelegt)", len(all))
+	}
+}
+
+// TestHandleWizardForm_RedirectsToOpenTeilstand verifies AC4 for the GET
+// path: opening the "neu"-Formular while the newest Ablesung is still a
+// Teilstand redirects to its Vervollständigung instead of a blank form.
+func TestHandleWizardForm_RedirectsToOpenTeilstand(t *testing.T) {
+	db := openTestDB(t)
+	a := newAuth("", nil)
+
+	teilstandID, err := store.CreatePeriod(db, store.PeriodInput{
+		ReadingDate:             "2026-11-01",
+		HeizungWaermeGewichtung: 0.7,
+	})
+	if err != nil {
+		t.Fatalf("CreatePeriod (Teilstand seed): %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/ablesungen/neu", nil)
+	w := httptest.NewRecorder()
+	handleWizardForm(a)(w, requestWithDB(req, db))
+
+	if w.Code != http.StatusFound {
+		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())
+	}
+	wantLoc := fmt.Sprintf("/ablesungen/%d/bearbeiten", teilstandID)
+	if loc := w.Header().Get("Location"); loc != wantLoc {
+		t.Errorf("Location = %q, want %q", loc, wantLoc)
+	}
+}
+
+// TestHandleWizardForm_NoRedirectWhenComplete verifies the redirect only
+// fires for an open Teilstand - a complete newest Ablesung still serves
+// the normal, blank "neu"-Formular.
+func TestHandleWizardForm_NoRedirectWhenComplete(t *testing.T) {
+	db := openTestDB(t)
+	a := newAuth("", nil)
+
+	if _, err := store.CreatePeriod(db, seedPeriodInputAt("2026-11-01")); err != nil {
+		t.Fatalf("CreatePeriod: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/ablesungen/neu", nil)
+	w := httptest.NewRecorder()
+	handleWizardForm(a)(w, requestWithDB(req, db))
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusOK, w.Body.String())
+	}
+}
+
+// TestBerechneKosten_TeilstandReturnsKostenNote verifies berechneKosten
+// doesn't compute (wrong) numbers off a Teilstand's missing values -
+// KostenNote explains why instead, the same mechanism already used for
+// "no Vorperiode yet".
+func TestBerechneKosten_TeilstandReturnsKostenNote(t *testing.T) {
+	db := openTestDB(t)
+
+	id, err := store.CreatePeriod(db, store.PeriodInput{
+		ReadingDate:             "2026-11-01",
+		HeizungWaermeGewichtung: 0.7,
+	})
+	if err != nil {
+		t.Fatalf("CreatePeriod: %v", err)
+	}
+
+	k, err := berechneKosten(db, id)
+	if err != nil {
+		t.Fatalf("berechneKosten: %v", err)
+	}
+	if k.KostenNote == "" {
+		t.Error("KostenNote ist leer, want einen Hinweis auf den Teilstand")
+	}
+	if k.Strom != nil || k.Wasser != nil || k.Heizung != nil || k.Einspeisung != nil {
+		t.Error("Strom/Wasser/Heizung/Einspeisung sind gesetzt, want alle nil (keine Berechnung für einen Teilstand)")
+	}
+}
+
+// TestLoadDashboardData_ExcludesTeilstand verifies AC5: a Teilstand as the
+// newest Ablesung must not crash or corrupt the dashboard - it's simply
+// left out, older complete history keeps showing normally.
+func TestLoadDashboardData_ExcludesTeilstand(t *testing.T) {
+	db := openTestDB(t)
+
+	// 2 vollständige Ablesungen, da Verbrauch/Kosten erst ab der zweiten
+	// berechenbar sind (braucht eine Vorperiode) - unabhängig vom Teilstand.
+	if _, err := store.CreatePeriod(db, seedPeriodInputAt("2026-08-01")); err != nil {
+		t.Fatalf("CreatePeriod (aelteste, vollstaendige Ablesung): %v", err)
+	}
+	if _, err := store.CreatePeriod(db, seedPeriodInputAt("2026-09-01")); err != nil {
+		t.Fatalf("CreatePeriod (2. vollstaendige Ablesung): %v", err)
+	}
+	if _, err := store.CreatePeriod(db, store.PeriodInput{
+		ReadingDate:             "2026-11-01",
+		HeizungWaermeGewichtung: 0.7,
+	}); err != nil {
+		t.Fatalf("CreatePeriod (Teilstand): %v", err)
+	}
+
+	dd, err := loadDashboardData(db)
+	if err != nil {
+		t.Fatalf("loadDashboardData: %v", err)
+	}
+	if !dd.HasAnyData {
+		t.Fatal("HasAnyData = false, want true (die 2 vollstaendigen Ablesungen zaehlen)")
+	}
+	if len(dd.PeriodenKosten) != 1 {
+		t.Fatalf("len(PeriodenKosten) = %d, want 1 (nur die 2. vollstaendige mit Vorperiode, der Teilstand bleibt aussen vor)", len(dd.PeriodenKosten))
+	}
+	if dd.PeriodenKosten[0].ReadingDate != "2026-09-01" {
+		t.Errorf("PeriodenKosten[0].ReadingDate = %q, want 2026-09-01 (nicht der Teilstand vom 2026-11-01)", dd.PeriodenKosten[0].ReadingDate)
+	}
+}
+
+// TestLoadDashboardData_NurTeilstand_HasAnyDataFalse covers the edge case
+// where the only Ablesung that exists at all is the (newest, and
+// therefore only) Teilstand - the dashboard must fall back to its
+// "noch keine Daten" state, not a HasAnyData=true page with an empty
+// PeriodenKosten list.
+func TestLoadDashboardData_NurTeilstand_HasAnyDataFalse(t *testing.T) {
+	db := openTestDB(t)
+
+	if _, err := store.CreatePeriod(db, store.PeriodInput{
+		ReadingDate:             "2026-11-01",
+		HeizungWaermeGewichtung: 0.7,
+	}); err != nil {
+		t.Fatalf("CreatePeriod (Teilstand): %v", err)
+	}
+
+	dd, err := loadDashboardData(db)
+	if err != nil {
+		t.Fatalf("loadDashboardData: %v", err)
+	}
+	if dd.HasAnyData {
+		t.Error("HasAnyData = true, want false (einziger Datensatz ist ein Teilstand)")
+	}
+}

@@ -14,7 +14,7 @@
 <div class="panel">
   <p><strong>Ablesedatum:</strong> {{deDatum .Period.ReadingDate}}</p>
   <p><strong>Zeitraum:</strong> {{if .ZeitraumStart}}{{deDatum .ZeitraumStart}} – {{deDatum .Period.ReadingDate}}{{else}}bis {{deDatum .Period.ReadingDate}} (keine Vorperiode){{end}}</p>
-  <p><strong>Preise:</strong> Strom {{deEUR .Period.Strompreis}}&nbsp;EUR/kWh · Frischwasser {{deEUR .Period.FrischwasserPreis}}&nbsp;EUR/m³ · Abwasser {{deEUR .Period.AbwasserPreis}}&nbsp;EUR/m³ · Einspeisung {{deEUR .Period.EinspeisungPreis}}&nbsp;EUR/kWh</p>
+  <p><strong>Preise:</strong> Strom {{deEUR (orZero .Period.Strompreis)}}&nbsp;EUR/kWh · Frischwasser {{deEUR (orZero .Period.FrischwasserPreis)}}&nbsp;EUR/m³ · Abwasser {{deEUR (orZero .Period.AbwasserPreis)}}&nbsp;EUR/m³ · Einspeisung {{deEUR (orZero .Period.EinspeisungPreis)}}&nbsp;EUR/kWh</p>
 
   <table class="letzte">
     <thead><tr><th>Zähler</th><th>Stand</th></tr></thead>
