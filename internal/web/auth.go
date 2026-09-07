@@ -289,6 +289,12 @@ func handleLogin(secret string, demoDB *sql.DB) http.HandlerFunc {
 				http.Error(w, "demo reset: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			// Eine noch gültige echte Session-Cookie darf nicht liegen
+			// bleiben - isDemoSession wird zwar vor der echten Session
+			// geprüft (isLoggedIn/withDB), aber ein sauberer Login-Wechsel
+			// räumt beide Seiten auf, statt sich allein auf diese Prüf-
+			// reihenfolge zu verlassen.
+			clearSessionCookie(w)
 			setDemoSessionCookie(w)
 			http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
 			return
@@ -301,6 +307,9 @@ func handleLogin(secret string, demoDB *sql.DB) http.HandlerFunc {
 			redirectToLoginOverlay(w, r, r.FormValue("next"), true)
 			return
 		}
+		// Symmetrisch zum Demo-Zweig oben: eine noch gültige Demo-Session-
+		// Cookie darf einen frischen echten Login nicht überstimmen.
+		clearDemoSessionCookie(w)
 		setSessionCookie(w, secret)
 		http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
 	}

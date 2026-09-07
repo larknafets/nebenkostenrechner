@@ -95,9 +95,11 @@ func main() {
 	// demoDB ist eine komplett separate Datenbank für den Demo-Modus (Issue
 	// #120) - entsteht beim allerersten Start automatisch (store.Open legt
 	// Schema+Seed an wie bei db) und wird, falls noch leer, sofort mit dem
-	// 39-Monats-Testdatensatz befüllt. Ein erneutes Befüllen bei jedem Start
-	// würde bestehende Demo-Änderungen verwerfen - das periodische Zurück-
-	// setzen bei jedem Demo-Login ist Ticket #121, hier nicht implementiert.
+	// 39-Monats-Testdatensatz befüllt. Deckt nur den allerersten Start ab,
+	// bevor sich je jemand als "demo" angemeldet hat - jeder Demo-Login
+	// selbst setzt die Demo-DB ohnehin unconditionally zurück (Issue #121,
+	// store.ResetDemoData in handleLogin), diese Startup-Befüllung ist also
+	// nur der Fallback für den Zeitraum davor.
 	demoDB, err := store.Open(demoDBPath(dbPath))
 	if err != nil {
 		log.Fatalf("open demo store: %v", err)

@@ -177,6 +177,52 @@ func TestDemoLogin_ResetsPreviousDemoSession(t *testing.T) {
 	}
 }
 
+// findCookie returns the cookie with the given name among cookies, or nil.
+func findCookie(cookies []*http.Cookie, name string) *http.Cookie {
+	for _, c := range cookies {
+		if c.Name == name {
+			return c
+		}
+	}
+	return nil
+}
+
+// TestLogin_ClearsOtherSessionCookie covers a gap surfaced by the whole-
+// feature review of #118: handleLogin only ever set the cookie for the kind
+// of session it just granted, never clearing the other one - a stale
+// nk_demo_session cookie (30 Tage TTL) would outlive a subsequent echten
+// Login und (da isDemoSession vor dem echten Cookie geprüft wird) weiterhin
+// Demo-Daten ausliefern, trotz frischem echten Login. Jeder erfolgreiche
+// Login räumt jetzt symmetrisch die jeweils andere Session-Cookie ab, statt
+// sich allein auf die Prüfreihenfolge zu verlassen.
+func TestLogin_ClearsOtherSessionCookie(t *testing.T) {
+	t.Setenv("LOGIN_PASSWORD", "geheim")
+	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
+
+	demoCookies := demoLoginCookies(t, mux, demoPassword)
+	if c := findCookie(demoCookies, sessionCookieName); c == nil || c.Value != "" {
+		t.Errorf("Demo-Login: %s nicht geräumt (Value=%q), want geräumt (Value == \"\")", sessionCookieName, valueOrMissing(c))
+	}
+	if c := findCookie(demoCookies, demoSessionCookieName); c == nil || c.Value == "" {
+		t.Errorf("Demo-Login: %s nicht gesetzt", demoSessionCookieName)
+	}
+
+	realCookies := demoLoginCookies(t, mux, "geheim")
+	if c := findCookie(realCookies, demoSessionCookieName); c == nil || c.Value != "" {
+		t.Errorf("echter Login: %s nicht geräumt (Value=%q), want geräumt (Value == \"\")", demoSessionCookieName, valueOrMissing(c))
+	}
+	if c := findCookie(realCookies, sessionCookieName); c == nil || c.Value == "" {
+		t.Errorf("echter Login: %s nicht gesetzt", sessionCookieName)
+	}
+}
+
+func valueOrMissing(c *http.Cookie) string {
+	if c == nil {
+		return "<cookie fehlt ganz>"
+	}
+	return c.Value
+}
+
 // TestDemoMode_IndependentOfRealLogin covers the spec's letzten Punkt: ein
 // regulärer Login (echtes LOGIN_PASSWORD) bleibt unverändert auf die echte
 // Datenbank bezogen, unabhängig vom Demo-Modus.
