@@ -28,8 +28,10 @@ var routeMatrix = []struct {
 }{
 	{"GET", "/ablesungen", false},
 	{"GET", "/ablesungen/export.csv", true},
-	{"GET", "/ablesungen/neu", true},
-	{"POST", "/ablesungen", true},
+	// /ablesungen/neu und POST /ablesungen bewusst ungated - eine neue
+	// Ablesung anlegen ist auch nicht eingeloggt möglich.
+	{"GET", "/ablesungen/neu", false},
+	{"POST", "/ablesungen", false},
 	{"POST", "/ablesungen/import", true},
 	{"GET", "/ablesungen/1", false},
 	{"GET", "/ablesungen/1/bearbeiten", true},

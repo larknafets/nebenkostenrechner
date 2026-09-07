@@ -143,10 +143,16 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 		// Entities neben den Wohnung-Tabs, analog zum Prototyp
 		// (docs/prototypes/fixkosten-prototype.html): eigene Jahressumme +
 		// Monatsverlauf, kein Fixkosten-Anteil, keine Wohnungs-Zuteilung.
-		wallboxCard := buildSimpleJahresCard(wallboxSeries, jahr, periodenKosten)
-		wallboxVerlauf := buildSimpleVerlauf(wallboxSeries, periodenKosten)
-		pvCard := buildSimpleJahresCard(pvSeries, jahr, periodenKosten)
-		pvVerlauf := buildSimpleVerlauf(pvSeries, periodenKosten)
+		// Nicht eingeloggt: bleiben ganz außen vor, wie Wohnung 1 oben -
+		// dieselbe "nur Wohnung 2 sichtbar"-Regel gilt fürs ganze Haus.
+		var wallboxCard, pvCard dashboardSimpleCard
+		var wallboxVerlauf, pvVerlauf dashboardSimpleSpalte
+		if nav.IsLoggedIn {
+			wallboxCard = buildSimpleJahresCard(wallboxSeries, jahr, periodenKosten)
+			wallboxVerlauf = buildSimpleVerlauf(wallboxSeries, periodenKosten)
+			pvCard = buildSimpleJahresCard(pvSeries, jahr, periodenKosten)
+			pvVerlauf = buildSimpleVerlauf(pvSeries, periodenKosten)
+		}
 
 		data := struct {
 			navData

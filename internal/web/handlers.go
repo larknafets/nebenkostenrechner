@@ -121,10 +121,12 @@ func parseFormFloat(r *http.Request, name, fieldLabel, apartmentID string) (floa
 
 // NewMux wires up the wizard and read routes. Every mutating or create-only
 // route is wrapped in a.RequireLogin (Ticket #112's Durchsetzungs-Matrix) -
-// harmless no-ops when secret == "" (no Login-Kennwort configured). Every
-// route that touches the DB is wrapped in withDB (Ticket #119/#120), which
-// picks db or demoDB per request depending on whether the visitor carries a
-// Demo-Session-Cookie.
+// harmless no-ops when secret == "" (no Login-Kennwort configured) - mit
+// einer bewussten Ausnahme: GET /ablesungen/neu und POST /ablesungen sind
+// ungated, eine neue Ablesung anlegen ist auch nicht eingeloggt möglich.
+// Every route that touches the DB is wrapped in withDB (Ticket #119/#120),
+// which picks db or demoDB per request depending on whether the visitor
+// carries a Demo-Session-Cookie.
 func NewMux(db, demoDB *sql.DB, version, buildDate string) *http.ServeMux {
 	a := newAuth(resolveLoginPassword(), demoDB)
 	mux := http.NewServeMux()
@@ -133,8 +135,8 @@ func NewMux(db, demoDB *sql.DB, version, buildDate string) *http.ServeMux {
 	mux.HandleFunc("POST /logout", a.HandleLogout())
 	mux.HandleFunc("GET /ablesungen", withDB(db, demoDB, handleAblesungenListe(a)))
 	mux.HandleFunc("GET /ablesungen/export.csv", withDB(db, demoDB, a.RequireLogin(handleExportCSV())))
-	mux.HandleFunc("GET /ablesungen/neu", withDB(db, demoDB, a.RequireLogin(handleWizardForm(a))))
-	mux.HandleFunc("POST /ablesungen", withDB(db, demoDB, a.RequireLogin(handleCreateAblesung())))
+	mux.HandleFunc("GET /ablesungen/neu", withDB(db, demoDB, handleWizardForm(a)))
+	mux.HandleFunc("POST /ablesungen", withDB(db, demoDB, handleCreateAblesung()))
 	mux.HandleFunc("POST /ablesungen/import", withDB(db, demoDB, a.RequireLogin(handleImportCSV())))
 	mux.HandleFunc("GET /ablesungen/{id}", withDB(db, demoDB, handleAblesungDetail(a)))
 	mux.HandleFunc("GET /ablesungen/{id}/bearbeiten", withDB(db, demoDB, a.RequireLogin(handleEditWizardForm(a))))
