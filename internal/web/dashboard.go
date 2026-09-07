@@ -92,15 +92,25 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			return
 		}
 		nav := a.NavData(r)
+		latestVersion, updateAvailable := checkForUpdate(version)
 
 		if !dd.HasAnyData {
 			data := struct {
 				navData
-				Aktuell    string
-				HasAnyData bool
-				Version    string
-				BuildDate  string
-			}{navData: nav, Aktuell: "dashboard", Version: version, BuildDate: buildDate}
+				Aktuell         string
+				HasAnyData      bool
+				Version         string
+				BuildDate       string
+				UpdateAvailable bool
+				LatestVersion   string
+			}{
+				navData:         nav,
+				Aktuell:         "dashboard",
+				Version:         version,
+				BuildDate:       buildDate,
+				UpdateAvailable: updateAvailable,
+				LatestVersion:   latestVersion,
+			}
 			if err := dashboardTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
@@ -137,8 +147,6 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 		wallboxVerlauf := buildSimpleVerlauf(wallboxSeries, periodenKosten)
 		pvCard := buildSimpleJahresCard(pvSeries, jahr, periodenKosten)
 		pvVerlauf := buildSimpleVerlauf(pvSeries, periodenKosten)
-
-		latestVersion, updateAvailable := checkForUpdate(version)
 
 		data := struct {
 			navData
