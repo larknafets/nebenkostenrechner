@@ -213,9 +213,11 @@ Danach erreichbar unter `http://localhost:8080`, Health-Check unter `/healthz`. 
 
 ### Demo-Modus
 
-Login mit dem Kennwort `demo` funktioniert immer, unabhängig davon ob `LOGIN_PASSWORD` gesetzt ist - er meldet in einer komplett separaten, eigenen Datenbank (`demo.db`, im selben Verzeichnis wie `DB_PATH`) an, gefüllt mit 39 Monaten realitätsnahen Testdaten. Änderungen im Demo-Modus (Ablesungen, Fixkosten-Eingaben, Stammdaten) landen ausschließlich in dieser Demo-Datenbank, nie in den echten Daten. Jeder erneute Demo-Login setzt die Demo-Datenbank vollständig auf ihren frischen Ausgangszustand zurück - keine Isolation zwischen gleichzeitigen Demo-Besuchern, ein bewusst akzeptierter Kompromiss für eine einfache, öffentlich vorführbare Demo.
+Login mit dem Kennwort `demo` funktioniert immer, unabhängig davon ob `LOGIN_PASSWORD` gesetzt ist - er meldet in einer komplett separaten, eigenen Datenbank (`demo.db`, im selben Verzeichnis wie `DB_PATH`) an, gefüllt mit 39 Monaten realitätsnahen Testdaten. Änderungen im Demo-Modus (Ablesungen, Fixkosten-Eingaben, Stammdaten) landen ausschließlich in dieser Demo-Datenbank, nie in den echten Daten. Jeder erneute Demo-Login setzt die Demo-Datenbank vollständig auf ihren frischen Ausgangszustand zurück - keine Isolation zwischen gleichzeitigen Demo-Besuchern.
 
 Ein manueller Reset (z. B. nach einem Bug) ist ohne eigene Route möglich: `demo.db` löschen und den Server neu starten - die Datei entsteht beim nächsten Start automatisch neu, wieder mit einem frischen 39-Monats-Datensatz.
+
+> **Beim lokalen Testen:** das Browser-Cookie ist an den Host gebunden, nicht an den Port - ein Browser, der bereits als `demo` angemeldet ist, schickt dieses Cookie automatisch auch an eine andere lokale Instanz unter `localhost` (z. B. `go run` auf einem Port, ein Docker-Container auf einem anderen). Da beide Instanzen mit demselben fest verdrahteten Cookie-Secret signieren, wird das Cookie dort ebenfalls als gültige Demo-Session akzeptiert. Für einen sauberen, nicht angemeldeten Zustand des Cookies für `localhost` löschen oder ein privates Fenster verwenden.
 
 ### Home Assistant Add-on
 
