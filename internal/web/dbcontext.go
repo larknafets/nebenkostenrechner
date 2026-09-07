@@ -14,18 +14,25 @@ import (
 // dbFromContext instead.
 type dbContextKey struct{}
 
+// selectDB picks demoDB when r carries a valid Demo-Session-Cookie (Issue
+// #120), db otherwise - the actual Demo/Echt-Entscheidung, pulled out of
+// withDB (Architecture Review nach dem Demo-Modus #118, Kandidat 4) so
+// sie sich direkt mit einem bloßen *http.Request testen lässt, ohne einen
+// Mux, echten Handler oder echte SQLite-Dateien zu brauchen.
+func selectDB(r *http.Request, db, demoDB *sql.DB) *sql.DB {
+	if isDemoSession(r) {
+		return demoDB
+	}
+	return db
+}
+
 // withDB wraps next so it (and any helper it calls with r in scope) can read
-// the request's *sql.DB via dbFromContext(r.Context()). Picks demoDB when r
-// carries a valid Demo-Session-Cookie (Issue #120), db otherwise - the only
-// place in the app that branches Demo/Echt-Datenbank; every downstream
-// handler just reads whichever one it got.
+// the request's *sql.DB via dbFromContext(r.Context()) - the only place in
+// the app that branches Demo/Echt-Datenbank (via selectDB); every
+// downstream handler just reads whichever one it got.
 func withDB(db, demoDB *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		chosen := db
-		if isDemoSession(r) {
-			chosen = demoDB
-		}
-		next(w, requestWithDB(r, chosen))
+		next(w, requestWithDB(r, selectDB(r, db, demoDB)))
 	}
 }
 
