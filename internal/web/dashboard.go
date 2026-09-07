@@ -92,16 +92,19 @@ func handleDashboard(version, buildDate, secret string) http.HandlerFunc {
 			return
 		}
 		loggedIn := isLoggedIn(r, secret)
+		isDemo, showLoginEntry := demoNavFlags(r, secret)
 
 		if !dd.HasAnyData {
 			data := struct {
-				Base       string
-				Aktuell    string
-				IsLoggedIn bool
-				HasAnyData bool
-				Version    string
-				BuildDate  string
-			}{Base: requestBase(r), Aktuell: "dashboard", IsLoggedIn: loggedIn, Version: version, BuildDate: buildDate}
+				Base           string
+				Aktuell        string
+				IsLoggedIn     bool
+				IsDemoSession  bool
+				ShowLoginEntry bool
+				HasAnyData     bool
+				Version        string
+				BuildDate      string
+			}{Base: requestBase(r), Aktuell: "dashboard", IsLoggedIn: loggedIn, IsDemoSession: isDemo, ShowLoginEntry: showLoginEntry, Version: version, BuildDate: buildDate}
 			if err := dashboardTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
@@ -145,6 +148,8 @@ func handleDashboard(version, buildDate, secret string) http.HandlerFunc {
 			Base               string
 			Aktuell            string
 			IsLoggedIn         bool
+			IsDemoSession      bool
+			ShowLoginEntry     bool
 			HasAnyData         bool
 			AnzeigeJahr        int
 			AnzeigeJahrLaufend bool
@@ -162,6 +167,8 @@ func handleDashboard(version, buildDate, secret string) http.HandlerFunc {
 			Base:               requestBase(r),
 			Aktuell:            "dashboard",
 			IsLoggedIn:         loggedIn,
+			IsDemoSession:      isDemo,
+			ShowLoginEntry:     showLoginEntry,
 			HasAnyData:         true,
 			AnzeigeJahr:        jahr,
 			AnzeigeJahrLaufend: jahr == time.Now().Year(),

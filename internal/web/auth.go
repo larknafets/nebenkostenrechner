@@ -178,6 +178,23 @@ func isDemoSession(r *http.Request) bool {
 	return verifySession(demoSessionSecret, c.Value)
 }
 
+// demoNavFlags computes the beiden Demo-Modus-bezogenen Nav-Fakten, die
+// jede Seite über die gemeinsame "nav"-Partial braucht (Issue #122):
+// isDemo (steuert den Demo-Banner und, zusammen mit IsLoggedIn, den
+// "Abmelden"-Link) und showLoginEntry (steuert die Sichtbarkeit des
+// "Anmelden"-Einstiegspunkts ins Login-Overlay). Ein Einstiegspunkt wird
+// gezeigt, sobald der Besucher weder in einer Demo-Session ist noch mit
+// einem echten, konfigurierten LOGIN_PASSWORD eingeloggt ist - deckt sowohl
+// den klassischen "nicht eingeloggt"-Fall (secret gesetzt, kein gültiges
+// Cookie) als auch den neuen Fall secret == "" ab, wo isLoggedIn zwar
+// unconditionally true ist (alles offen), es aber bislang keinen
+// sichtbaren Weg zum Demo-Login gab.
+func demoNavFlags(r *http.Request, secret string) (isDemo, showLoginEntry bool) {
+	isDemo = isDemoSession(r)
+	realLogin := secret != "" && !isDemo && isLoggedIn(r, secret)
+	return isDemo, !isDemo && !realLogin
+}
+
 // requireLogin gates a mutating or create-only route behind the
 // Login-Kennwort (Ticket #112's Durchsetzungs-Matrix): with no Kennwort
 // configured every route stays open (isLoggedIn always true), otherwise an

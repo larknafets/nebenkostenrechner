@@ -79,7 +79,8 @@
      crumbBack, where every page showed the same 4 links regardless of
      where you were). .Aktuell is one of "dashboard"/"ablesungen"/
      "fixkosten"/"stammdaten"/"berechnungslogik", set by each handler. */}}
-{{define "nav"}}<p class="muted">{{if eq .Aktuell "dashboard"}}<strong>Dashboard</strong>{{else}}<a href="{{.Base}}/dashboard">Dashboard</a>{{end}} · {{if eq .Aktuell "ablesungen"}}<strong>Ablesungen</strong>{{else if eq .Aktuell "ablesungen-detail"}}<a href="{{.Base}}/ablesungen"><strong>Ablesungen</strong></a>{{else}}<a href="{{.Base}}/ablesungen">Ablesungen</a>{{end}} · {{if eq .Aktuell "fixkosten"}}<strong>Fixkosten</strong>{{else if eq .Aktuell "fixkosten-detail"}}<a href="{{.Base}}/fixkosten"><strong>Fixkosten</strong></a>{{else}}<a href="{{.Base}}/fixkosten">Fixkosten</a>{{end}} · {{if eq .Aktuell "stammdaten"}}<strong>Stammdaten</strong>{{else}}<a href="{{.Base}}/stammdaten">Stammdaten</a>{{end}} · {{if eq .Aktuell "berechnungslogik"}}<strong>Wie wird gerechnet?</strong>{{else}}<a href="{{.Base}}/berechnungslogik">Wie wird gerechnet?</a>{{end}} · {{if .IsLoggedIn}}<a href="#" id="logout-link">Logout</a>{{else}}<a href="#" id="login-open">Login</a>{{end}}</p>
+{{define "nav"}}{{if .IsDemoSession}}<div class="demo-banner">Demo-Modus: geteilte Vorführumgebung mit Testdaten - Änderungen wirken sich nie auf echte Daten aus.</div>{{end}}
+<p class="muted">{{if eq .Aktuell "dashboard"}}<strong>Dashboard</strong>{{else}}<a href="{{.Base}}/dashboard">Dashboard</a>{{end}} · {{if eq .Aktuell "ablesungen"}}<strong>Ablesungen</strong>{{else if eq .Aktuell "ablesungen-detail"}}<a href="{{.Base}}/ablesungen"><strong>Ablesungen</strong></a>{{else}}<a href="{{.Base}}/ablesungen">Ablesungen</a>{{end}} · {{if eq .Aktuell "fixkosten"}}<strong>Fixkosten</strong>{{else if eq .Aktuell "fixkosten-detail"}}<a href="{{.Base}}/fixkosten"><strong>Fixkosten</strong></a>{{else}}<a href="{{.Base}}/fixkosten">Fixkosten</a>{{end}} · {{if eq .Aktuell "stammdaten"}}<strong>Stammdaten</strong>{{else}}<a href="{{.Base}}/stammdaten">Stammdaten</a>{{end}} · {{if eq .Aktuell "berechnungslogik"}}<strong>Wie wird gerechnet?</strong>{{else}}<a href="{{.Base}}/berechnungslogik">Wie wird gerechnet?</a>{{end}} · {{if .IsLoggedIn}}<a href="#" id="logout-link">Abmelden</a>{{end}}{{if .ShowLoginEntry}}{{if .IsLoggedIn}} · {{end}}<a href="#" id="login-open">Anmelden</a>{{end}}</p>
 {{if .IsLoggedIn}}
 <form method="post" action="{{.Base}}/logout" id="logout-form" hidden></form>
 <script>
@@ -89,7 +90,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
 });
 </script>
 {{end}}
-{{if not .IsLoggedIn}}
+{{if .ShowLoginEntry}}
 <div class="login-backdrop" id="login-overlay" hidden>
   <div class="login-modal">
     <h3 style="margin-top:0">Anmelden</h3>
@@ -195,6 +196,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: .25rem; }
   input[type=number], input[type=date], input[type=password], select { width: 100%; padding: .5rem .6rem; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
   input:disabled { opacity: .6; cursor: not-allowed; }
+  .demo-banner { background: var(--warning); color: #1a1200; font-size: .85rem; font-weight: 600; text-align: center; padding: .5rem 1rem; margin-bottom: 1rem; border-radius: 8px; }
   .login-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 100; }
   .login-backdrop[hidden] { display: none; }
   .login-modal { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; width: 320px; max-width: 90vw; box-shadow: 0 10px 40px rgba(0,0,0,.25); }

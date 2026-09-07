@@ -182,10 +182,12 @@ func handleIndex() http.HandlerFunc {
 // period - the negative-Verbrauch/Ausreißer-Warnung baseline the new
 // values are checked against - never the Ablesung being edited itself.
 type wizardData struct {
-	Base        string
-	Aktuell     string
-	IsLoggedIn  bool
-	FormAction  string
+	Base           string
+	Aktuell        string
+	IsLoggedIn     bool
+	IsDemoSession  bool
+	ShowLoginEntry bool
+	FormAction     string
 	IsEdit      bool
 	ReadingDate string
 	// Monat is the Abrechnungsmonat field's value ("YYYY-MM", <input
@@ -252,10 +254,13 @@ func handleWizardForm(secret string) http.HandlerFunc {
 			return
 		}
 
+		isDemo, showLoginEntry := demoNavFlags(r, secret)
 		data := wizardData{
 			Base:                      requestBase(r),
 			Aktuell:                   "ablesungen",
 			IsLoggedIn:                isLoggedIn(r, secret),
+			IsDemoSession:             isDemo,
+			ShowLoginEntry:            showLoginEntry,
 			FormAction:                requestBase(r) + "/ablesungen",
 			ReadingDate:               time.Now().Format("2006-01-02"),
 			Monat:                     time.Now().Format("2006-01"),
@@ -321,10 +326,13 @@ func handleEditWizardForm(secret string) http.HandlerFunc {
 			return
 		}
 
+		isDemo, showLoginEntry := demoNavFlags(r, secret)
 		data := wizardData{
 			Base:                      requestBase(r),
 			Aktuell:                   "ablesungen",
 			IsLoggedIn:                isLoggedIn(r, secret),
+			IsDemoSession:             isDemo,
+			ShowLoginEntry:            showLoginEntry,
 			FormAction:                fmt.Sprintf("%s/ablesungen/%d", requestBase(r), target.ID),
 			IsEdit:                    true,
 			ReadingDate:               target.ReadingDate,
@@ -641,21 +649,26 @@ func handleAblesungenListe(secret string) http.HandlerFunc {
 		}
 
 		importedCount, _ := strconv.Atoi(r.URL.Query().Get("imported"))
+		isDemo, showLoginEntry := demoNavFlags(r, secret)
 
 		data := struct {
-			Base          string
-			Aktuell       string
-			IsLoggedIn    bool
-			MonatGruppen  []periodMonatGroup
-			ImportedCount int
-			Warnings      []string
+			Base           string
+			Aktuell        string
+			IsLoggedIn     bool
+			IsDemoSession  bool
+			ShowLoginEntry bool
+			MonatGruppen   []periodMonatGroup
+			ImportedCount  int
+			Warnings       []string
 		}{
-			Base:          requestBase(r),
-			Aktuell:       "ablesungen",
-			IsLoggedIn:    isLoggedIn(r, secret),
-			MonatGruppen:  periodOverviewGroups(periods),
-			ImportedCount: importedCount,
-			Warnings:      r.URL.Query()["warning"],
+			Base:           requestBase(r),
+			Aktuell:        "ablesungen",
+			IsLoggedIn:     isLoggedIn(r, secret),
+			IsDemoSession:  isDemo,
+			ShowLoginEntry: showLoginEntry,
+			MonatGruppen:   periodOverviewGroups(periods),
+			ImportedCount:  importedCount,
+			Warnings:       r.URL.Query()["warning"],
 		}
 
 		if err := ablesungenTemplate.ExecuteTemplate(w, "layout", data); err != nil {
@@ -754,16 +767,19 @@ func handleAblesungDetail(secret string) http.HandlerFunc {
 			return
 		}
 
+		isDemo, showLoginEntry := demoNavFlags(r, secret)
 		data := struct {
-			Base          string
-			Aktuell       string
-			IsLoggedIn    bool
-			Period        *store.LatestPeriod
-			AllPeriods    []periodListItem
-			Apartments    []store.Apartment
-			Personen      map[int64]int64
-			ZeitraumStart string
-			Meters        []struct {
+			Base           string
+			Aktuell        string
+			IsLoggedIn     bool
+			IsDemoSession  bool
+			ShowLoginEntry bool
+			Period         *store.LatestPeriod
+			AllPeriods     []periodListItem
+			Apartments     []store.Apartment
+			Personen       map[int64]int64
+			ZeitraumStart  string
+			Meters         []struct {
 				Label string
 				Value float64
 				Unit  string
@@ -775,15 +791,17 @@ func handleAblesungDetail(secret string) http.HandlerFunc {
 			Einspeisung *calc.EinspeisungErgebnis
 			KostenNote  string
 		}{
-			Base:          requestBase(r),
-			Aktuell:       "ablesungen-detail",
-			IsLoggedIn:    isLoggedIn(r, secret),
-			Period:        period,
-			AllPeriods:    periodListItems(allPeriods),
-			Apartments:    apartments,
-			Personen:      period.PersonenByApartment,
-			ZeitraumStart: zeitraumStart,
-			Meters:        meters,
+			Base:           requestBase(r),
+			Aktuell:        "ablesungen-detail",
+			IsLoggedIn:     isLoggedIn(r, secret),
+			IsDemoSession:  isDemo,
+			ShowLoginEntry: showLoginEntry,
+			Period:         period,
+			AllPeriods:     periodListItems(allPeriods),
+			Apartments:     apartments,
+			Personen:       period.PersonenByApartment,
+			ZeitraumStart:  zeitraumStart,
+			Meters:         meters,
 			Strom:         k.Strom,
 			Wasser:        k.Wasser,
 			Heizung:       k.Heizung,
@@ -802,10 +820,13 @@ func handleAblesungDetail(secret string) http.HandlerFunc {
 // any period's data.
 func handleBerechnungslogik(secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		isDemo, showLoginEntry := demoNavFlags(r, secret)
 		data := struct {
-			Base, Aktuell string
-			IsLoggedIn    bool
-		}{Base: requestBase(r), Aktuell: "berechnungslogik", IsLoggedIn: isLoggedIn(r, secret)}
+			Base, Aktuell  string
+			IsLoggedIn     bool
+			IsDemoSession  bool
+			ShowLoginEntry bool
+		}{Base: requestBase(r), Aktuell: "berechnungslogik", IsLoggedIn: isLoggedIn(r, secret), IsDemoSession: isDemo, ShowLoginEntry: showLoginEntry}
 		if err := berechnungslogikTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -824,16 +845,21 @@ func handleStammdatenForm(secret string) http.HandlerFunc {
 			return
 		}
 
+		isDemo, showLoginEntry := demoNavFlags(r, secret)
 		data := struct {
-			Base       string
-			Aktuell    string
-			IsLoggedIn bool
-			Apartments []store.Apartment
+			Base           string
+			Aktuell        string
+			IsLoggedIn     bool
+			IsDemoSession  bool
+			ShowLoginEntry bool
+			Apartments     []store.Apartment
 		}{
-			Base:       requestBase(r),
-			Aktuell:    "stammdaten",
-			IsLoggedIn: isLoggedIn(r, secret),
-			Apartments: apartments,
+			Base:           requestBase(r),
+			Aktuell:        "stammdaten",
+			IsLoggedIn:     isLoggedIn(r, secret),
+			IsDemoSession:  isDemo,
+			ShowLoginEntry: showLoginEntry,
+			Apartments:     apartments,
 		}
 
 		if err := stammdatenTemplate.ExecuteTemplate(w, "layout", data); err != nil {

@@ -70,10 +70,12 @@ type fixkostenPositionRow struct {
 // (prefilled with the Eingabe's own current values), same split as
 // wizardData for Ablesungen.
 type fixkostenFormData struct {
-	Base             string
-	Aktuell          string
-	IsLoggedIn       bool
-	FormAction       string
+	Base           string
+	Aktuell        string
+	IsLoggedIn     bool
+	IsDemoSession  bool
+	ShowLoginEntry bool
+	FormAction     string
 	IsEdit           bool
 	Monat            string // "YYYY-MM", <input type="month"> value
 	Apartments       []store.Apartment
@@ -135,13 +137,16 @@ func handleFixkostenForm(secret string) http.HandlerFunc {
 			return
 		}
 
+		isDemo, showLoginEntry := demoNavFlags(r, secret)
 		data := fixkostenFormData{
-			Base:       requestBase(r),
-			Aktuell:    "fixkosten",
-			IsLoggedIn: isLoggedIn(r, secret),
-			FormAction: requestBase(r) + "/fixkosten",
-			Monat:      monat,
-			Apartments: apartments,
+			Base:           requestBase(r),
+			Aktuell:        "fixkosten",
+			IsLoggedIn:     isLoggedIn(r, secret),
+			IsDemoSession:  isDemo,
+			ShowLoginEntry: showLoginEntry,
+			FormAction:     requestBase(r) + "/fixkosten",
+			Monat:          monat,
+			Apartments:     apartments,
 		}
 		var werte map[int64]store.FixkostenPositionWert
 		if latest != nil {
@@ -192,10 +197,13 @@ func handleFixkostenEditForm(secret string) http.HandlerFunc {
 
 		positionen := buildFixkostenPositionRows(kostenpositionen, target.Werte)
 
+		isDemo, showLoginEntry := demoNavFlags(r, secret)
 		data := fixkostenFormData{
 			Base:             requestBase(r),
 			Aktuell:          "fixkosten",
 			IsLoggedIn:       isLoggedIn(r, secret),
+			IsDemoSession:    isDemo,
+			ShowLoginEntry:   showLoginEntry,
 			FormAction:       fmt.Sprintf("%s/fixkosten/%d", requestBase(r), target.ID),
 			IsEdit:           true,
 			Monat:            monatForInput(target.Monat),
@@ -395,16 +403,21 @@ func handleFixkostenListe(secret string) http.HandlerFunc {
 			})
 		}
 
+		isDemo, showLoginEntry := demoNavFlags(r, secret)
 		data := struct {
-			Base       string
-			Aktuell    string
-			IsLoggedIn bool
-			Eingaben   []fixkostenListItem
+			Base           string
+			Aktuell        string
+			IsLoggedIn     bool
+			IsDemoSession  bool
+			ShowLoginEntry bool
+			Eingaben       []fixkostenListItem
 		}{
-			Base:       requestBase(r),
-			Aktuell:    "fixkosten",
-			IsLoggedIn: isLoggedIn(r, secret),
-			Eingaben:   items,
+			Base:           requestBase(r),
+			Aktuell:        "fixkosten",
+			IsLoggedIn:     isLoggedIn(r, secret),
+			IsDemoSession:  isDemo,
+			ShowLoginEntry: showLoginEntry,
+			Eingaben:       items,
 		}
 
 		if err := fixkostenListeTemplate.ExecuteTemplate(w, "layout", data); err != nil {
@@ -471,22 +484,27 @@ func handleFixkostenDetail(secret string) http.HandlerFunc {
 			})
 		}
 
+		isDemo, showLoginEntry := demoNavFlags(r, secret)
 		data := struct {
-			Base        string
-			Aktuell     string
-			IsLoggedIn  bool
-			Eingabe     *store.FixkostenEingabeDetails
-			MonatLabel  string
-			AllEingaben []fixkostenListItem
-			Apartments  []store.Apartment
-			Positionen  []fixkostenDetailPosition
-			KostenW1    float64
-			KostenW2    float64
+			Base           string
+			Aktuell        string
+			IsLoggedIn     bool
+			IsDemoSession  bool
+			ShowLoginEntry bool
+			Eingabe        *store.FixkostenEingabeDetails
+			MonatLabel     string
+			AllEingaben    []fixkostenListItem
+			Apartments     []store.Apartment
+			Positionen     []fixkostenDetailPosition
+			KostenW1       float64
+			KostenW2       float64
 		}{
-			Base:        requestBase(r),
-			Aktuell:     "fixkosten-detail",
-			IsLoggedIn:  isLoggedIn(r, secret),
-			Eingabe:     eingabe,
+			Base:           requestBase(r),
+			Aktuell:        "fixkosten-detail",
+			IsLoggedIn:     isLoggedIn(r, secret),
+			IsDemoSession:  isDemo,
+			ShowLoginEntry: showLoginEntry,
+			Eingabe:        eingabe,
 			MonatLabel:  germanPeriodLabel(eingabe.Monat),
 			AllEingaben: allItems,
 			Apartments:  apartments,
