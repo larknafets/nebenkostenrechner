@@ -171,6 +171,39 @@ func seedDemoPeriods(db *sql.DB, now time.Time) error {
 	return nil
 }
 
+// ResetDemoData wipes every Ablesung/Fixkosten-Eingabe/Personen/Abschlag-Zeile
+// und ruft SeedDemoData erneut auf (Issue #121: jeder erneute Demo-Login
+// setzt die Demo-Datenbank vollständig auf ihren frischen 39-Monats-
+// Ausgangszustand zurück, mit dem aktuellen Monat als neuestem). Master-
+// Stammdaten (apartments, meters, kostenpositionen) bleiben unangetastet -
+// SeedDemoData überschreibt apartments' qm/flurstueck_groesse ohnehin selbst.
+func ResetDemoData(db *sql.DB, now time.Time) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Kind-Tabellen zuerst - PRAGMA foreign_keys=ON (store.Open) verbietet
+	// sonst das Löschen einer noch referenzierten periods/fixkosten_eingaben-
+	// Zeile.
+	for _, table := range []string{
+		"meter_readings", "period_occupancy",
+		"fixkosten_werte", "fixkosten_personen", "nebenkosten_abschlaege",
+		"periods", "fixkosten_eingaben",
+	} {
+		if _, err := tx.Exec("DELETE FROM " + table); err != nil {
+			return fmt.Errorf("delete %s: %w", table, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit: %w", err)
+	}
+
+	return SeedDemoData(db, now)
+}
+
 // demoKostenpositionWerte are plausible EUR-Werte je Kostenposition (Issue
 // #117) - konstant über alle 39 Monate, wie im echten Leben Grundsteuer,
 // Versicherung & Grundgebühren meist über Jahre unverändert bleiben.

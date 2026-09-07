@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/subtle"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
@@ -12,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
 const (
@@ -251,7 +254,11 @@ func loginRedirectTarget(r *http.Request) string {
 	return requestBase(r) + next
 }
 
-func handleLogin(secret string) http.HandlerFunc {
+// handleLogin's demo branch resets demoDB to its frischen 39-Monats-
+// Ausgangszustand on every erfolgreichen Demo-Login (Issue #121) - vor dem
+// Setzen des Session-Cookies, damit eine gewährte Demo-Session immer den
+// frischen Stand sieht, nie den einer vorherigen Session.
+func handleLogin(secret string, demoDB *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form: "+err.Error(), http.StatusBadRequest)
@@ -261,6 +268,10 @@ func handleLogin(secret string) http.HandlerFunc {
 		// secret-Vergleich - funktioniert immer, auch bei secret == ""
 		// (Issue #118 Implementation Decision).
 		if r.FormValue("password") == demoPassword {
+			if err := store.ResetDemoData(demoDB, time.Now()); err != nil {
+				http.Error(w, "demo reset: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
 			setDemoSessionCookie(w)
 			http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
 			return

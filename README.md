@@ -211,6 +211,12 @@ Danach erreichbar unter `http://localhost:8080`, Health-Check unter `/healthz`. 
 | `WIDGET_LISTEN_ADDR` | `:8081` | Listen-Adresse der Widget-Routen (siehe unten) |
 | `LOGIN_PASSWORD` | *(leer)* | Optionales Kennwort. Leer = alles offen wie bisher. Gesetzt: nicht angemeldete Besucher sehen nur eingeschränkte, lesende Ansichten (z. B. nur Wohnung 2 auf dem Dashboard), alle Eingabe-/Änderungsaktionen sind gesperrt - "Login"-Link in der Navigation öffnet ein Overlay zur Anmeldung. |
 
+### Demo-Modus
+
+Login mit dem Kennwort `demo` funktioniert immer, unabhängig davon ob `LOGIN_PASSWORD` gesetzt ist - er meldet in einer komplett separaten, eigenen Datenbank (`demo.db`, im selben Verzeichnis wie `DB_PATH`) an, gefüllt mit 39 Monaten realitätsnahen Testdaten. Änderungen im Demo-Modus (Ablesungen, Fixkosten-Eingaben, Stammdaten) landen ausschließlich in dieser Demo-Datenbank, nie in den echten Daten. Jeder erneute Demo-Login setzt die Demo-Datenbank vollständig auf ihren frischen Ausgangszustand zurück - keine Isolation zwischen gleichzeitigen Demo-Besuchern, ein bewusst akzeptierter Kompromiss für eine einfache, öffentlich vorführbare Demo.
+
+Ein manueller Reset (z. B. nach einem Bug) ist ohne eigene Route möglich: `demo.db` löschen und den Server neu starten - die Datei entsteht beim nächsten Start automatisch neu, wieder mit einem frischen 39-Monats-Datensatz.
+
 ### Home Assistant Add-on
 
 Für den Betrieb als Home Assistant Add-on (inkl. Ingress-Integration) siehe das Add-on-Repository [`larknafets/ha-addons`](https://github.com/larknafets/ha-addons).

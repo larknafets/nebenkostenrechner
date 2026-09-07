@@ -129,7 +129,7 @@ func NewMux(db, demoDB *sql.DB, version, buildDate string) *http.ServeMux {
 	secret := resolveLoginPassword()
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", handleIndex())
-	mux.HandleFunc("POST /login", handleLogin(secret))
+	mux.HandleFunc("POST /login", handleLogin(secret, demoDB))
 	mux.HandleFunc("POST /logout", handleLogout(secret))
 	mux.HandleFunc("GET /ablesungen", withDB(db, demoDB, handleAblesungenListe(secret)))
 	mux.HandleFunc("GET /ablesungen/export.csv", withDB(db, demoDB, requireLogin(secret, handleExportCSV())))

@@ -70,6 +70,14 @@ func TestDemoMode_WritesIsolatedFromRealDB(t *testing.T) {
 
 	cookies := demoLoginCookies(t, mux, demoPassword)
 
+	// Demo-Login setzt die Demo-DB bereits auf ihren 39-Monats-Ausgangs-
+	// zustand zurück (Issue #121) - Baseline hier einmal einlesen, statt
+	// die genaue Anzahl zu hardcoden.
+	baseline, err := store.AllPeriods(demoDB)
+	if err != nil {
+		t.Fatalf("AllPeriods(demoDB) baseline: %v", err)
+	}
+
 	form := periodFormValues("2026-06-15", "2026-06")
 	req := httptest.NewRequest(http.MethodPost, "/ablesungen", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -84,8 +92,8 @@ func TestDemoMode_WritesIsolatedFromRealDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AllPeriods(demoDB): %v", err)
 	}
-	if len(demoPeriods) != 1 {
-		t.Errorf("len(demoPeriods) = %d, want 1", len(demoPeriods))
+	if len(demoPeriods) != len(baseline)+1 {
+		t.Errorf("len(demoPeriods) = %d, want %d (baseline+1)", len(demoPeriods), len(baseline)+1)
 	}
 
 	realPeriods, err := store.AllPeriods(realDB)
@@ -103,6 +111,69 @@ func TestDemoMode_WritesIsolatedFromRealDB(t *testing.T) {
 	mux.ServeHTTP(w2, req2)
 	if strings.Contains(w2.Body.String(), "2026-06-15") {
 		t.Error("nicht angemeldete Ansicht zeigt die im Demo-Modus angelegte Ablesung - Datenbanken sind nicht isoliert")
+	}
+}
+
+// TestDemoLogin_ResetsPreviousDemoSession covers Issue #121's Kernanforderung:
+// eine im Demo-Modus angelegte Ablesung ist nach einem erneuten Demo-Login
+// nicht mehr vorhanden, ein Reset auf die echte DB hat dabei keinerlei
+// Auswirkung.
+func TestDemoLogin_ResetsPreviousDemoSession(t *testing.T) {
+	realDB := openTestDB(t)
+	demoDB := openTestDB(t)
+	mux := NewMux(realDB, demoDB, "", "")
+
+	firstSession := demoLoginCookies(t, mux, demoPassword)
+	baseline, err := store.AllPeriods(demoDB)
+	if err != nil {
+		t.Fatalf("AllPeriods(demoDB) baseline: %v", err)
+	}
+
+	// 2099 liegt garantiert außerhalb des relativ zu "jetzt" generierten
+	// 39-Monats-Fensters (Issue #117) - eindeutig als injizierte Änderung
+	// erkennbar, im Gegensatz zu einem Monat, der ohnehin Teil der frischen
+	// Baseline sein könnte.
+	form := periodFormValues("2099-01-15", "2099-01")
+	req := httptest.NewRequest(http.MethodPost, "/ablesungen", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	attachCookies(req, firstSession)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+	if w.Code != http.StatusFound {
+		t.Fatalf("create ablesung in 1. Demo-Session: status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())
+	}
+
+	afterFirstSession, err := store.AllPeriods(demoDB)
+	if err != nil {
+		t.Fatalf("AllPeriods(demoDB) nach 1. Session: %v", err)
+	}
+	if len(afterFirstSession) != len(baseline)+1 {
+		t.Fatalf("len(afterFirstSession) = %d, want %d (baseline+1)", len(afterFirstSession), len(baseline)+1)
+	}
+
+	// Erneuter Demo-Login (2. Session) muss die Ablesung aus der 1. Session
+	// verwerfen und wieder exakt die Baseline zeigen.
+	demoLoginCookies(t, mux, demoPassword)
+
+	afterReset, err := store.AllPeriods(demoDB)
+	if err != nil {
+		t.Fatalf("AllPeriods(demoDB) nach Reset: %v", err)
+	}
+	if len(afterReset) != len(baseline) {
+		t.Errorf("len(afterReset) = %d, want %d (Baseline) - erneuter Demo-Login muss vorherige Demo-Änderungen verwerfen", len(afterReset), len(baseline))
+	}
+	for _, p := range afterReset {
+		if p.Monat == "2099-01-01" {
+			t.Error("die in der 1. Demo-Session angelegte Ablesung ist nach dem Reset noch vorhanden")
+		}
+	}
+
+	realPeriods, err := store.AllPeriods(realDB)
+	if err != nil {
+		t.Fatalf("AllPeriods(realDB): %v", err)
+	}
+	if len(realPeriods) != 0 {
+		t.Errorf("len(realPeriods) = %d, want 0 - der Demo-Reset darf die echte DB nie berühren", len(realPeriods))
 	}
 }
 
