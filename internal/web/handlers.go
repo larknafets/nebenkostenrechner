@@ -126,8 +126,13 @@ func parseFormFloat(r *http.Request, name, fieldLabel, apartmentID string) (floa
 // NewMux wires up the wizard and read routes. Every mutating or create-only
 // route is wrapped in a.RequireLogin (Ticket #112's Durchsetzungs-Matrix) -
 // harmless no-ops when secret == "" (no Login-Kennwort configured) - mit
-// einer bewussten Ausnahme: GET /ablesungen/neu und POST /ablesungen sind
-// ungated, eine neue Ablesung anlegen ist auch nicht eingeloggt möglich.
+// bewussten Ausnahmen für Teilstände (Ticket #129/#130): GET /ablesungen/neu
+// und POST /ablesungen sind immer ungated, eine neue Ablesung anlegen ist
+// auch nicht eingeloggt möglich. GET /ablesungen/{id}/bearbeiten und
+// POST /ablesungen/{id} sind über requireLoginUnlessTeilstand nur dann
+// ungated, wenn die Ziel-Ablesung selbst noch ein Teilstand ist -
+// vervollständigen ohne Login, korrigieren einer bereits vollständigen
+// Ablesung bleibt gated. Löschen bleibt für jede Ablesung immer gated.
 // Every route that touches the DB is wrapped in withDB (Ticket #119/#120),
 // which picks db or demoDB per request depending on whether the visitor
 // carries a Demo-Session-Cookie.
@@ -143,8 +148,8 @@ func NewMux(db, demoDB *sql.DB, version, buildDate string) *http.ServeMux {
 	mux.HandleFunc("POST /ablesungen", withDB(db, demoDB, handleCreateAblesung()))
 	mux.HandleFunc("POST /ablesungen/import", withDB(db, demoDB, a.RequireLogin(handleImportCSV())))
 	mux.HandleFunc("GET /ablesungen/{id}", withDB(db, demoDB, handleAblesungDetail(a)))
-	mux.HandleFunc("GET /ablesungen/{id}/bearbeiten", withDB(db, demoDB, a.RequireLogin(handleEditWizardForm(a))))
-	mux.HandleFunc("POST /ablesungen/{id}", withDB(db, demoDB, a.RequireLogin(handleUpdateAblesung())))
+	mux.HandleFunc("GET /ablesungen/{id}/bearbeiten", withDB(db, demoDB, requireLoginUnlessTeilstand(a, handleEditWizardForm(a))))
+	mux.HandleFunc("POST /ablesungen/{id}", withDB(db, demoDB, requireLoginUnlessTeilstand(a, handleUpdateAblesung())))
 	mux.HandleFunc("POST /ablesungen/{id}/loeschen", withDB(db, demoDB, a.RequireLogin(handleDeleteAblesung())))
 	mux.HandleFunc("GET /dashboard", withDB(db, demoDB, handleDashboard(version, buildDate, a)))
 	mux.HandleFunc("GET /berechnungslogik", handleBerechnungslogik(a))
@@ -335,6 +340,40 @@ func handleWizardForm(a auth) http.HandlerFunc {
 		if err := wizardTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
+	}
+}
+
+// requireLoginUnlessTeilstand wraps next with a's login gate, except when
+// the request's {id} path value names a Teilstand (Ticket #130) -
+// vervollständigen einer offenen Ablesung braucht kein Login, genauso
+// wenig wie deren erstmaliges Anlegen (Ticket #129). Eine bereits
+// vollständige Ablesung bleibt gated wie bisher. Eine nicht (mehr)
+// existierende id liefert direkt 404 statt eines Login-Redirects - ihre
+// Existenz ist hier keine schützenswerte Information. Nur für Routen mit
+// einem numerischen {id} Pfad-Parameter gedacht, die zusätzlich schon
+// hinter withDB liegen (dbFromContext braucht dessen DB im Context).
+func requireLoginUnlessTeilstand(a auth, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
+		periodID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+		if err != nil {
+			http.Error(w, "invalid period id", http.StatusBadRequest)
+			return
+		}
+		complete, err := store.PeriodComplete(db, periodID)
+		if err != nil {
+			if errors.Is(err, store.ErrPeriodNotFound) {
+				http.NotFound(w, r)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !complete {
+			next(w, r)
+			return
+		}
+		a.RequireLogin(next)(w, r)
 	}
 }
 
