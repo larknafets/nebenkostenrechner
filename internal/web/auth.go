@@ -210,35 +210,51 @@ type navData struct {
 	ShowLoginEntry bool
 }
 
-// newNavData builds navData for the current request - the single place
+// auth bundles the 2 facts every login-related decision needs: das
+// konfigurierte Login-Kennwort (secret) und die Demo-Datenbank (gebraucht,
+// um sie bei einem erfolgreichen Demo-Login zurückzusetzen). Einmal in
+// NewMux gebaut (newAuth) und seitdem durchgereicht statt secret als
+// bloßer String durch ~13 Routen-Registrierungen und 11 Handler-
+// Konstruktoren - Architecture Review nach dem Demo-Modus (#118),
+// Kandidat 2.
+type auth struct {
+	secret string
+	demoDB *sql.DB
+}
+
+func newAuth(secret string, demoDB *sql.DB) auth {
+	return auth{secret: secret, demoDB: demoDB}
+}
+
+// NavData builds navData for the current request - the single place
 // requestBase/isLoggedIn/demoNavFlags are called together, replacing what
 // used to be duplicated across all 9 page-handlers.
-func newNavData(r *http.Request, secret string) navData {
-	isDemo, showLoginEntry := demoNavFlags(r, secret)
+func (a auth) NavData(r *http.Request) navData {
+	isDemo, showLoginEntry := demoNavFlags(r, a.secret)
 	return navData{
 		Base:           requestBase(r),
-		IsLoggedIn:     isLoggedIn(r, secret),
+		IsLoggedIn:     isLoggedIn(r, a.secret),
 		IsDemoSession:  isDemo,
 		ShowLoginEntry: showLoginEntry,
 	}
 }
 
-// requireLogin gates a mutating or create-only route behind the
+// RequireLogin gates a mutating or create-only route behind the
 // Login-Kennwort (Ticket #112's Durchsetzungs-Matrix): with no Kennwort
 // configured every route stays open (isLoggedIn always true), otherwise an
 // unauthenticated request bounces to the Login-Overlay (Ticket #113).
 //
 // The bounce always lands on the Dashboard, never back on the gated URL
 // itself - a fully gated GET page (e.g. /ablesungen/neu) is itself wrapped
-// in requireLogin, so redirecting to itself with ?login=1 would just hit
-// requireLogin again and loop forever, since a query param alone never
-// grants access. The Dashboard is the one page never behind requireLogin,
+// in RequireLogin, so redirecting to itself with ?login=1 would just hit
+// RequireLogin again and loop forever, since a query param alone never
+// grants access. The Dashboard is the one page never behind RequireLogin,
 // so it's always safe to land on; the originally attempted URL travels
 // along as "next" and is where a *successful* login lands instead (see
 // loginRedirectTarget).
-func requireLogin(secret string, next http.HandlerFunc) http.HandlerFunc {
+func (a auth) RequireLogin(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if isLoggedIn(r, secret) {
+		if isLoggedIn(r, a.secret) {
 			next(w, r)
 			return
 		}
@@ -299,11 +315,11 @@ func loginRedirectTarget(r *http.Request) string {
 	return requestBase(r) + next
 }
 
-// handleLogin's demo branch resets demoDB to its frischen 39-Monats-
+// HandleLogin's demo branch resets a.demoDB to its frischen 39-Monats-
 // Ausgangszustand on every erfolgreichen Demo-Login (Issue #121) - vor dem
 // Setzen des Session-Cookies, damit eine gewährte Demo-Session immer den
 // frischen Stand sieht, nie den einer vorherigen Session.
-func handleLogin(secret string, demoDB *sql.DB) http.HandlerFunc {
+func (a auth) HandleLogin() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form: "+err.Error(), http.StatusBadRequest)
@@ -313,7 +329,7 @@ func handleLogin(secret string, demoDB *sql.DB) http.HandlerFunc {
 		// secret-Vergleich - funktioniert immer, auch bei secret == ""
 		// (Issue #118 Implementation Decision).
 		if r.FormValue("password") == demoPassword {
-			if err := store.ResetDemoData(demoDB, time.Now()); err != nil {
+			if err := store.ResetDemoData(a.demoDB, time.Now()); err != nil {
 				http.Error(w, "demo reset: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -327,23 +343,23 @@ func handleLogin(secret string, demoDB *sql.DB) http.HandlerFunc {
 			http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
 			return
 		}
-		if secret == "" {
+		if a.secret == "" {
 			http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
 			return
 		}
-		if subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte(secret)) != 1 {
+		if subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte(a.secret)) != 1 {
 			redirectToLoginOverlay(w, r, r.FormValue("next"), true)
 			return
 		}
 		// Symmetrisch zum Demo-Zweig oben: eine noch gültige Demo-Session-
 		// Cookie darf einen frischen echten Login nicht überstimmen.
 		clearDemoSessionCookie(w)
-		setSessionCookie(w, secret)
+		setSessionCookie(w, a.secret)
 		http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
 	}
 }
 
-func handleLogout(secret string) http.HandlerFunc {
+func (a auth) HandleLogout() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		clearSessionCookie(w)
 		clearDemoSessionCookie(w)

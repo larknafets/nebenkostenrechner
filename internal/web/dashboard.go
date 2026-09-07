@@ -84,14 +84,14 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 // handleDashboard serves the redesigned Dashboard (Issue #60): Jahressummen-
 // Karten je Wohnung for the auto-following Anzeigejahr, then a Wohnung-
 // Umschalter with a combined Verbrauch+Fixkosten Monatsverlauf (4 Modi).
-func handleDashboard(version, buildDate, secret string) http.HandlerFunc {
+func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dd, err := loadDashboardData(dbFromContext(r.Context()))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		nav := newNavData(r, secret)
+		nav := a.NavData(r)
 
 		if !dd.HasAnyData {
 			data := struct {

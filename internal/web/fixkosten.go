@@ -111,7 +111,7 @@ func buildFixkostenPositionRows(kostenpositionen []store.Kostenposition, values 
 // the latest Fixkosten-Eingabe (Issue #60 Story 2/9) - today's month as the
 // default Monat, same convention as the Ablesung-Wizard's ReadingDate
 // default.
-func handleFixkostenForm(secret string) http.HandlerFunc {
+func handleFixkostenForm(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 		apartments, err := store.Apartments(db)
@@ -135,7 +135,7 @@ func handleFixkostenForm(secret string) http.HandlerFunc {
 		}
 
 		data := fixkostenFormData{
-			navData:    newNavData(r, secret),
+			navData:    a.NavData(r),
 			Aktuell:    "fixkosten",
 			FormAction: requestBase(r) + "/fixkosten",
 			Monat:      monat,
@@ -157,7 +157,7 @@ func handleFixkostenForm(secret string) http.HandlerFunc {
 
 // handleFixkostenEditForm serves the "bearbeiten" Fixkosten-Formular for an
 // existing Eingabe, prefilled with its own current values.
-func handleFixkostenEditForm(secret string) http.HandlerFunc {
+func handleFixkostenEditForm(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 		eingabeID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -191,7 +191,7 @@ func handleFixkostenEditForm(secret string) http.HandlerFunc {
 		positionen := buildFixkostenPositionRows(kostenpositionen, target.Werte)
 
 		data := fixkostenFormData{
-			navData:          newNavData(r, secret),
+			navData:          a.NavData(r),
 			Aktuell:          "fixkosten",
 			FormAction:       fmt.Sprintf("%s/fixkosten/%d", requestBase(r), target.ID),
 			IsEdit:           true,
@@ -370,7 +370,7 @@ type fixkostenListItem struct {
 	SummeW2 float64
 }
 
-func handleFixkostenListe(secret string) http.HandlerFunc {
+func handleFixkostenListe(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 		eingaben, err := store.AllFixkostenEingaben(db)
@@ -397,7 +397,7 @@ func handleFixkostenListe(secret string) http.HandlerFunc {
 			Aktuell  string
 			Eingaben []fixkostenListItem
 		}{
-			navData:  newNavData(r, secret),
+			navData:  a.NavData(r),
 			Aktuell:  "fixkosten",
 			Eingaben: items,
 		}
@@ -416,7 +416,7 @@ type fixkostenDetailPosition struct {
 	KostenW2   float64
 }
 
-func handleFixkostenDetail(secret string) http.HandlerFunc {
+func handleFixkostenDetail(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 		eingabeID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -477,7 +477,7 @@ func handleFixkostenDetail(secret string) http.HandlerFunc {
 			KostenW1    float64
 			KostenW2    float64
 		}{
-			navData:     newNavData(r, secret),
+			navData:     a.NavData(r),
 			Aktuell:     "fixkosten-detail",
 			Eingabe:     eingabe,
 			MonatLabel:  germanPeriodLabel(eingabe.Monat),

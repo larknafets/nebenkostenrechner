@@ -120,37 +120,37 @@ func parseFormFloat(r *http.Request, name, fieldLabel, apartmentID string) (floa
 }
 
 // NewMux wires up the wizard and read routes. Every mutating or create-only
-// route is wrapped in requireLogin (Ticket #112's Durchsetzungs-Matrix) -
+// route is wrapped in a.RequireLogin (Ticket #112's Durchsetzungs-Matrix) -
 // harmless no-ops when secret == "" (no Login-Kennwort configured). Every
 // route that touches the DB is wrapped in withDB (Ticket #119/#120), which
 // picks db or demoDB per request depending on whether the visitor carries a
 // Demo-Session-Cookie.
 func NewMux(db, demoDB *sql.DB, version, buildDate string) *http.ServeMux {
-	secret := resolveLoginPassword()
+	a := newAuth(resolveLoginPassword(), demoDB)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", handleIndex())
-	mux.HandleFunc("POST /login", handleLogin(secret, demoDB))
-	mux.HandleFunc("POST /logout", handleLogout(secret))
-	mux.HandleFunc("GET /ablesungen", withDB(db, demoDB, handleAblesungenListe(secret)))
-	mux.HandleFunc("GET /ablesungen/export.csv", withDB(db, demoDB, requireLogin(secret, handleExportCSV())))
-	mux.HandleFunc("GET /ablesungen/neu", withDB(db, demoDB, requireLogin(secret, handleWizardForm(secret))))
-	mux.HandleFunc("POST /ablesungen", withDB(db, demoDB, requireLogin(secret, handleCreateAblesung())))
-	mux.HandleFunc("POST /ablesungen/import", withDB(db, demoDB, requireLogin(secret, handleImportCSV())))
-	mux.HandleFunc("GET /ablesungen/{id}", withDB(db, demoDB, handleAblesungDetail(secret)))
-	mux.HandleFunc("GET /ablesungen/{id}/bearbeiten", withDB(db, demoDB, requireLogin(secret, handleEditWizardForm(secret))))
-	mux.HandleFunc("POST /ablesungen/{id}", withDB(db, demoDB, requireLogin(secret, handleUpdateAblesung())))
-	mux.HandleFunc("POST /ablesungen/{id}/loeschen", withDB(db, demoDB, requireLogin(secret, handleDeleteAblesung())))
-	mux.HandleFunc("GET /dashboard", withDB(db, demoDB, handleDashboard(version, buildDate, secret)))
-	mux.HandleFunc("GET /berechnungslogik", handleBerechnungslogik(secret))
-	mux.HandleFunc("GET /stammdaten", withDB(db, demoDB, handleStammdatenForm(secret)))
-	mux.HandleFunc("POST /stammdaten", withDB(db, demoDB, requireLogin(secret, handleUpdateStammdaten())))
-	mux.HandleFunc("GET /fixkosten", withDB(db, demoDB, handleFixkostenListe(secret)))
-	mux.HandleFunc("GET /fixkosten/neu", withDB(db, demoDB, requireLogin(secret, handleFixkostenForm(secret))))
-	mux.HandleFunc("POST /fixkosten", withDB(db, demoDB, requireLogin(secret, handleCreateFixkosten())))
-	mux.HandleFunc("GET /fixkosten/{id}", withDB(db, demoDB, handleFixkostenDetail(secret)))
-	mux.HandleFunc("GET /fixkosten/{id}/bearbeiten", withDB(db, demoDB, requireLogin(secret, handleFixkostenEditForm(secret))))
-	mux.HandleFunc("POST /fixkosten/{id}", withDB(db, demoDB, requireLogin(secret, handleUpdateFixkosten())))
-	mux.HandleFunc("POST /fixkosten/{id}/loeschen", withDB(db, demoDB, requireLogin(secret, handleDeleteFixkosten())))
+	mux.HandleFunc("POST /login", a.HandleLogin())
+	mux.HandleFunc("POST /logout", a.HandleLogout())
+	mux.HandleFunc("GET /ablesungen", withDB(db, demoDB, handleAblesungenListe(a)))
+	mux.HandleFunc("GET /ablesungen/export.csv", withDB(db, demoDB, a.RequireLogin(handleExportCSV())))
+	mux.HandleFunc("GET /ablesungen/neu", withDB(db, demoDB, a.RequireLogin(handleWizardForm(a))))
+	mux.HandleFunc("POST /ablesungen", withDB(db, demoDB, a.RequireLogin(handleCreateAblesung())))
+	mux.HandleFunc("POST /ablesungen/import", withDB(db, demoDB, a.RequireLogin(handleImportCSV())))
+	mux.HandleFunc("GET /ablesungen/{id}", withDB(db, demoDB, handleAblesungDetail(a)))
+	mux.HandleFunc("GET /ablesungen/{id}/bearbeiten", withDB(db, demoDB, a.RequireLogin(handleEditWizardForm(a))))
+	mux.HandleFunc("POST /ablesungen/{id}", withDB(db, demoDB, a.RequireLogin(handleUpdateAblesung())))
+	mux.HandleFunc("POST /ablesungen/{id}/loeschen", withDB(db, demoDB, a.RequireLogin(handleDeleteAblesung())))
+	mux.HandleFunc("GET /dashboard", withDB(db, demoDB, handleDashboard(version, buildDate, a)))
+	mux.HandleFunc("GET /berechnungslogik", handleBerechnungslogik(a))
+	mux.HandleFunc("GET /stammdaten", withDB(db, demoDB, handleStammdatenForm(a)))
+	mux.HandleFunc("POST /stammdaten", withDB(db, demoDB, a.RequireLogin(handleUpdateStammdaten())))
+	mux.HandleFunc("GET /fixkosten", withDB(db, demoDB, handleFixkostenListe(a)))
+	mux.HandleFunc("GET /fixkosten/neu", withDB(db, demoDB, a.RequireLogin(handleFixkostenForm(a))))
+	mux.HandleFunc("POST /fixkosten", withDB(db, demoDB, a.RequireLogin(handleCreateFixkosten())))
+	mux.HandleFunc("GET /fixkosten/{id}", withDB(db, demoDB, handleFixkostenDetail(a)))
+	mux.HandleFunc("GET /fixkosten/{id}/bearbeiten", withDB(db, demoDB, a.RequireLogin(handleFixkostenEditForm(a))))
+	mux.HandleFunc("POST /fixkosten/{id}", withDB(db, demoDB, a.RequireLogin(handleUpdateFixkosten())))
+	mux.HandleFunc("POST /fixkosten/{id}/loeschen", withDB(db, demoDB, a.RequireLogin(handleDeleteFixkosten())))
 	return mux
 }
 
@@ -226,7 +226,7 @@ type wizardData struct {
 	NoPeriods bool
 }
 
-func handleWizardForm(secret string) http.HandlerFunc {
+func handleWizardForm(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 		apartments, err := store.Apartments(db)
@@ -252,7 +252,7 @@ func handleWizardForm(secret string) http.HandlerFunc {
 		}
 
 		data := wizardData{
-			navData:                   newNavData(r, secret),
+			navData:                   a.NavData(r),
 			Aktuell:                   "ablesungen",
 			FormAction:                requestBase(r) + "/ablesungen",
 			ReadingDate:               time.Now().Format("2006-01-02"),
@@ -288,7 +288,7 @@ func handleWizardForm(secret string) http.HandlerFunc {
 // Ausreißer-Warnung baseline always compares against the genuine previous
 // period - the one chronologically before the Ablesung being edited,
 // regardless of whether newer Ablesungen exist after it.
-func handleEditWizardForm(secret string) http.HandlerFunc {
+func handleEditWizardForm(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 		periodID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -320,7 +320,7 @@ func handleEditWizardForm(secret string) http.HandlerFunc {
 		}
 
 		data := wizardData{
-			navData:                   newNavData(r, secret),
+			navData:                   a.NavData(r),
 			Aktuell:                   "ablesungen",
 			FormAction:                fmt.Sprintf("%s/ablesungen/%d", requestBase(r), target.ID),
 			IsEdit:                    true,
@@ -628,7 +628,7 @@ func periodOverviewGroups(periods []store.PeriodSummary) []periodMonatGroup {
 // first, linking each to its detail view. ImportedCount/Warnings surface the
 // CSV import's result (Ticket #54) - passed via query params since the app
 // has no session/flash mechanism.
-func handleAblesungenListe(secret string) http.HandlerFunc {
+func handleAblesungenListe(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 		periods, err := store.AllPeriods(db)
@@ -646,7 +646,7 @@ func handleAblesungenListe(secret string) http.HandlerFunc {
 			ImportedCount int
 			Warnings      []string
 		}{
-			navData:       newNavData(r, secret),
+			navData:       a.NavData(r),
 			Aktuell:       "ablesungen",
 			MonatGruppen:  periodOverviewGroups(periods),
 			ImportedCount: importedCount,
@@ -676,7 +676,7 @@ func formatMeterDiff(current, previous float64) string {
 // handleAblesungDetail shows one period's Zählerstände and full
 // Kostenaufstellung (Ticket #43, generalized from the old "letzte Ablesung"
 // view to any period by id), with a dropdown to jump to any other period.
-func handleAblesungDetail(secret string) http.HandlerFunc {
+func handleAblesungDetail(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 		periodID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -769,7 +769,7 @@ func handleAblesungDetail(secret string) http.HandlerFunc {
 			Einspeisung *calc.EinspeisungErgebnis
 			KostenNote  string
 		}{
-			navData:       newNavData(r, secret),
+			navData:       a.NavData(r),
 			Aktuell:       "ablesungen-detail",
 			Period:        period,
 			AllPeriods:    periodListItems(allPeriods),
@@ -793,12 +793,12 @@ func handleAblesungDetail(secret string) http.HandlerFunc {
 // handleBerechnungslogik serves a static, informational explanation of the
 // cost formulas (Ticket #33) - no DB access, the content never depends on
 // any period's data.
-func handleBerechnungslogik(secret string) http.HandlerFunc {
+func handleBerechnungslogik(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data := struct {
 			navData
 			Aktuell string
-		}{navData: newNavData(r, secret), Aktuell: "berechnungslogik"}
+		}{navData: a.NavData(r), Aktuell: "berechnungslogik"}
 		if err := berechnungslogikTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -808,7 +808,7 @@ func handleBerechnungslogik(secret string) http.HandlerFunc {
 // handleStammdatenForm serves the /stammdaten page (Issue #61): each
 // apartment's current Wohnungsgröße/Flurstücksgröße, editable as live
 // values - not historized per Ablesung like the rest of the monthly form.
-func handleStammdatenForm(secret string) http.HandlerFunc {
+func handleStammdatenForm(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 		apartments, err := store.Apartments(db)
@@ -822,7 +822,7 @@ func handleStammdatenForm(secret string) http.HandlerFunc {
 			Aktuell    string
 			Apartments []store.Apartment
 		}{
-			navData:    newNavData(r, secret),
+			navData:    a.NavData(r),
 			Aktuell:    "stammdaten",
 			Apartments: apartments,
 		}
