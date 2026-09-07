@@ -36,10 +36,12 @@ func TestNav_LoginEntry_NoLoginPassword(t *testing.T) {
 	if !strings.Contains(body, `id="login-overlay"`) {
 		t.Error("das Login-Overlay selbst wird nicht gerendert, obwohl ein Einstiegspunkt dafür sichtbar sein soll")
 	}
-	// Bestehendes Verhalten (Ticket #112): secret == "" gilt weiterhin als
-	// eingeloggt, der Abmelden-Link bleibt sichtbar.
-	if !strings.Contains(body, `id="logout-link"`) {
-		t.Error("Abmelden-Link fehlt - bestehendes Verhalten für secret == \"\" darf sich nicht ändern")
+	// Ohne aktive Session (weder echtes Login möglich, da secret == "",
+	// noch Demo-Session) gibt es nichts, wovon man sich abmelden könnte -
+	// der Abmelden-Link bleibt verborgen (sonst stünden Abmelden und
+	// Anmelden widersprüchlich nebeneinander, siehe Issue #132-Bugfix).
+	if strings.Contains(body, `id="logout-link"`) {
+		t.Error("Abmelden-Link sichtbar ohne aktive Session (secret == \"\", keine Demo-Session)")
 	}
 	if strings.Contains(body, `class="demo-banner"`) {
 		t.Error("Demo-Banner sichtbar ohne aktive Demo-Session")

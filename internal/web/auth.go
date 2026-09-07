@@ -178,21 +178,24 @@ func isDemoSession(r *http.Request) bool {
 	return verifySession(demoSessionSecret, c.Value)
 }
 
-// demoNavFlags computes the beiden Demo-Modus-bezogenen Nav-Fakten, die
-// jede Seite über die gemeinsame "nav"-Partial braucht (Issue #122):
-// isDemo (steuert den Demo-Banner und, zusammen mit IsLoggedIn, den
-// "Abmelden"-Link) und showLoginEntry (steuert die Sichtbarkeit des
-// "Anmelden"-Einstiegspunkts ins Login-Overlay). Ein Einstiegspunkt wird
-// gezeigt, sobald der Besucher weder in einer Demo-Session ist noch mit
-// einem echten, konfigurierten LOGIN_PASSWORD eingeloggt ist - deckt sowohl
-// den klassischen "nicht eingeloggt"-Fall (secret gesetzt, kein gültiges
-// Cookie) als auch den neuen Fall secret == "" ab, wo isLoggedIn zwar
-// unconditionally true ist (alles offen), es aber bislang keinen
-// sichtbaren Weg zum Demo-Login gab.
-func demoNavFlags(r *http.Request, secret string) (isDemo, showLoginEntry bool) {
+// demoNavFlags computes die 3 Demo-Modus-bezogenen Nav-Fakten, die jede
+// Seite über die gemeinsame "nav"-Partial braucht (Issue #122): isDemo
+// (steuert den Demo-Banner), showLoginEntry (Sichtbarkeit des "Anmelden"-
+// Einstiegspunkts ins Login-Overlay) und showLogoutEntry (Sichtbarkeit des
+// "Abmelden"-Links). showLoginEntry wird gezeigt, sobald der Besucher weder
+// in einer Demo-Session ist noch mit einem echten, konfigurierten
+// LOGIN_PASSWORD eingeloggt ist - deckt sowohl den klassischen "nicht
+// eingeloggt"-Fall (secret gesetzt, kein gültiges Cookie) als auch den Fall
+// secret == "" ab, wo isLoggedIn zwar unconditionally true ist (alles
+// offen), es aber trotzdem einen sichtbaren Weg zum Demo-Login braucht.
+// showLogoutEntry ist bewusst NICHT einfach isLoggedIn: bei secret == ""
+// ist isLoggedIn immer true (alles offen), obwohl gar keine Session
+// existiert, aus der man sich abmelden könnte - "Abmelden" ist nur
+// sinnvoll bei einer echten Session (realLogin) oder einer Demo-Session.
+func demoNavFlags(r *http.Request, secret string) (isDemo, showLoginEntry, showLogoutEntry bool) {
 	isDemo = isDemoSession(r)
 	realLogin := secret != "" && !isDemo && isLoggedIn(r, secret)
-	return isDemo, !isDemo && !realLogin
+	return isDemo, !isDemo && !realLogin, isDemo || realLogin
 }
 
 // navData is every page's shared Nav-Fakten - Base plus the 3 Login/Demo-
@@ -204,10 +207,11 @@ func demoNavFlags(r *http.Request, secret string) (isDemo, showLoginEntry bool) 
 // Aktuell (the active nav tab) deliberately stays out - each handler names
 // its own page, a constructor here can't derive that for it.
 type navData struct {
-	Base           string
-	IsLoggedIn     bool
-	IsDemoSession  bool
-	ShowLoginEntry bool
+	Base            string
+	IsLoggedIn      bool
+	IsDemoSession   bool
+	ShowLoginEntry  bool
+	ShowLogoutEntry bool
 }
 
 // auth bundles the 2 facts every login-related decision needs: das
@@ -230,12 +234,13 @@ func newAuth(secret string, demoDB *sql.DB) auth {
 // requestBase/isLoggedIn/demoNavFlags are called together, replacing what
 // used to be duplicated across all 9 page-handlers.
 func (a auth) NavData(r *http.Request) navData {
-	isDemo, showLoginEntry := demoNavFlags(r, a.secret)
+	isDemo, showLoginEntry, showLogoutEntry := demoNavFlags(r, a.secret)
 	return navData{
-		Base:           requestBase(r),
-		IsLoggedIn:     isLoggedIn(r, a.secret),
-		IsDemoSession:  isDemo,
-		ShowLoginEntry: showLoginEntry,
+		Base:            requestBase(r),
+		IsLoggedIn:      isLoggedIn(r, a.secret),
+		IsDemoSession:   isDemo,
+		ShowLoginEntry:  showLoginEntry,
+		ShowLogoutEntry: showLogoutEntry,
 	}
 }
 
