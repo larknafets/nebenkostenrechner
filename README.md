@@ -41,6 +41,8 @@ Preise (aktuell, werden pro Monat neu erfasst statt zentral versioniert):
 
 Ableserhythmus: 1x/Monat. Verbrauch = aktueller Zählerstand minus Stand der chronologisch nächstälteren Ablesung (einfache Differenz, funktioniert automatisch auch über Lücken hinweg).
 
+Eine Ablesung darf auch nur teilweise ausgefüllt gespeichert werden (**Teilstand**) - einzelne Zählerstände, Preise, Personenzahl oder der Abrechnungsmonat können fehlen und später nachgetragen werden (nur Ablesedatum und Heizungs-Gewichtung sind immer zwingend). Ein Teilstand fließt nicht in die Berechnung ein (Dashboard, Verbrauch) und ist in der Ablesungen-Liste/-Detailansicht als "unvollständig" markiert. Nur die jeweils neueste Ablesung darf ein Teilstand sein - solange sie es ist, führt "Neue Ablesung" stattdessen zu ihrer Vervollständigung. Anlegen und Vervollständigen sind beide auch ohne Login möglich, siehe `LOGIN_PASSWORD` unten.
+
 `strom_wallbox` fließt als dritte Zuteilungsstufe in die Strom-Netzbezug-Zuteilung ein (siehe unten) - sie wird vom nach Wohnung 2/Wärmepumpe verbleibenden Netzbezug abgezogen, bevor der Rest implizit Wohnung 1 zufällt. Keine eigene Wohnungszuteilung, kein eigener Wallbox-Tarif.
 
 Visuelle Übersicht der Zählerverschachtelung (und der PV-Verrechnungskaskade): [docs/pv-verrechnung.md](docs/pv-verrechnung.md).
@@ -209,7 +211,7 @@ Danach erreichbar unter `http://localhost:8080`, Health-Check unter `/healthz`. 
 | `DB_PATH` | `/data/nebenkosten.db` | Pfad zur SQLite-Datenbankdatei |
 | `LISTEN_ADDR` | `:8080` | Listen-Adresse des HTTP-Servers |
 | `WIDGET_LISTEN_ADDR` | `:8081` | Listen-Adresse der Widget-Routen (siehe unten) |
-| `LOGIN_PASSWORD` | *(leer)* | Optionales Kennwort. Leer = alles offen wie bisher. Gesetzt: nicht angemeldete Besucher sehen nur eingeschränkte, lesende Ansichten (z. B. nur Wohnung 2 auf dem Dashboard), alle Eingabe-/Änderungsaktionen sind gesperrt - "Login"-Link in der Navigation öffnet ein Overlay zur Anmeldung. |
+| `LOGIN_PASSWORD` | *(leer)* | Optionales Kennwort. Leer = alles offen wie bisher. Gesetzt: nicht angemeldete Besucher sehen nur eingeschränkte, lesende Ansichten (z. B. nur Wohnung 2 auf dem Dashboard), alle Eingabe-/Änderungsaktionen sind gesperrt - mit Ausnahme einer neuen Ablesung bzw. dem Vervollständigen eines bestehenden Teilstands, siehe oben - "Login"-Link in der Navigation öffnet ein Overlay zur Anmeldung. |
 
 ### Demo-Modus
 
