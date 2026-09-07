@@ -1413,7 +1413,7 @@ func TestHandleUpdateAblesung_ErrorMapping(t *testing.T) {
 			req.SetPathValue("id", strconv.FormatInt(target, 10))
 
 			w := httptest.NewRecorder()
-			handleUpdateAblesung(db)(w, req)
+			handleUpdateAblesung()(w, requestWithDB(req, db))
 
 			if w.Code != http.StatusBadRequest {
 				t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusBadRequest, w.Body.String())
@@ -1431,7 +1431,7 @@ func TestHandleUpdateAblesung_ErrorMapping(t *testing.T) {
 		req.SetPathValue("id", strconv.FormatInt(target, 10))
 
 		w := httptest.NewRecorder()
-		handleUpdateAblesung(db)(w, req)
+		handleUpdateAblesung()(w, requestWithDB(req, db))
 
 		if w.Code != http.StatusFound {
 			t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())

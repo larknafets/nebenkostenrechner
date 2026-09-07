@@ -2,7 +2,6 @@ package web
 
 import (
 	"bufio"
-	"database/sql"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -30,9 +29,9 @@ var csvHeader = append(append([]string{"reading_date", "monat"}, store.MeterKeys
 // handleExportCSV streams every Ablesung as CSV (Ticket #53) - Excel-DE
 // dialect (Semikolon, Komma-Dezimal, UTF-8 mit BOM), same csvHeader the
 // import (Ticket #54) reads back.
-func handleExportCSV(db *sql.DB) http.HandlerFunc {
+func handleExportCSV() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		details, err := store.AllPeriodDetails(db)
+		details, err := store.AllPeriodDetails(dbFromContext(r.Context()))
 		if err != nil {
 			http.Error(w, "periods: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -88,8 +87,9 @@ type importRow struct {
 // depth). A hard error in any row aborts the whole import (alles oder
 // nichts); negative-Verbrauch/Ausreißer warnings never block, just get
 // reported afterwards on the Ablesungen-Übersicht.
-func handleImportCSV(db *sql.DB) http.HandlerFunc {
+func handleImportCSV() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		existing, err := store.AllPeriods(db)
 		if err != nil {
 			http.Error(w, "periods: "+err.Error(), http.StatusInternalServerError)

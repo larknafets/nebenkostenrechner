@@ -121,33 +121,37 @@ func parseFormFloat(r *http.Request, name, fieldLabel, apartmentID string) (floa
 
 // NewMux wires up the wizard and read routes. Every mutating or create-only
 // route is wrapped in requireLogin (Ticket #112's Durchsetzungs-Matrix) -
-// harmless no-ops when secret == "" (no Login-Kennwort configured).
+// harmless no-ops when secret == "" (no Login-Kennwort configured). Every
+// route that touches the DB is wrapped in withDB (Ticket #119) so its
+// handler reads *sql.DB from the request context instead of a fixed
+// closure variable - db itself is still always the same real database for
+// now, the actual Demo/Echt-Umschaltung is a later ticket.
 func NewMux(db *sql.DB, version, buildDate string) *http.ServeMux {
 	secret := resolveLoginPassword()
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", handleIndex(db))
+	mux.HandleFunc("GET /", handleIndex())
 	mux.HandleFunc("POST /login", handleLogin(secret))
 	mux.HandleFunc("POST /logout", handleLogout(secret))
-	mux.HandleFunc("GET /ablesungen", handleAblesungenListe(db, secret))
-	mux.HandleFunc("GET /ablesungen/export.csv", requireLogin(secret, handleExportCSV(db)))
-	mux.HandleFunc("GET /ablesungen/neu", requireLogin(secret, handleWizardForm(db, secret)))
-	mux.HandleFunc("POST /ablesungen", requireLogin(secret, handleCreateAblesung(db)))
-	mux.HandleFunc("POST /ablesungen/import", requireLogin(secret, handleImportCSV(db)))
-	mux.HandleFunc("GET /ablesungen/{id}", handleAblesungDetail(db, secret))
-	mux.HandleFunc("GET /ablesungen/{id}/bearbeiten", requireLogin(secret, handleEditWizardForm(db, secret)))
-	mux.HandleFunc("POST /ablesungen/{id}", requireLogin(secret, handleUpdateAblesung(db)))
-	mux.HandleFunc("POST /ablesungen/{id}/loeschen", requireLogin(secret, handleDeleteAblesung(db)))
-	mux.HandleFunc("GET /dashboard", handleDashboard(db, version, buildDate, secret))
+	mux.HandleFunc("GET /ablesungen", withDB(db, handleAblesungenListe(secret)))
+	mux.HandleFunc("GET /ablesungen/export.csv", withDB(db, requireLogin(secret, handleExportCSV())))
+	mux.HandleFunc("GET /ablesungen/neu", withDB(db, requireLogin(secret, handleWizardForm(secret))))
+	mux.HandleFunc("POST /ablesungen", withDB(db, requireLogin(secret, handleCreateAblesung())))
+	mux.HandleFunc("POST /ablesungen/import", withDB(db, requireLogin(secret, handleImportCSV())))
+	mux.HandleFunc("GET /ablesungen/{id}", withDB(db, handleAblesungDetail(secret)))
+	mux.HandleFunc("GET /ablesungen/{id}/bearbeiten", withDB(db, requireLogin(secret, handleEditWizardForm(secret))))
+	mux.HandleFunc("POST /ablesungen/{id}", withDB(db, requireLogin(secret, handleUpdateAblesung())))
+	mux.HandleFunc("POST /ablesungen/{id}/loeschen", withDB(db, requireLogin(secret, handleDeleteAblesung())))
+	mux.HandleFunc("GET /dashboard", withDB(db, handleDashboard(version, buildDate, secret)))
 	mux.HandleFunc("GET /berechnungslogik", handleBerechnungslogik(secret))
-	mux.HandleFunc("GET /stammdaten", handleStammdatenForm(db, secret))
-	mux.HandleFunc("POST /stammdaten", requireLogin(secret, handleUpdateStammdaten(db)))
-	mux.HandleFunc("GET /fixkosten", handleFixkostenListe(db, secret))
-	mux.HandleFunc("GET /fixkosten/neu", requireLogin(secret, handleFixkostenForm(db, secret)))
-	mux.HandleFunc("POST /fixkosten", requireLogin(secret, handleCreateFixkosten(db)))
-	mux.HandleFunc("GET /fixkosten/{id}", handleFixkostenDetail(db, secret))
-	mux.HandleFunc("GET /fixkosten/{id}/bearbeiten", requireLogin(secret, handleFixkostenEditForm(db, secret)))
-	mux.HandleFunc("POST /fixkosten/{id}", requireLogin(secret, handleUpdateFixkosten(db)))
-	mux.HandleFunc("POST /fixkosten/{id}/loeschen", requireLogin(secret, handleDeleteFixkosten(db)))
+	mux.HandleFunc("GET /stammdaten", withDB(db, handleStammdatenForm(secret)))
+	mux.HandleFunc("POST /stammdaten", withDB(db, requireLogin(secret, handleUpdateStammdaten())))
+	mux.HandleFunc("GET /fixkosten", withDB(db, handleFixkostenListe(secret)))
+	mux.HandleFunc("GET /fixkosten/neu", withDB(db, requireLogin(secret, handleFixkostenForm(secret))))
+	mux.HandleFunc("POST /fixkosten", withDB(db, requireLogin(secret, handleCreateFixkosten())))
+	mux.HandleFunc("GET /fixkosten/{id}", withDB(db, handleFixkostenDetail(secret)))
+	mux.HandleFunc("GET /fixkosten/{id}/bearbeiten", withDB(db, requireLogin(secret, handleFixkostenEditForm(secret))))
+	mux.HandleFunc("POST /fixkosten/{id}", withDB(db, requireLogin(secret, handleUpdateFixkosten())))
+	mux.HandleFunc("POST /fixkosten/{id}/loeschen", withDB(db, requireLogin(secret, handleDeleteFixkosten())))
 	return mux
 }
 
@@ -165,7 +169,7 @@ func requestBase(r *http.Request) string {
 	return ingressBase(r.Header.Get("X-Ingress-Path"))
 }
 
-func handleIndex(db *sql.DB) http.HandlerFunc {
+func handleIndex() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, requestBase(r)+"/dashboard", http.StatusFound)
 	}
@@ -224,8 +228,9 @@ type wizardData struct {
 	NoPeriods bool
 }
 
-func handleWizardForm(db *sql.DB, secret string) http.HandlerFunc {
+func handleWizardForm(secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		apartments, err := store.Apartments(db)
 		if err != nil {
 			http.Error(w, "apartments: "+err.Error(), http.StatusInternalServerError)
@@ -286,8 +291,9 @@ func handleWizardForm(db *sql.DB, secret string) http.HandlerFunc {
 // Ausreißer-Warnung baseline always compares against the genuine previous
 // period - the one chronologically before the Ablesung being edited,
 // regardless of whether newer Ablesungen exist after it.
-func handleEditWizardForm(db *sql.DB, secret string) http.HandlerFunc {
+func handleEditWizardForm(secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		periodID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		if err != nil {
 			http.Error(w, "invalid period id", http.StatusBadRequest)
@@ -427,8 +433,9 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 	}, nil
 }
 
-func handleCreateAblesung(db *sql.DB) http.HandlerFunc {
+func handleCreateAblesung() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form: "+err.Error(), http.StatusBadRequest)
 			return
@@ -461,8 +468,9 @@ func handleCreateAblesung(db *sql.DB) http.HandlerFunc {
 // one anymore, see store.UpdatePeriod). The neighbor-date reorder guard
 // lives in store.UpdatePeriod itself; this handler only translates its
 // typed errors into the German user-facing messages.
-func handleUpdateAblesung(db *sql.DB) http.HandlerFunc {
+func handleUpdateAblesung() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		periodID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		if err != nil {
 			http.Error(w, "invalid period id", http.StatusBadRequest)
@@ -524,8 +532,9 @@ func handleUpdateAblesung(db *sql.DB) http.HandlerFunc {
 // deletable, including the last remaining one - no "abgeschlossen" status
 // exists in this app; the client-side confirm() dialog is the only
 // safety net (see ablesung.html).
-func handleDeleteAblesung(db *sql.DB) http.HandlerFunc {
+func handleDeleteAblesung() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		periodID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		if err != nil {
 			http.Error(w, "invalid period id", http.StatusBadRequest)
@@ -623,8 +632,9 @@ func periodOverviewGroups(periods []store.PeriodSummary) []periodMonatGroup {
 // first, linking each to its detail view. ImportedCount/Warnings surface the
 // CSV import's result (Ticket #54) - passed via query params since the app
 // has no session/flash mechanism.
-func handleAblesungenListe(db *sql.DB, secret string) http.HandlerFunc {
+func handleAblesungenListe(secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		periods, err := store.AllPeriods(db)
 		if err != nil {
 			http.Error(w, "periods: "+err.Error(), http.StatusInternalServerError)
@@ -672,8 +682,9 @@ func formatMeterDiff(current, previous float64) string {
 // handleAblesungDetail shows one period's Zählerstände and full
 // Kostenaufstellung (Ticket #43, generalized from the old "letzte Ablesung"
 // view to any period by id), with a dropdown to jump to any other period.
-func handleAblesungDetail(db *sql.DB, secret string) http.HandlerFunc {
+func handleAblesungDetail(secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		periodID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		if err != nil {
 			http.Error(w, "invalid period id", http.StatusBadRequest)
@@ -805,8 +816,9 @@ func handleBerechnungslogik(secret string) http.HandlerFunc {
 // handleStammdatenForm serves the /stammdaten page (Issue #61): each
 // apartment's current Wohnungsgröße/Flurstücksgröße, editable as live
 // values - not historized per Ablesung like the rest of the monthly form.
-func handleStammdatenForm(db *sql.DB, secret string) http.HandlerFunc {
+func handleStammdatenForm(secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		apartments, err := store.Apartments(db)
 		if err != nil {
 			http.Error(w, "apartments: "+err.Error(), http.StatusInternalServerError)
@@ -833,8 +845,9 @@ func handleStammdatenForm(db *sql.DB, secret string) http.HandlerFunc {
 
 // handleUpdateStammdaten saves every apartment's Wohnungsgröße/
 // Flurstücksgröße from the /stammdaten form.
-func handleUpdateStammdaten(db *sql.DB) http.HandlerFunc {
+func handleUpdateStammdaten() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form: "+err.Error(), http.StatusBadRequest)
 			return

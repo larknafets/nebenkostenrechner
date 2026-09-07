@@ -1,7 +1,6 @@
 package web
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -113,8 +112,9 @@ func buildFixkostenPositionRows(kostenpositionen []store.Kostenposition, values 
 // the latest Fixkosten-Eingabe (Issue #60 Story 2/9) - today's month as the
 // default Monat, same convention as the Ablesung-Wizard's ReadingDate
 // default.
-func handleFixkostenForm(db *sql.DB, secret string) http.HandlerFunc {
+func handleFixkostenForm(secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		apartments, err := store.Apartments(db)
 		if err != nil {
 			http.Error(w, "apartments: "+err.Error(), http.StatusInternalServerError)
@@ -159,8 +159,9 @@ func handleFixkostenForm(db *sql.DB, secret string) http.HandlerFunc {
 
 // handleFixkostenEditForm serves the "bearbeiten" Fixkosten-Formular for an
 // existing Eingabe, prefilled with its own current values.
-func handleFixkostenEditForm(db *sql.DB, secret string) http.HandlerFunc {
+func handleFixkostenEditForm(secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		eingabeID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		if err != nil {
 			http.Error(w, "invalid fixkosten eingabe id", http.StatusBadRequest)
@@ -214,7 +215,8 @@ func handleFixkostenEditForm(db *sql.DB, secret string) http.HandlerFunc {
 // handleCreateFixkosten and handleUpdateFixkosten) - Logik/Typ/Wert werden
 // für alle 14 Kostenpositionen gelesen (Issue #105/#108), jede Eingabe trägt
 // ihren eigenen unabhängigen Stand.
-func parseFixkostenInput(r *http.Request, db *sql.DB, apartments []store.Apartment) (store.FixkostenInput, error) {
+func parseFixkostenInput(r *http.Request, apartments []store.Apartment) (store.FixkostenInput, error) {
+	db := dbFromContext(r.Context())
 	monat, err := parseFixkostenMonat(r.FormValue("monat"))
 	if err != nil {
 		return store.FixkostenInput{}, err
@@ -265,8 +267,9 @@ func parseFixkostenInput(r *http.Request, db *sql.DB, apartments []store.Apartme
 	return store.FixkostenInput{Monat: monat, Personen: personen, Werte: werte, Abschlag: abschlag}, nil
 }
 
-func handleCreateFixkosten(db *sql.DB) http.HandlerFunc {
+func handleCreateFixkosten() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form: "+err.Error(), http.StatusBadRequest)
 			return
@@ -278,7 +281,7 @@ func handleCreateFixkosten(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		in, err := parseFixkostenInput(r, db, apartments)
+		in, err := parseFixkostenInput(r, apartments)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -294,8 +297,9 @@ func handleCreateFixkosten(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func handleUpdateFixkosten(db *sql.DB) http.HandlerFunc {
+func handleUpdateFixkosten() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		eingabeID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		if err != nil {
 			http.Error(w, "invalid fixkosten eingabe id", http.StatusBadRequest)
@@ -323,7 +327,7 @@ func handleUpdateFixkosten(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		in, err := parseFixkostenInput(r, db, apartments)
+		in, err := parseFixkostenInput(r, apartments)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -338,8 +342,9 @@ func handleUpdateFixkosten(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func handleDeleteFixkosten(db *sql.DB) http.HandlerFunc {
+func handleDeleteFixkosten() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		eingabeID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		if err != nil {
 			http.Error(w, "invalid fixkosten eingabe id", http.StatusBadRequest)
@@ -368,8 +373,9 @@ type fixkostenListItem struct {
 	SummeW2 float64
 }
 
-func handleFixkostenListe(db *sql.DB, secret string) http.HandlerFunc {
+func handleFixkostenListe(secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		eingaben, err := store.AllFixkostenEingaben(db)
 		if err != nil {
 			http.Error(w, "fixkosten eingaben: "+err.Error(), http.StatusInternalServerError)
@@ -415,8 +421,9 @@ type fixkostenDetailPosition struct {
 	KostenW2   float64
 }
 
-func handleFixkostenDetail(db *sql.DB, secret string) http.HandlerFunc {
+func handleFixkostenDetail(secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
 		eingabeID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		if err != nil {
 			http.Error(w, "invalid fixkosten eingabe id", http.StatusBadRequest)

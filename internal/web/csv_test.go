@@ -40,7 +40,7 @@ func TestHandleExportCSV(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/ablesungen/export.csv", nil)
 	w := httptest.NewRecorder()
-	handleExportCSV(db)(w, req)
+	handleExportCSV()(w, requestWithDB(req, db))
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
@@ -80,7 +80,7 @@ func TestHandleImportCSV_Success(t *testing.T) {
 		csvRow("2026-07-01", "210") + "\n"
 
 	w := httptest.NewRecorder()
-	handleImportCSV(db)(w, csvUploadRequest(t, csvText))
+	handleImportCSV()(w, requestWithDB(csvUploadRequest(t, csvText), db))
 
 	if w.Code != http.StatusFound {
 		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())
@@ -107,7 +107,7 @@ func TestHandleImportCSV_RejectsWhenDataExists(t *testing.T) {
 
 	csvText := strings.Join(csvHeader, ";") + "\n" + csvRow("2026-06-01", "100") + "\n"
 	w := httptest.NewRecorder()
-	handleImportCSV(db)(w, csvUploadRequest(t, csvText))
+	handleImportCSV()(w, requestWithDB(csvUploadRequest(t, csvText), db))
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
@@ -119,7 +119,7 @@ func TestHandleImportCSV_BadRowRejectedWithoutPersisting(t *testing.T) {
 	csvText := strings.Join(csvHeader, ";") + "\n" + csvRow("2026-06-01", "nicht-numerisch") + "\n"
 
 	w := httptest.NewRecorder()
-	handleImportCSV(db)(w, csvUploadRequest(t, csvText))
+	handleImportCSV()(w, requestWithDB(csvUploadRequest(t, csvText), db))
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
