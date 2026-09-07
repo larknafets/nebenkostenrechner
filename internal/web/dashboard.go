@@ -91,20 +91,16 @@ func handleDashboard(version, buildDate, secret string) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		loggedIn := isLoggedIn(r, secret)
-		isDemo, showLoginEntry := demoNavFlags(r, secret)
+		nav := newNavData(r, secret)
 
 		if !dd.HasAnyData {
 			data := struct {
-				Base           string
-				Aktuell        string
-				IsLoggedIn     bool
-				IsDemoSession  bool
-				ShowLoginEntry bool
-				HasAnyData     bool
-				Version        string
-				BuildDate      string
-			}{Base: requestBase(r), Aktuell: "dashboard", IsLoggedIn: loggedIn, IsDemoSession: isDemo, ShowLoginEntry: showLoginEntry, Version: version, BuildDate: buildDate}
+				navData
+				Aktuell    string
+				HasAnyData bool
+				Version    string
+				BuildDate  string
+			}{navData: nav, Aktuell: "dashboard", Version: version, BuildDate: buildDate}
 			if err := dashboardTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
@@ -116,7 +112,7 @@ func handleDashboard(version, buildDate, secret string) http.HandlerFunc {
 		// Datenobjekt (Ticket #112) - ein reines Server-seitiges Ausblenden
 		// im Template würde Wohnung 1's Daten trotzdem im HTML-Quelltext
 		// belassen (Fund aus dem Login-Overlay-Prototyp, Issue #113).
-		if !loggedIn {
+		if !nav.IsLoggedIn {
 			for _, a := range apartments {
 				if a.ID == 2 {
 					apartments = []store.Apartment{a}
@@ -145,11 +141,8 @@ func handleDashboard(version, buildDate, secret string) http.HandlerFunc {
 		latestVersion, updateAvailable := checkForUpdate(version)
 
 		data := struct {
-			Base               string
+			navData
 			Aktuell            string
-			IsLoggedIn         bool
-			IsDemoSession      bool
-			ShowLoginEntry     bool
 			HasAnyData         bool
 			AnzeigeJahr        int
 			AnzeigeJahrLaufend bool
@@ -164,11 +157,8 @@ func handleDashboard(version, buildDate, secret string) http.HandlerFunc {
 			UpdateAvailable    bool
 			LatestVersion      string
 		}{
-			Base:               requestBase(r),
+			navData:            nav,
 			Aktuell:            "dashboard",
-			IsLoggedIn:         loggedIn,
-			IsDemoSession:      isDemo,
-			ShowLoginEntry:     showLoginEntry,
 			HasAnyData:         true,
 			AnzeigeJahr:        jahr,
 			AnzeigeJahrLaufend: jahr == time.Now().Year(),

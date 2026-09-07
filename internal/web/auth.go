@@ -195,6 +195,34 @@ func demoNavFlags(r *http.Request, secret string) (isDemo, showLoginEntry bool) 
 	return isDemo, !isDemo && !realLogin
 }
 
+// navData is every page's shared Nav-Fakten - Base plus the 3 Login/Demo-
+// Facts, computed once per request instead of separately in each of the 9
+// page-handlers. Embedded (anonymous field) in every page's template-data
+// struct: text/template promotes embedded-struct fields for dot-access, so
+// layout.html keeps reading .Base/.IsLoggedIn/.IsDemoSession/.ShowLoginEntry
+// unchanged, whether they come directly from a struct or via this embed.
+// Aktuell (the active nav tab) deliberately stays out - each handler names
+// its own page, a constructor here can't derive that for it.
+type navData struct {
+	Base           string
+	IsLoggedIn     bool
+	IsDemoSession  bool
+	ShowLoginEntry bool
+}
+
+// newNavData builds navData for the current request - the single place
+// requestBase/isLoggedIn/demoNavFlags are called together, replacing what
+// used to be duplicated across all 9 page-handlers.
+func newNavData(r *http.Request, secret string) navData {
+	isDemo, showLoginEntry := demoNavFlags(r, secret)
+	return navData{
+		Base:           requestBase(r),
+		IsLoggedIn:     isLoggedIn(r, secret),
+		IsDemoSession:  isDemo,
+		ShowLoginEntry: showLoginEntry,
+	}
+}
+
 // requireLogin gates a mutating or create-only route behind the
 // Login-Kennwort (Ticket #112's Durchsetzungs-Matrix): with no Kennwort
 // configured every route stays open (isLoggedIn always true), otherwise an
