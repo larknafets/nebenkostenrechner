@@ -79,7 +79,160 @@
      crumbBack, where every page showed the same 4 links regardless of
      where you were). .Aktuell is one of "dashboard"/"ablesungen"/
      "fixkosten"/"stammdaten"/"berechnungslogik", set by each handler. */}}
-{{define "nav"}}<p class="muted">{{if eq .Aktuell "dashboard"}}<strong>Dashboard</strong>{{else}}<a href="{{.Base}}/dashboard">Dashboard</a>{{end}} · {{if eq .Aktuell "ablesungen"}}<strong>Ablesungen</strong>{{else if eq .Aktuell "ablesungen-detail"}}<a href="{{.Base}}/ablesungen"><strong>Ablesungen</strong></a>{{else}}<a href="{{.Base}}/ablesungen">Ablesungen</a>{{end}} · {{if eq .Aktuell "fixkosten"}}<strong>Fixkosten</strong>{{else if eq .Aktuell "fixkosten-detail"}}<a href="{{.Base}}/fixkosten"><strong>Fixkosten</strong></a>{{else}}<a href="{{.Base}}/fixkosten">Fixkosten</a>{{end}} · {{if eq .Aktuell "stammdaten"}}<strong>Stammdaten</strong>{{else}}<a href="{{.Base}}/stammdaten">Stammdaten</a>{{end}} · {{if eq .Aktuell "berechnungslogik"}}<strong>Wie wird gerechnet?</strong>{{else}}<a href="{{.Base}}/berechnungslogik">Wie wird gerechnet?</a>{{end}}</p>{{end}}
+{{define "nav"}}<p class="muted">{{if eq .Aktuell "dashboard"}}<strong>Dashboard</strong>{{else}}<a href="{{.Base}}/dashboard">Dashboard</a>{{end}} · {{if eq .Aktuell "ablesungen"}}<strong>Ablesungen</strong>{{else if eq .Aktuell "ablesungen-detail"}}<a href="{{.Base}}/ablesungen"><strong>Ablesungen</strong></a>{{else}}<a href="{{.Base}}/ablesungen">Ablesungen</a>{{end}} · {{if eq .Aktuell "fixkosten"}}<strong>Fixkosten</strong>{{else if eq .Aktuell "fixkosten-detail"}}<a href="{{.Base}}/fixkosten"><strong>Fixkosten</strong></a>{{else}}<a href="{{.Base}}/fixkosten">Fixkosten</a>{{end}} · {{if eq .Aktuell "stammdaten"}}<strong>Stammdaten</strong>{{else}}<a href="{{.Base}}/stammdaten">Stammdaten</a>{{end}} · {{if eq .Aktuell "berechnungslogik"}}<strong>Wie wird gerechnet?</strong>{{else}}<a href="{{.Base}}/berechnungslogik">Wie wird gerechnet?</a>{{end}} · <span id="proto-authlink-wrap"><a href="#" data-proto-open data-proto-login>Login</a><a href="#" data-proto-logout hidden>Logout</a></span></p>
+{{/* PROTOTYP Ticket #113 - 3 Overlay-Varianten, siehe https://github.com/larknafets/nebenkostenrechner/issues/113. NICHT fuer Produktion, vor Merge nach main entfernen/durch die gewaehlte Variante ersetzen. Fake-Login: Kennwort "demo", nur localStorage, keine echte Route. Divs bewusst AUSSERHALB der Nav-<p>/<span> - Block-Content darin wird vom HTML-Parser aus <p> rausgehoben (schliesst <p> automatisch), das brach Variante B's Popover-Anker (siehe Ticket-Kommentar). */}}
+<div class="proto-overlay" data-variant="A" hidden>
+  <div class="proto-backdrop">
+    <div class="proto-modal">
+      <h3 style="margin-top:0">Anmelden</h3>
+      <div class="field"><label>Kennwort</label><input type="password" placeholder="Kennwort"><div class="proto-field-error" hidden>Falsches Kennwort.</div></div>
+      <p class="muted" style="margin:.25rem 0 1rem">Prototyp: Kennwort ist "demo"</p>
+      <div class="btn-row" style="margin-top:0;justify-content:flex-end">
+        <button type="button" class="secondary" data-proto-cancel>Abbrechen</button>
+        <button type="button" class="primary" data-proto-submit>Anmelden</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="proto-overlay" data-variant="B" hidden>
+  <div class="proto-popover">
+    <h3 style="margin-top:0;font-size:1rem">Anmelden</h3>
+    <div class="field"><label>Kennwort</label><input type="password" placeholder="Kennwort"><div class="proto-field-error" hidden>Falsches Kennwort.</div></div>
+    <p class="muted" style="margin:.25rem 0 1rem;font-size:.75rem">Prototyp: Kennwort ist "demo"</p>
+    <div class="btn-row" style="margin-top:0;justify-content:flex-end">
+      <button type="button" class="secondary" data-proto-cancel>Abbrechen</button>
+      <button type="button" class="primary" data-proto-submit>Anmelden</button>
+    </div>
+  </div>
+</div>
+<dialog class="proto-overlay proto-dialog" data-variant="C">
+  <h3 style="margin-top:0">Anmelden</h3>
+  <div class="field"><label>Kennwort</label><input type="password" placeholder="Kennwort"><div class="proto-field-error" hidden>Falsches Kennwort.</div></div>
+  <p class="muted" style="margin:.25rem 0 1rem">Prototyp: Kennwort ist "demo"</p>
+  <div class="btn-row" style="margin-top:0;justify-content:flex-end">
+    <button type="button" class="secondary" data-proto-cancel>Abbrechen</button>
+    <button type="button" class="primary" data-proto-submit>Anmelden</button>
+  </div>
+</dialog>
+<div class="proto-switcher">
+  <button type="button" id="proto-switcher-prev" title="Vorherige Variante (←)">←</button>
+  <span id="proto-switcher-label">A — Modal mit Backdrop</span>
+  <button type="button" id="proto-switcher-next" title="Naechste Variante (→)">→</button>
+</div>
+<script>
+(function(){
+  var STORAGE_KEY = 'protoEingeloggt';
+  var DEMO_PW = 'demo';
+  var VARIANTS = ['A','B','C'];
+  var VARIANT_NAMES = {A:'Modal mit Backdrop', B:'Anchored Popover', C:'Natives <dialog>'};
+
+  function isEingeloggt(){ try { return localStorage.getItem(STORAGE_KEY) === '1'; } catch(e){ return false; } }
+  function setEingeloggt(v){ try { localStorage.setItem(STORAGE_KEY, v ? '1' : '0'); } catch(e){} }
+
+  function currentVariant(){
+    var v = new URLSearchParams(location.search).get('variant');
+    return VARIANTS.indexOf(v) !== -1 ? v : 'A';
+  }
+  function setVariant(v){
+    var url = new URL(location.href);
+    url.searchParams.set('variant', v);
+    history.replaceState(null, '', url);
+    renderVariant(v);
+  }
+
+  function renderNavLink(){
+    var wrap = document.getElementById('proto-authlink-wrap');
+    if (!wrap) return;
+    var loggedIn = isEingeloggt();
+    wrap.querySelector('[data-proto-login]').hidden = loggedIn;
+    wrap.querySelector('[data-proto-logout]').hidden = !loggedIn;
+  }
+
+  function overlayFor(v){ return document.querySelector('.proto-overlay[data-variant="' + v + '"]'); }
+
+  function openOverlay(v){
+    var target = overlayFor(v);
+    if (!target) return;
+    var input = target.querySelector('input[type=password]');
+    if (input) input.value = '';
+    var err = target.querySelector('.proto-field-error');
+    if (err) err.hidden = true;
+    if (v === 'B') {
+      var anchor = document.getElementById('proto-authlink-wrap');
+      var rect = anchor.getBoundingClientRect();
+      var pop = target.querySelector('.proto-popover');
+      pop.style.top = (rect.bottom + 6) + 'px';
+      pop.style.left = Math.max(8, rect.right - 280) + 'px';
+    }
+    if (target.tagName === 'DIALOG') { target.showModal(); } else { target.hidden = false; }
+    if (input) input.focus();
+  }
+  function closeOverlay(v){
+    var target = overlayFor(v);
+    if (!target) return;
+    if (target.tagName === 'DIALOG') { if (target.open) target.close(); } else { target.hidden = true; }
+  }
+
+  function renderVariant(v){
+    VARIANTS.forEach(function(name){
+      var el = overlayFor(name);
+      if (!el) return;
+      el.style.display = name === v ? '' : 'none';
+      if (el.tagName === 'DIALOG' && name !== v && el.open) el.close();
+      if (el.tagName !== 'DIALOG') el.hidden = true;
+    });
+    var label = document.getElementById('proto-switcher-label');
+    if (label) label.textContent = v + ' — ' + VARIANT_NAMES[v];
+  }
+
+  document.addEventListener('click', function(e){
+    if (e.target.classList.contains('proto-backdrop')) { closeOverlay(currentVariant()); return; }
+    if (e.target.closest('[data-proto-open]')) { e.preventDefault(); openOverlay(currentVariant()); return; }
+    if (e.target.closest('[data-proto-cancel]')) { e.preventDefault(); closeOverlay(currentVariant()); return; }
+    if (e.target.closest('[data-proto-logout]')) { e.preventDefault(); setEingeloggt(false); renderNavLink(); return; }
+    if (e.target.closest('[data-proto-submit]')) {
+      e.preventDefault();
+      var overlay = e.target.closest('.proto-overlay');
+      var pw = overlay.querySelector('input[type=password]').value;
+      var err = overlay.querySelector('.proto-field-error');
+      if (pw === DEMO_PW) {
+        setEingeloggt(true);
+        renderNavLink();
+        closeOverlay(currentVariant());
+      } else if (err) {
+        err.hidden = false;
+      }
+      return;
+    }
+    if (currentVariant() === 'B') {
+      var popover = overlayFor('B');
+      if (popover && !popover.hidden && !popover.contains(e.target) && !e.target.closest('[data-proto-open]')) {
+        closeOverlay('B');
+      }
+    }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && currentVariant() !== 'C') { closeOverlay(currentVariant()); }
+    var tag = (document.activeElement && document.activeElement.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || (document.activeElement && document.activeElement.isContentEditable)) return;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      var idx = VARIANTS.indexOf(currentVariant());
+      var next = e.key === 'ArrowLeft' ? (idx + VARIANTS.length - 1) % VARIANTS.length : (idx + 1) % VARIANTS.length;
+      setVariant(VARIANTS[next]);
+    }
+  });
+
+  var prevBtn = document.getElementById('proto-switcher-prev');
+  var nextBtn = document.getElementById('proto-switcher-next');
+  if (prevBtn) prevBtn.addEventListener('click', function(){ var i = VARIANTS.indexOf(currentVariant()); setVariant(VARIANTS[(i + VARIANTS.length - 1) % VARIANTS.length]); });
+  if (nextBtn) nextBtn.addEventListener('click', function(){ var i = VARIANTS.indexOf(currentVariant()); setVariant(VARIANTS[(i + 1) % VARIANTS.length]); });
+
+  renderNavLink();
+  renderVariant(currentVariant());
+})();
+</script>
+{{end}}
 
 {{/* styles is the full shared CSS, split out of "layout" so the widget
      shell (widget_layout.html) can reuse every component style (badges,
@@ -236,6 +389,18 @@
   .theme-btn.active { background: var(--accent-soft); color: var(--accent); }
   .theme-btn:hover:not(.active) { background: var(--bg); }
   .theme-btn svg { width: 16px; height: 16px; }
+
+  /* PROTOTYP Ticket #113 (Login-Overlay) - vor Merge nach main entfernen/ersetzen */
+  input[type=password] { width: 100%; padding: .5rem .6rem; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
+  .proto-field-error { color: var(--danger); font-size: .8rem; margin-top: .3rem; }
+  .proto-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .proto-modal { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; width: 320px; max-width: 90vw; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+  .proto-popover { position: fixed; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; width: 280px; max-width: 90vw; box-shadow: 0 8px 24px rgba(0,0,0,.18); z-index: 100; }
+  dialog.proto-dialog { border: none; border-radius: 10px; padding: 1.5rem; width: 320px; max-width: 90vw; background: var(--panel); color: var(--text); }
+  dialog.proto-dialog::backdrop { background: rgba(0,0,0,.45); }
+  .proto-switcher { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: .6rem; background: #1c1e21; color: #fff; padding: .5rem .9rem; border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,.35); z-index: 200; font-size: .8rem; }
+  .proto-switcher button { background: rgba(255,255,255,.15); color: #fff; border: none; border-radius: 999px; width: 26px; height: 26px; padding: 0; cursor: pointer; }
+  .proto-switcher button:hover { background: rgba(255,255,255,.3); }
 
   @media (max-width: 480px) {
     .app { padding: 1rem 1rem 3rem; }
