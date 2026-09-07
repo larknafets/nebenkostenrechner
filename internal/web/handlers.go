@@ -122,36 +122,35 @@ func parseFormFloat(r *http.Request, name, fieldLabel, apartmentID string) (floa
 // NewMux wires up the wizard and read routes. Every mutating or create-only
 // route is wrapped in requireLogin (Ticket #112's Durchsetzungs-Matrix) -
 // harmless no-ops when secret == "" (no Login-Kennwort configured). Every
-// route that touches the DB is wrapped in withDB (Ticket #119) so its
-// handler reads *sql.DB from the request context instead of a fixed
-// closure variable - db itself is still always the same real database for
-// now, the actual Demo/Echt-Umschaltung is a later ticket.
-func NewMux(db *sql.DB, version, buildDate string) *http.ServeMux {
+// route that touches the DB is wrapped in withDB (Ticket #119/#120), which
+// picks db or demoDB per request depending on whether the visitor carries a
+// Demo-Session-Cookie.
+func NewMux(db, demoDB *sql.DB, version, buildDate string) *http.ServeMux {
 	secret := resolveLoginPassword()
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", handleIndex())
 	mux.HandleFunc("POST /login", handleLogin(secret))
 	mux.HandleFunc("POST /logout", handleLogout(secret))
-	mux.HandleFunc("GET /ablesungen", withDB(db, handleAblesungenListe(secret)))
-	mux.HandleFunc("GET /ablesungen/export.csv", withDB(db, requireLogin(secret, handleExportCSV())))
-	mux.HandleFunc("GET /ablesungen/neu", withDB(db, requireLogin(secret, handleWizardForm(secret))))
-	mux.HandleFunc("POST /ablesungen", withDB(db, requireLogin(secret, handleCreateAblesung())))
-	mux.HandleFunc("POST /ablesungen/import", withDB(db, requireLogin(secret, handleImportCSV())))
-	mux.HandleFunc("GET /ablesungen/{id}", withDB(db, handleAblesungDetail(secret)))
-	mux.HandleFunc("GET /ablesungen/{id}/bearbeiten", withDB(db, requireLogin(secret, handleEditWizardForm(secret))))
-	mux.HandleFunc("POST /ablesungen/{id}", withDB(db, requireLogin(secret, handleUpdateAblesung())))
-	mux.HandleFunc("POST /ablesungen/{id}/loeschen", withDB(db, requireLogin(secret, handleDeleteAblesung())))
-	mux.HandleFunc("GET /dashboard", withDB(db, handleDashboard(version, buildDate, secret)))
+	mux.HandleFunc("GET /ablesungen", withDB(db, demoDB, handleAblesungenListe(secret)))
+	mux.HandleFunc("GET /ablesungen/export.csv", withDB(db, demoDB, requireLogin(secret, handleExportCSV())))
+	mux.HandleFunc("GET /ablesungen/neu", withDB(db, demoDB, requireLogin(secret, handleWizardForm(secret))))
+	mux.HandleFunc("POST /ablesungen", withDB(db, demoDB, requireLogin(secret, handleCreateAblesung())))
+	mux.HandleFunc("POST /ablesungen/import", withDB(db, demoDB, requireLogin(secret, handleImportCSV())))
+	mux.HandleFunc("GET /ablesungen/{id}", withDB(db, demoDB, handleAblesungDetail(secret)))
+	mux.HandleFunc("GET /ablesungen/{id}/bearbeiten", withDB(db, demoDB, requireLogin(secret, handleEditWizardForm(secret))))
+	mux.HandleFunc("POST /ablesungen/{id}", withDB(db, demoDB, requireLogin(secret, handleUpdateAblesung())))
+	mux.HandleFunc("POST /ablesungen/{id}/loeschen", withDB(db, demoDB, requireLogin(secret, handleDeleteAblesung())))
+	mux.HandleFunc("GET /dashboard", withDB(db, demoDB, handleDashboard(version, buildDate, secret)))
 	mux.HandleFunc("GET /berechnungslogik", handleBerechnungslogik(secret))
-	mux.HandleFunc("GET /stammdaten", withDB(db, handleStammdatenForm(secret)))
-	mux.HandleFunc("POST /stammdaten", withDB(db, requireLogin(secret, handleUpdateStammdaten())))
-	mux.HandleFunc("GET /fixkosten", withDB(db, handleFixkostenListe(secret)))
-	mux.HandleFunc("GET /fixkosten/neu", withDB(db, requireLogin(secret, handleFixkostenForm(secret))))
-	mux.HandleFunc("POST /fixkosten", withDB(db, requireLogin(secret, handleCreateFixkosten())))
-	mux.HandleFunc("GET /fixkosten/{id}", withDB(db, handleFixkostenDetail(secret)))
-	mux.HandleFunc("GET /fixkosten/{id}/bearbeiten", withDB(db, requireLogin(secret, handleFixkostenEditForm(secret))))
-	mux.HandleFunc("POST /fixkosten/{id}", withDB(db, requireLogin(secret, handleUpdateFixkosten())))
-	mux.HandleFunc("POST /fixkosten/{id}/loeschen", withDB(db, requireLogin(secret, handleDeleteFixkosten())))
+	mux.HandleFunc("GET /stammdaten", withDB(db, demoDB, handleStammdatenForm(secret)))
+	mux.HandleFunc("POST /stammdaten", withDB(db, demoDB, requireLogin(secret, handleUpdateStammdaten())))
+	mux.HandleFunc("GET /fixkosten", withDB(db, demoDB, handleFixkostenListe(secret)))
+	mux.HandleFunc("GET /fixkosten/neu", withDB(db, demoDB, requireLogin(secret, handleFixkostenForm(secret))))
+	mux.HandleFunc("POST /fixkosten", withDB(db, demoDB, requireLogin(secret, handleCreateFixkosten())))
+	mux.HandleFunc("GET /fixkosten/{id}", withDB(db, demoDB, handleFixkostenDetail(secret)))
+	mux.HandleFunc("GET /fixkosten/{id}/bearbeiten", withDB(db, demoDB, requireLogin(secret, handleFixkostenEditForm(secret))))
+	mux.HandleFunc("POST /fixkosten/{id}", withDB(db, demoDB, requireLogin(secret, handleUpdateFixkosten())))
+	mux.HandleFunc("POST /fixkosten/{id}/loeschen", withDB(db, demoDB, requireLogin(secret, handleDeleteFixkosten())))
 	return mux
 }
 

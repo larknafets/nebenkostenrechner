@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 	"github.com/larknafets/nebenkostenrechner/internal/web"
@@ -67,6 +68,14 @@ var (
 	buildDate = ""
 )
 
+// demoDBPath derives the Demo-Modus's eigene DB-Datei (Issue #120) - liegt
+// im selben Verzeichnis wie die echte DB, damit sie über Neustarts hinweg
+// auf demselben persistenten Volume (z. B. /data, HA-Addon addon_configs)
+// erhalten bleibt.
+func demoDBPath(dbPath string) string {
+	return filepath.Join(filepath.Dir(dbPath), "demo.db")
+}
+
 func main() {
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
@@ -83,7 +92,28 @@ func main() {
 	}
 	defer db.Close()
 
-	mux := web.NewMux(db, version, buildDate)
+	// demoDB ist eine komplett separate Datenbank für den Demo-Modus (Issue
+	// #120) - entsteht beim allerersten Start automatisch (store.Open legt
+	// Schema+Seed an wie bei db) und wird, falls noch leer, sofort mit dem
+	// 39-Monats-Testdatensatz befüllt. Ein erneutes Befüllen bei jedem Start
+	// würde bestehende Demo-Änderungen verwerfen - das periodische Zurück-
+	// setzen bei jedem Demo-Login ist Ticket #121, hier nicht implementiert.
+	demoDB, err := store.Open(demoDBPath(dbPath))
+	if err != nil {
+		log.Fatalf("open demo store: %v", err)
+	}
+	defer demoDB.Close()
+	demoPeriods, err := store.AllPeriods(demoDB)
+	if err != nil {
+		log.Fatalf("demo store: %v", err)
+	}
+	if len(demoPeriods) == 0 {
+		if err := store.SeedDemoData(demoDB, time.Now()); err != nil {
+			log.Fatalf("seed demo data: %v", err)
+		}
+	}
+
+	mux := web.NewMux(db, demoDB, version, buildDate)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		if err := db.PingContext(r.Context()); err != nil {
 			http.Error(w, "db unreachable", http.StatusServiceUnavailable)

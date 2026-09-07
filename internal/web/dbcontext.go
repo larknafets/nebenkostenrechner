@@ -15,11 +15,17 @@ import (
 type dbContextKey struct{}
 
 // withDB wraps next so it (and any helper it calls with r in scope) can read
-// db via dbFromContext(r.Context()). For now every route is wired through
-// NewMux with the same, real *sql.DB - no behavior change yet.
-func withDB(db *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+// the request's *sql.DB via dbFromContext(r.Context()). Picks demoDB when r
+// carries a valid Demo-Session-Cookie (Issue #120), db otherwise - the only
+// place in the app that branches Demo/Echt-Datenbank; every downstream
+// handler just reads whichever one it got.
+func withDB(db, demoDB *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		next(w, requestWithDB(r, db))
+		chosen := db
+		if isDemoSession(r) {
+			chosen = demoDB
+		}
+		next(w, requestWithDB(r, chosen))
 	}
 }
 

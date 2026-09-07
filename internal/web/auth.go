@@ -17,6 +17,24 @@ import (
 const (
 	sessionCookieName = "nk_session"
 	sessionTTL        = 30 * 24 * time.Hour
+
+	// demoSessionCookieName marks a visitor's session as a Demo-Session
+	// (Issue #120) - a separate cookie from sessionCookieName, so the real
+	// Login-Kennwort mechanism (secret) stays completely untouched. A demo
+	// visitor also counts as "logged in" for UI/Routen-Zwecke (see
+	// isLoggedIn); this cookie additionally tells withDB which *sql.DB a
+	// request should use.
+	demoSessionCookieName = "nk_demo_session"
+
+	// demoPassword is fest im Code verankert (Issue #118 Implementation
+	// Decision) - kein ENV/Config, funktioniert immer, unabhängig davon ob
+	// LOGIN_PASSWORD gesetzt ist.
+	demoPassword = "demo"
+
+	// demoSessionSecret signs the Demo-Session-Cookie. Not a real secret -
+	// demoPassword itself is public/hardcoded - just reuses signSession's
+	// HMAC-Mechanismus so a visitor can't forge/tamper the marker.
+	demoSessionSecret = "nebenkostenrechner-demo-session"
 )
 
 // resolveLoginPassword reads the optional Login-Kennwort: LOGIN_PASSWORD env
@@ -74,9 +92,11 @@ func verifySession(secret, value string) bool {
 
 // isLoggedIn reports whether r carries a valid session - always true when
 // no Kennwort is configured (secret == ""), the "Login-System deaktiviert"
-// case from Ticket #112.
+// case from Ticket #112, or when r carries a valid Demo-Session (Issue
+// #120) - a demo visitor gets full UI/Routen-Zugriff like a regulär
+// eingeloggter Nutzer, unabhängig davon ob LOGIN_PASSWORD gesetzt ist.
 func isLoggedIn(r *http.Request, secret string) bool {
-	if secret == "" {
+	if secret == "" || isDemoSession(r) {
 		return true
 	}
 	c, err := r.Cookie(sessionCookieName)
@@ -115,6 +135,44 @@ func clearSessionCookie(w http.ResponseWriter) {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
+}
+
+// setDemoSessionCookie logs the visitor into den Demo-Modus (Issue #120)
+// for sessionTTL - gleiche Form wie setSessionCookie, nur mit
+// demoSessionSecret statt dem echten secret signiert.
+func setDemoSessionCookie(w http.ResponseWriter) {
+	expiry := time.Now().Add(sessionTTL)
+	http.SetCookie(w, &http.Cookie{
+		Name:     demoSessionCookieName,
+		Value:    signSession(demoSessionSecret, expiry),
+		Path:     "/",
+		Expires:  expiry,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+// clearDemoSessionCookie logs the visitor out of dem Demo-Modus.
+func clearDemoSessionCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     demoSessionCookieName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+// isDemoSession reports whether r carries a valid Demo-Session-Cookie -
+// unabhängig von secret/LOGIN_PASSWORD, da der Demo-Login immer
+// funktioniert (Issue #118 Implementation Decision).
+func isDemoSession(r *http.Request) bool {
+	c, err := r.Cookie(demoSessionCookieName)
+	if err != nil {
+		return false
+	}
+	return verifySession(demoSessionSecret, c.Value)
 }
 
 // requireLogin gates a mutating or create-only route behind the
@@ -199,6 +257,14 @@ func handleLogin(secret string) http.HandlerFunc {
 			http.Error(w, "invalid form: "+err.Error(), http.StatusBadRequest)
 			return
 		}
+		// demoPassword ist ein Sonderfall, geprüft vor dem regulären
+		// secret-Vergleich - funktioniert immer, auch bei secret == ""
+		// (Issue #118 Implementation Decision).
+		if r.FormValue("password") == demoPassword {
+			setDemoSessionCookie(w)
+			http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
+			return
+		}
 		if secret == "" {
 			http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
 			return
@@ -215,6 +281,7 @@ func handleLogin(secret string) http.HandlerFunc {
 func handleLogout(secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		clearSessionCookie(w)
+		clearDemoSessionCookie(w)
 		http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
 	}
 }
