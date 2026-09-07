@@ -7,15 +7,17 @@
     {{range .Apartments}}
     <div class="panel">
       <h3>{{.Name}}</h3>
-      <div class="field"><label>Wohnungsgröße (m²)</label><input type="number" step="any" name="qm_{{.ID}}" value="{{.QM}}" required></div>
-      <div class="field"><label>Flurstücksgröße (m²)</label><input type="number" step="any" name="flurstueck_groesse_{{.ID}}" value="{{.FlurstueckGroesse}}" required></div>
+      <div class="field"><label>Wohnungsgröße (m²)</label><input type="number" step="any" name="qm_{{.ID}}" value="{{.QM}}" required {{if not $.IsLoggedIn}}disabled{{end}}></div>
+      <div class="field"><label>Flurstücksgröße (m²)</label><input type="number" step="any" name="flurstueck_groesse_{{.ID}}" value="{{.FlurstueckGroesse}}" required {{if not $.IsLoggedIn}}disabled{{end}}></div>
     </div>
     {{end}}
   </div>
 
+  {{if .IsLoggedIn}}
   <div class="btn-row">
     <button type="submit" class="primary dirty-save" disabled>Speichern</button>
   </div>
+  {{end}}
 </form>
 
 <script>

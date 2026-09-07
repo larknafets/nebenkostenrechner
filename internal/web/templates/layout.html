@@ -79,7 +79,76 @@
      crumbBack, where every page showed the same 4 links regardless of
      where you were). .Aktuell is one of "dashboard"/"ablesungen"/
      "fixkosten"/"stammdaten"/"berechnungslogik", set by each handler. */}}
-{{define "nav"}}<p class="muted">{{if eq .Aktuell "dashboard"}}<strong>Dashboard</strong>{{else}}<a href="{{.Base}}/dashboard">Dashboard</a>{{end}} · {{if eq .Aktuell "ablesungen"}}<strong>Ablesungen</strong>{{else if eq .Aktuell "ablesungen-detail"}}<a href="{{.Base}}/ablesungen"><strong>Ablesungen</strong></a>{{else}}<a href="{{.Base}}/ablesungen">Ablesungen</a>{{end}} · {{if eq .Aktuell "fixkosten"}}<strong>Fixkosten</strong>{{else if eq .Aktuell "fixkosten-detail"}}<a href="{{.Base}}/fixkosten"><strong>Fixkosten</strong></a>{{else}}<a href="{{.Base}}/fixkosten">Fixkosten</a>{{end}} · {{if eq .Aktuell "stammdaten"}}<strong>Stammdaten</strong>{{else}}<a href="{{.Base}}/stammdaten">Stammdaten</a>{{end}} · {{if eq .Aktuell "berechnungslogik"}}<strong>Wie wird gerechnet?</strong>{{else}}<a href="{{.Base}}/berechnungslogik">Wie wird gerechnet?</a>{{end}}</p>{{end}}
+{{define "nav"}}<p class="muted">{{if eq .Aktuell "dashboard"}}<strong>Dashboard</strong>{{else}}<a href="{{.Base}}/dashboard">Dashboard</a>{{end}} · {{if eq .Aktuell "ablesungen"}}<strong>Ablesungen</strong>{{else if eq .Aktuell "ablesungen-detail"}}<a href="{{.Base}}/ablesungen"><strong>Ablesungen</strong></a>{{else}}<a href="{{.Base}}/ablesungen">Ablesungen</a>{{end}} · {{if eq .Aktuell "fixkosten"}}<strong>Fixkosten</strong>{{else if eq .Aktuell "fixkosten-detail"}}<a href="{{.Base}}/fixkosten"><strong>Fixkosten</strong></a>{{else}}<a href="{{.Base}}/fixkosten">Fixkosten</a>{{end}} · {{if eq .Aktuell "stammdaten"}}<strong>Stammdaten</strong>{{else}}<a href="{{.Base}}/stammdaten">Stammdaten</a>{{end}} · {{if eq .Aktuell "berechnungslogik"}}<strong>Wie wird gerechnet?</strong>{{else}}<a href="{{.Base}}/berechnungslogik">Wie wird gerechnet?</a>{{end}} · {{if .IsLoggedIn}}<a href="#" id="logout-link">Logout</a>{{else}}<a href="#" id="login-open">Login</a>{{end}}</p>
+{{if .IsLoggedIn}}
+<form method="post" action="{{.Base}}/logout" id="logout-form" hidden></form>
+<script>
+document.getElementById("logout-link").addEventListener("click", function (e) {
+  e.preventDefault();
+  document.getElementById("logout-form").submit();
+});
+</script>
+{{end}}
+{{if not .IsLoggedIn}}
+<div class="login-backdrop" id="login-overlay" hidden>
+  <div class="login-modal">
+    <h3 style="margin-top:0">Anmelden</h3>
+    <form method="post" action="{{.Base}}/login" id="login-form">
+      <input type="hidden" name="next" id="login-next">
+      <div class="field"><label>Kennwort</label><input type="password" name="password" id="login-password" autocomplete="current-password"></div>
+      <div class="login-error" id="login-error" hidden>Falsches Kennwort.</div>
+      <div class="btn-row" style="margin-top:0;justify-content:flex-end">
+        <button type="button" class="secondary" id="login-cancel">Abbrechen</button>
+        <button type="submit" class="primary">Anmelden</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+(function () {
+  var overlay = document.getElementById("login-overlay");
+  var openLink = document.getElementById("login-open");
+  var cancelBtn = document.getElementById("login-cancel");
+  var errorBox = document.getElementById("login-error");
+  var nextField = document.getElementById("login-next");
+  var pwField = document.getElementById("login-password");
+
+  function currentPath() {
+    var params = new URLSearchParams(window.location.search);
+    params.delete("login");
+    params.delete("fehler");
+    params.delete("next");
+    var qs = params.toString();
+    return window.location.pathname + (qs ? "?" + qs : "");
+  }
+
+  // explicitNext is set when the server itself bounced here with ?next=...
+  // (Ticket #112's redirectToLoginOverlay - a gated URL, or the page a
+  // failed login attempt came from) - takes precedence over the current
+  // page, which for a server-side bounce is always just the Dashboard.
+  function open(explicitNext) {
+    nextField.value = explicitNext || currentPath();
+    overlay.hidden = false;
+    pwField.focus();
+  }
+  function close() {
+    overlay.hidden = true;
+  }
+
+  openLink.addEventListener("click", function (e) { e.preventDefault(); open(); });
+  cancelBtn.addEventListener("click", close);
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !overlay.hidden) close(); });
+
+  var params = new URLSearchParams(window.location.search);
+  if (params.get("login") === "1") {
+    open(params.get("next"));
+    if (params.get("fehler") === "1") errorBox.hidden = false;
+  }
+})();
+</script>
+{{end}}
+{{end}}
 
 {{/* styles is the full shared CSS, split out of "layout" so the widget
      shell (widget_layout.html) can reuse every component style (badges,
@@ -124,7 +193,12 @@
   .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; }
   .muted { color: var(--muted); font-size: .85rem; }
   label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: .25rem; }
-  input[type=number], input[type=date], select { width: 100%; padding: .5rem .6rem; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
+  input[type=number], input[type=date], input[type=password], select { width: 100%; padding: .5rem .6rem; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
+  input:disabled { opacity: .6; cursor: not-allowed; }
+  .login-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .login-backdrop[hidden] { display: none; }
+  .login-modal { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; width: 320px; max-width: 90vw; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+  .login-error { color: var(--danger); font-size: .8rem; margin-top: .3rem; }
   .field { margin-bottom: .9rem; }
   .radio-options { display: flex; gap: 1.25rem; flex-wrap: wrap; }
   .radio-option { display: flex; align-items: center; gap: .35rem; width: auto; font-size: .9rem; color: var(--text); margin-bottom: 0; }

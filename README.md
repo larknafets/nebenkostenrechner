@@ -209,6 +209,7 @@ Danach erreichbar unter `http://localhost:8080`, Health-Check unter `/healthz`. 
 | `DB_PATH` | `/data/nebenkosten.db` | Pfad zur SQLite-Datenbankdatei |
 | `LISTEN_ADDR` | `:8080` | Listen-Adresse des HTTP-Servers |
 | `WIDGET_LISTEN_ADDR` | `:8081` | Listen-Adresse der Widget-Routen (siehe unten) |
+| `LOGIN_PASSWORD` | *(leer)* | Optionales Kennwort. Leer = alles offen wie bisher. Gesetzt: nicht angemeldete Besucher sehen nur eingeschränkte, lesende Ansichten (z. B. nur Wohnung 2 auf dem Dashboard), alle Eingabe-/Änderungsaktionen sind gesperrt - "Login"-Link in der Navigation öffnet ein Overlay zur Anmeldung. |
 
 ### Home Assistant Add-on
 

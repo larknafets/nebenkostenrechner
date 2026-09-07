@@ -32,6 +32,7 @@
   </table>
 </div>
 
+{{if .IsLoggedIn}}
 <div class="btn-row">
   <a href="{{.Base}}/fixkosten/neu" class="button success">Neue Fixkosteneingabe</a>
   <a href="{{.Base}}/fixkosten/{{.Eingabe.ID}}/bearbeiten" class="button secondary">Eingabe korrigieren</a>
@@ -39,4 +40,5 @@
     <button type="submit" class="danger">Eingabe löschen</button>
   </form>
 </div>
+{{end}}
 {{end}}

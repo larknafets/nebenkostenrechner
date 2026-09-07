@@ -99,6 +99,7 @@
   {{end}}
 </div>
 
+{{if .IsLoggedIn}}
 <div class="btn-row">
   <a href="{{.Base}}/ablesungen/neu" class="button success">Neue Ablesung</a>
   <a href="{{.Base}}/ablesungen/{{.Period.ID}}/bearbeiten" class="button secondary">Ablesung korrigieren</a>
@@ -106,4 +107,5 @@
     <button type="submit" class="danger">Ablesung löschen</button>
   </form>
 </div>
+{{end}}
 {{end}}

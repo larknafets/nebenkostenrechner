@@ -1,0 +1,220 @@
+package web
+
+import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"crypto/subtle"
+	"encoding/hex"
+	"encoding/json"
+	"net/http"
+	"net/url"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+)
+
+const (
+	sessionCookieName = "nk_session"
+	sessionTTL        = 30 * 24 * time.Hour
+)
+
+// resolveLoginPassword reads the optional Login-Kennwort: LOGIN_PASSWORD env
+// var first (Docker/.env), falling back to the Home Assistant Supervisor's
+// /data/options.json ("login_password" field) when unset - Supervisor does
+// not map addon options onto container env vars itself, and this app's
+// distroless image has no shell for the usual bashio/run.sh workaround (see
+// larknafets/ha-addons#3). Read once at startup, like DB_PATH/LISTEN_ADDR.
+// Empty means the login system stays disabled - everything visible.
+func resolveLoginPassword() string {
+	if pw := os.Getenv("LOGIN_PASSWORD"); pw != "" {
+		return pw
+	}
+	data, err := os.ReadFile("/data/options.json")
+	if err != nil {
+		return ""
+	}
+	var options struct {
+		LoginPassword string `json:"login_password"`
+	}
+	if err := json.Unmarshal(data, &options); err != nil {
+		return ""
+	}
+	return options.LoginPassword
+}
+
+// signSession returns a session cookie value valid until expiry:
+// "<unix-expiry>.<hex-hmac>". Stateless (no server-side session store, so it
+// survives restarts) and keyed by secret itself - changing the configured
+// Kennwort invalidates every outstanding session automatically, since the
+// HMAC key changes with it.
+func signSession(secret string, expiry time.Time) string {
+	exp := strconv.FormatInt(expiry.Unix(), 10)
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(exp))
+	return exp + "." + hex.EncodeToString(mac.Sum(nil))
+}
+
+// verifySession checks a session cookie value against secret: well-formed,
+// not expired, and HMAC-valid (constant-time comparison).
+func verifySession(secret, value string) bool {
+	exp, sig, ok := strings.Cut(value, ".")
+	if !ok {
+		return false
+	}
+	expUnix, err := strconv.ParseInt(exp, 10, 64)
+	if err != nil || time.Now().Unix() > expUnix {
+		return false
+	}
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(exp))
+	wantSig := hex.EncodeToString(mac.Sum(nil))
+	return hmac.Equal([]byte(sig), []byte(wantSig))
+}
+
+// isLoggedIn reports whether r carries a valid session - always true when
+// no Kennwort is configured (secret == ""), the "Login-System deaktiviert"
+// case from Ticket #112.
+func isLoggedIn(r *http.Request, secret string) bool {
+	if secret == "" {
+		return true
+	}
+	c, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return false
+	}
+	return verifySession(secret, c.Value)
+}
+
+// setSessionCookie logs the visitor in for sessionTTL. HttpOnly (never
+// readable from JS) and SameSite=Lax (the app only ever runs same-origin,
+// whether direct or behind HA-Ingress - no cross-site posting scenario to
+// guard against, see Ticket #112). No Secure attribute: the app has no
+// notion of its own whether it's reached over TLS (HA-Ingress may terminate
+// TLS in front of it), and Secure isn't required for the Same-Origin-Proxy
+// setup Ingress uses.
+func setSessionCookie(w http.ResponseWriter, secret string) {
+	expiry := time.Now().Add(sessionTTL)
+	http.SetCookie(w, &http.Cookie{
+		Name:     sessionCookieName,
+		Value:    signSession(secret, expiry),
+		Path:     "/",
+		Expires:  expiry,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+// clearSessionCookie logs the visitor out.
+func clearSessionCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     sessionCookieName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+// requireLogin gates a mutating or create-only route behind the
+// Login-Kennwort (Ticket #112's Durchsetzungs-Matrix): with no Kennwort
+// configured every route stays open (isLoggedIn always true), otherwise an
+// unauthenticated request bounces to the Login-Overlay (Ticket #113).
+//
+// The bounce always lands on the Dashboard, never back on the gated URL
+// itself - a fully gated GET page (e.g. /ablesungen/neu) is itself wrapped
+// in requireLogin, so redirecting to itself with ?login=1 would just hit
+// requireLogin again and loop forever, since a query param alone never
+// grants access. The Dashboard is the one page never behind requireLogin,
+// so it's always safe to land on; the originally attempted URL travels
+// along as "next" and is where a *successful* login lands instead (see
+// loginRedirectTarget).
+func requireLogin(secret string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if isLoggedIn(r, secret) {
+			next(w, r)
+			return
+		}
+		wantedPath := r.URL.Path
+		if r.URL.RawQuery != "" {
+			wantedPath += "?" + r.URL.RawQuery
+		}
+		if r.Method != http.MethodGet {
+			// A gated POST (e.g. .../loeschen) is never itself worth
+			// landing on after login - fall back to the page the form was
+			// submitted from, if any.
+			wantedPath = refererPath(r)
+		}
+		redirectToLoginOverlay(w, r, wantedPath, false)
+	}
+}
+
+// refererPath extracts just the path(+query) off the Referer header - never
+// its scheme/host, so an unexpected cross-origin Referer can't smuggle
+// anything past loginRedirectTarget's same-origin-only check downstream.
+func refererPath(r *http.Request) string {
+	u, err := url.Parse(r.Referer())
+	if err != nil || u.Path == "" {
+		return ""
+	}
+	if u.RawQuery != "" {
+		return u.Path + "?" + u.RawQuery
+	}
+	return u.Path
+}
+
+// redirectToLoginOverlay bounces to the Dashboard with the Login-Overlay
+// flagged open (?login=1[&fehler=1]) and next carrying where a successful
+// login should actually land - see requireLogin for why it's always the
+// Dashboard, never the originally attempted URL.
+func redirectToLoginOverlay(w http.ResponseWriter, r *http.Request, next string, fehler bool) {
+	if next == "" || !strings.HasPrefix(next, "/") || strings.HasPrefix(next, "//") {
+		next = "/dashboard"
+	}
+	target := requestBase(r) + "/dashboard?login=1&next=" + url.QueryEscape(next)
+	if fehler {
+		target += "&fehler=1"
+	}
+	http.Redirect(w, r, target, http.StatusFound)
+}
+
+// loginRedirectTarget resolves where to send the browser after a
+// *successful* login (or a logout): the "next" hidden field the Overlay
+// fills in (Ticket #113), falling back to the Dashboard when absent
+// (logout - see nav's Logout-Formular) or malformed. Only ever a
+// same-origin path, never a full URL, to rule out open-redirect abuse via a
+// crafted "next" value.
+func loginRedirectTarget(r *http.Request) string {
+	next := r.FormValue("next")
+	if next == "" || !strings.HasPrefix(next, "/") || strings.HasPrefix(next, "//") {
+		return requestBase(r) + "/dashboard"
+	}
+	return requestBase(r) + next
+}
+
+func handleLogin(secret string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "invalid form: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		if secret == "" {
+			http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
+			return
+		}
+		if subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte(secret)) != 1 {
+			redirectToLoginOverlay(w, r, r.FormValue("next"), true)
+			return
+		}
+		setSessionCookie(w, secret)
+		http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
+	}
+}
+
+func handleLogout(secret string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		clearSessionCookie(w)
+		http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
+	}
+}

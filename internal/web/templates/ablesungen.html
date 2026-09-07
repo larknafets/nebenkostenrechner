@@ -2,9 +2,11 @@
 <h1>Ablesungen</h1>
 {{template "nav" .}}
 
+{{if .IsLoggedIn}}
 <div class="btn-row">
   <a href="{{.Base}}/ablesungen/neu" class="button success">Neue Ablesung</a>
 </div>
+{{end}}
 
 {{if .ImportedCount}}
 <p class="panel" style="border-color:#2e7d32; margin-top:1rem">✓ {{.ImportedCount}} Ablesungen importiert.</p>
@@ -19,7 +21,11 @@
 {{end}}
 
 {{if not .MonatGruppen}}
+{{if .IsLoggedIn}}
 <p class="muted" style="margin-top:1rem">Noch keine Ablesung erfasst. <a href="{{.Base}}/ablesungen/neu">Jetzt erfassen</a>.</p>
+{{else}}
+<p class="muted" style="margin-top:1rem">Noch keine Ablesung erfasst.</p>
+{{end}}
 {{else}}
 <div class="panel" style="margin-top:1rem">
   <table class="letzte">
@@ -37,8 +43,10 @@
   </table>
 </div>
 
+{{if .IsLoggedIn}}
 <div class="btn-row">
   <a href="{{.Base}}/ablesungen/export.csv" class="button secondary">CSV Export</a>
 </div>
+{{end}}
 {{end}}
 {{end}}

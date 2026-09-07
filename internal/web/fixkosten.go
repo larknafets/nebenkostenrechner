@@ -73,6 +73,7 @@ type fixkostenPositionRow struct {
 type fixkostenFormData struct {
 	Base             string
 	Aktuell          string
+	IsLoggedIn       bool
 	FormAction       string
 	IsEdit           bool
 	Monat            string // "YYYY-MM", <input type="month"> value
@@ -112,7 +113,7 @@ func buildFixkostenPositionRows(kostenpositionen []store.Kostenposition, values 
 // the latest Fixkosten-Eingabe (Issue #60 Story 2/9) - today's month as the
 // default Monat, same convention as the Ablesung-Wizard's ReadingDate
 // default.
-func handleFixkostenForm(db *sql.DB) http.HandlerFunc {
+func handleFixkostenForm(db *sql.DB, secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		apartments, err := store.Apartments(db)
 		if err != nil {
@@ -137,6 +138,7 @@ func handleFixkostenForm(db *sql.DB) http.HandlerFunc {
 		data := fixkostenFormData{
 			Base:       requestBase(r),
 			Aktuell:    "fixkosten",
+			IsLoggedIn: isLoggedIn(r, secret),
 			FormAction: requestBase(r) + "/fixkosten",
 			Monat:      monat,
 			Apartments: apartments,
@@ -157,7 +159,7 @@ func handleFixkostenForm(db *sql.DB) http.HandlerFunc {
 
 // handleFixkostenEditForm serves the "bearbeiten" Fixkosten-Formular for an
 // existing Eingabe, prefilled with its own current values.
-func handleFixkostenEditForm(db *sql.DB) http.HandlerFunc {
+func handleFixkostenEditForm(db *sql.DB, secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		eingabeID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		if err != nil {
@@ -192,6 +194,7 @@ func handleFixkostenEditForm(db *sql.DB) http.HandlerFunc {
 		data := fixkostenFormData{
 			Base:             requestBase(r),
 			Aktuell:          "fixkosten",
+			IsLoggedIn:       isLoggedIn(r, secret),
 			FormAction:       fmt.Sprintf("%s/fixkosten/%d", requestBase(r), target.ID),
 			IsEdit:           true,
 			Monat:            monatForInput(target.Monat),
@@ -365,7 +368,7 @@ type fixkostenListItem struct {
 	SummeW2 float64
 }
 
-func handleFixkostenListe(db *sql.DB) http.HandlerFunc {
+func handleFixkostenListe(db *sql.DB, secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		eingaben, err := store.AllFixkostenEingaben(db)
 		if err != nil {
@@ -387,13 +390,15 @@ func handleFixkostenListe(db *sql.DB) http.HandlerFunc {
 		}
 
 		data := struct {
-			Base     string
-			Aktuell  string
-			Eingaben []fixkostenListItem
+			Base       string
+			Aktuell    string
+			IsLoggedIn bool
+			Eingaben   []fixkostenListItem
 		}{
-			Base:     requestBase(r),
-			Aktuell:  "fixkosten",
-			Eingaben: items,
+			Base:       requestBase(r),
+			Aktuell:    "fixkosten",
+			IsLoggedIn: isLoggedIn(r, secret),
+			Eingaben:   items,
 		}
 
 		if err := fixkostenListeTemplate.ExecuteTemplate(w, "layout", data); err != nil {
@@ -410,7 +415,7 @@ type fixkostenDetailPosition struct {
 	KostenW2   float64
 }
 
-func handleFixkostenDetail(db *sql.DB) http.HandlerFunc {
+func handleFixkostenDetail(db *sql.DB, secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		eingabeID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		if err != nil {
@@ -462,6 +467,7 @@ func handleFixkostenDetail(db *sql.DB) http.HandlerFunc {
 		data := struct {
 			Base        string
 			Aktuell     string
+			IsLoggedIn  bool
 			Eingabe     *store.FixkostenEingabeDetails
 			MonatLabel  string
 			AllEingaben []fixkostenListItem
@@ -472,6 +478,7 @@ func handleFixkostenDetail(db *sql.DB) http.HandlerFunc {
 		}{
 			Base:        requestBase(r),
 			Aktuell:     "fixkosten-detail",
+			IsLoggedIn:  isLoggedIn(r, secret),
 			Eingabe:     eingabe,
 			MonatLabel:  germanPeriodLabel(eingabe.Monat),
 			AllEingaben: allItems,

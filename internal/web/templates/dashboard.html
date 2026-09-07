@@ -3,7 +3,11 @@
 {{template "nav" .}}
 
 {{if not .HasAnyData}}
+{{if .IsLoggedIn}}
 <p class="muted">Noch keine Ablesung oder Fixkosten-Eingabe erfasst. <a href="{{.Base}}/ablesungen/neu">Ablesung erfassen</a> oder <a href="{{.Base}}/fixkosten/neu">Fixkosten-Eingabe erfassen</a>.</p>
+{{else}}
+<p class="muted">Noch keine Ablesung oder Fixkosten-Eingabe erfasst.</p>
+{{end}}
 {{else}}
 <h2>Jahressummen {{.AnzeigeJahr}}{{if .AnzeigeJahrLaufend}} <span class="badge">laufend</span>{{end}}</h2>
 <div class="grid jahressummen-grid">
@@ -53,10 +57,12 @@
   </div>
 </div>
 
+{{if .IsLoggedIn}}
 <div class="btn-row">
   <a href="{{.Base}}/ablesungen/neu" class="button success">Neue Ablesung</a>
   <a href="{{.Base}}/fixkosten/neu" class="button success">Neue Fixkosteneingabe</a>
 </div>
+{{end}}
 
 <div class="wohnung-tabs" id="wohnung-tabs">
   {{range .Cards}}

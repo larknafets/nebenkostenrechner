@@ -84,28 +84,43 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 // handleDashboard serves the redesigned Dashboard (Issue #60): Jahressummen-
 // Karten je Wohnung for the auto-following Anzeigejahr, then a Wohnung-
 // Umschalter with a combined Verbrauch+Fixkosten Monatsverlauf (4 Modi).
-func handleDashboard(db *sql.DB, version, buildDate string) http.HandlerFunc {
+func handleDashboard(db *sql.DB, version, buildDate, secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dd, err := loadDashboardData(db)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		loggedIn := isLoggedIn(r, secret)
 
 		if !dd.HasAnyData {
 			data := struct {
 				Base       string
 				Aktuell    string
+				IsLoggedIn bool
 				HasAnyData bool
 				Version    string
 				BuildDate  string
-			}{Base: requestBase(r), Aktuell: "dashboard", Version: version, BuildDate: buildDate}
+			}{Base: requestBase(r), Aktuell: "dashboard", IsLoggedIn: loggedIn, Version: version, BuildDate: buildDate}
 			if err := dashboardTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
 			return
 		}
 		apartments, periodenKosten, jahr := dd.Apartments, dd.PeriodenKosten, dd.Jahr
+
+		// Nicht eingeloggt: nur Wohnung 2 geht überhaupt ins Template-
+		// Datenobjekt (Ticket #112) - ein reines Server-seitiges Ausblenden
+		// im Template würde Wohnung 1's Daten trotzdem im HTML-Quelltext
+		// belassen (Fund aus dem Login-Overlay-Prototyp, Issue #113).
+		if !loggedIn {
+			for _, a := range apartments {
+				if a.ID == 2 {
+					apartments = []store.Apartment{a}
+					break
+				}
+			}
+		}
 
 		var cards []dashboardJahresCard
 		var verlaufSpalten []dashboardVerlaufSpalte
@@ -129,6 +144,7 @@ func handleDashboard(db *sql.DB, version, buildDate string) http.HandlerFunc {
 		data := struct {
 			Base               string
 			Aktuell            string
+			IsLoggedIn         bool
 			HasAnyData         bool
 			AnzeigeJahr        int
 			AnzeigeJahrLaufend bool
@@ -145,6 +161,7 @@ func handleDashboard(db *sql.DB, version, buildDate string) http.HandlerFunc {
 		}{
 			Base:               requestBase(r),
 			Aktuell:            "dashboard",
+			IsLoggedIn:         loggedIn,
 			HasAnyData:         true,
 			AnzeigeJahr:        jahr,
 			AnzeigeJahrLaufend: jahr == time.Now().Year(),
