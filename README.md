@@ -1,19 +1,19 @@
 # Nebenkostenrechner
 
-Web-App zur monatlichen Nebenkostenabrechnung für ein Zweifamilienhaus mit Wärmepumpe und PV-Anlage. Berechnet Strom-, Heizung/Warmwasser- und Wasserkosten je Wohnung aus monatlich erfassten Zählerständen, sowie Fixkosten/Grundgebühren (Grundsteuer, Versicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise, Wärmepumpen-Wartung) aus einer separaten monatlichen Erfassung.
+Web-App zur monatlichen Nebenkostenabrechnung für ein Zweifamilienhaus mit Wärmepumpe und PV-Anlage. Berechnet Strom-, Heizung/Warmwasser- und Wasserkosten je Wohnung aus monatlich erfassten Zählerständen, sowie Fixkosten/Grundgebühren (Grundsteuer, Versicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise, Wärmepumpenwartung). Zusätzlich werrden Nebenkostenabschläge eingetragen und gegengerechnet werden, so daß eine erfassungsaktuelle Guthaben/Nachzahlung Übersicht entsteht. Angenommen wird, dass es Hauptzähler und Zwischenzähler für die EInliegerwohnung (Wohnung 2) gibt.
 
 ## Stammdaten
 
-Auf der `/stammdaten`-Seite gepflegt - aktuelle Einzelwerte, nicht pro Monat historisiert, wirken sofort auf alle Berechnungen:
+Auf der `/stammdaten`-Seite gepflegt werden folgende Daten gepflegt. und gelten sofort auf alle Berechnungen:
 
 | Wohnung | Wohnungsgröße | Flurstücksgröße |
 |---|---|---|
 | Wohnung 1 | 116,23 m² | - |
 | Wohnung 2 | 86 m² | - |
 
-Die 14 Fixkosten-Kostenpositionen (Berechnungslogik, Typ jährlich/monatlich, Wert) sowie der Nebenkostenabschlag werden dagegen nicht hier, sondern direkt an der jeweiligen Fixkosten-Eingabe gepflegt - siehe [Fixkosten/Grundgebühren](#fixkostengrundgebühren) und [Nebenkostenabschlag](#nebenkostenabschlag-guthabennachzahlung) unten.
+Die Fixkostenkostenpositionen (Berechnungslogik, Typ jährlich/monatlich, Wert) sowie der Nebenkostenabschlag werden dagegen nicht hier, sondern direkt an der jeweiligen Fixkosteneingabe gepflegt - siehe [Fixkosten/Grundgebühren](#fixkostengrundgebühren) und [Nebenkostenabschlag](#nebenkostenabschlag-guthabennachzahlung) unten.
 
-Personenzahl ist variabel und wird separat pro Ablesung *und* pro Fixkosten-Eingabe erfasst (zwei unabhängige Werte, nicht gemeinsam versioniert).
+Personenzahl ist variabel und wird separat pro Ablesung *und* pro Fixkosteneingabe erfasst (zwei unabhängige Werte, nicht gemeinsam versioniert).
 
 Preise (aktuell, werden pro Monat neu erfasst statt zentral versioniert):
 
@@ -39,9 +39,11 @@ Preise (aktuell, werden pro Monat neu erfasst statt zentral versioniert):
 | `waerme_wohnung2` | Wärmemengenzähler Wohnung 2 | **MWh** |
 | `strom_einspeisung` | Einspeisezähler (PV) | kWh |
 
-Ablese-Rhythmus: 1x/Monat. Verbrauch = aktueller Zählerstand minus Stand der chronologisch nächst-älteren Ablesung (einfache Differenz, funktioniert automatisch auch über Lücken hinweg).
+Ableserhythmus: 1x/Monat. Verbrauch = aktueller Zählerstand minus Stand der chronologisch nächstälteren Ablesung (einfache Differenz, funktioniert automatisch auch über Lücken hinweg).
 
-`strom_wallbox` fließt als dritte Zuteilungsstufe in die Strom-Netzbezug-Zuteilung ein (siehe unten) - sie wird vom nach Wohnung 2/Wärmepumpe verbleibenden Netzbezug abgezogen, bevor der Rest implizit Wohnung 1 zufällt. Keine eigene Wohnungs-Zuteilung, kein eigener Wallbox-Tarif.
+`strom_wallbox` fließt als dritte Zuteilungsstufe in die Strom-Netzbezug-Zuteilung ein (siehe unten) - sie wird vom nach Wohnung 2/Wärmepumpe verbleibenden Netzbezug abgezogen, bevor der Rest implizit Wohnung 1 zufällt. Keine eigene Wohnungszuteilung, kein eigener Wallbox-Tarif.
+
+Visuelle Übersicht der Zählerverschachtelung (und der PV-Verrechnungskaskade): [docs/pv-verrechnung.md](docs/pv-verrechnung.md).
 
 ## Berechnungslogik
 
@@ -65,11 +67,11 @@ Kosten_Wallbox   = Wallbox_Anteil_kWh * Strompreis
 
 Bei PV-Überschuss (`Netzbezug_Gesamt = 0`) sind alle 3 Kosten 0. Alle Anteile über `min()` gedeckelt, nie negativ.
 
-Visuelle Übersicht der Zähler-Verschachtelung und der PV-Verrechnungskaskade: [docs/pv-verrechnung.md](docs/pv-verrechnung.md).
+Visuelle Übersicht der Zählerverschachtelung und der PV-Verrechnungskaskade: [docs/pv-verrechnung.md](docs/pv-verrechnung.md).
 
 ### Heizung/Warmwasser (konfigurierbarer Split, Default 70/30)
 
-Die Wärmepumpen-Stromkosten (siehe oben) werden nach Wärmemengenzähler-Verhältnis und Wohnungsgrößen-Verhältnis auf die beiden Wohnungen verteilt. Die Gewichtung wird pro Periode im Wizard gewählt (70/30, 60/40 oder 50/50) und ab dann für diese Periode eingefroren. `qm_W1`/`qm_W2` kommen dagegen live von den Stammdaten, nicht von der Periode.
+Die Wärmepumpenstromkosten (siehe oben) werden nach Wärmemengenzählerverhältnis und Wohnungsgrößenverhältnis auf die beiden Wohnungen verteilt. Die Gewichtung wird pro Periode im Wizard gewählt (70/30, 60/40 oder 50/50) und ab dann für diese Periode eingefroren. `qm_W1`/`qm_W2` kommen dagegen live von den Stammdaten, nicht von der Periode.
 
 ```
 Ratio_Waerme_W1  = Verbrauch(waerme_wohnung1) / (Verbrauch(waerme_wohnung1) + Verbrauch(waerme_wohnung2))
@@ -101,7 +103,7 @@ Kosten_Abwasser_X     = Abwasser_X * Abwasserpreis
 
 ### Einspeisevergütung (PV)
 
-Rein informativ, unabhängig von der Kostenverteilung oben - keine Wohnungs-Zuteilung, da der Einspeisezähler haus-weit misst.
+Rein informativ, unabhängig von der Kostenverteilung oben - keine Wohnungszuteilung, da der Einspeisezähler hausweit misst.
 
 ```
 Einspeisevergütung = Verbrauch(strom_einspeisung) * Einspeisung_Preis
@@ -109,7 +111,7 @@ Einspeisevergütung = Verbrauch(strom_einspeisung) * Einspeisung_Preis
 
 ### Fixkosten/Grundgebühren
 
-Die 14 festen Kostenpositionen (Grundsteuer, Wohngebäudeversicherung, Deichbeitrag Grund und Boden, Deichbeitrag Bauliche Anlagen, Kreisverband Wesermarsch, Abfallwirtschaft Grundgebühr Haushalt/Personen/Biomüll/Restmüll, Grundgebühr Strom, Grundgebühr Trinkwasser/Abwasser, Grundgebühr Internet, Wärmepumpen-Wartung) werden unabhängig von Strom/Heizung/Wasser auf einer eigenen monatlichen Fixkosten-Eingabe erfasst und berechnet. Jede Position trägt in dieser Eingabe ihre eigene Berechnungslogik, ihren Typ und ihren Wert (vorbelegt von der letzten Eingabe, frei überschreibbar):
+Die festen Kostenpositionen (Grundsteuer, Wohngebäudeversicherung, Deichbeitrag Grund und Boden, Deichbeitrag Bauliche Anlagen, Kreisverband Wesermarsch, Abfallwirtschaft Grundgebühr Haushalt/Personen/Biomüll/Restmüll, Grundgebühr Strom, Grundgebühr Trinkwasser/Abwasser, Grundgebühr Internet, Wärmepumpenwartung) werden unabhängig von Strom/Heizung/Wasser auf einer eigenen monatlichen Fixkosteneingabe erfasst und berechnet. Jede Position trägt in dieser Eingabe ihre eigene Berechnungslogik, ihren Typ und ihren Wert (vorbelegt von der letzten Eingabe, frei überschreibbar):
 
 ```
 Monatswert("jährlich")  = Jahreswert / 12          (Jahreswert = erfasster Wert dieser Eingabe)
@@ -125,27 +127,27 @@ Je anteilige Wohnungsgröße : qm_W1 / (qm_W1 + qm_W2)                          
 Je Anzahl Personen         : Personen_W1 / (Personen_W1 + Personen_W2)         (Fixkosten-Eingabe)
 ```
 
-Sind bei den letzten drei Logiken beide Werte 0, fällt die Aufteilung auf hälftig zurück (gleiche Regel wie bei der Heizungs-Wärme-Ratio).
+Sind bei den letzten drei Logiken beide Werte 0, fällt die Aufteilung auf hälftig zurück (gleiche Regel wie bei der Heizungswärme-Ratio).
 
 ### Nebenkostenabschlag (Guthaben/Nachzahlung)
 
-Die monatliche Vorauszahlung je Wohnung, an der jeweiligen Fixkosten-Eingabe erfasst wie ein monatlich-typisierter Wert (vorbelegt von der letzten Eingabe, frei überschreibbar) - deckt Fixkosten UND Verbräuche gemeinsam ab, ist selbst aber keine Kostenposition (keine Berechnungslogik, kein Split, direkter Wert je Wohnung).
+Die monatliche Vorauszahlung je Wohnung, an der jeweiligen Fixkosteneingabe erfasst wie ein monatlich typisierter Wert (vorbelegt von der letzten Eingabe, frei überschreibbar) - deckt Fixkosten UND Verbräuche gemeinsam ab, ist selbst aber keine Kostenposition (keine Berechnungslogik, kein Split, direkter Wert je Wohnung).
 
 ```
 Saldo(Monat) = Saldo(Vormonat) + Abschlag(Monat) - (Fixkosten(Monat) + Verbrauch(Monat))
 ```
 
-Fortlaufend seit Erfassungsbeginn kumuliert, kein Reset zum Jahreswechsel. Positiv heißt Guthaben, negativ Nachzahlung, exakt 0 Ausgeglichen. Ein Monat ohne Fixkosten-Eingabe lässt den Saldo unverändert, statt ihn verschwinden zu lassen.
+Fortlaufend seit Erfassungsbeginn kumuliert, kein Reset zum Jahreswechsel. Positiv heißt Guthaben, negativ Nachzahlung, exakt 0 Ausgeglichen. Ein Monat ohne Fixkosteneingabe lässt den Saldo unverändert, statt ihn verschwinden zu lassen.
 
 ### Rundung
 
-Jede Kostenposition (Strom, Heizung/Warmwasser, Frischwasser, Abwasser, jede der 14 Fixkosten-Positionen) wird einzeln je Wohnung **kaufmännisch auf Cent gerundet** (0,5 Cent immer aufgerundet), erst nach der vollständigen Berechnung mit float-Genauigkeit. Die angezeigte Gesamtsumme je Wohnung kann dadurch um 1-2 Cent von der rechnerisch exakten Summe abweichen - das ist akzeptiert, es gibt keinen Korrekturmechanismus.
+Jede Kostenposition (Strom, Heizung/Warmwasser, Frischwasser, Abwasser, jede der 14 Fixkostenpositionen) wird einzeln je Wohnung **kaufmännisch auf Cent gerundet** (0,5 Cent immer aufgerundet), erst nach der vollständigen Berechnung mit float-Genauigkeit. Die angezeigte Gesamtsumme je Wohnung kann dadurch um 1-2 Cent von der rechnerisch exakten Summe abweichen - das ist akzeptiert, es gibt keinen Korrekturmechanismus.
 
 ### Preise & Personenzahl
 
-Es gibt kein zentrales Preishistorie-Konzept: Strompreis, Frischwasser- und Abwasserpreis sowie die Personenzahl je Wohnung werden direkt bei jeder monatlichen Ablesung mit erfasst (nicht separat versioniert). Ein einmal berechneter Monat bleibt dadurch automatisch "eingefroren", auch wenn sich Preise oder Personenzahl später ändern.
+Es gibt kein zentrales Preishistoriekonzept: Strompreis, Frischwasser- und Abwasserpreis sowie die Personenzahl je Wohnung werden direkt bei jeder monatlichen Ablesung mit erfasst (nicht separat versioniert). Ein einmal berechneter Monat bleibt dadurch automatisch "eingefroren", auch wenn sich Preise oder Personenzahl später ändern.
 
-Die Fixkosten-Eingabe hat ihre eigene, unabhängige Personenzahl je Wohnung (ebenfalls pro Monat eingefroren) - muss nicht mit der Ablesung übereinstimmen. Wohnungsgröße und Flurstücksgröße sind dagegen keine monatlichen Werte mehr, sondern aktuelle Stammdaten-Einzelwerte, die sofort auf alle Monate wirken.
+Die Fixkosteneingabe hat ihre eigene, unabhängige Personenzahl je Wohnung (ebenfalls pro Monat eingefroren) - muss nicht mit der Ablesung übereinstimmen. 
 
 ### Fehlerbehandlung bei Zähleranomalien
 
@@ -179,7 +181,7 @@ Berechnete Kosten werden nicht persistiert, sondern bei jedem Aufruf live aus de
 
 ## Tech-Stack
 
-Go, `modernc.org/sqlite` (kein ORM, `database/sql`), server-rendered `html/template` mit Vanilla-JS für die Wizard-Interaktivität (kein htmx - ursprünglich in der Spec vorgesehen, aber nicht gebraucht). SQLite-Datei unter `/data` im Container. Multi-Arch-Docker-Image (`linux/amd64`, `linux/arm64`, `linux/arm/v7`) auf Basis `gcr.io/distroless/static-debian12`, läuft als nicht-root User (UID/GID 65532). Version und Build-Datum werden per `-ldflags` eingebrannt und im Dashboard angezeigt (Ticket #48).
+Go, `modernc.org/sqlite` (kein ORM, `database/sql`), server-rendered `html/template` mit Vanilla-JS für die Wizard-Interaktivität (kein htmx - ursprünglich in der Spec vorgesehen, aber nicht gebraucht). SQLite-Datei unter `/data` im Container. Multi-Arch-Docker-Image (`linux/amd64`, `linux/arm64`, `linux/arm/v7`) auf Basis `gcr.io/distroless/static-debian12`, läuft als nicht-root User (UID/GID 65532). Version und Build-Datum werden per `-ldflags` eingebrannt und im Dashboard angezeigt.
 
 ## Installation
 
