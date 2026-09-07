@@ -29,7 +29,7 @@
     <div class="c-step-dot active" data-step="1">1 · Strom</div>
     <div class="c-step-dot" data-step="2">2 · Wasser</div>
     <div class="c-step-dot" data-step="3">3 · Wärme</div>
-    <div class="c-step-dot" data-step="4">4 · Preise &amp; Personen</div>
+    <div class="c-step-dot" data-step="4">4 · Personen &amp; Preise</div>
   </div>
 
   <div class="c-pane active" data-step="1">
@@ -60,16 +60,16 @@
   </div>
 
   <div class="c-pane" data-step="4">
+    <div class="grid grid-2">
+      {{range .Apartments}}
+      <div class="field"><label>Personen {{.Name}}</label><input type="number" name="personen_{{.ID}}" {{if or $.IsEdit $.HasPrevious}}value="{{index $.PreviousPersonen .ID}}"{{end}} required></div>
+      {{end}}
+    </div>
     <div class="grid grid-4">
       <div class="field"><label>Strompreis (EUR/kWh)</label><input type="number" step="any" name="strompreis" {{if or .IsEdit .HasPrevious}}value="{{.PreviousStrompreis}}"{{end}} required></div>
       <div class="field"><label>Frischwasser (EUR/m³)</label><input type="number" step="any" name="frischwasser_preis" {{if or .IsEdit .HasPrevious}}value="{{.PreviousFrischwasserPreis}}"{{end}} required></div>
       <div class="field"><label>Abwasser (EUR/m³)</label><input type="number" step="any" name="abwasser_preis" {{if or .IsEdit .HasPrevious}}value="{{.PreviousAbwasserPreis}}"{{end}} required></div>
       <div class="field"><label>Einspeisung (EUR/kWh)</label><input type="number" step="any" name="einspeisung_preis" {{if or .IsEdit .HasPrevious}}value="{{.PreviousEinspeisungPreis}}"{{end}} required></div>
-    </div>
-    <div class="grid grid-2">
-      {{range .Apartments}}
-      <div class="field"><label>Personen {{.Name}}</label><input type="number" name="personen_{{.ID}}" {{if or $.IsEdit $.HasPrevious}}value="{{index $.PreviousPersonen .ID}}"{{end}} required></div>
-      {{end}}
     </div>
     <div class="field">
       <label>Heizung/Warmwasser-Gewichtung (Wärmeverbrauch / Wohnungsgröße)</label>
