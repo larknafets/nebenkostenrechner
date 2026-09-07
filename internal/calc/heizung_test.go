@@ -14,9 +14,9 @@ func TestHeizung_70_30_Verteilung(t *testing.T) {
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate:             "2026-11-01",
-		Strompreis:              0.22,
-		FrischwasserPreis:       1.46,
-		AbwasserPreis:           4.87,
+		Strompreis:              store.Float64(0.22),
+		FrischwasserPreis:       store.Float64(1.46),
+		AbwasserPreis:           store.Float64(4.87),
 		HeizungWaermeGewichtung: 0.7,
 		Readings: baseReadings(map[string]float64{
 			"strom_gesamt":      18420,
@@ -63,9 +63,9 @@ func TestHeizung_WPVerbrauch_TatsaechlicherWertOhnePVAbzug(t *testing.T) {
 	// wird aber nichts vom Netzbezug gedeckt (komplett durch PV gedeckt).
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate:             "2026-11-01",
-		Strompreis:              0.22,
-		FrischwasserPreis:       1.46,
-		AbwasserPreis:           4.87,
+		Strompreis:              store.Float64(0.22),
+		FrischwasserPreis:       store.Float64(1.46),
+		AbwasserPreis:           store.Float64(4.87),
 		HeizungWaermeGewichtung: 0.7,
 		Readings: baseReadings(map[string]float64{
 			"strom_gesamt":      0,
@@ -100,9 +100,9 @@ func TestHeizung_KeinWaermeVerbrauch_FaelltAufHaelftigeVerteilungZurueck(t *test
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate:             "2026-11-01",
-		Strompreis:              0.22,
-		FrischwasserPreis:       1.46,
-		AbwasserPreis:           4.87,
+		Strompreis:              store.Float64(0.22),
+		FrischwasserPreis:       store.Float64(1.46),
+		AbwasserPreis:           store.Float64(4.87),
 		HeizungWaermeGewichtung: 0.7,
 		Readings: baseReadings(map[string]float64{
 			"strom_gesamt":      1000,

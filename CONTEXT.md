@@ -8,6 +8,10 @@ Monatliche Nebenkostenabrechnung für ein Zweifamilienhaus mit Wärmepumpe und P
 Eine monatliche Erfassung: Zählerstände, Preise, Personenzahl je Wohnung und Heizungs-Gewichtung zu einem Ablesedatum. Im Code auch "Periode" genannt.
 _Avoid_: Eintrag, Datensatz
 
+**Teilstand**:
+Eine Ablesung, bei der nicht alle Felder gefüllt sind (Zählerstände, Preise, Personenzahl, oder Abrechnungsmonat - nur Ablesedatum und Heizungs-Gewichtung sind immer zwingend). Fließt nicht in die Berechnung ein - erst nach Vervollständigung wird sie zur regulären Ablesung. Nur die neueste Ablesung darf ein Teilstand sein.
+_Avoid_: unvollständige Ablesung (funktioniert, aber "Teilstand" ist der feste Begriff)
+
 **Zählerstand**:
 Der am Ablesedatum abgelesene Wert eines Zählers - ein kumulativer Punktwert, kein Verbrauch.
 _Avoid_: Messwert, Reading

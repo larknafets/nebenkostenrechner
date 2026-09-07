@@ -24,20 +24,27 @@ type Period struct {
 	EinspeisungPreis        float64
 }
 
-// GetPeriodByID fetches a single period by id.
+// GetPeriodByID fetches a single period by id. A Teilstand's not-yet-
+// entered price (Ticket #128, periods.<preis> IS NULL) reads back as 0
+// here, not nil - Period only ever feeds calc's Kosten-Berechnung
+// (internal/calc), which by design never runs against an incomplete
+// period (see PeriodComplete), so this coalesce is a safe default rather
+// than a real "was it entered" answer.
 func GetPeriodByID(db *sql.DB, id int64) (*Period, error) {
 	var p Period
+	var strompreis, frischwasserPreis, abwasserPreis, einspeisungPreis sql.NullFloat64
 	err := db.QueryRow(
 		`SELECT id, reading_date, strompreis, frischwasser_preis, abwasser_preis, heizung_waerme_gewichtung, einspeisung_preis
 		 FROM periods WHERE id = ?`,
 		id,
-	).Scan(&p.ID, &p.ReadingDate, &p.Strompreis, &p.FrischwasserPreis, &p.AbwasserPreis, &p.HeizungWaermeGewichtung, &p.EinspeisungPreis)
+	).Scan(&p.ID, &p.ReadingDate, &strompreis, &frischwasserPreis, &abwasserPreis, &p.HeizungWaermeGewichtung, &einspeisungPreis)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("period %d not found", id)
 		}
 		return nil, fmt.Errorf("query period %d: %w", id, err)
 	}
+	p.Strompreis, p.FrischwasserPreis, p.AbwasserPreis, p.EinspeisungPreis = strompreis.Float64, frischwasserPreis.Float64, abwasserPreis.Float64, einspeisungPreis.Float64
 	return &p, nil
 }
 

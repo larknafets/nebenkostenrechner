@@ -47,9 +47,9 @@ func mustCreatePeriod(t *testing.T, db *sql.DB, date string, strompreis float64,
 	t.Helper()
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate:             date,
-		Strompreis:              strompreis,
-		FrischwasserPreis:       1.46,
-		AbwasserPreis:           4.87,
+		Strompreis:              store.Float64(strompreis),
+		FrischwasserPreis:       store.Float64(1.46),
+		AbwasserPreis:           store.Float64(4.87),
 		HeizungWaermeGewichtung: 0.7,
 		Readings:                readings,
 		Personen:                map[int64]int64{1: 2, 2: 1},

@@ -17,11 +17,11 @@ CREATE TABLE IF NOT EXISTS meters (
 CREATE TABLE IF NOT EXISTS periods (
     id                         INTEGER PRIMARY KEY,
     reading_date               TEXT NOT NULL,
-    strompreis                 REAL NOT NULL,
-    frischwasser_preis         REAL NOT NULL,
-    abwasser_preis             REAL NOT NULL,
+    strompreis                 REAL,
+    frischwasser_preis         REAL,
+    abwasser_preis             REAL,
     heizung_waerme_gewichtung  REAL NOT NULL DEFAULT 0.7,
-    einspeisung_preis          REAL NOT NULL DEFAULT 0,
+    einspeisung_preis          REAL,
     monat                      TEXT NOT NULL DEFAULT ''
 );
 

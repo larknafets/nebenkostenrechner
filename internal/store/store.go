@@ -4,6 +4,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	_ "embed"
 	"errors"
@@ -64,6 +65,11 @@ func Open(path string) (*sql.DB, error) {
 	if err := ensurePeriodsMonatColumn(db); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("migrate monat column: %w", err)
+	}
+
+	if err := ensurePeriodsNullablePriceColumns(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("migrate periods price columns nullable: %w", err)
 	}
 
 	if err := seed(db); err != nil {
@@ -218,6 +224,130 @@ func ensurePeriodsMonatColumn(db *sql.DB) error {
 	}
 	_, err = db.Exec(`UPDATE periods SET monat = substr(reading_date, 1, 7) || '-01' WHERE monat = ''`)
 	return err
+}
+
+// ensurePeriodsNullablePriceColumns makes periods' 4 price columns
+// (strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis)
+// nullable (Ticket #128, Teilstand) - a NULL there means "not yet
+// entered", the write-side counterpart to PeriodInput's *float64 fields.
+// SQLite has no `ALTER TABLE ... ALTER COLUMN ... DROP NOT NULL`, so this
+// follows SQLite's documented 12-step table-rebuild procedure
+// (https://www.sqlite.org/lang_altertable.html#otheralter) instead of the
+// simple ADD COLUMN migrations above. Pinned to a single *sql.Conn: PRAGMA
+// foreign_keys is per-connection, and running the OFF/rebuild/ON sequence
+// across different pooled connections could leave FK enforcement in the
+// wrong state on whichever connection a later request happens to land on.
+// Idempotent: checks strompreis's current NOT NULL-ness first and returns
+// immediately once it's already nullable. Must run after every ADD COLUMN
+// migration above - it assumes periods already has heizung_waerme_gewichtung/
+// einspeisung_preis/monat.
+func ensurePeriodsNullablePriceColumns(db *sql.DB) error {
+	ctx := context.Background()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire connection: %w", err)
+	}
+	defer conn.Close()
+
+	nullable, err := periodsStrompreisNullable(ctx, conn)
+	if err != nil {
+		return err
+	}
+	if nullable {
+		return nil
+	}
+
+	if _, err := conn.ExecContext(ctx, `PRAGMA foreign_keys = OFF`); err != nil {
+		return fmt.Errorf("disable foreign keys: %w", err)
+	}
+	defer conn.ExecContext(ctx, `PRAGMA foreign_keys = ON`)
+
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Aufräumen falls ein früherer Migrationsversuch mittendrin abgebrochen
+	// ist (Prozess gekillt zwischen CREATE und DROP) und periods_new noch
+	// von damals herumliegt - sonst würde das CREATE unten fehlschlagen.
+	if _, err := tx.ExecContext(ctx, `DROP TABLE IF EXISTS periods_new`); err != nil {
+		return fmt.Errorf("drop stale periods_new: %w", err)
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		CREATE TABLE periods_new (
+		    id                         INTEGER PRIMARY KEY,
+		    reading_date               TEXT NOT NULL,
+		    strompreis                 REAL,
+		    frischwasser_preis         REAL,
+		    abwasser_preis             REAL,
+		    heizung_waerme_gewichtung  REAL NOT NULL DEFAULT 0.7,
+		    einspeisung_preis          REAL,
+		    monat                      TEXT NOT NULL DEFAULT ''
+		)
+	`); err != nil {
+		return fmt.Errorf("create periods_new: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO periods_new (id, reading_date, strompreis, frischwasser_preis, abwasser_preis, heizung_waerme_gewichtung, einspeisung_preis, monat)
+		SELECT id, reading_date, strompreis, frischwasser_preis, abwasser_preis, heizung_waerme_gewichtung, einspeisung_preis, monat FROM periods
+	`); err != nil {
+		return fmt.Errorf("copy periods into periods_new: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `DROP TABLE periods`); err != nil {
+		return fmt.Errorf("drop old periods table: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `ALTER TABLE periods_new RENAME TO periods`); err != nil {
+		return fmt.Errorf("rename periods_new to periods: %w", err)
+	}
+
+	checkRows, err := tx.QueryContext(ctx, `PRAGMA foreign_key_check`)
+	if err != nil {
+		return fmt.Errorf("foreign key check: %w", err)
+	}
+	hasViolation := checkRows.Next()
+	if err := checkRows.Err(); err != nil {
+		checkRows.Close()
+		return fmt.Errorf("foreign key check: %w", err)
+	}
+	checkRows.Close()
+	if hasViolation {
+		return fmt.Errorf("foreign key check failed after periods table rebuild")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
+	}
+	return nil
+}
+
+// periodsStrompreisNullable inspects periods.strompreis's current NOT NULL-
+// ness via PRAGMA table_info - strompreis stands in for all 4 price
+// columns since ensurePeriodsNullablePriceColumns always rebuilds them
+// together.
+func periodsStrompreisNullable(ctx context.Context, conn *sql.Conn) (bool, error) {
+	rows, err := conn.QueryContext(ctx, `PRAGMA table_info(periods)`)
+	if err != nil {
+		return false, fmt.Errorf("inspect periods columns: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var cid, notnull, pk int
+		var name, ctype string
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			return false, fmt.Errorf("scan periods column: %w", err)
+		}
+		if name == "strompreis" {
+			return notnull == 0, nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return false, err
+	}
+	return false, fmt.Errorf("periods.strompreis column not found")
 }
 
 // ensureFixkostenWerteLogikTypColumns adds the logik/typ columns to an

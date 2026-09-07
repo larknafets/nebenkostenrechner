@@ -1001,8 +1001,8 @@ func TestParseImportCSV_RoundTrip(t *testing.T) {
 	if rows[1].input.Readings["strom_gesamt"] != 210 {
 		t.Errorf("Readings[strom_gesamt] = %v, want 210", rows[1].input.Readings["strom_gesamt"])
 	}
-	if rows[1].input.Strompreis != 0.22 {
-		t.Errorf("Strompreis = %v, want 0.22", rows[1].input.Strompreis)
+	if store.OrZero(rows[1].input.Strompreis) != 0.22 {
+		t.Errorf("Strompreis = %v, want 0.22", store.OrZero(rows[1].input.Strompreis))
 	}
 	if rows[1].input.HeizungWaermeGewichtung != 0.7 {
 		t.Errorf("HeizungWaermeGewichtung = %v, want 0.7", rows[1].input.HeizungWaermeGewichtung)
@@ -1344,11 +1344,11 @@ func seedPeriodInputAt(date string) store.PeriodInput {
 	return store.PeriodInput{
 		ReadingDate:             date,
 		Monat:                   date,
-		Strompreis:              0.22,
-		FrischwasserPreis:       1.46,
-		AbwasserPreis:           4.87,
+		Strompreis:              store.Float64(0.22),
+		FrischwasserPreis:       store.Float64(1.46),
+		AbwasserPreis:           store.Float64(4.87),
 		HeizungWaermeGewichtung: 0.7,
-		EinspeisungPreis:        0.08,
+		EinspeisungPreis:        store.Float64(0.08),
 		Readings:                readings,
 		Personen:                map[int64]int64{1: 2, 2: 1},
 	}

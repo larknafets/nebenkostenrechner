@@ -269,10 +269,13 @@ func handleWizardForm(a auth) http.HandlerFunc {
 			data.PreviousReadingDate = recent[0].ReadingDate
 		}
 		if previousPeriod != nil {
-			data.PreviousStrompreis = previousPeriod.Strompreis
-			data.PreviousFrischwasserPreis = previousPeriod.FrischwasserPreis
-			data.PreviousAbwasserPreis = previousPeriod.AbwasserPreis
-			data.PreviousEinspeisungPreis = previousPeriod.EinspeisungPreis
+			// store.OrZero: previousPeriod ist Teilstand-fähig (Ticket
+			// #128), diese Prefill-Felder unterscheiden "fehlt" noch nicht
+			// von "0" - das bleibt #129 vorbehalten.
+			data.PreviousStrompreis = store.OrZero(previousPeriod.Strompreis)
+			data.PreviousFrischwasserPreis = store.OrZero(previousPeriod.FrischwasserPreis)
+			data.PreviousAbwasserPreis = store.OrZero(previousPeriod.AbwasserPreis)
+			data.PreviousEinspeisungPreis = store.OrZero(previousPeriod.EinspeisungPreis)
 			data.PreviousPersonen = previousPeriod.PersonenByApartment
 			data.PreviousHeizungGewichtung = previousPeriod.HeizungWaermeGewichtung
 		}
@@ -330,10 +333,10 @@ func handleEditWizardForm(a auth) http.HandlerFunc {
 			Monat:                     string(monatInputFromStored(target.Monat)),
 			Apartments:                apartments,
 			EditReadings:              target.Readings,
-			PreviousStrompreis:        target.Strompreis,
-			PreviousFrischwasserPreis: target.FrischwasserPreis,
-			PreviousAbwasserPreis:     target.AbwasserPreis,
-			PreviousEinspeisungPreis:  target.EinspeisungPreis,
+			PreviousStrompreis:        store.OrZero(target.Strompreis),
+			PreviousFrischwasserPreis: store.OrZero(target.FrischwasserPreis),
+			PreviousAbwasserPreis:     store.OrZero(target.AbwasserPreis),
+			PreviousEinspeisungPreis:  store.OrZero(target.EinspeisungPreis),
 			PreviousPersonen:          target.PersonenByApartment,
 			PreviousHeizungGewichtung: target.HeizungWaermeGewichtung,
 		}
@@ -421,11 +424,11 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 	return store.PeriodInput{
 		ReadingDate:             r.FormValue("reading_date"),
 		Monat:                   monatInput(r.FormValue("monat")).toStored(),
-		Strompreis:              strompreis,
-		FrischwasserPreis:       frischwasserPreis,
-		AbwasserPreis:           abwasserPreis,
+		Strompreis:              store.Float64(strompreis),
+		FrischwasserPreis:       store.Float64(frischwasserPreis),
+		AbwasserPreis:           store.Float64(abwasserPreis),
 		HeizungWaermeGewichtung: heizungGewichtung,
-		EinspeisungPreis:        einspeisungPreis,
+		EinspeisungPreis:        store.Float64(einspeisungPreis),
 		Readings:                readings,
 		Personen:                personen,
 	}, nil

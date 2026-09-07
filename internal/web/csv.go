@@ -53,11 +53,15 @@ func handleExportCSV() http.HandlerFunc {
 				row = append(row, formatDecimalDE(p.Readings[key]))
 			}
 			row = append(row,
-				formatDecimalDE(p.Strompreis),
-				formatDecimalDE(p.FrischwasserPreis),
-				formatDecimalDE(p.AbwasserPreis),
+				// store.OrZero: ein Teilstand (Ticket #128) exportiert
+				// seinen fehlenden Preis hier als "0" - CSV-Import/-Export
+				// von/für Teilstände ist explizit nicht Teil dieser Spec
+				// (#127), kann also praktisch noch gar nicht vorkommen.
+				formatDecimalDE(store.OrZero(p.Strompreis)),
+				formatDecimalDE(store.OrZero(p.FrischwasserPreis)),
+				formatDecimalDE(store.OrZero(p.AbwasserPreis)),
 				formatDecimalDE(p.HeizungWaermeGewichtung),
-				formatDecimalDE(p.EinspeisungPreis),
+				formatDecimalDE(store.OrZero(p.EinspeisungPreis)),
 				formatDecimalDE(float64(p.PersonenByApartment[1])),
 				formatDecimalDE(float64(p.PersonenByApartment[2])),
 			)
@@ -240,11 +244,11 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (store.Per
 	return store.PeriodInput{
 		ReadingDate:             readingDate,
 		Monat:                   monat,
-		Strompreis:              strompreis,
-		FrischwasserPreis:       frischwasserPreis,
-		AbwasserPreis:           abwasserPreis,
+		Strompreis:              store.Float64(strompreis),
+		FrischwasserPreis:       store.Float64(frischwasserPreis),
+		AbwasserPreis:           store.Float64(abwasserPreis),
 		HeizungWaermeGewichtung: heizungGewichtung,
-		EinspeisungPreis:        einspeisungPreis,
+		EinspeisungPreis:        store.Float64(einspeisungPreis),
 		Readings:                readings,
 		Personen:                personen,
 	}, nil

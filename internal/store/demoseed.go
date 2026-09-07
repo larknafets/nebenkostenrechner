@@ -156,11 +156,11 @@ func seedDemoPeriods(db *sql.DB, now time.Time) error {
 		in := PeriodInput{
 			ReadingDate:             date.Format("2006-01-02"),
 			Monat:                   monat,
-			Strompreis:              strompreis,
-			FrischwasserPreis:       frischwasserPreis,
-			AbwasserPreis:           abwasserPreis,
+			Strompreis:              Float64(strompreis),
+			FrischwasserPreis:       Float64(frischwasserPreis),
+			AbwasserPreis:           Float64(abwasserPreis),
 			HeizungWaermeGewichtung: 0.7,
-			EinspeisungPreis:        0.08,
+			EinspeisungPreis:        Float64(0.08),
 			Readings:                readingsCopy,
 			Personen:                map[int64]int64{1: 2, 2: personenWohnung2(i)},
 		}

@@ -12,11 +12,11 @@ func mustCreatePeriodMitEinspeisung(t *testing.T, db *sql.DB, date string, einsp
 	t.Helper()
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate:             date,
-		Strompreis:              0.22,
-		FrischwasserPreis:       1.46,
-		AbwasserPreis:           4.87,
+		Strompreis:              store.Float64(0.22),
+		FrischwasserPreis:       store.Float64(1.46),
+		AbwasserPreis:           store.Float64(4.87),
 		HeizungWaermeGewichtung: 0.7,
-		EinspeisungPreis:        einspeisungPreis,
+		EinspeisungPreis:        store.Float64(einspeisungPreis),
 		Readings:                readings,
 		Personen:                map[int64]int64{1: 2, 2: 1},
 	})

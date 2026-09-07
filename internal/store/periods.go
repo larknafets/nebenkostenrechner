@@ -82,15 +82,41 @@ func UpdateStammdaten(db *sql.DB, in map[int64]StammdatenInput) error {
 
 // PeriodInput is one monthly reading, ready to be persisted.
 type PeriodInput struct {
-	ReadingDate             string // YYYY-MM-DD
-	Monat                   string // YYYY-MM-01, das Abrechnungsmonat-Label (Issue #86)
-	Strompreis              float64
-	FrischwasserPreis       float64
-	AbwasserPreis           float64
-	HeizungWaermeGewichtung float64            // Heizungs-Split-Gewichtung (0.7/0.6/0.5), Ticket #27
-	EinspeisungPreis        float64            // EUR/kWh für die PV-Einspeisevergütung (Ticket #47)
-	Readings                map[string]float64 // meter key -> Zählerstand, must cover all of MeterKeys
-	Personen                map[int64]int64    // apartment id -> Personenzahl
+	ReadingDate string // YYYY-MM-DD
+	// Monat is the Abrechnungsmonat-Label (Issue #86), "YYYY-MM-01" - an
+	// empty string means "nicht erfasst" (Teilstand, Ticket #128), the
+	// column's own DEFAULT ''.
+	Monat string
+	// Strompreis/FrischwasserPreis/AbwasserPreis/EinspeisungPreis are nil
+	// when not (yet) entered - a Teilstand (Ticket #128). CreatePeriod
+	// persists nil as SQL NULL; UpdatePeriod leaves the existing stored
+	// value untouched for a nil field, same "don't touch what wasn't
+	// given" rule Readings/Personen below already followed.
+	Strompreis              *float64
+	FrischwasserPreis       *float64
+	AbwasserPreis           *float64
+	HeizungWaermeGewichtung float64 // Heizungs-Split-Gewichtung (0.7/0.6/0.5), Ticket #27 - always has a value, its radio group defaults to 0.7
+	EinspeisungPreis        *float64
+	// Readings/Personen: a missing key means "nicht erfasst" (Teilstand,
+	// Ticket #128) - CreatePeriod/UpdatePeriod simply don't write a row for
+	// it, rather than requiring every MeterKeys/apartment id to be present.
+	Readings map[string]float64 // meter key -> Zählerstand
+	Personen map[int64]int64    // apartment id -> Personenzahl
+}
+
+// Float64 returns a pointer to v - a constructor for PeriodInput/
+// LatestPeriod's optional price fields (Ticket #128), since Go has no
+// address-of operator for a literal.
+func Float64(v float64) *float64 { return &v }
+
+// OrZero dereferences a Teilstand-fähiges Preis-Feld, treating "nicht
+// erfasst" (nil) as 0 - for callers that don't (yet) distinguish "fehlt"
+// from "0", such as a prefill or an export column (Ticket #128).
+func OrZero(p *float64) float64 {
+	if p == nil {
+		return 0
+	}
+	return *p
 }
 
 // insertPeriodTx inserts one period with its meter readings and occupancy.
@@ -115,7 +141,9 @@ func insertPeriodTx(tx *sql.Tx, in PeriodInput) (periodID int64, err error) {
 	for _, key := range MeterKeys {
 		value, ok := in.Readings[key]
 		if !ok {
-			return 0, fmt.Errorf("missing reading for meter %q", key)
+			// Teilstand (Ticket #128): kein Zählerstand für diesen Meter -
+			// einfach keine Row anlegen, statt einen Fehler zu werfen.
+			continue
 		}
 		if _, err := tx.Exec(
 			`INSERT INTO meter_readings (period_id, meter_id, zaehlerstand)
@@ -308,6 +336,13 @@ func monatNeighborBounds(all []PeriodSummary, periodID int64, currentDate string
 // CreatePeriod leaves Monat unvalidated, consistent with ReadingDate's own
 // unvalidated creation path.
 func checkMonatNeighbors(db *sql.DB, periodID int64, monat string) error {
+	if monat == "" {
+		// Teilstand (Ticket #128): ein noch nicht erfasster Abrechnungsmonat
+		// ist kein chronologischer Konflikt mit einer Nachbarperiode -
+		// überspringen, bis er tatsächlich eingetragen wird.
+		return nil
+	}
+
 	currentDate, all, err := periodNeighborContext(db, periodID)
 	if err != nil {
 		return err
@@ -346,7 +381,21 @@ func UpdatePeriod(db *sql.DB, periodID int64, in PeriodInput) error {
 	defer tx.Rollback()
 
 	res, err := tx.Exec(
-		`UPDATE periods SET reading_date = ?, monat = ?, strompreis = ?, frischwasser_preis = ?, abwasser_preis = ?, heizung_waerme_gewichtung = ?, einspeisung_preis = ?
+		// Teilstand (Ticket #128): monat/die 3 Preise nur überschreiben,
+		// wenn diese Runde tatsächlich einen Wert mitbringt (Monat != '',
+		// Preis != NULL) - ein bewusst leer gelassenes Feld darf einen
+		// vorher schon erfassten Wert nicht stillschweigend löschen. Dieselbe
+		// "nur anfassen was mitgegeben wurde"-Regel gilt jetzt für Readings
+		// weiter unten (vorher ein Fehler bei fehlendem Meter) und galt für
+		// Personen schon vorher (nie ein Pflicht-Coverage-Check).
+		`UPDATE periods SET
+		   reading_date = ?,
+		   monat = COALESCE(NULLIF(?, ''), monat),
+		   strompreis = COALESCE(?, strompreis),
+		   frischwasser_preis = COALESCE(?, frischwasser_preis),
+		   abwasser_preis = COALESCE(?, abwasser_preis),
+		   heizung_waerme_gewichtung = ?,
+		   einspeisung_preis = COALESCE(?, einspeisung_preis)
 		 WHERE id = ?`,
 		in.ReadingDate, in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.HeizungWaermeGewichtung, in.EinspeisungPreis, periodID,
 	)
@@ -362,7 +411,9 @@ func UpdatePeriod(db *sql.DB, periodID int64, in PeriodInput) error {
 	for _, key := range MeterKeys {
 		value, ok := in.Readings[key]
 		if !ok {
-			return fmt.Errorf("missing reading for meter %q", key)
+			// Teilstand (Ticket #128): kein neuer Wert für diesen Meter in
+			// dieser Runde - vorhandenen Zählerstand unangetastet lassen.
+			continue
 		}
 		if _, err := tx.Exec(
 			`INSERT INTO meter_readings (period_id, meter_id, zaehlerstand)
@@ -393,14 +444,16 @@ func UpdatePeriod(db *sql.DB, periodID int64, in PeriodInput) error {
 // LatestPeriod is a period together with its readings and occupancy, as
 // shown on the "letzte Ablesung" view.
 type LatestPeriod struct {
-	ID                      int64
-	ReadingDate             string
-	Monat                   string
-	Strompreis              float64
-	FrischwasserPreis       float64
-	AbwasserPreis           float64
+	ID          int64
+	ReadingDate string
+	Monat       string
+	// Strompreis/FrischwasserPreis/AbwasserPreis/EinspeisungPreis are nil
+	// when not (yet) entered - a Teilstand (Ticket #128).
+	Strompreis              *float64
+	FrischwasserPreis       *float64
+	AbwasserPreis           *float64
 	HeizungWaermeGewichtung float64
-	EinspeisungPreis        float64
+	EinspeisungPreis        *float64
 	Readings                map[string]float64
 	PersonenByApartment     map[int64]int64
 }
@@ -699,6 +752,47 @@ func DeletePeriod(db *sql.DB, periodID int64) error {
 	}
 
 	return tx.Commit()
+}
+
+// PeriodComplete reports whether periodID is a fully entered Ablesung or a
+// Teilstand (Ticket #128): complete means all 4 price columns are set,
+// Monat isn't empty, every store.MeterKeys entry has a meter_readings row,
+// and every apartment has a period_occupancy row. Rein abgeleitet - kein
+// eigenes "vollständig"-Flag, damit es keine zweite Wahrheitsquelle gibt.
+func PeriodComplete(db *sql.DB, periodID int64) (bool, error) {
+	var pricesSet int
+	var monat string
+	if err := db.QueryRow(
+		`SELECT (strompreis IS NOT NULL AND frischwasser_preis IS NOT NULL AND abwasser_preis IS NOT NULL AND einspeisung_preis IS NOT NULL), monat
+		 FROM periods WHERE id = ?`,
+		periodID,
+	).Scan(&pricesSet, &monat); err != nil {
+		if err == sql.ErrNoRows {
+			return false, fmt.Errorf("%w: period %d", ErrPeriodNotFound, periodID)
+		}
+		return false, fmt.Errorf("query period %d: %w", periodID, err)
+	}
+	if pricesSet == 0 || monat == "" {
+		return false, nil
+	}
+
+	var readingCount int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM meter_readings WHERE period_id = ?`, periodID).Scan(&readingCount); err != nil {
+		return false, fmt.Errorf("count readings for period %d: %w", periodID, err)
+	}
+	if readingCount < len(MeterKeys) {
+		return false, nil
+	}
+
+	var apartmentCount int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM apartments`).Scan(&apartmentCount); err != nil {
+		return false, fmt.Errorf("count apartments: %w", err)
+	}
+	var occupancyCount int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM period_occupancy WHERE period_id = ?`, periodID).Scan(&occupancyCount); err != nil {
+		return false, fmt.Errorf("count occupancy for period %d: %w", periodID, err)
+	}
+	return occupancyCount >= apartmentCount, nil
 }
 
 // PersonenByApartment returns the given period's occupancy (apartment id ->
