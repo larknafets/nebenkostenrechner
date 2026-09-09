@@ -116,6 +116,15 @@ func formatDecimalDE2(x float64) string {
 	return groupThousandsDE(strings.ReplaceAll(strconv.FormatFloat(x, 'f', 2, 64), ".", ","))
 }
 
+// formatDecimalDE3 renders a float64 German-formatted, always padded to
+// exactly 3 decimal places. Used for raw Zählerstände (Ablesungen), which
+// are entered with up to 3 Nachkommastellen precision - formatDecimalDE2
+// would round/truncate that third digit away. Thousands grouped with "."
+// (e.g. "2.345,433").
+func formatDecimalDE3(x float64) string {
+	return groupThousandsDE(strings.ReplaceAll(strconv.FormatFloat(x, 'f', 3, 64), ".", ","))
+}
+
 // formatDatumDE renders a period's ReadingDate ("YYYY-MM-DD") in the German
 // DD.MM.YYYY form (Ticket #36). Falls back to the raw string if it isn't a
 // parseable date, same convention as germanPeriodLabel.

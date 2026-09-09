@@ -26,7 +26,7 @@
     <thead><tr><th>Zähler</th><th>Stand</th></tr></thead>
     <tbody>
       {{range .Meters}}
-      <tr><td>{{.Label}}</td><td>{{if .Erfasst}}{{de2 .Value}}&nbsp;{{.Unit}}{{if .Diff}} ({{.Diff}}&nbsp;{{.Unit}}){{end}}{{else}}<span class="text-warning">noch offen</span>{{end}}</td></tr>
+      <tr><td>{{.Label}}</td><td>{{if .Erfasst}}{{de3 .Value}}&nbsp;{{.Unit}}{{if .Diff}} ({{.Diff}}&nbsp;{{.Unit}}){{end}}{{else}}<span class="text-warning">noch offen</span>{{end}}</td></tr>
       {{end}}
     </tbody>
   </table>

@@ -84,6 +84,7 @@ var templateFuncs = template.FuncMap{
 	"de0":           formatDecimalDE0,
 	"de1":           formatDecimalDE1,
 	"de2":           formatDecimalDE2,
+	"de3":           formatDecimalDE3,
 	"deEUR":         formatEuroDE,
 	"deDatum":       formatDatumDE,
 	"deDatumZeit":   formatDatumZeitDE,

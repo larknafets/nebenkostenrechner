@@ -1881,7 +1881,7 @@ func TestHandleAblesungDetail_TeilstandZeigtOffeneFelder(t *testing.T) {
 	if !strings.Contains(body, "noch offen") {
 		t.Error("Detailseite markiert keine fehlenden Werte als 'noch offen'")
 	}
-	if !strings.Contains(body, "12.345,00") {
+	if !strings.Contains(body, "12.345,000") {
 		t.Error("Detailseite zeigt den bereits erfassten Zählerstand nicht normal an")
 	}
 }
