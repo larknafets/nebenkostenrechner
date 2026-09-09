@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -42,31 +43,68 @@ const (
 )
 
 // resolveLoginPassword reads the optional Login-Kennwort: LOGIN_PASSWORD env
-// var first (Docker/.env), falling back to the Home Assistant Supervisor's
-// /data/options.json ("login_password" field) when unset - Supervisor does
-// not map addon options onto container env vars itself, and this app's
-// distroless image has no shell for the usual bashio/run.sh workaround (see
-// larknafets/ha-addons#3). Read once at startup, like DB_PATH/LISTEN_ADDR.
-// Empty means the login system stays disabled - everything visible.
+// var first (Docker/.env), falling back to the Home Assistant Supervisor API
+// when unset - Supervisor does not map addon options onto container env vars
+// itself, and this app's distroless image has no shell for the usual
+// bashio/run.sh workaround (see larknafets/ha-addons#3). An earlier version
+// of this fallback read /data/options.json directly, but that file is
+// root-owned and unreadable by this image's nonroot container user
+// (confirmed via addon log: "permission denied") - the Supervisor API call
+// needs no filesystem access at all. Read once at startup, like
+// DB_PATH/LISTEN_ADDR. Empty means the login system stays disabled -
+// everything visible.
 func resolveLoginPassword() string {
 	if pw := os.Getenv("LOGIN_PASSWORD"); pw != "" {
-		log.Printf("login: LOGIN_PASSWORD env gesetzt (Länge %d)", len(pw))
+		log.Printf("login: LOGIN_PASSWORD env set (length %d)", len(pw))
 		return pw
 	}
-	data, err := os.ReadFile("/data/options.json")
+	token := os.Getenv("SUPERVISOR_TOKEN")
+	if token == "" {
+		return ""
+	}
+	pw, err := fetchSupervisorLoginPassword(token)
 	if err != nil {
-		log.Printf("login: /data/options.json nicht lesbar (%v) - Login-Kennwort bleibt leer", err)
+		log.Printf("login: Supervisor API call failed (%v) - login password stays empty", err)
 		return ""
 	}
-	var options struct {
-		LoginPassword string `json:"login_password"`
+	log.Printf("login: read login_password from Supervisor API (length %d)", len(pw))
+	return pw
+}
+
+// fetchSupervisorLoginPassword calls the Supervisor's internal
+// "/addons/self/info" API (only reachable from inside the addon container,
+// requires "hassio_api: true" in config.yaml) and extracts the currently
+// configured "login_password" option. The options object in this response
+// is the addon's own, unredacted configuration - unlike the equivalent
+// "/addons/<slug>/info" call from outside, which redacts it.
+func fetchSupervisorLoginPassword(token string) (string, error) {
+	req, err := http.NewRequest(http.MethodGet, "http://supervisor/addons/self/info", nil)
+	if err != nil {
+		return "", err
 	}
-	if err := json.Unmarshal(data, &options); err != nil {
-		log.Printf("login: /data/options.json nicht als JSON parsbar (%v) - Login-Kennwort bleibt leer", err)
-		return ""
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
 	}
-	log.Printf("login: /data/options.json gelesen, login_password-Feld Länge %d", len(options.LoginPassword))
-	return options.LoginPassword
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("unexpected status %d", resp.StatusCode)
+	}
+
+	var body struct {
+		Data struct {
+			Options struct {
+				LoginPassword string `json:"login_password"`
+			} `json:"options"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return "", err
+	}
+	return body.Data.Options.LoginPassword, nil
 }
 
 // signSession returns a session cookie value valid until expiry:
