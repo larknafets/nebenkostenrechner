@@ -273,71 +273,21 @@ type FixkostenEingabeDetails struct {
 }
 
 // GetFixkostenEingabeDetails returns the given Fixkosten-Eingabe with its
-// Werte/Personen, or nil if it doesn't exist.
+// Werte/Personen, or nil if it doesn't exist. Reuses AllFixkostenEingabenDetails'
+// single hydration path rather than its own queries - same fix as
+// GetPeriodDetails/AllPeriodDetails (periods.go), data volume here is
+// equally small.
 func GetFixkostenEingabeDetails(db *sql.DB, eingabeID int64) (*FixkostenEingabeDetails, error) {
-	f := FixkostenEingabeDetails{
-		Personen: map[int64]int64{},
-		Werte:    map[int64]FixkostenPositionWert{},
-		Abschlag: map[int64]float64{},
-	}
-	if err := db.QueryRow(`SELECT id, monat FROM fixkosten_eingaben WHERE id = ?`, eingabeID).Scan(&f.ID, &f.Monat); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("query fixkosten eingabe %d: %w", eingabeID, err)
-	}
-
-	werteRows, err := db.Query(`SELECT kostenposition_id, wert, logik, typ FROM fixkosten_werte WHERE fixkosten_eingabe_id = ?`, eingabeID)
+	eingaben, err := AllFixkostenEingabenDetails(db)
 	if err != nil {
-		return nil, fmt.Errorf("query fixkosten werte: %w", err)
-	}
-	defer werteRows.Close()
-	for werteRows.Next() {
-		var kostenpositionID int64
-		var w FixkostenPositionWert
-		if err := werteRows.Scan(&kostenpositionID, &w.Wert, &w.Logik, &w.Typ); err != nil {
-			return nil, fmt.Errorf("scan fixkosten wert: %w", err)
-		}
-		f.Werte[kostenpositionID] = w
-	}
-	if err := werteRows.Err(); err != nil {
 		return nil, err
 	}
-
-	personenRows, err := db.Query(`SELECT apartment_id, personen FROM fixkosten_personen WHERE fixkosten_eingabe_id = ?`, eingabeID)
-	if err != nil {
-		return nil, fmt.Errorf("query fixkosten personen: %w", err)
-	}
-	defer personenRows.Close()
-	for personenRows.Next() {
-		var apartmentID, personen int64
-		if err := personenRows.Scan(&apartmentID, &personen); err != nil {
-			return nil, fmt.Errorf("scan fixkosten personen: %w", err)
+	for _, f := range eingaben {
+		if f.ID == eingabeID {
+			return f, nil
 		}
-		f.Personen[apartmentID] = personen
 	}
-	if err := personenRows.Err(); err != nil {
-		return nil, err
-	}
-
-	abschlagRows, err := db.Query(`SELECT apartment_id, wert FROM nebenkosten_abschlaege WHERE fixkosten_eingabe_id = ?`, eingabeID)
-	if err != nil {
-		return nil, fmt.Errorf("query nebenkosten abschlaege: %w", err)
-	}
-	defer abschlagRows.Close()
-	for abschlagRows.Next() {
-		var apartmentID int64
-		var wert float64
-		if err := abschlagRows.Scan(&apartmentID, &wert); err != nil {
-			return nil, fmt.Errorf("scan nebenkosten abschlag: %w", err)
-		}
-		f.Abschlag[apartmentID] = wert
-	}
-	if err := abschlagRows.Err(); err != nil {
-		return nil, err
-	}
-
-	return &f, nil
+	return nil, nil
 }
 
 // AllAbschlaege returns every recorded Nebenkostenabschlag-Wert, keyed by
