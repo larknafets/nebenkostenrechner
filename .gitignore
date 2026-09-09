@@ -1,1 +1,13 @@
 /dist/
+
+# Claude Code project settings/state - local to this machine, never shared
+/.claude/
+
+# local dev artifacts
+*.db
+*.log
+.env
+.DS_Store
+
+# built binary (matches module name, e.g. from `go build ./cmd/nebenkostenrechner`)
+/nebenkostenrechner
