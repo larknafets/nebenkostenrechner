@@ -57,6 +57,12 @@ changelog:
       - "^chore:"
 
 release:
+  header: |
+    # Changelog
+
+    Full release details: https://github.com/larknafets/nebenkostenrechner/releases
+
+    ## {{ .Tag }} - {{ .Now.Format "2006-01-02" }}
   github:
     owner: larknafets
     name: nebenkostenrechner
