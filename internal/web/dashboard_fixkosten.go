@@ -328,6 +328,45 @@ func groupKostenByMonat(apartmentID int64, periodenKosten []periodKosten) map[st
 	return out
 }
 
+// accumulateAbschlagSaldo computes the Nebenkostenabschlag-Saldo (utility
+// advance payment balance) for every month in monate, writing Saldo/
+// AbschlagProzent directly into monate (index-aligned with abschlagWerte).
+// Continuously accumulated from oldest to newest month (monate is sorted
+// newest-first, hence the backward iteration) - saldo(m) = abschlag(m) -
+// KombiniertGesamt(m). The gate is HasFixkosten, not HasKombiniert:
+// abschlagWert comes exclusively from a fixed-costs entry (see
+// buildDashboardVerlauf's fixErg==nil condition) - a month with only a
+// reading but (still) no fixed-costs entry has no recorded advance-payment
+// value and would otherwise be wrongly computed with abschlag=0, instead of
+// being skipped like a month with no data (#94: "no data" instead of an
+// implicit jump).
+func accumulateAbschlagSaldo(monate []dashboardMonat, abschlagWerte []float64) {
+	var laufenderSaldo float64
+	saldi := make([]float64, len(monate))
+	hatSaldo := make([]bool, len(monate))
+	var maxAbsSaldo float64
+	for i := len(monate) - 1; i >= 0; i-- {
+		if !monate[i].HasFixkosten {
+			continue
+		}
+		laufenderSaldo = calc.Round2(laufenderSaldo + calc.Round2(abschlagWerte[i]-monate[i].KombiniertGesamt))
+		saldi[i] = laufenderSaldo
+		hatSaldo[i] = true
+		if abs := math.Abs(laufenderSaldo); abs > maxAbsSaldo {
+			maxAbsSaldo = abs
+		}
+	}
+	for i := range monate {
+		if !hatSaldo[i] {
+			continue
+		}
+		monate[i].Saldo = newAbschlagSaldo(saldi[i])
+		if maxAbsSaldo > 0 {
+			monate[i].AbschlagProzent = math.Abs(saldi[i]) / maxAbsSaldo * 50
+		}
+	}
+}
+
 // buildDashboardVerlauf merges the given apartment's consumption (from
 // periodenKosten) and fixed costs (from fixkostenListe) into one calendar-
 // month Monatsverlauf. The 2 input series aren't forced 1:1 - a month with
@@ -439,40 +478,7 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 		setSegmentPct(monate[i].KombiniertSegmente, maxKombiniert)
 	}
 
-	// Nebenkostenabschlag-Saldo (utility advance payment balance):
-	// continuously accumulated from oldest to newest month (monate is
-	// sorted newest-first, hence backwards) - saldo(m) = abschlag(m) -
-	// KombiniertGesamt(m). The gate is HasFixkosten, not HasKombiniert:
-	// abschlagWert comes exclusively from a fixed-costs entry (see the
-	// fixErg==nil condition above) - a month with only a reading but
-	// (still) no fixed-costs entry has no recorded advance-payment value
-	// and would otherwise be wrongly computed with abschlag=0, instead of
-	// being skipped like a month with no data (#94: "no data" instead of
-	// an implicit jump).
-	var laufenderSaldo float64
-	saldi := make([]float64, len(monate))
-	hatSaldo := make([]bool, len(monate))
-	var maxAbsSaldo float64
-	for i := len(monate) - 1; i >= 0; i-- {
-		if !monate[i].HasFixkosten {
-			continue
-		}
-		laufenderSaldo = calc.Round2(laufenderSaldo + calc.Round2(abschlagWerte[i]-monate[i].KombiniertGesamt))
-		saldi[i] = laufenderSaldo
-		hatSaldo[i] = true
-		if abs := math.Abs(laufenderSaldo); abs > maxAbsSaldo {
-			maxAbsSaldo = abs
-		}
-	}
-	for i := range monate {
-		if !hatSaldo[i] {
-			continue
-		}
-		monate[i].Saldo = newAbschlagSaldo(saldi[i])
-		if maxAbsSaldo > 0 {
-			monate[i].AbschlagProzent = math.Abs(saldi[i]) / maxAbsSaldo * 50
-		}
-	}
+	accumulateAbschlagSaldo(monate, abschlagWerte)
 
 	var latestSaldo *AbschlagSaldo
 	for i := range monate {

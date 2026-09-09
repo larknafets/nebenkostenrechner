@@ -574,6 +574,45 @@ func TestAbschlagSaldo(t *testing.T) {
 	}
 }
 
+// TestAccumulateAbschlagSaldo tests the running-balance accumulation
+// (architecture review: extracted out of buildDashboardVerlauf so this hard,
+// order-dependent logic - reverse iteration, HasFixkosten gating, per-step
+// rounding, maxAbsSaldo-scaled percent - has a seam of its own to test,
+// instead of only being reachable through the much larger function.
+func TestAccumulateAbschlagSaldo(t *testing.T) {
+	// monate is newest-first (Mär, Feb, Jan); Feb has no Fixkosten-Eingabe
+	// and must be skipped, not treated as Abschlag=0 (#94).
+	monate := []dashboardMonat{
+		{Label: "Mär", HasFixkosten: true, KombiniertGesamt: 30},
+		{Label: "Feb", HasFixkosten: false, KombiniertGesamt: 20},
+		{Label: "Jan", HasFixkosten: true, KombiniertGesamt: 20},
+	}
+	abschlagWerte := []float64{100, 0, 100} // Feb's 0 must never be used
+
+	accumulateAbschlagSaldo(monate, abschlagWerte)
+
+	if monate[2].Saldo == nil || monate[2].Saldo.Betrag() != 80 || !monate[2].Saldo.Guthaben() {
+		t.Fatalf("Jan.Saldo = %+v, want Betrag 80/Guthaben (Abschlag 100 - Kombiniert 20)", monate[2].Saldo)
+	}
+	if monate[1].Saldo != nil {
+		t.Errorf("Feb.Saldo = %+v, want nil (keine Fixkosten-Eingabe, wird uebersprungen)", monate[1].Saldo)
+	}
+	// Mär carries forward Jan's balance: 80 + (100 - 30) = 150.
+	if monate[0].Saldo == nil || monate[0].Saldo.Betrag() != 150 || !monate[0].Saldo.Guthaben() {
+		t.Fatalf("Mär.Saldo = %+v, want Betrag 150/Guthaben (fortgeführt aus Jan, ueberspringt Feb)", monate[0].Saldo)
+	}
+
+	// AbschlagProzent is scaled against maxAbsSaldo (150, from Mär) -
+	// Jan's 80 should be 80/150*50, Mär's own 150/150*50 = 50.
+	wantJanProzent := 80.0 / 150.0 * 50
+	if got := monate[2].AbschlagProzent; got != wantJanProzent {
+		t.Errorf("Jan.AbschlagProzent = %v, want %v", got, wantJanProzent)
+	}
+	if got := monate[0].AbschlagProzent; got != 50 {
+		t.Errorf("Mär.AbschlagProzent = %v, want 50 (eigener Betrag ist das Maximum)", got)
+	}
+}
+
 // TestBuildDashboardVerlauf_LatestSaldo covers #99/#102: LatestSaldo is now
 // set directly in buildDashboardVerlauf (from the same backward loop that
 // also computes the per-month balances), instead of being determined
