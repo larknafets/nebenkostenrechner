@@ -60,9 +60,7 @@ changelog:
 
 release:
   header: |
-    # Changelog
-
-    ## {{ .Tag }} - {{ .Now.Format "2006-01-02" }}
+    ## Changelog
   github:
     owner: larknafets
     name: nebenkostenrechner
