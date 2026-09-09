@@ -2,12 +2,17 @@
 
 # Claude Code project settings/state - local to this machine, never shared
 /.claude/
+.mcp.json
 
 # local dev artifacts
 *.db
 *.log
 .env
 .DS_Store
+
+# graft's local graph cache for this project, never shared
+/graft/
+.ignore
 
 # built binary (matches module name, e.g. from `go build ./cmd/nebenkostenrechner`)
 /nebenkostenrechner
