@@ -12,8 +12,8 @@ import (
 )
 
 // dashboardSegment is one colored slice of a Dashboard bar - shared shape
-// for the Jahressummen-Karten' mini-bar, the Monatsverlauf's Verbrauch/
-// Fixkosten/Kombiniert bars, and (via ProzentNeuestesGesamt/ProzentGesamt,
+// for the yearly-totals cards' mini-bar, the Monatsverlauf's consumption/
+// fixed-costs/combined bars, and (via ProzentNeuestesGesamt/ProzentGesamt,
 // reused for either "percent of the newest month" or "percent of this
 // card's own total" depending on the call site) every percentage-scaled bar
 // on the page.
@@ -21,14 +21,14 @@ type dashboardSegment struct {
 	Farbe                 string
 	Label                 string
 	Kosten                float64
-	Verbrauch             float64 // Menge (kWh/MWh/m³) - only set for Verbrauch-Kategorien, 0 for Fixkosten/Kombiniert
+	Verbrauch             float64 // amount (kWh/MWh/m³) - only set for consumption categories, 0 for Fixkosten/Kombiniert
 	Einheit               string
 	ProzentNeuestesGesamt float64
 
-	// Verbrauch2/Einheit2 is a second, optional Mengenangabe shown behind
-	// Verbrauch/Einheit in der Verbrauchswerte-Ansicht - nur bei Heizung/
-	// Warmwasser gesetzt (siehe kategorie.Verbrauch2). Einheit2 == "" heißt
-	// kein zweiter Wert.
+	// Verbrauch2/Einheit2 is a second, optional quantity shown behind
+	// Verbrauch/Einheit in the consumption values view - only set for
+	// Heizung/Warmwasser (heating/hot water, see kategorie.Verbrauch2).
+	// Einheit2 == "" means no second value.
 	Verbrauch2 float64
 	Einheit2   string
 }
@@ -45,14 +45,15 @@ func setSegmentPct(segs []dashboardSegment, denom float64) {
 	}
 }
 
-// fixkostenKosten is one Fixkosten-Eingabe's Monat and computed Ergebnis.
+// fixkostenKosten is one fixed-costs entry's month (Monat) and computed
+// result (Ergebnis).
 type fixkostenKosten struct {
 	Monat    string
 	Erg      *calc.FixkostenErgebnis
-	Abschlag map[int64]float64 // apartment id -> Nebenkostenabschlag-Wert, nil/missing entry = kein Wert erfasst
+	Abschlag map[int64]float64 // apartment id -> utility advance payment value, nil/missing entry = no value recorded
 }
 
-// alleFixkostenKosten returns every computable Fixkosten-Eingabe's Ergebnis,
+// alleFixkostenKosten returns every computable fixed-costs entry's result,
 // newest first (store.AllFixkostenEingaben's own order).
 func alleFixkostenKosten(db *sql.DB) ([]fixkostenKosten, error) {
 	eingaben, err := store.AllFixkostenEingaben(db)
@@ -75,9 +76,10 @@ func alleFixkostenKosten(db *sql.DB) ([]fixkostenKosten, error) {
 	return out, nil
 }
 
-// fixkostenGruppen groups one Fixkosten-Ergebnis's 14 Positionen by Logik
-// into the 4 fixed buckets the "Fixkosten"-Modus bar shows (always all 4,
-// even at 0 - same "show every category" convention as kategorien()).
+// fixkostenGruppen groups one fixed-costs result's 14 positions by Logik
+// (allocation logic) into the 4 fixed buckets the "Fixkosten" mode bar
+// shows (always all 4, even at 0 - same "show every category" convention
+// as kategorien()).
 func fixkostenGruppen(apartmentID int64, erg *calc.FixkostenErgebnis) []dashboardSegment {
 	sums := map[string]float64{}
 	for _, p := range erg.Positionen {
@@ -91,9 +93,9 @@ func fixkostenGruppen(apartmentID int64, erg *calc.FixkostenErgebnis) []dashboar
 	return out
 }
 
-// anzeigeJahr is the Dashboard's auto-following Anzeigejahr (Issue #60
+// anzeigeJahr is the Dashboard's auto-following display year (Issue #60
 // Story 22) - the year of whichever is chronologically newest across both
-// Ablesungen and Fixkosten-Eingaben, purely data-driven (not wall-clock
+// readings and fixed-costs entries, purely data-driven (not wall-clock
 // time). Falls back to the real current year only when neither series has
 // any data yet (fresh install).
 func anzeigeJahr(allPeriods []store.PeriodSummary, fixkostenEingaben []store.FixkostenEingabeSummary) int {
@@ -114,11 +116,11 @@ func anzeigeJahr(allPeriods []store.PeriodSummary, fixkostenEingaben []store.Fix
 	return jahr
 }
 
-// dashboardJahresCard is one apartment's Jahressummen-Karte (Issue #60
-// Story 21) - Fixkosten first, then Strom/Heizung/Wasser, same field order
-// the mini-bar Segmente use. Also feeds the KPI-Strip below the Wohnung-
-// Umschalter (VerbrauchEUR/FixkostenEUR/GesamtEUR), so the numbers always
-// match between the two.
+// dashboardJahresCard is one apartment's yearly-totals card (Issue #60
+// Story 21) - fixed costs first, then Strom/Heizung/Wasser (electricity/
+// heating/water), same field order the mini-bar segments use. Also feeds
+// the KPI strip below the apartment switcher (VerbrauchEUR/FixkostenEUR/
+// GesamtEUR), so the numbers always match between the two.
 type dashboardJahresCard struct {
 	ApartmentID         int64
 	ApartmentName       string
@@ -133,24 +135,25 @@ type dashboardJahresCard struct {
 	GesamtEUR           float64
 	Segmente            []dashboardSegment
 
-	// PVAnteilKWh ist die Jahressumme von StromErgebnis.PVAnteilW2KWh ("Nicht
-	// dem Netzbezug zugeordnet (PV)", CONTEXT.md) - nur für Wohnung 2 gesetzt
-	// (Issue #98), da Wohnung 1 keinen eigenen Stromzähler hat. 0 = Zeile wird
-	// ausgeblendet.
+	// PVAnteilKWh is the yearly total of StromErgebnis.PVAnteilW2KWh ("not
+	// allocated to grid draw (PV)", CONTEXT.md) - only set for apartment 2
+	// (Issue #98), since apartment 1 has no own electricity meter. 0 =
+	// row is hidden.
 	PVAnteilKWh float64
 
-	// Nebenkostenabschlag-Saldo: fortlaufend seit Erfassungsbeginn kumuliert
-	// (kein Jahres-Reset), Stand des jeweils neuesten Monats - siehe
-	// buildDashboardVerlauf, das den Saldo je Monat berechnet; von dort
-	// übernommen (handleDashboard), nicht hier in buildJahresCard berechnet.
-	// nil = kein Saldo berechenbar (siehe AbschlagSaldo).
+	// Nebenkostenabschlag-Saldo (utility advance payment balance):
+	// continuously accumulated since recording began (no yearly reset),
+	// as of the latest month - see buildDashboardVerlauf, which computes
+	// the balance per month; taken over from there (handleDashboard), not
+	// computed here in buildJahresCard. nil = no balance calculable (see
+	// AbschlagSaldo).
 	Saldo *AbschlagSaldo
 }
 
-// buildJahresCard sums the given apartment's Verbrauch- und Fixkosten-Kosten
-// over every period/Eingabe whose date falls in jahr, and (Ticket #75)
-// averages the apartment's Personenzahl over jahr's Ablesungen (1
-// Nachkommastelle, 0 if the year has no Ablesung yet).
+// buildJahresCard sums the given apartment's consumption and fixed costs
+// over every period/entry whose date falls in jahr, and (Ticket #75)
+// averages the apartment's occupant count over jahr's readings (1 decimal
+// place, 0 if the year has no reading yet).
 func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apartmentFlurstueck float64, jahr int, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten) dashboardJahresCard {
 	var strom, heizung, wasser, fix float64
 	var pvAnteilKWh float64
@@ -213,10 +216,11 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 	}
 }
 
-// dashboardMonat is one calendar month's combined Verbrauch+Fixkosten
-// Monatsverlauf-Zeile - up to 3 independently pct-scaled bar variants (one
-// per numeric Modus); the 4th Modus ("Verbrauchswerte") reuses
-// VerbrauchSegmente's raw Verbrauch/Einheit as text instead of a bar.
+// dashboardMonat is one calendar month's combined consumption+fixed-costs
+// Monatsverlauf row - up to 3 independently pct-scaled bar variants (one
+// per numeric mode); the 4th mode ("Verbrauchswerte"/consumption values)
+// reuses VerbrauchSegmente's raw Verbrauch/Einheit as text instead of a
+// bar.
 type dashboardMonat struct {
 	Label     string
 	Jahr      int
@@ -234,23 +238,26 @@ type dashboardMonat struct {
 	KombiniertSegmente []dashboardSegment
 	KombiniertGesamt   float64
 
-	// Nebenkostenabschlag-Saldo (5. Modus "abschlag"): fortlaufend kumulierter
-	// Stand bis einschließlich diesem Monat - abschlag(m) - KombiniertGesamt(m)
-	// je Monat aufsummiert seit dem ersten je erfassten Monat, kein Jahres-
-	// Reset. nil, wenn der Monat nicht HasKombiniert ist (fehlende Monate
-	// lassen den Saldo unverändert, siehe buildDashboardVerlauf).
+	// Nebenkostenabschlag-Saldo (utility advance payment balance, 5th mode
+	// "abschlag"): continuously accumulated balance up to and including
+	// this month - abschlag(m) - KombiniertGesamt(m) summed per month
+	// since the very first recorded month, no yearly reset. nil if the
+	// month is not HasKombiniert (missing months leave the balance
+	// unchanged, see buildDashboardVerlauf).
 	Saldo *AbschlagSaldo
 
-	// AbschlagProzent (0-50) ist die Balken-Halbbreite - Anteil vom größten
-	// |Saldo| der ganzen Reihe, also eine Eigenschaft der Reihe, nicht des
-	// einzelnen Saldos, deshalb kein Feld auf AbschlagSaldo selbst.
+	// AbschlagProzent (0-50) is the bar's half-width - share of the
+	// largest |Saldo| across the whole series, so a property of the
+	// series, not of the individual balance, hence no field on
+	// AbschlagSaldo itself.
 	AbschlagProzent float64
 }
 
-// dashboardJahreszeile is the Monatsverlauf's per-Jahr summary row (Issue
-// #60 Story 27) - unlike the old Ablesung-only Verlauf's December-triggered
-// separator, every Jahr gets one, including the not-yet-complete newest one
-// (IstLaufend), which only sums whatever months are recorded so far.
+// dashboardJahreszeile is the Monatsverlauf's per-year summary row (Issue
+// #60 Story 27) - unlike the old readings-only Verlauf's December-
+// triggered separator, every year gets one, including the not-yet-
+// complete newest one (IstLaufend), which only sums whatever months are
+// recorded so far.
 type dashboardJahreszeile struct {
 	Jahr           int
 	IstLaufend     bool
@@ -258,16 +265,18 @@ type dashboardJahreszeile struct {
 	FixkostenSumme float64
 	GesamtSumme    float64
 
-	// Endstand: der kumulierte Saldo am Jahresende (bzw. am neuesten erfassten
-	// Monat, bei einem laufenden Jahr) - keine Summe, da der Saldo fortlaufend
-	// ist und sich nicht sinnvoll pro Jahr aufaddieren lässt (siehe #92/#94).
-	// Eigener Feldname statt "Saldo" wie bei dashboardMonat, weil hier ein
-	// anderer Zeitpunkt gemeint ist (Jahresende, nicht laufender Monat).
+	// Endstand (closing balance): the accumulated balance at year end (or
+	// at the latest recorded month, for a running year) - not a sum,
+	// since the balance is continuous and can't meaningfully be added up
+	// per year (see #92/#94). Own field name instead of "Saldo" like on
+	// dashboardMonat, because this refers to a different point in time
+	// (year end, not the current month).
 	Endstand *AbschlagSaldo
 }
 
 // dashboardVerlaufEintrag is one row of a Monatsverlauf column: either a
-// Monat or (if Jahreszeile is set) a year-summary row. Exactly one is set.
+// month (Monat) or (if Jahreszeile is set) a year-summary row. Exactly one
+// is set.
 type dashboardVerlaufEintrag struct {
 	Monat       *dashboardMonat
 	Jahreszeile *dashboardJahreszeile
@@ -279,18 +288,18 @@ type dashboardVerlaufSpalte struct {
 	ApartmentName string
 	Eintraege     []dashboardVerlaufEintrag
 
-	// LatestSaldo ist der neueste Monat mit Saldo (newest-first, überspringt
-	// Jahreszeilen und lückenhafte Monate) - direkt aus der Rückwärtsschleife
-	// in buildDashboardVerlauf gesetzt, statt dass eine 2. Funktion
-	// (latestAbschlagSaldo) hinterher nochmal durch Eintraege läuft, um
-	// denselben Wert wiederzufinden (#99/#102: Duplicated Code). nil = kein
-	// Saldo berechenbar.
+	// LatestSaldo is the newest month with a balance (newest-first, skips
+	// year-summary rows and gapped months) - set directly from the
+	// backward loop in buildDashboardVerlauf, instead of a 2nd function
+	// (latestAbschlagSaldo) walking through Eintraege afterwards to find
+	// the same value again (#99/#102: duplicated code). nil = no balance
+	// calculable.
 	LatestSaldo *AbschlagSaldo
 }
 
 // groupKostenByMonat merges every periodKosten's kategorien(apartmentID, ...)
-// row by Abrechnungsmonat (Issue #86): 2+ Ablesungen sharing a Monat
-// (untermonatige Ablesungen) get their rows summed (Kosten, Verbrauch,
+// row by billing month (Abrechnungsmonat, Issue #86): 2+ readings sharing
+// a month (sub-monthly readings) get their rows summed (Kosten, Verbrauch,
 // Verbrauch2), instead of one silently overwriting another - replaces
 // buildDashboardVerlauf's old per-ReadingDate "first one wins" bucket,
 // which only ever saw 1 period per month in practice.
@@ -319,11 +328,11 @@ func groupKostenByMonat(apartmentID int64, periodenKosten []periodKosten) map[st
 	return out
 }
 
-// buildDashboardVerlauf merges the given apartment's Verbrauch (from
-// periodenKosten) and Fixkosten (from fixkostenListe) into one calendar-
+// buildDashboardVerlauf merges the given apartment's consumption (from
+// periodenKosten) and fixed costs (from fixkostenListe) into one calendar-
 // month Monatsverlauf. The 2 input series aren't forced 1:1 - a month with
-// only an Ablesung, only a Fixkosten-Eingabe, or both, is equally valid;
-// when a month has 2+ Perioden/Eingaben, the newest one wins (both inputs
+// only a reading, only a fixed-costs entry, or both, is equally valid;
+// when a month has 2+ periods/entries, the newest one wins (both inputs
 // are already newest-first).
 func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten) dashboardVerlaufSpalte {
 	type bucket struct {
@@ -331,7 +340,7 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 		jahr          int
 		verbrauchKats []kategorie
 		fixErg        *calc.FixkostenErgebnis
-		abschlagWert  float64 // 0 wenn kein Wert erfasst (siehe #92: fehlender Wert zählt als 0)
+		abschlagWert  float64 // 0 if no value recorded (see #92: a missing value counts as 0)
 	}
 	buckets := map[string]*bucket{}
 	var order []string
@@ -409,9 +418,9 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 		monate[0].IsCurrent = true
 	}
 
-	// Baseline je Modus = das größte Monat über den gesamten angezeigten
-	// Zeitraum - kein Balken läuft dadurch über 100% (sonst hart am
-	// bar-track-Rand abgeschnitten, siehe Architecture Review).
+	// Baseline per mode = the largest month across the entire displayed
+	// time range - no bar runs past 100% because of this (otherwise cut
+	// off hard at the bar-track edge, see architecture review).
 	var maxVerbrauch, maxFixkosten, maxKombiniert float64
 	for _, m := range monate {
 		if m.HasVerbrauch && m.VerbrauchGesamt > maxVerbrauch {
@@ -430,15 +439,16 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 		setSegmentPct(monate[i].KombiniertSegmente, maxKombiniert)
 	}
 
-	// Nebenkostenabschlag-Saldo: fortlaufend kumuliert von ältestem zu
-	// neuestem Monat (monate ist newest-first sortiert, daher rückwärts) -
-	// saldo(m) = abschlag(m) - KombiniertGesamt(m). Gate ist HasFixkosten,
-	// nicht HasKombiniert: abschlagWert kommt ausschließlich aus einer
-	// Fixkosten-Eingabe (siehe die fixErg==nil-Bedingung oben) - ein Monat
-	// mit nur einer Ablesung, aber (noch) ohne Fixkosten-Eingabe, hat keinen
-	// erfassten Abschlagwert und würde sonst fälschlich mit Abschlag=0
-	// gerechnet, statt wie ein Monat ohne Daten übersprungen zu werden
-	// (#94: "keine Daten" statt eines impliziten Sprungs).
+	// Nebenkostenabschlag-Saldo (utility advance payment balance):
+	// continuously accumulated from oldest to newest month (monate is
+	// sorted newest-first, hence backwards) - saldo(m) = abschlag(m) -
+	// KombiniertGesamt(m). The gate is HasFixkosten, not HasKombiniert:
+	// abschlagWert comes exclusively from a fixed-costs entry (see the
+	// fixErg==nil condition above) - a month with only a reading but
+	// (still) no fixed-costs entry has no recorded advance-payment value
+	// and would otherwise be wrongly computed with abschlag=0, instead of
+	// being skipped like a month with no data (#94: "no data" instead of
+	// an implicit jump).
 	var laufenderSaldo float64
 	saldi := make([]float64, len(monate))
 	hatSaldo := make([]bool, len(monate))
@@ -479,15 +489,15 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 	}
 }
 
-// buildEntityView bündelt, was jede apartmentID-basierte Dashboard/Widget-
-// Route ohnehin an einer Stelle braucht: die Jahressumme-Karte, den
-// Monatsverlauf, und den Saldo konsistent zwischen beiden verdrahtet (#99,
-// Kandidat 3) - ersetzt 3 Call-Sites, die das bisher manuell nachbauten
+// buildEntityView bundles what every apartmentID-based Dashboard/widget
+// route needs in one place anyway: the yearly-totals card, the monthly
+// history, and the balance wired consistently between both (#99,
+// candidate 3) - replaces 3 call sites that used to rebuild this manually
 // (dashboard.go handleDashboard, widgets.go handleWidgetJahressumme/
-// handleWidgetUebersicht). Baut immer den vollen Verlauf, auch wenn ein
-// Aufrufer nur die Karte braucht (#101: kein Nur-Karte-Modus, Speculative
-// Generality vermieden). Nur für die 2 Wohnungen gedacht - Wallboxen/PV-
-// Anlage haben kein Saldo-Konzept und laufen über buildSimpleJahresCard/
+// handleWidgetUebersicht). Always builds the full history, even when a
+// caller only needs the card (#101: no card-only mode, avoiding
+// speculative generality). Only intended for the 2 apartments - Wallboxen/
+// PV-Anlage have no balance concept and run via buildSimpleJahresCard/
 // buildSimpleVerlauf.
 func buildEntityView(dd dashboardData, apartmentID int64) (dashboardJahresCard, dashboardVerlaufSpalte) {
 	a := findApartment(dd.Apartments, apartmentID)
@@ -497,19 +507,19 @@ func buildEntityView(dd dashboardData, apartmentID int64) (dashboardJahresCard, 
 	return card, verlauf
 }
 
-// jahresGruppe ist ein zusammenhängender, newest-first Lauf eines
-// Kalenderjahrs innerhalb einer newest-first sortierten Liste.
+// jahresGruppe is a contiguous, newest-first run of one calendar year
+// within a newest-first sorted list.
 type jahresGruppe[T any] struct {
 	Jahr       int
 	IstLaufend bool
 	Items      []T
 }
 
-// gruppiereNachJahr zerlegt eine newest-first Liste in aufeinanderfolgende
-// Jahres-Läufe (#103, ersetzt walkJahre) - der Lauf, der items[0] enthält,
-// ist IstLaufend. Reine Gruppierfunktion ohne Callback-Timing-Vertrag:
-// "auch am Ende flushen" ergibt sich automatisch daraus, dass jede Gruppe
-// (auch die letzte) im Ergebnis-Slice steht.
+// gruppiereNachJahr splits a newest-first list into consecutive yearly
+// runs (#103, replaces walkJahre) - the run containing items[0] is
+// IstLaufend. A pure grouping function with no callback-timing contract:
+// "also flush at the end" follows automatically from every group
+// (including the last) ending up in the result slice.
 func gruppiereNachJahr[T any](items []T, jahrVon func(T) int) []jahresGruppe[T] {
 	if len(items) == 0 {
 		return nil
@@ -527,9 +537,9 @@ func gruppiereNachJahr[T any](items []T, jahrVon func(T) int) []jahresGruppe[T] 
 	return out
 }
 
-// mitJahreszeilen fügt nach jedem Kalenderjahr-Lauf eine Jahreszeile ein
-// (Issue #60 Story 27) - jedes Jahr, auch das noch nicht abgeschlossene
-// neueste (IstLaufend), bekommt genau eine Summary-Row.
+// mitJahreszeilen inserts a year-summary row after each calendar-year run
+// (Issue #60 Story 27) - every year, including the not-yet-complete
+// newest one (IstLaufend), gets exactly one summary row.
 func mitJahreszeilen(monate []dashboardMonat) []dashboardVerlaufEintrag {
 	if len(monate) == 0 {
 		return nil
@@ -541,8 +551,9 @@ func mitJahreszeilen(monate []dashboardMonat) []dashboardVerlaufEintrag {
 		for _, m := range g.Items {
 			vSumme += m.VerbrauchGesamt
 			fSumme += m.FixkostenGesamt
-			// Endstand = Saldo des neuesten Monats dieses Jahres mit Saldo -
-			// da g.Items newest-first ist, ist das der erste Treffer.
+			// Endstand = the balance of this year's newest month that has
+			// a balance - since g.Items is newest-first, that's the
+			// first match.
 			if endstand == nil && m.Saldo != nil {
 				endstand = m.Saldo
 			}
@@ -557,26 +568,28 @@ func mitJahreszeilen(monate []dashboardMonat) []dashboardVerlaufEintrag {
 	return out
 }
 
-// dashboardSimpleCard is Wallbox/PV-Anlage's Jahressummen-Karte (Ticket
-// #67) - a single EUR figure, unlike dashboardJahresCard: whole-house, no
-// Wohnungs-Aufteilung and no Fixkosten-Anteil (rein informativ, siehe
-// StromErgebnis.WallboxAnteilKWh/calc.Einspeisung).
+// dashboardSimpleCard is Wallbox/PV-Anlage's (wallbox/PV system) yearly-
+// totals card (Ticket #67) - a single EUR figure, unlike
+// dashboardJahresCard: whole-house, no apartment split and no fixed-costs
+// share (purely informative, see StromErgebnis.WallboxAnteilKWh/
+// calc.Einspeisung).
 type dashboardSimpleCard struct {
 	Name      string
 	GesamtEUR float64
-	IstErtrag bool // true for PV-Anlage: "+" prefix, success color (Vergütung statt Kosten)
+	IstErtrag bool // true for PV-Anlage: "+" prefix, success color (feed-in compensation instead of cost)
 
-	// Segmente is die Jahressumme je Bar-Segment (kWh via Verbrauch, EUR via
-	// Kosten) - bei Wallbox 2 (Stromkosten/PV-Anteil), bei PV-Anlage 1
-	// (Einspeisevergütung), analog zu buildSimpleVerlauf's Monats-Segmente.
+	// Segmente is the yearly total per bar segment (kWh via Verbrauch,
+	// EUR via Kosten) - 2 for Wallbox (electricity cost/PV share), 1 for
+	// PV-Anlage (feed-in compensation), analogous to buildSimpleVerlauf's
+	// monthly segments.
 	Segmente []dashboardSegment
 }
 
 // dashboardSimpleMonat is one calendar month's row in a Wallbox/PV-Anlage
-// Monatsverlauf - 1+ bar segments (Segmente, in tatsächlichen kWh - Ticket
-// #67 Nachtrag: Wallbox zeigt hier 2, "Stromkosten" + "PV-Anteil", statt nur
-// des abgerechneten Anteils), unlike dashboardMonat's 4 Modus-Varianten
-// (there's no Fixkosten/Kombiniert distinction for these).
+// Monatsverlauf - 1+ bar segments (Segmente, in actual kWh - Ticket #67
+// follow-up: Wallbox shows 2 here, "Stromkosten" + "PV-Anteil", instead of
+// just the billed share), unlike dashboardMonat's 4 mode variants (there's
+// no fixed-costs/combined distinction for these).
 type dashboardSimpleMonat struct {
 	Label     string
 	Jahr      int
@@ -598,7 +611,7 @@ type dashboardSimpleEintrag struct {
 }
 
 // dashboardSimpleSpalte is Wallbox/PV-Anlage's Monatsverlauf, newest first -
-// analog zu dashboardVerlaufSpalte, aber ohne Wohnungs-Aufteilung.
+// analogous to dashboardVerlaufSpalte, but without an apartment split.
 type dashboardSimpleSpalte struct {
 	ID        string
 	Name      string
@@ -606,16 +619,15 @@ type dashboardSimpleSpalte struct {
 	Eintraege []dashboardSimpleEintrag
 }
 
-// simpleWert extracts one period's bar-Segmente (tatsächliche kWh je
-// Segment, nicht nur der abgerechnete Anteil) and total EUR for a Wallbox/
-// PV-Anlage series - ok=false skips the period entirely (no Ablesung/keine
-// Vorperiode).
+// simpleWert extracts one period's bar segments (actual kWh per segment,
+// not just the billed share) and total EUR for a Wallbox/PV-Anlage series
+// - ok=false skips the period entirely (no reading/no previous period).
 type simpleWert func(k kosten) (segs []dashboardSegment, eur float64, ok bool)
 
 // simpleSeries bundles a Wallbox/PV-Anlage entity's identity (ID/Name/
-// IstErtrag) with its Wert-Extractor - the 2 call sites in handleDashboard
-// otherwise repeated the same id/name/istErtrag/wert-func quadruple twice
-// each, once per build* call.
+// IstErtrag) with its value extractor - the 2 call sites in
+// handleDashboard otherwise repeated the same id/name/istErtrag/wert-func
+// quadruple twice each, once per build* call.
 type simpleSeries struct {
 	ID        string
 	Name      string
@@ -623,15 +635,15 @@ type simpleSeries struct {
 	Wert      simpleWert
 }
 
-// wallboxSeries reads the Wallbox-Anteil from StromErgebnis - eine dritte,
-// PV-Netzbezug-gedeckelte Zuteilungsstufe nach Wohnung 2 und Wärmepumpe
-// (Ticket #67 Nachtrag). Der Balken zeigt den tatsächlichen Wallbox-
-// Verbrauch als 2 Segmente: "Stromkosten" (WallboxAnteilKWh, der
-// abgerechnete Anteil) und "PV-Anteil" (PVAnteilWallboxKWh, die Lücke
-// zwischen Zwischenzähler-Verbrauch und dem, was der Netzbezug hergab -
-// analog zur "Nicht dem Netzbezug zugeordnet (PV)"-Zeile bei Wohnung 2/WP).
-// Die Summe beider Segmente ist der rohe Zwischenzähler-Verbrauch, nicht
-// nur der abgerechnete Teil.
+// wallboxSeries reads the wallbox share from StromErgebnis - a 3rd,
+// PV-grid-draw-capped allocation tier after apartment 2 and the heat pump
+// (Ticket #67 follow-up). The bar shows the actual wallbox consumption as
+// 2 segments: "Stromkosten" (WallboxAnteilKWh, the billed share) and
+// "PV-Anteil" (PVAnteilWallboxKWh, the gap between sub-meter consumption
+// and what the grid draw actually provided - analogous to the "not
+// allocated to grid draw (PV)" row for apartment 2/heat pump). The sum of
+// both segments is the raw sub-meter consumption, not just the billed
+// part.
 var wallboxSeries = simpleSeries{
 	ID: "wallbox", Name: "Wallboxen", IstErtrag: false,
 	Wert: func(k kosten) (segs []dashboardSegment, eur float64, ok bool) {
@@ -661,7 +673,7 @@ var pvSeries = simpleSeries{
 // whose ReadingDate falls in jahr.
 func buildSimpleJahresCard(series simpleSeries, jahr int, periodenKosten []periodKosten) dashboardSimpleCard {
 	var sum float64
-	var segSummen []dashboardSegment // gleiche Reihenfolge/Label wie series.Wert liefert
+	var segSummen []dashboardSegment // same order/labels as series.Wert returns
 	for _, pk := range periodenKosten {
 		y, ok := store.Abrechnungsmonat(pk.Monat).Jahr()
 		if !ok || y != jahr {
@@ -700,10 +712,11 @@ func buildSimpleJahresCard(series simpleSeries, jahr int, periodenKosten []perio
 }
 
 // buildSimpleVerlauf builds a Wallbox/PV-Anlage Monatsverlauf - one bar per
-// Ablesungs-Monat plus a Jahressumme-Trennzeile per Kalenderjahr, analog zu
-// buildDashboardVerlauf's Fixkosten-freier Fall. Der Balken skaliert nach
-// der Summe der Segment-kWh (tatsächlicher Verbrauch), nicht nach EUR - bei
-// Wallbox macht sonst der unbezahlte PV-Anteil die Breite unproportional.
+// reading month plus a yearly-total separator row per calendar year,
+// analogous to buildDashboardVerlauf's fixed-costs-free case. The bar
+// scales by the sum of segment kWh (actual consumption), not by EUR -
+// for Wallbox, the unbilled PV share would otherwise make the width
+// disproportionate.
 func buildSimpleVerlauf(series simpleSeries, periodenKosten []periodKosten) dashboardSimpleSpalte {
 	id, name, istErtrag, wert := series.ID, series.Name, series.IstErtrag, series.Wert
 
@@ -769,8 +782,8 @@ func buildSimpleVerlauf(series simpleSeries, periodenKosten []periodKosten) dash
 		return sum
 	}
 
-	// Baseline = das größte Monat über den gesamten angezeigten Zeitraum
-	// (kein Balken über 100%, siehe buildDashboardVerlauf).
+	// Baseline = the largest month across the entire displayed time range
+	// (no bar past 100%, see buildDashboardVerlauf).
 	var maxKWh float64
 	for _, m := range monate {
 		if m.HasWert {

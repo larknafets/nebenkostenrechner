@@ -16,19 +16,19 @@ import (
 )
 
 // csvHeader is the canonical CSV column order for both export (Ticket #53)
-// and import (Ticket #54) - reading_date, every meter key (Zählerstände,
-// not Verbrauch), the period-level prices/Gewichtung, then Personen per
-// apartment (fixed ids 1/2, see store's seed()). No qm_1/qm_2 columns
-// (Issue #61 moved Wohnungsgröße off the Ablesung onto /stammdaten - hard
+// and import (Ticket #54) - reading_date, every meter key (meter readings,
+// not consumption), the period-level prices/weighting, then occupant count
+// per apartment (fixed ids 1/2, see store's seed()). No qm_1/qm_2 columns
+// (Issue #61 moved apartment size off the reading onto /stammdaten - hard
 // cut, no backward compatibility with the old format).
 var csvHeader = append(append([]string{"reading_date", "monat"}, store.MeterKeys...),
 	"strompreis", "frischwasser_preis", "abwasser_preis", "heizung_gewichtung", "einspeisung_preis",
 	"personen_1", "personen_2",
 )
 
-// handleExportCSV streams every Ablesung as CSV (Ticket #53) - Excel-DE
-// dialect (Semikolon, Komma-Dezimal, UTF-8 mit BOM), same csvHeader the
-// import (Ticket #54) reads back.
+// handleExportCSV streams every reading as CSV (Ticket #53) - Excel-DE
+// dialect (semicolon-separated, comma-decimal, UTF-8 with BOM), same
+// csvHeader the import (Ticket #54) reads back.
 func handleExportCSV() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		details, err := store.AllPeriodDetails(dbFromContext(r.Context()))
@@ -53,10 +53,11 @@ func handleExportCSV() http.HandlerFunc {
 				row = append(row, formatDecimalDE(p.Readings[key]))
 			}
 			row = append(row,
-				// store.OrZero: ein Teilstand (Ticket #128) exportiert
-				// seinen fehlenden Preis hier als "0" - CSV-Import/-Export
-				// von/für Teilstände ist explizit nicht Teil dieser Spec
-				// (#127), kann also praktisch noch gar nicht vorkommen.
+				// store.OrZero: a partial reading (Ticket #128) exports
+				// its missing price here as "0" - CSV import/export
+				// of/for partial readings is explicitly not part of this
+				// spec (#127), so this can't actually occur in practice
+				// yet.
 				formatDecimalDE(store.OrZero(p.Strompreis)),
 				formatDecimalDE(store.OrZero(p.FrischwasserPreis)),
 				formatDecimalDE(store.OrZero(p.AbwasserPreis)),
@@ -86,11 +87,11 @@ type importRow struct {
 }
 
 // handleImportCSV bootstraps a completely empty database from a CSV in the
-// csvHeader format (Ticket #54) - rejected if any Ablesung already exists,
+// csvHeader format (Ticket #54) - rejected if any reading already exists,
 // even though the form button is already hidden in that case (defense in
-// depth). A hard error in any row aborts the whole import (alles oder
-// nichts); negative-Verbrauch/Ausreißer warnings never block, just get
-// reported afterwards on the Ablesungen-Übersicht.
+// depth). A hard error in any row aborts the whole import (all or
+// nothing); negative-consumption/outlier warnings never block, just get
+// reported afterwards on the readings overview.
 func handleImportCSV() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
@@ -144,11 +145,11 @@ func handleImportCSV() http.HandlerFunc {
 	}
 }
 
-// parseImportCSV reads csvHeader-formatted CSV (Semikolon, Komma-Dezimal,
-// optionales UTF-8-BOM) and validates every row into a PeriodInput. Returns
-// the first hard error encountered (missing/kaputte Werte, ungültiges
-// Datum/Heizungs-Gewichtung) - the caller aborts the whole import on any
-// error, so there's no point collecting more than one.
+// parseImportCSV reads csvHeader-formatted CSV (semicolon-separated,
+// comma-decimal, optional UTF-8 BOM) and validates every row into a
+// PeriodInput. Returns the first hard error encountered (missing/broken
+// values, invalid date/heating weighting) - the caller aborts the whole
+// import on any error, so there's no point collecting more than one.
 func parseImportCSV(file io.Reader) ([]importRow, error) {
 	reader := bufio.NewReader(file)
 	if bom, err := reader.Peek(3); err == nil && bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF {
@@ -254,8 +255,8 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (store.Per
 	}, nil
 }
 
-// importWarnings reproduces the wizard's client-side negative-Verbrauch/
-// Ausreißer checks server-side (Ticket #54) - the bulk import has no
+// importWarnings reproduces the wizard's client-side negative-consumption/
+// outlier checks server-side (Ticket #54) - the bulk import has no
 // per-field JS to run them, but a bulk import of historical data is exactly
 // where a typo is easiest to miss. rows must already be chronologically
 // sorted, ids in the same order (ImportPeriods preserves it).

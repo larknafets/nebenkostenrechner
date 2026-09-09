@@ -67,11 +67,11 @@ func TestBuildFixkostenPositionRows(t *testing.T) {
 	}
 }
 
-// TestBuildFixkostenPositionRows_OhneVorherigeEingabe deckt #105/#108 ab:
-// die allererste jemals angelegte Fixkosten-Eingabe hat keine values, fällt
-// aber nicht auf leere Logik/Typ zurück, sondern auf
-// store.KostenpositionDefaults - dieselben Startwerte, die früher eine
-// frisch angelegte Kostenpositionen-Jahr-Zeile bekam.
+// TestBuildFixkostenPositionRows_OhneVorherigeEingabe covers #105/#108: the
+// very first fixed-cost entry ever created has no values, but doesn't fall
+// back to an empty Logik/Typ - instead it falls back to
+// store.KostenpositionDefaults, the same starting values a freshly created
+// Kostenposition year row used to get.
 func TestBuildFixkostenPositionRows_OhneVorherigeEingabe(t *testing.T) {
 	kostenpositionen := []store.Kostenposition{
 		{ID: 1, Key: "grundsteuer", Label: "Grundsteuer"},

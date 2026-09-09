@@ -7,13 +7,13 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// WasserErgebnis is the Wasserkosten-Zuteilung result for one period. See
+// WasserErgebnis is the water cost allocation result for one period. See
 // https://github.com/larknafets/nebenkostenrechner/issues/3 for the
-// formula: Wohnung 2 zählt direkt über ihren Zwischenzähler, Wohnung 1 ist
-// der Rest des Gesamtverbrauchs. Die Warmwasseraufbereitung wird nach dem
-// Personenverhältnis der Periode auf beide Wohnungen verteilt und dem
-// jeweiligen Frischwasser-Anteil zugeschlagen; Abwasser wird in gleicher
-// Menge wie Frischwasser angenommen.
+// formula: apartment 2 counts directly via its own submeter, apartment 1
+// is the remainder of the total consumption. Hot water preparation is split
+// between both apartments by the period's occupant ratio and added to each
+// apartment's fresh water share; waste water is assumed to equal the same
+// amount as fresh water.
 type WasserErgebnis struct {
 	PersonenW1 int64
 	PersonenW2 int64
@@ -26,14 +26,14 @@ type WasserErgebnis struct {
 	AbwasserW1     float64
 	AbwasserW2     float64
 
-	// Kosten* sind kaufmännisch auf Cent gerundet (Issue #8).
+	// Kosten* are rounded to the cent using commercial rounding (Issue #8).
 	KostenFrischwasserW1 float64
 	KostenFrischwasserW2 float64
 	KostenAbwasserW1     float64
 	KostenAbwasserW2     float64
 }
 
-// Wasser computes the Wasserkosten-Zuteilung for the given period.
+// Wasser computes the water cost allocation for the given period.
 func Wasser(db *sql.DB, periodID int64) (*WasserErgebnis, error) {
 	period, err := store.GetPeriodByID(db, periodID)
 	if err != nil {

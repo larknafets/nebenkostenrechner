@@ -141,8 +141,8 @@ func insertPeriodTx(tx *sql.Tx, in PeriodInput) (periodID int64, err error) {
 	for _, key := range MeterKeys {
 		value, ok := in.Readings[key]
 		if !ok {
-			// Teilstand (Ticket #128): kein Zählerstand für diesen Meter -
-			// einfach keine Row anlegen, statt einen Fehler zu werfen.
+			// Teilstand (Ticket #128): no meter reading for this meter -
+			// simply don't create a row, instead of raising an error.
 			continue
 		}
 		if _, err := tx.Exec(
@@ -337,9 +337,9 @@ func monatNeighborBounds(all []PeriodSummary, periodID int64, currentDate string
 // unvalidated creation path.
 func checkMonatNeighbors(db *sql.DB, periodID int64, monat string) error {
 	if monat == "" {
-		// Teilstand (Ticket #128): ein noch nicht erfasster Abrechnungsmonat
-		// ist kein chronologischer Konflikt mit einer Nachbarperiode -
-		// überspringen, bis er tatsächlich eingetragen wird.
+		// Teilstand (Ticket #128): an Abrechnungsmonat not entered yet is
+		// not a chronological conflict with a neighboring period - skip
+		// until it's actually entered.
 		return nil
 	}
 
@@ -381,13 +381,13 @@ func UpdatePeriod(db *sql.DB, periodID int64, in PeriodInput) error {
 	defer tx.Rollback()
 
 	res, err := tx.Exec(
-		// Teilstand (Ticket #128): monat/die 3 Preise nur überschreiben,
-		// wenn diese Runde tatsächlich einen Wert mitbringt (Monat != '',
-		// Preis != NULL) - ein bewusst leer gelassenes Feld darf einen
-		// vorher schon erfassten Wert nicht stillschweigend löschen. Dieselbe
-		// "nur anfassen was mitgegeben wurde"-Regel gilt jetzt für Readings
-		// weiter unten (vorher ein Fehler bei fehlendem Meter) und galt für
-		// Personen schon vorher (nie ein Pflicht-Coverage-Check).
+		// Teilstand (Ticket #128): only overwrite monat/the 3 prices when
+		// this round actually brings a value (Monat != '', Preis != NULL) -
+		// a deliberately empty field must not silently delete a
+		// previously-entered value. The same "only touch what was given"
+		// rule now applies to Readings below (previously an error on a
+		// missing meter) and already applied to Personen before (never a
+		// mandatory coverage check).
 		`UPDATE periods SET
 		   reading_date = ?,
 		   monat = COALESCE(NULLIF(?, ''), monat),
@@ -411,8 +411,8 @@ func UpdatePeriod(db *sql.DB, periodID int64, in PeriodInput) error {
 	for _, key := range MeterKeys {
 		value, ok := in.Readings[key]
 		if !ok {
-			// Teilstand (Ticket #128): kein neuer Wert für diesen Meter in
-			// dieser Runde - vorhandenen Zählerstand unangetastet lassen.
+			// Teilstand (Ticket #128): no new value for this meter in this
+			// round - leave the existing meter reading untouched.
 			continue
 		}
 		if _, err := tx.Exec(
@@ -757,8 +757,8 @@ func DeletePeriod(db *sql.DB, periodID int64) error {
 // PeriodComplete reports whether periodID is a fully entered Ablesung or a
 // Teilstand (Ticket #128): complete means all 4 price columns are set,
 // Monat isn't empty, every store.MeterKeys entry has a meter_readings row,
-// and every apartment has a period_occupancy row. Rein abgeleitet - kein
-// eigenes "vollständig"-Flag, damit es keine zweite Wahrheitsquelle gibt.
+// and every apartment has a period_occupancy row. Purely derived - no
+// dedicated "complete" flag, so there's no second source of truth.
 func PeriodComplete(db *sql.DB, periodID int64) (bool, error) {
 	var pricesSet int
 	var monat string

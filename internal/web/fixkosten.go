@@ -11,9 +11,10 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// logikLabels renders a Kostenposition's Logik as the German label shown
-// throughout the Fixkosten/Stammdaten UI - shared by the form, detail, and
-// Stammdaten Kostenpositionen-Jahre templates.
+// logikLabels renders a cost position's (Kostenposition) allocation logic
+// (Logik) as the German label shown throughout the Fixkosten/Stammdaten
+// UI - shared by the form, detail, and Stammdaten Kostenpositionen-Jahre
+// templates.
 var logikLabels = map[string]string{
 	store.LogikWohneinheit: "Je Wohneinheit",
 	store.LogikFlurstueck:  "Je anteiliges Flurstück",
@@ -21,11 +22,11 @@ var logikLabels = map[string]string{
 	store.LogikPersonen:    "Je Anzahl Personen",
 }
 
-// logikOption is one <select> choice for a Kostenposition's Logik.
+// logikOption is one <select> choice for a cost position's allocation logic.
 type logikOption struct{ Value, Label string }
 
 // logikOptions is logikLabels in a stable, display order - the Stammdaten
-// Kostenpositionen-Jahre Logik-Dropdown's option list.
+// Kostenpositionen-Jahre logic dropdown's option list.
 var logikOptions = []logikOption{
 	{store.LogikWohneinheit, logikLabels[store.LogikWohneinheit]},
 	{store.LogikFlurstueck, logikLabels[store.LogikFlurstueck]},
@@ -54,9 +55,9 @@ func monatForInput(monat string) string {
 	return t.Format("2006-01")
 }
 
-// fixkostenPositionRow is one Kostenposition's row on the Fixkosten-Formular
-// - Logik/Typ/Wert sind für jede Position editierbar (Issue #105/#108),
-// keine Jahr-basierte Sonderbehandlung mehr.
+// fixkostenPositionRow is one cost position's row on the fixed-costs form
+// - Logik/Typ/Wert are editable for every position (Issue #105/#108), no
+// more year-based special handling.
 type fixkostenPositionRow struct {
 	ID    int64
 	Label string
@@ -65,10 +66,10 @@ type fixkostenPositionRow struct {
 	Wert  float64
 }
 
-// fixkostenFormData is the Fixkosten-Formular's template data - shared by
-// "neu" (prefilled from the latest Fixkosten-Eingabe) and "bearbeiten"
-// (prefilled with the Eingabe's own current values), same split as
-// wizardData for Ablesungen.
+// fixkostenFormData is the fixed-costs form's template data - shared by
+// "neu" (new, prefilled from the latest entry) and "bearbeiten" (edit,
+// prefilled with the entry's own current values), same split as
+// wizardData for readings.
 type fixkostenFormData struct {
 	navData
 	Aktuell          string
@@ -81,13 +82,12 @@ type fixkostenFormData struct {
 	Positionen       []fixkostenPositionRow
 }
 
-// buildFixkostenPositionRows assembles one row per Kostenposition, using
-// values (Logik/Typ/Wert je Position, aus der letzten Eingabe in "neu"-Modus
-// bzw. der eigenen Eingabe in "bearbeiten"-Modus) zur Vorbelegung. Eine
-// Position ohne Eintrag in values (die allererste jemals angelegte
-// Fixkosten-Eingabe) fällt auf KostenpositionDefaults zurück - dieselben
-// Startwerte, die früher eine frisch angelegte Kostenpositionen-Jahr-Zeile
-// bekam.
+// buildFixkostenPositionRows assembles one row per cost position, using
+// values (Logik/Typ/Wert per position, from the latest entry in "neu"
+// mode, or the entry's own values in "bearbeiten" mode) for prefilling. A
+// position with no entry in values (the very first fixed-costs entry ever
+// created) falls back to KostenpositionDefaults - the same starting
+// values a freshly created Kostenpositionen-Jahre row used to get.
 func buildFixkostenPositionRows(kostenpositionen []store.Kostenposition, values map[int64]store.FixkostenPositionWert) []fixkostenPositionRow {
 	defaultByID := map[int64]store.KostenpositionDefault{}
 	for _, kd := range store.KostenpositionDefaults {
@@ -107,9 +107,9 @@ func buildFixkostenPositionRows(kostenpositionen []store.Kostenposition, values 
 	return rows
 }
 
-// handleFixkostenForm serves the "neu" Fixkosten-Formular, prefilled from
-// the latest Fixkosten-Eingabe (Issue #60 Story 2/9) - today's month as the
-// default Monat, same convention as the Ablesung-Wizard's ReadingDate
+// handleFixkostenForm serves the "neu" (new) fixed-costs form, prefilled
+// from the latest entry (Issue #60 Story 2/9) - today's month as the
+// default Monat, same convention as the reading wizard's ReadingDate
 // default.
 func handleFixkostenForm(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -155,8 +155,8 @@ func handleFixkostenForm(a auth) http.HandlerFunc {
 	}
 }
 
-// handleFixkostenEditForm serves the "bearbeiten" Fixkosten-Formular for an
-// existing Eingabe, prefilled with its own current values.
+// handleFixkostenEditForm serves the "bearbeiten" (edit) fixed-costs form
+// for an existing entry, prefilled with its own current values.
 func handleFixkostenEditForm(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
@@ -208,10 +208,10 @@ func handleFixkostenEditForm(a auth) http.HandlerFunc {
 	}
 }
 
-// parseFixkostenInput parses a Fixkosten-Formular (shared by
-// handleCreateFixkosten and handleUpdateFixkosten) - Logik/Typ/Wert werden
-// für alle 14 Kostenpositionen gelesen (Issue #105/#108), jede Eingabe trägt
-// ihren eigenen unabhängigen Stand.
+// parseFixkostenInput parses a fixed-costs form submission (shared by
+// handleCreateFixkosten and handleUpdateFixkosten) - Logik/Typ/Wert are
+// read for all 14 cost positions (Issue #105/#108), each entry carries
+// its own independent state.
 func parseFixkostenInput(r *http.Request, apartments []store.Apartment) (store.FixkostenInput, error) {
 	db := dbFromContext(r.Context())
 	monat, err := parseFixkostenMonat(r.FormValue("monat"))
@@ -361,8 +361,8 @@ func handleDeleteFixkosten() http.HandlerFunc {
 	}
 }
 
-// fixkostenListItem is one Fixkosten-Eingabe row in the /fixkosten
-// Übersicht and the detail view's "andere Eingabe anzeigen" dropdown.
+// fixkostenListItem is one fixed-costs entry row in the /fixkosten
+// overview and the detail view's "show other entry" dropdown.
 type fixkostenListItem struct {
 	ID      int64
 	Label   string
@@ -408,7 +408,7 @@ func handleFixkostenListe(a auth) http.HandlerFunc {
 	}
 }
 
-// fixkostenDetailPosition is one Kostenposition's row on the Detailansicht.
+// fixkostenDetailPosition is one cost position's row on the detail view.
 type fixkostenDetailPosition struct {
 	Label      string
 	LogikLabel string

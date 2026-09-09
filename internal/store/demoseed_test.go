@@ -29,7 +29,7 @@ func TestSeedDemoData(t *testing.T) {
 		t.Fatalf("got %d fixkosten eingaben, want 39", len(eingaben))
 	}
 
-	// Neuester Monat = now's Monat, aeltester = 38 Monate zuvor.
+	// Newest Monat = now's Monat, oldest = 38 months earlier.
 	newest, oldest := periods[0], periods[len(periods)-1]
 	if want := "2026-03-01"; newest.Monat != want {
 		t.Errorf("newest period Monat = %q, want %q", newest.Monat, want)
@@ -38,7 +38,7 @@ func TestSeedDemoData(t *testing.T) {
 		t.Errorf("oldest period Monat = %q, want %q", oldest.Monat, want)
 	}
 
-	// Stammdaten wurden gesetzt (nicht der 0-Default eines frischen Installs).
+	// Stammdaten was set (not the 0 default of a fresh install).
 	apartments, err := Apartments(db)
 	if err != nil {
 		t.Fatalf("Apartments: %v", err)
@@ -49,8 +49,8 @@ func TestSeedDemoData(t *testing.T) {
 		}
 	}
 
-	// Saisonalitaet: waerme_wohnung1-Zuwachs im Sommer (Juni) faktisch 0,
-	// im Winter (Januar) deutlich groesser als 0.
+	// Seasonality: waerme_wohnung1 growth in summer (June) is effectively 0,
+	// in winter (January) clearly greater than 0.
 	var summerDelta, winterDelta float64
 	for i := 1; i < len(periods); i++ {
 		older, err := GetPeriodDetails(db, periods[i].ID)
@@ -80,7 +80,7 @@ func TestSeedDemoData(t *testing.T) {
 		t.Errorf("waerme_wohnung1 Winter-Delta = %v, want > 1.0 (Heizsaison)", winterDelta)
 	}
 
-	// Personenzahl Wohnung 2 variiert zwischen 1 und 2, Wohnung 1 immer 2.
+	// Occupancy count for Wohnung 2 varies between 1 and 2, Wohnung 1 always 2.
 	sawOne, sawTwo := false, false
 	for _, p := range periods {
 		details, err := GetPeriodDetails(db, p.ID)
@@ -102,11 +102,10 @@ func TestSeedDemoData(t *testing.T) {
 	}
 }
 
-// TestResetDemoData covers Issue #121: ein erneuter Demo-Login muss
-// Änderungen aus einer vorherigen Demo-Session vollständig verwerfen und
-// wieder exakt den frischen 39-Monats-Ausgangszustand zeigen, mit dem
-// neuesten Monat am aktuellen Kalendermonat, nicht an einem eingefrorenen
-// historischen Datum.
+// TestResetDemoData covers Issue #121: a repeated demo login must fully
+// discard changes from a previous demo session and show exactly the fresh
+// 39-month starting state again, with the newest month at the current
+// calendar month, not at a frozen historical date.
 func TestResetDemoData(t *testing.T) {
 	db := openTestDB(t)
 	firstRun := time.Date(2026, time.March, 15, 0, 0, 0, 0, time.UTC)
@@ -114,8 +113,7 @@ func TestResetDemoData(t *testing.T) {
 		t.Fatalf("SeedDemoData: %v", err)
 	}
 
-	// Simuliert eine im Demo-Modus vorgenommene Änderung, die der Reset
-	// verwerfen muss.
+	// Simulates a change made in demo mode that the reset must discard.
 	readings := make(map[string]float64, len(MeterKeys))
 	for _, key := range MeterKeys {
 		readings[key] = 0

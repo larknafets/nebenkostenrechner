@@ -62,11 +62,11 @@ func Kostenpositionen(db *sql.DB) ([]Kostenposition, error) {
 }
 
 // FixkostenPositionWert is one Kostenposition's Logik/Typ/Wert for a single
-// Fixkosten-Eingabe (Issue #105/#106/#107) - lives per Eingabe now, jede
-// Eingabe unabhängig, statt jahresweise in kostenpositionen_jahre. Bei Typ
-// "jährlich" ist Wert ein Jahresgesamtbetrag (durch 12 geteilt für den
-// Monatswert, siehe calc.Fixkosten), bei "monatlich" ein direkter
-// Monatsbetrag.
+// Fixkosten-Eingabe (Issue #105/#106/#107) - lives per Eingabe now, each
+// Eingabe independent, instead of yearly in kostenpositionen_jahre. For
+// Typ "jaehrlich" Wert is an annual total amount (divided by 12 for the
+// monthly value, see calc.Fixkosten), for "monatlich" a direct monthly
+// amount.
 type FixkostenPositionWert struct {
 	Logik string
 	Typ   string
@@ -77,8 +77,8 @@ type FixkostenPositionWert struct {
 type FixkostenInput struct {
 	Monat    string                          // YYYY-MM-01, same convention as PeriodInput.ReadingDate
 	Personen map[int64]int64                 // apartment id -> Personenzahl - own to Fixkosten, not period_occupancy (Issue #60 Story 8)
-	Werte    map[int64]FixkostenPositionWert // kostenposition id -> Logik/Typ/Wert für diese Eingabe
-	Abschlag map[int64]float64               // apartment id -> Nebenkostenabschlag-Wert - kein Kostenposition, deckt Fixkosten UND Verbräuche gemeinsam ab, siehe nebenkosten_abschlaege
+	Werte    map[int64]FixkostenPositionWert // kostenposition id -> Logik/Typ/Wert for this Eingabe
+	Abschlag map[int64]float64               // apartment id -> Nebenkostenabschlag value - not a Kostenposition, covers Fixkosten AND consumption costs together, see nebenkosten_abschlaege
 }
 
 // ErrFixkostenEingabeNotFound is returned by UpdateFixkostenEingabe and

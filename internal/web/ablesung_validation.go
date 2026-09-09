@@ -6,14 +6,14 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// ablesung_validation.go holds the Ablesung input rules shared by both
-// input adapters - the Wizard-Formular and the CSV-Import (Issue #86/#87
+// ablesung_validation.go holds the reading (Ablesung) input rules shared by
+// both input adapters - the wizard form and the CSV import (Issue #86/#87
 // follow-up architecture review): same rules, same seam, two callers.
 
 var heizungGewichtungOptions = map[string]float64{"0.7": 0.7, "0.6": 0.6, "0.5": 0.5}
 
-// parseHeizungGewichtung validates the Wizard's Heizung-Gewichtung form
-// value against heizungGewichtungOptions.
+// parseHeizungGewichtung validates the wizard's heating weighting
+// (Heizung-Gewichtung) form value against heizungGewichtungOptions.
 func parseHeizungGewichtung(raw string) (float64, error) {
 	v, ok := heizungGewichtungOptions[raw]
 	if !ok {
@@ -22,7 +22,7 @@ func parseHeizungGewichtung(raw string) (float64, error) {
 	return v, nil
 }
 
-// outlierAvg computes the Ausreißer-Warnung baseline (Ticket #13) from up
+// outlierAvg computes the outlier-warning baseline (Ticket #13) from up
 // to 4 recent periods (newest first): the average of the 3 consumption
 // diffs between them. ok is false if fewer than 4 are available.
 func outlierAvg(recent []store.PeriodReadings) (avg map[string]float64, ok bool) {

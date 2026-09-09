@@ -172,7 +172,7 @@ func TestGermanPeriodLabelShort(t *testing.T) {
 }
 
 // TestGroupKostenByMonat verifies Issue #86: periodenKosten sharing a Monat
-// (untermonatige Ablesungen) get their kategorien summed per Label, not
+// (sub-monthly meter readings) get their kategorien summed per Label, not
 // overwritten by whichever period is processed last.
 func TestGroupKostenByMonat(t *testing.T) {
 	first := kosten{Strom: &calc.StromErgebnis{KostenW2: 10, W2VerbrauchKWh: 50}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
@@ -218,10 +218,10 @@ func TestGroupKostenByMonat(t *testing.T) {
 }
 
 func TestBuildDashboardVerlauf_Skalierung(t *testing.T) {
-	// Neueste Periode (index 0) hat den kleineren Gesamtbetrag - die Skala
-	// ist relativ zum groessten Monat im Zeitraum (Architecture Review:
-	// vorher relativ zum neuesten Monat, was aeltere/teurere Monate ueber
-	// 100% hinauslaufen liess und ihren Text am bar-track-Rand abschnitt).
+	// The newest period (index 0) has the smaller total amount - the scale
+	// is relative to the largest month in the range (architecture review:
+	// previously relative to the newest month, which let older/pricier
+	// months run past 100% and cut off their text at the bar-track edge).
 	neu := kosten{
 		Strom:   &calc.StromErgebnis{KostenW2: 20, W2AnteilKWh: 123, W2VerbrauchKWh: 123},
 		Wasser:  &calc.WasserErgebnis{KostenFrischwasserW2: 5, KostenAbwasserW2: 5},
@@ -260,16 +260,16 @@ func TestBuildDashboardVerlauf_Skalierung(t *testing.T) {
 		t.Errorf("aelterer VerbrauchGesamt = %v, want 80", monate[1].VerbrauchGesamt)
 	}
 
-	// Segmente tragen Label/Verbrauch/Einheit fuer die Verbrauchswerte-Ansicht
-	// (Ticket #39) - Strom ist bei Wohnung 2 immer das erste Segment.
+	// Segments carry Label/Verbrauch/Einheit for the consumption-values view
+	// (Ticket #39) - Strom is always the first segment for Wohnung 2.
 	strom := monate[0].VerbrauchSegmente[0]
 	if strom.Label != "Strom" || strom.Verbrauch != 123 || strom.Einheit != "kWh" {
 		t.Errorf("Strom-Segment = %+v, want Label=Strom Verbrauch=123 Einheit=kWh", strom)
 	}
 
-	// Skala = groesster VerbrauchGesamt im Zeitraum (80, der aeltere Monat).
-	// Der aeltere Monat kommt also auf 100%, der neuere (40, halb so teuer)
-	// auf 50% - kein Balken laeuft ueber den Rand hinaus.
+	// Scale = largest VerbrauchGesamt in the range (80, the older month).
+	// So the older month lands at 100%, the newer one (40, half as much)
+	// at 50% - no bar runs past the edge.
 	var altSum, neuSum float64
 	for _, seg := range monate[1].VerbrauchSegmente {
 		altSum += seg.ProzentNeuestesGesamt
@@ -303,10 +303,10 @@ func TestBuildDashboardVerlauf_Skalierung(t *testing.T) {
 }
 
 func TestBuildSimpleVerlaufUndJahresCard(t *testing.T) {
-	// Wallboxen/PV-Anlage (Ticket #67) - whole-house, rein informativ, kein
-	// Fixkosten-Anteil, keine Wohnungs-Zuteilung. Wallbox-Anteil kommt aus
-	// StromErgebnis (dritte, PV-Netzbezug-gedeckelte Zuteilungsstufe nach
-	// Wohnung 2 und Wärmepumpe, Ticket #67 Nachtrag).
+	// Wallboxen/PV-Anlage (Ticket #67) - whole-house, purely informational,
+	// no Fixkosten share, no Wohnung allocation. The Wallbox share comes
+	// from StromErgebnis (third, PV-Netzbezug-capped allocation tier after
+	// Wohnung 2 and Wärmepumpe, Ticket #67 follow-up).
 	neu := kosten{Strom: &calc.StromErgebnis{WallboxAnteilKWh: 30, PVAnteilWallboxKWh: 10, KostenWallbox: 12}}
 	alt := kosten{Strom: &calc.StromErgebnis{WallboxAnteilKWh: 15, PVAnteilWallboxKWh: 5, KostenWallbox: 6}}
 	ohneWallbox := kosten{} // Strom nil - erste Periode ohne Vorperiode
@@ -353,12 +353,12 @@ func TestBuildSimpleVerlaufUndJahresCard(t *testing.T) {
 	if monate[2].HasWert {
 		t.Errorf("Monat ohne Wallbox-Ergebnis soll HasWert=false sein, got %+v", monate[2])
 	}
-	// Skala = neuester tatsaechlicher Gesamt-kWh (30+10=40) - jedes Segment
-	// des aelteren Monats (15/5 kWh) skaliert gegen diesen gemeinsamen Nenner
-	// (nicht gegen seinen eigenen Segment-Typ), die 2 Segmentbreiten summieren
-	// sich also auf die Haelfte der Balkenbreite (15+5=20, halb so viel wie
-	// 40) - analog TestBuildDashboardVerlauf_Skalierung, aber kWh- statt
-	// EUR-basiert, siehe buildSimpleVerlauf.
+	// Scale = newest actual total kWh (30+10=40) - each segment of the older
+	// month (15/5 kWh) scales against this shared denominator (not against
+	// its own segment type), so the 2 segment widths add up to half the bar
+	// width (15+5=20, half of 40) - analogous to
+	// TestBuildDashboardVerlauf_Skalierung, but kWh- instead of EUR-based,
+	// see buildSimpleVerlauf.
 	if want := 37.5; monate[1].Segmente[0].ProzentNeuestesGesamt < want-0.01 || monate[1].Segmente[0].ProzentNeuestesGesamt > want+0.01 {
 		t.Errorf("aelteres Stromkosten-Segment ProzentNeuestesGesamt = %v, want ~37.5 (15/40)", monate[1].Segmente[0].ProzentNeuestesGesamt)
 	}
@@ -373,8 +373,8 @@ func TestBuildSimpleVerlaufUndJahresCard(t *testing.T) {
 	if card.GesamtEUR != 18 || card.IstErtrag {
 		t.Errorf("card = %+v, want GesamtEUR=18 IstErtrag=false", card)
 	}
-	// Jahressumme je Segment: Stromkosten 30+15=45 kWh, PV-Anteil 10+5=15
-	// kWh (der Monat ohne Wallbox-Ergebnis zaehlt nicht mit).
+	// Yearly total per segment: Stromkosten 30+15=45 kWh, PV share 10+5=15
+	// kWh (the month without a Wallbox result doesn't count).
 	if len(card.Segmente) != 2 {
 		t.Fatalf("want 2 Segmente, got %d: %+v", len(card.Segmente), card.Segmente)
 	}
@@ -484,11 +484,11 @@ func TestBuildDashboardVerlauf_NurFixkosten(t *testing.T) {
 	}
 }
 
-// TestBuildDashboardVerlauf_AbschlagSaldo_UeberspringtMonatOhneFixkosten deckt
-// einen Bug ab: ein Monat mit nur einer Ablesung (HasVerbrauch), aber ohne
-// Fixkosten-Eingabe (kein abschlagWert erfasst), wurde fälschlich als
-// HasKombiniert=true fürs Saldo mitgezählt und dabei Abschlag=0 angenommen -
-// statt wie ein Monat ohne Daten übersprungen zu werden.
+// TestBuildDashboardVerlauf_AbschlagSaldo_UeberspringtMonatOhneFixkosten
+// covers a bug: a month with only an Ablesung (HasVerbrauch), but no
+// Fixkosten entry (no abschlagWert recorded), was incorrectly counted as
+// HasKombiniert=true for the balance and assumed Abschlag=0 - instead of
+// being skipped like a month with no data at all.
 func TestBuildDashboardVerlauf_AbschlagSaldo_UeberspringtMonatOhneFixkosten(t *testing.T) {
 	fix := &calc.FixkostenErgebnis{
 		Positionen: []calc.FixkostenPosition{{Key: "abfall_haushalt", Label: "Abfallwirtschaft Grundgebühr Haushalt", Logik: store.LogikWohneinheit, KostenW1: 15, KostenW2: 20}},
@@ -528,8 +528,8 @@ func TestBuildDashboardVerlauf_AbschlagSaldo_UeberspringtMonatOhneFixkosten(t *t
 		t.Fatalf("Jan.Saldo = %+v, want Betrag 80/Guthaben (Abschlag 100 - Fixkosten 20)", jan.Saldo)
 	}
 
-	// LatestSaldo muss den lückenhaften Feb überspringen und den Jan-Saldo
-	// liefern, nicht fälschlich einen aus Feb abgeleiteten Wert.
+	// LatestSaldo must skip the gappy Feb and return the Jan balance, not
+	// incorrectly a value derived from Feb.
 	if got := spalte.LatestSaldo; got == nil || got.Betrag() != 80 {
 		t.Fatalf("LatestSaldo = %+v, want Betrag 80 (aus Jan, Feb uebersprungen)", got)
 	}
@@ -574,10 +574,10 @@ func TestAbschlagSaldo(t *testing.T) {
 	}
 }
 
-// TestBuildDashboardVerlauf_LatestSaldo deckt #99/#102 ab: LatestSaldo wird
-// direkt in buildDashboardVerlauf gesetzt (aus derselben Rückwärtsschleife,
-// die auch die Monat-Salden berechnet), statt über eine 2. Funktion
-// (latestAbschlagSaldo, entfallen) hinterher nochmal ermittelt zu werden.
+// TestBuildDashboardVerlauf_LatestSaldo covers #99/#102: LatestSaldo is now
+// set directly in buildDashboardVerlauf (from the same backward loop that
+// also computes the per-month balances), instead of being determined
+// afterwards via a 2nd function (latestAbschlagSaldo, removed).
 func TestBuildDashboardVerlauf_LatestSaldo(t *testing.T) {
 	fix := &calc.FixkostenErgebnis{
 		Positionen: []calc.FixkostenPosition{{Key: "abfall_haushalt", Label: "Abfallwirtschaft Grundgebühr Haushalt", Logik: store.LogikWohneinheit, KostenW1: 15, KostenW2: 20}},
@@ -673,8 +673,8 @@ func TestMitJahreszeilen(t *testing.T) {
 		if eintraege[4].Jahreszeile.Jahr != 2025 || eintraege[4].Jahreszeile.IstLaufend {
 			t.Errorf("Jahreszeile 4 = %+v, want Jahr:2025 IstLaufend:false", eintraege[4].Jahreszeile)
 		}
-		// VerbrauchSumme 2025 = Dez (10) + Nov (10) = 20 - Januar 2026 gehoert
-		// nicht zu Kalenderjahr 2025.
+		// VerbrauchSumme 2025 = Dez (10) + Nov (10) = 20 - January 2026 does
+		// not belong to calendar year 2025.
 		if eintraege[4].Jahreszeile.VerbrauchSumme != 20 {
 			t.Errorf("Jahreszeile 2025 VerbrauchSumme = %v, want 20", eintraege[4].Jahreszeile.VerbrauchSumme)
 		}
@@ -938,9 +938,9 @@ func TestParseDecimalDE(t *testing.T) {
 		{" 116,23 ", 116.23, false},
 		{"", 0, true},
 		{"abc", 0, true},
-		// Issue #87: formatDecimalDE gruppiert ab 1000 mit "." als
-		// Tausendertrenner (siehe groupThousandsDE) - parseDecimalDE muss
-		// das wieder entfernen, nicht als Dezimalpunkt fehlinterpretieren.
+		// Issue #87: formatDecimalDE groups from 1000 up with "." as the
+		// thousands separator (see groupThousandsDE) - parseDecimalDE must
+		// strip that again, not misinterpret it as a decimal point.
 		{"1.000", 1000, false},
 		{"2.345,43", 2345.43, false},
 		{"-12.345", -12345, false},
@@ -966,7 +966,7 @@ func TestParseDecimalDE(t *testing.T) {
 // reading_date/strom_gesamt, everything else at a fixed valid default -
 // the exact values elsewhere don't matter for the tests using this. monat
 // is derived from readingDate (YYYY-MM-01), matching the wizard's own
-// auto-vorbelegung (Issue #86).
+// auto-prefill (Issue #86).
 func csvRow(readingDate string, stromGesamt string) string {
 	return strings.Join([]string{
 		readingDate, readingDate[:7] + "-01", stromGesamt, "0", "0", "0", "0", "0", "0", "0", "0", "0",
@@ -1016,8 +1016,9 @@ func TestParseImportCSV_RoundTrip(t *testing.T) {
 }
 
 // TestParseImportCSV_RoundTrip_ThousandsSeparator verifies Issue #87: a
-// Zählerstand ≥ 1000, which formatDecimalDE writes with a "." thousands
-// separator on export (e.g. "1.000"), survives reimport unchanged.
+// meter reading (Zählerstand) >= 1000, which formatDecimalDE writes with a
+// "." thousands separator on export (e.g. "1.000"), survives reimport
+// unchanged.
 func TestParseImportCSV_RoundTrip_ThousandsSeparator(t *testing.T) {
 	csvText := strings.Join(csvHeader, ";") + "\n" +
 		csvRow("2026-08-01", formatDecimalDE(1000)) + "\n"
@@ -1070,9 +1071,9 @@ func TestImportWarnings_NegativeAndOutlier(t *testing.T) {
 		{line: 3, input: store.PeriodInput{ReadingDate: "2026-02-01", Readings: baseReadingsForImportTest(map[string]float64{"strom_gesamt": 1100})}},
 		{line: 4, input: store.PeriodInput{ReadingDate: "2026-03-01", Readings: baseReadingsForImportTest(map[string]float64{"strom_gesamt": 1200})}},
 		{line: 5, input: store.PeriodInput{ReadingDate: "2026-04-01", Readings: baseReadingsForImportTest(map[string]float64{"strom_gesamt": 1300})}},
-		// consumption 1050 vs. previous 3 avg 100 -> Ausreißer.
+		// consumption 1050 vs. previous 3 avg 100 -> outlier.
 		{line: 6, input: store.PeriodInput{ReadingDate: "2026-05-01", Readings: baseReadingsForImportTest(map[string]float64{"strom_gesamt": 2350})}},
-		// negativer Verbrauch: 2300 < 2350.
+		// negative consumption: 2300 < 2350.
 		{line: 7, input: store.PeriodInput{ReadingDate: "2026-06-01", Readings: baseReadingsForImportTest(map[string]float64{"strom_gesamt": 2300})}},
 	}
 	ids := make([]int64, len(rows))
@@ -1132,10 +1133,10 @@ func TestPeriodListItems(t *testing.T) {
 	}
 }
 
-// TestPeriodOverviewGroups verifies Issue #86: the Ablesungen-Übersicht
-// groups periods by Monat (Abrechnungsmonat), newest first - untermonatige
-// Ablesungen sharing a Monat land in one group's Rows, ready for the
-// template's rowspan-Spalte (Variante B).
+// TestPeriodOverviewGroups verifies Issue #86: the Ablesungen overview
+// groups periods by Monat (billing month), newest first - sub-monthly
+// meter readings sharing a Monat land in one group's Rows, ready for the
+// template's rowspan column (variant B).
 func TestPeriodOverviewGroups(t *testing.T) {
 	periods := []store.PeriodSummary{
 		{ID: 4, ReadingDate: "2026-10-01", Monat: "2026-10-01"},
@@ -1199,7 +1200,7 @@ func TestFormatDecimalDE(t *testing.T) {
 		{45.5, "45,5"},
 		{-3.14, "-3,14"},
 		{0, "0"},
-		// Ticket #37: max. 2 Nachkommastellen, aber nicht auffuellen.
+		// Ticket #37: at most 2 decimal places, but don't pad.
 		{25.333333333333332, "25,33"},
 		{0.46999999999999975, "0,47"},
 		{1406.3333333333333, "1.406,33"},
@@ -1354,10 +1355,10 @@ func seedPeriodInputAt(date string) store.PeriodInput {
 	}
 }
 
-// periodFormValues builds a valid Ablesung-Formular Wertesatz for the given
+// periodFormValues builds a valid Ablesung form value set for the given
 // reading_date/monat ("YYYY-MM"), everything else a fixed valid default -
-// handleUpdateAblesung's seam tests only care about the Vorperiode/
-// Folgeperiode-Konflikt branch.
+// handleUpdateAblesung's seam tests only care about the previous-period/
+// next-period conflict branch.
 func periodFormValues(readingDate, monat string) url.Values {
 	v := url.Values{}
 	v.Set("reading_date", readingDate)
@@ -1442,7 +1443,7 @@ func TestHandleUpdateAblesung_ErrorMapping(t *testing.T) {
 	})
 }
 
-// --- Ticket #129 (Teilstand): Wizard-Ebene ---
+// --- Ticket #129 (Teilstand): wizard level ---
 
 // teilstandFormValues builds a form where readingDate is set but every
 // other field is left empty (Teilstand, Ticket #129) - the counterpart to
@@ -1450,7 +1451,7 @@ func TestHandleUpdateAblesung_ErrorMapping(t *testing.T) {
 func teilstandFormValues(readingDate string) url.Values {
 	v := url.Values{}
 	v.Set("reading_date", readingDate)
-	v.Set("heizung_gewichtung", "0.7") // bleibt immer zwingend
+	v.Set("heizung_gewichtung", "0.7") // always mandatory
 	return v
 }
 
@@ -1462,11 +1463,11 @@ func TestParsePeriodInput_TeilstandLeereFelderErlaubt(t *testing.T) {
 
 	form := url.Values{
 		"reading_date":       {"2026-11-01"},
-		"strom_gesamt":       {"12345"}, // 1 von 10 Metern ausgefüllt
-		"personen_1":         {"2"},     // 1 von 2 Wohnungen ausgefüllt
+		"strom_gesamt":       {"12345"}, // 1 of 10 meters filled in
+		"personen_1":         {"2"},     // 1 of 2 apartments filled in
 		"heizung_gewichtung": {"0.7"},
 		// monat, strompreis/frischwasser_preis/abwasser_preis/
-		// einspeisung_preis, alle übrigen Meter, personen_2: bewusst leer
+		// einspeisung_preis, all other meters, personen_2: deliberately empty
 	}
 
 	r, err := http.NewRequest(http.MethodPost, "/ablesungen", strings.NewReader(form.Encode()))
@@ -1556,12 +1557,11 @@ func TestHandleCreateAblesung_TeilstandPersistiert(t *testing.T) {
 }
 
 // TestHandleUpdateAblesung_Teilstand_Vervollstaendigen verifies AC3's
-// other half - "POST /ablesungen/{id} (Bearbeiten) ... persistieren einen
-// Teilstand korrekt über den Store": vervollständigen über den bestehenden
-// Bearbeiten-Handler funktioniert genauso wie das erstmalige Anlegen -
-// vorher gesetzte Felder bleiben (die COALESCE-Logik aus Ticket #128),
-// neu mitgegebene werden übernommen, und am Ende ist die Ablesung
-// vollständig.
+// other half - "POST /ablesungen/{id} (edit) ... correctly persist a
+// Teilstand via the store": completing one through the existing edit
+// handler works just like the initial creation - previously set fields
+// stay (the COALESCE logic from Ticket #128), newly supplied ones get
+// applied, and in the end the Ablesung is complete.
 func TestHandleUpdateAblesung_Teilstand_Vervollstaendigen(t *testing.T) {
 	db := openTestDB(t)
 
@@ -1575,8 +1575,8 @@ func TestHandleUpdateAblesung_Teilstand_Vervollstaendigen(t *testing.T) {
 		t.Fatalf("CreatePeriod (Teilstand seed): %v", err)
 	}
 
-	// Vervollständigen: Monat + restliche Felder nachtragen, Strompreis
-	// diesmal leer gelassen (muss den schon gesetzten Wert nicht löschen).
+	// Completing it: add Monat + the remaining fields, Strompreis left
+	// empty this time (must not delete the value already set).
 	form := url.Values{}
 	form.Set("reading_date", "2026-11-01")
 	form.Set("monat", "2026-11")
@@ -1744,8 +1744,9 @@ func TestBerechneKosten_TeilstandReturnsKostenNote(t *testing.T) {
 func TestLoadDashboardData_ExcludesTeilstand(t *testing.T) {
 	db := openTestDB(t)
 
-	// 2 vollständige Ablesungen, da Verbrauch/Kosten erst ab der zweiten
-	// berechenbar sind (braucht eine Vorperiode) - unabhängig vom Teilstand.
+	// 2 complete Ablesungen, since consumption/costs are only computable
+	// from the second one on (needs a previous period) - independent of
+	// the Teilstand.
 	if _, err := store.CreatePeriod(db, seedPeriodInputAt("2026-08-01")); err != nil {
 		t.Fatalf("CreatePeriod (aelteste, vollstaendige Ablesung): %v", err)
 	}
@@ -1798,7 +1799,7 @@ func TestLoadDashboardData_NurTeilstand_HasAnyDataFalse(t *testing.T) {
 	}
 }
 
-// --- Ticket #131 (Teilstand): Anzeige + geführter Wizard ---
+// --- Ticket #131 (Teilstand): display + guided wizard ---
 
 // TestPeriodOverviewGroups_MarksTeilstand verifies AC1: periodOverviewGroups
 // marks exactly the row named by teilstandID, none of the others -
@@ -1824,7 +1825,7 @@ func TestPeriodOverviewGroups_MarksTeilstand(t *testing.T) {
 }
 
 // TestHandleAblesungenListe_TeilstandBadge verifies AC1 at the handler
-// level: the Ablesungen-Liste shows an "unvollständig"-Hinweis for a
+// level: the Ablesungen list shows an "unvollständig" hint for a
 // Teilstand row.
 func TestHandleAblesungenListe_TeilstandBadge(t *testing.T) {
 	db := openTestDB(t)
@@ -1887,7 +1888,7 @@ func TestHandleAblesungDetail_TeilstandZeigtOffeneFelder(t *testing.T) {
 }
 
 // TestHandleAblesungDetail_VollstaendigKeinBadge verifies the badge/"noch
-// offen"-Markierung only appears for a Teilstand, not for an already
+// offen" marking only appears for a Teilstand, not for an already
 // complete Ablesung.
 func TestHandleAblesungDetail_VollstaendigKeinBadge(t *testing.T) {
 	db := openTestDB(t)
@@ -1916,10 +1917,10 @@ func TestHandleAblesungDetail_VollstaendigKeinBadge(t *testing.T) {
 }
 
 // TestHandleAblesungDetail_TeilstandButtonOhneLogin verifies AC5's
-// Erreichbarkeit: even without a login cookie (and with LOGIN_PASSWORD
-// set), the detail page of a Teilstand offers a way to vervollständigen -
-// otherwise an anonymous visitor would have no visible path to the
-// bearbeiten-Route Ticket #130 already ungated for them.
+// reachability: even without a login cookie (and with LOGIN_PASSWORD set),
+// the detail page of a Teilstand offers a way to complete it - otherwise
+// an anonymous visitor would have no visible path to the edit route
+// Ticket #130 already ungated for them.
 func TestHandleAblesungDetail_TeilstandButtonOhneLogin(t *testing.T) {
 	db := openTestDB(t)
 	a := newAuth("geheim", nil)

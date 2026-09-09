@@ -8,10 +8,11 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// widgetEntity resolves a Widget-Route's {entity} Pfadsegment to either an
-// Apartment-ID (Wohnung 1/2) or one of the whole-house simpleSeries
-// (Wallboxen/PV-Anlage) - exactly the 4 Entitäten the Dashboard's
-// Jahressummen-Karten/Wohnung-Tabs already show. "" for an unknown slug.
+// widgetEntity resolves a widget route's {entity} path segment to either an
+// apartment id (Wohnung 1/2 - apartment 1/2) or one of the whole-house
+// simpleSeries (Wallboxen/PV-Anlage - wallboxes/PV system) - exactly the 4
+// entities the Dashboard's yearly-totals cards/apartment tabs already show.
+// "" for an unknown slug.
 func widgetEntity(slug string) (apartmentID int64, simple *simpleSeries) {
 	switch slug {
 	case "wohnung-1":
@@ -38,10 +39,10 @@ func findApartment(apartments []store.Apartment, id int64) store.Apartment {
 	return store.Apartment{}
 }
 
-// handleWidgetJahressumme serves the Ingress-freie HA-Widget-Route (Issue
-// #77 ff.): exactly one Entity's Jahressummen-Karte, ohne Nav/Footer/
-// Theme-Toggle - gedacht für ein Lovelace "Webpage card" Iframe. {entity}
-// ist eine der 4 festen Wohnung-Tab-Entitäten (siehe widgetEntity).
+// handleWidgetJahressumme serves the ingress-free HA widget route (Issue
+// #77 ff.): exactly one entity's yearly-totals card, without nav/footer/
+// theme toggle - intended for a Lovelace "Webpage card" iframe. {entity}
+// is one of the 4 fixed apartment-tab entities (see widgetEntity).
 func handleWidgetJahressumme(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		apartmentID, simple := widgetEntity(r.PathValue("entity"))
@@ -80,9 +81,10 @@ func handleWidgetJahressumme(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// handleWidgetVerbrauchswerte serves the 2. Ingress-freie HA-Widget-Route:
-// exactly ein Entity's Monatsverlauf-Panel (Verbrauch/Verbrauchswerte/
-// Fixkosten/Kombiniert-Umschalter bleibt nutzbar, nur die Entity ist fest).
+// handleWidgetVerbrauchswerte serves the 2nd ingress-free HA widget route:
+// exactly one entity's Monatsverlauf (monthly history) panel (the
+// consumption/consumption-values/fixed-costs/combined toggle stays usable,
+// only the entity is fixed).
 func handleWidgetVerbrauchswerte(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		apartmentID, simple := widgetEntity(r.PathValue("entity"))
@@ -120,11 +122,12 @@ func handleWidgetVerbrauchswerte(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// handleWidgetUebersicht serves die 3. HA-Widget-Route (Issue #78): die
-// Jahressumme-Karte und das Verbrauchswerte-Panel derselben Entity
-// untereinander, in einer Seite - reuses beide Body-Templates
+// handleWidgetUebersicht serves the 3rd HA widget route (Issue #78): the
+// yearly-totals card and the consumption-values panel of the same entity
+// stacked on one page - reuses both body templates
 // ("widget-jahressumme-body"/"widget-verbrauchswerte-body", widget_layout.
-// html) statt sie ein 3. Mal zu duplizieren, und lädt die Daten nur einmal.
+// html) instead of duplicating them a 3rd time, and loads the data only
+// once.
 func handleWidgetUebersicht(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		apartmentID, simple := widgetEntity(r.PathValue("entity"))
@@ -168,11 +171,11 @@ func handleWidgetUebersicht(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// NewWidgetMux serves ONLY die 3 read-only HA-Widget-Routen, deliberately
-// separate from NewMux's full app (Ablesungen/Fixkosten bearbeiten/
-// löschen etc.) - gedacht, auf einem 2. Port außerhalb von Ingress zu
-// laufen (siehe cmd/nebenkostenrechner), also ohne jede Auth: kleinstmögliche
-// Angriffsfläche, kein Zugriff auf mutierende Routen.
+// NewWidgetMux serves ONLY the 3 read-only HA widget routes, deliberately
+// separate from NewMux's full app (edit/delete readings/fixed costs etc.)
+// - intended to run on a 2nd port outside of ingress (see
+// cmd/nebenkostenrechner), so without any auth at all: smallest possible
+// attack surface, no access to mutating routes.
 func NewWidgetMux(db *sql.DB) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /widget/jahressumme/{entity}", handleWidgetJahressumme(db))

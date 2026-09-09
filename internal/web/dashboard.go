@@ -10,9 +10,9 @@ import (
 )
 
 // dashboardData is every piece of already-computed data the Dashboard and
-// the HA-Widget-Routen (Issue #77 ff.) build their views from - factored
+// the HA widget routes (Issue #77 ff.) build their views from - factored
 // out of handleDashboard so both share one implementation of "walk every
-// Periode/Fixkosten-Eingabe and compute this Jahr's Kosten" instead of
+// period/fixed-costs entry and compute this year's costs" instead of
 // diverging copies.
 type dashboardData struct {
 	HasAnyData     bool
@@ -24,10 +24,10 @@ type dashboardData struct {
 
 // loadDashboardData runs the shared, DB-heavy first half of both
 // handleDashboard and the widget handlers: apartments, every period's
-// Kosten (stopping at the oldest Periode ohne Vorperiode, same as before),
-// every Fixkosten-Eingabe's Ergebnis, and the auto-following Anzeigejahr.
-// HasAnyData=false (zero-value everything else) when neither Ablesungen
-// noch Fixkosten-Eingaben exist yet.
+// costs (stopping at the oldest period without a previous period, same as
+// before), every fixed-costs entry's result, and the auto-following
+// display year. HasAnyData=false (zero-value everything else) when
+// neither readings nor fixed-costs entries exist yet.
 func loadDashboardData(db *sql.DB) (dashboardData, error) {
 	apartments, err := store.Apartments(db)
 	if err != nil {
@@ -38,13 +38,13 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 	if err != nil {
 		return dashboardData{}, fmt.Errorf("all periods: %w", err)
 	}
-	// Teilstand (Ticket #129): nur die neueste Periode kann unvollständig
-	// sein (durchgesetzt beim Anlegen, siehe handleCreateAblesung) - bleibt
-	// hier komplett außen vor (kein Jahressummen-/Monatsverlauf-Eintrag),
-	// bis sie komplettiert ist. Ohne das würde berechneKosten's eigener
-	// Teilstand-KostenNote-Guard weiter unten sonst die ganze Historie
-	// verdecken: die Schleife läuft newest->oldest und bricht beim ersten
-	// KostenNote ab.
+	// Teilstand/partial reading (Ticket #129): only the newest period can
+	// be incomplete (enforced on creation, see handleCreateAblesung) -
+	// stays completely excluded here (no yearly-totals/monthly-history
+	// entry) until it's completed. Without this, berechneKosten's own
+	// partial-reading KostenNote guard further below would otherwise hide
+	// the entire history: the loop runs newest->oldest and stops at the
+	// first KostenNote.
 	if len(allPeriods) > 0 {
 		complete, err := store.PeriodComplete(db, allPeriods[0].ID)
 		if err != nil {
@@ -97,9 +97,10 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 	}, nil
 }
 
-// handleDashboard serves the redesigned Dashboard (Issue #60): Jahressummen-
-// Karten je Wohnung for the auto-following Anzeigejahr, then a Wohnung-
-// Umschalter with a combined Verbrauch+Fixkosten Monatsverlauf (4 Modi).
+// handleDashboard serves the redesigned Dashboard (Issue #60): yearly-
+// totals cards per apartment for the auto-following display year, then an
+// apartment switcher with a combined consumption+fixed-costs monthly
+// history (4 modes).
 func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dd, err := loadDashboardData(dbFromContext(r.Context()))
@@ -134,10 +135,10 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 		}
 		apartments, periodenKosten, jahr := dd.Apartments, dd.PeriodenKosten, dd.Jahr
 
-		// Nicht eingeloggt: nur Wohnung 2 geht überhaupt ins Template-
-		// Datenobjekt (Ticket #112) - ein reines Server-seitiges Ausblenden
-		// im Template würde Wohnung 1's Daten trotzdem im HTML-Quelltext
-		// belassen (Fund aus dem Login-Overlay-Prototyp, Issue #113).
+		// Not logged in: only apartment 2 goes into the template data
+		// object at all (Ticket #112) - purely server-side hiding in the
+		// template would still leave apartment 1's data in the HTML
+		// source (finding from the login overlay prototype, Issue #113).
 		if !nav.IsLoggedIn {
 			for _, a := range apartments {
 				if a.ID == 2 {
@@ -155,12 +156,14 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			verlaufSpalten = append(verlaufSpalten, verlauf)
 		}
 
-		// Wallboxen/PV-Anlage (Ticket #67) - whole-house, rein informative
-		// Entities neben den Wohnung-Tabs, analog zum Prototyp
-		// (docs/prototypes/fixkosten-prototype.html): eigene Jahressumme +
-		// Monatsverlauf, kein Fixkosten-Anteil, keine Wohnungs-Zuteilung.
-		// Nicht eingeloggt: bleiben ganz außen vor, wie Wohnung 1 oben -
-		// dieselbe "nur Wohnung 2 sichtbar"-Regel gilt fürs ganze Haus.
+		// Wallboxen/PV-Anlage (wallboxes/PV system, Ticket #67) - whole-
+		// house, purely informative entities alongside the apartment tabs,
+		// analogous to the prototype
+		// (docs/prototypes/fixkosten-prototype.html): own yearly total +
+		// monthly history, no fixed-costs share, no apartment allocation.
+		// Not logged in: stay completely excluded, like apartment 1 above
+		// - the same "only apartment 2 visible" rule applies to the whole
+		// house.
 		var wallboxCard, pvCard dashboardSimpleCard
 		var wallboxVerlauf, pvVerlauf dashboardSimpleSpalte
 		if nav.IsLoggedIn {

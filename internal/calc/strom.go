@@ -7,49 +7,51 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// StromErgebnis is the PV-Netzbezug-Zuteilung result for one period. See
+// StromErgebnis is the PV grid-draw allocation result for one period. See
 // https://github.com/larknafets/nebenkostenrechner/issues/2 for the
-// formula: Netzbezug wird zuerst Wohnung 2 zugeteilt (gedeckelt auf ihren
-// Verbrauch), dann die Wärmepumpe auf den Rest, dann die Wallboxen auf den
-// wiederum verbleibenden Rest (Ticket #67 Nachtrag) - was danach übrig
-// bleibt, zählt implizit zu Wohnung 1 (keine eigene Kostenposition).
+// formula: grid draw is allocated to apartment 2 first (capped at its own
+// consumption), then the heat pump against the remainder, then the wallboxes
+// against whatever remains after that (Ticket #67 follow-up) - whatever's
+// left after that implicitly counts toward apartment 1 (no cost position of
+// its own).
 type StromErgebnis struct {
 	NetzbezugGesamtKWh float64
 	W2AnteilKWh        float64
 	WPAnteilKWh        float64
 	WallboxAnteilKWh   float64
 
-	// W2VerbrauchKWh is Wohnung 2's tatsächlicher (roher) Unterzähler-
-	// Verbrauch, ohne PV-Abzug - anders als W2AnteilKWh (auf den Netzbezug
-	// gedeckelter, abgerechneter Anteil). Gleich W2AnteilKWh+PVAnteilW2KWh.
+	// W2VerbrauchKWh is apartment 2's actual (raw) submeter consumption,
+	// without the PV deduction - unlike W2AnteilKWh (the billed share, capped
+	// at grid draw). Equal to W2AnteilKWh+PVAnteilW2KWh.
 	W2VerbrauchKWh float64
 
 	// PVAnteilW2KWh/PVAnteilWPKWh/PVAnteilWallboxKWh is the gap between the
 	// submeter's own consumption and what the min()-cap actually attributed
-	// to Netzbezug - since the submeters read gross consumption while
-	// Netzbezug is net of PV self-consumption, a gap can only exist because
-	// PV covered it (Ticket #50: "Nicht dem Netzbezug zugeordnet (PV)").
+	// to grid draw - since the submeters read gross consumption while grid
+	// draw is net of PV self-consumption, a gap can only exist because
+	// PV covered it (Ticket #50: "not attributed to grid draw (PV)").
 	PVAnteilW2KWh      float64
 	PVAnteilWPKWh      float64
 	PVAnteilWallboxKWh float64
 
-	// KostenW2 is the displayed cost position for Wohnung 2 - kaufmännisch
-	// auf Cent gerundet (Issue #8).
+	// KostenW2 is the displayed cost position for apartment 2 - rounded to
+	// the cent using commercial rounding (Issue #8).
 	KostenW2 float64
 
 	// KostenWPGesamtUnrounded is the (not yet rounded) total cost of the
-	// Wärmepumpe's electricity - it isn't a displayed position on its own,
-	// it's the input the Heizungs-Kostenberechnung-Ticket (#7 / #16)
+	// heat pump's electricity - it isn't a displayed position on its own,
+	// it's the input the heating cost calculation (Ticket #7 / #16)
 	// splits 70/30 between the two apartments.
 	KostenWPGesamtUnrounded float64
 
-	// KostenWallbox is rein informativ (Ticket #67) - Wallbox-Nutzung
-	// bekommt keine eigene Wohnungs-Zuteilung, sie läuft weiterhin implizit
-	// in Wohnung 1s Rest mit. Kaufmännisch auf Cent gerundet (Issue #8).
+	// KostenWallbox is purely informational (Ticket #67) - wallbox usage
+	// doesn't get its own apartment allocation, it still implicitly runs
+	// through apartment 1's remainder. Rounded to the cent using commercial
+	// rounding (Issue #8).
 	KostenWallbox float64
 }
 
-// Strom computes the Stromkosten-Zuteilung for the given period.
+// Strom computes the electricity cost allocation for the given period.
 func Strom(db *sql.DB, periodID int64) (*StromErgebnis, error) {
 	period, err := store.GetPeriodByID(db, periodID)
 	if err != nil {

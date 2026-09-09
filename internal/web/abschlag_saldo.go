@@ -1,27 +1,29 @@
 package web
 
-// AbschlagSaldo is one apartment's Guthaben/Nachzahlung-Stand at a point in
-// the Monatsverlauf - the difference between the erfassten Nebenkostenabschlag
-// and the tatsächlichen Fixkosten+Verbrauch, kumuliert (siehe buildDashboardVerlauf).
-// A nil *AbschlagSaldo means "kein Saldo für diesen Zeitpunkt berechenbar"
-// (z.B. der Monat hat keine Fixkosten-Eingabe/Ablesung) - callers and
-// templates check for nil instead of a separate Has-Bool. wert is signed and
-// unexported: every other fact about the Saldo (Betrag, Richtung, Label,
-// CSSClass) is derived from it, so there's exactly one number that can ever
-// disagree with itself.
+// AbschlagSaldo is one apartment's credit/repayment balance (Guthaben/
+// Nachzahlung) at a point in the Monatsverlauf (monthly history) - the
+// difference between the recorded utility advance payment
+// (Nebenkostenabschlag) and the actual fixed costs plus consumption,
+// accumulated (see buildDashboardVerlauf). A nil *AbschlagSaldo means "no
+// balance calculable for this point in time" (e.g. the month has no fixed-
+// costs entry/reading) - callers and templates check for nil instead of a
+// separate Has-bool. wert (value) is signed and unexported: every other
+// fact about the balance (Betrag, Richtung, Label, CSSClass - amount,
+// direction, label, CSS class) is derived from it, so there's exactly one
+// number that can ever disagree with itself.
 type AbschlagSaldo struct {
 	wert float64
 }
 
-// newAbschlagSaldo wraps an already Round2'd, signed Saldo-Wert. The single
-// construction point for the whole package, so the "wert is already gerundet"
-// contract lives in one place instead of at every call site.
+// newAbschlagSaldo wraps an already Round2'd, signed balance value. The
+// single construction point for the whole package, so the "wert is already
+// rounded" contract lives in one place instead of at every call site.
 func newAbschlagSaldo(wert float64) *AbschlagSaldo {
 	return &AbschlagSaldo{wert: wert}
 }
 
-// Betrag is the Saldo's absolute Betrag, immer >= 0 - Vorzeichen steckt in
-// Guthaben/Nachzahlung, nicht hier.
+// Betrag is the balance's absolute amount, always >= 0 - the sign lives in
+// Guthaben/Nachzahlung, not here.
 func (s *AbschlagSaldo) Betrag() float64 {
 	if s.wert < 0 {
 		return -s.wert
@@ -29,18 +31,20 @@ func (s *AbschlagSaldo) Betrag() float64 {
 	return s.wert
 }
 
-// Guthaben is true for a positive Saldo (Abschlag deckt mehr als Fixkosten+Verbrauch).
+// Guthaben (credit) is true for a positive balance (the advance payment
+// covers more than fixed costs + consumption).
 func (s *AbschlagSaldo) Guthaben() bool { return s.wert > 0 }
 
-// Nachzahlung is true for a negative Saldo (Abschlag deckt weniger als Fixkosten+Verbrauch).
+// Nachzahlung (repayment due) is true for a negative balance (the advance
+// payment covers less than fixed costs + consumption).
 func (s *AbschlagSaldo) Nachzahlung() bool { return s.wert < 0 }
 
-// Ausgeglichen is true for a Saldo von exakt 0.
+// Ausgeglichen (balanced) is true for a balance of exactly 0.
 func (s *AbschlagSaldo) Ausgeglichen() bool { return s.wert == 0 }
 
-// Label is the German Anzeige-Text für die Richtung - "Guthaben"/
-// "Nachzahlung"/"Ausgeglichen", gemeinsam genutzt von der Dashboard-Karte und
-// dem Monatsverlauf-Reiter.
+// Label is the German display text for the direction - "Guthaben"/
+// "Nachzahlung"/"Ausgeglichen", shared by the dashboard card and the
+// Monatsverlauf tab.
 func (s *AbschlagSaldo) Label() string {
 	switch {
 	case s.Guthaben():
@@ -52,9 +56,9 @@ func (s *AbschlagSaldo) Label() string {
 	}
 }
 
-// CSSClass is Label in Kleinschreibung, für die "guthaben"/"nachzahlung"/
-// "ausgeglichen"-Farbklassen in layout.html (.abschlag-value.*, .value-label.*,
-// .bar-track-center .fill.*).
+// CSSClass is Label lowercased, for the "guthaben"/"nachzahlung"/
+// "ausgeglichen" color classes in layout.html (.abschlag-value.*,
+// .value-label.*, .bar-track-center .fill.*).
 func (s *AbschlagSaldo) CSSClass() string {
 	switch {
 	case s.Guthaben():

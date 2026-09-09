@@ -15,8 +15,8 @@ var germanMonths = [...]string{
 
 // germanPeriodLabel renders a period's ReadingDate ("YYYY-MM-DD") as its
 // German month name and year (e.g. "November 2026"), for the Dashboard
-// heading (Ticket #17 Nachtrag - no "Dashboard -" prefix). Falls back to the
-// raw string if it isn't a parseable date.
+// heading (Ticket #17 follow-up - no "Dashboard -" prefix). Falls back to
+// the raw string if it isn't a parseable date.
 func germanPeriodLabel(readingDate string) string {
 	t, err := time.Parse("2006-01-02", readingDate)
 	if err != nil {
@@ -31,8 +31,8 @@ var germanMonthsShort = [...]string{
 }
 
 // germanPeriodLabelShort is germanPeriodLabel's abbreviated form (e.g. "Nov
-// 2026"), for the Verlauf month labels (Ticket #19) where every row needs
-// to fit next to a bar.
+// 2026"), for the Verlauf (history) month labels (Ticket #19) where every
+// row needs to fit next to a bar.
 func germanPeriodLabelShort(readingDate string) string {
 	t, err := time.Parse("2006-01-02", readingDate)
 	if err != nil {
@@ -86,39 +86,39 @@ func formatDecimalDE(x float64) string {
 
 // formatEuroDE renders a float64 as a German-formatted EUR amount, always
 // padded to exactly 2 decimal places (Ticket #40 - a currency amount reads
-// as "45,00", not "45"). EUR amounts are already Round2'd (kaufmännisch,
-// Issue #8) before reaching here, so the fixed 2-place formatting doesn't
-// change the value, only pads its display. Thousands grouped with "."
-// (e.g. "2.345,00").
+// as "45,00", not "45"). EUR amounts are already Round2'd (commercial
+// rounding, Issue #8) before reaching here, so the fixed 2-place formatting
+// doesn't change the value, only pads its display. Thousands grouped with
+// "." (e.g. "2.345,00").
 func formatEuroDE(x float64) string {
 	return groupThousandsDE(strings.ReplaceAll(strconv.FormatFloat(x, 'f', 2, 64), ".", ","))
 }
 
 // formatDecimalDE0 renders a float64 rounded to a whole number, no decimal
-// places at all (preview: Jahressummen-Karte's Wohnungsgröße/
-// Flurstücksgröße-Badges). Thousands grouped with "." (e.g. "2.345").
+// places at all (preview: the yearly-totals card's apartment-size/
+// property-size badges). Thousands grouped with "." (e.g. "2.345").
 func formatDecimalDE0(x float64) string {
 	return groupThousandsDE(strconv.FormatFloat(math.Round(x), 'f', 0, 64))
 }
 
 // formatDecimalDE1 renders a float64 German-formatted, always padded to
-// exactly 1 decimal place (Ticket #75 - the Personen-Schnitt reads as
-// "2,5", not "2" or "2,50"). Thousands grouped with "." (e.g. "2.345,0").
+// exactly 1 decimal place (Ticket #75 - the average occupant count reads
+// as "2,5", not "2" or "2,50"). Thousands grouped with "." (e.g. "2.345,0").
 func formatDecimalDE1(x float64) string {
 	return groupThousandsDE(strings.ReplaceAll(strconv.FormatFloat(x, 'f', 1, 64), ".", ","))
 }
 
 // formatDecimalDE2 renders a float64 German-formatted, always padded to
-// exactly 2 decimal places (Ticket #76 - a displayed Verbrauchswert reads as
-// "0,70"/"107,00", not "0,7"/"107", analog to formatEuroDE but without a
-// currency unit). Thousands grouped with "." (e.g. "2.345,43").
+// exactly 2 decimal places (Ticket #76 - a displayed consumption value
+// reads as "0,70"/"107,00", not "0,7"/"107", analogous to formatEuroDE but
+// without a currency unit). Thousands grouped with "." (e.g. "2.345,43").
 func formatDecimalDE2(x float64) string {
 	return groupThousandsDE(strings.ReplaceAll(strconv.FormatFloat(x, 'f', 2, 64), ".", ","))
 }
 
 // formatDecimalDE3 renders a float64 German-formatted, always padded to
-// exactly 3 decimal places. Used for raw Zählerstände (Ablesungen), which
-// are entered with up to 3 Nachkommastellen precision - formatDecimalDE2
+// exactly 3 decimal places. Used for raw meter readings, which are
+// entered with up to 3 decimal places of precision - formatDecimalDE2
 // would round/truncate that third digit away. Thousands grouped with "."
 // (e.g. "2.345,433").
 func formatDecimalDE3(x float64) string {

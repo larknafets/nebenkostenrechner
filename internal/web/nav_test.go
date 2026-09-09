@@ -22,10 +22,10 @@ func getDashboard(t *testing.T, mux *http.ServeMux, cookies []*http.Cookie) stri
 	return w.Body.String()
 }
 
-// TestNav_LoginEntry_NoLoginPassword covers Issue #122's Kernanforderung:
-// ist LOGIN_PASSWORD nicht gesetzt, gibt es trotzdem einen sichtbaren,
-// klickbaren Weg zum Login-Overlay (id="login-open"), obwohl isLoggedIn in
-// diesem Zustand unconditionally true ist.
+// TestNav_LoginEntry_NoLoginPassword covers Issue #122's core requirement:
+// if LOGIN_PASSWORD is not set, there is still a visible, clickable path to
+// the login overlay (id="login-open"), even though isLoggedIn is
+// unconditionally true in this state.
 func TestNav_LoginEntry_NoLoginPassword(t *testing.T) {
 	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
 	body := getDashboard(t, mux, nil)
@@ -36,10 +36,10 @@ func TestNav_LoginEntry_NoLoginPassword(t *testing.T) {
 	if !strings.Contains(body, `id="login-overlay"`) {
 		t.Error("das Login-Overlay selbst wird nicht gerendert, obwohl ein Einstiegspunkt dafür sichtbar sein soll")
 	}
-	// Ohne aktive Session (weder echtes Login möglich, da secret == "",
-	// noch Demo-Session) gibt es nichts, wovon man sich abmelden könnte -
-	// der Abmelden-Link bleibt verborgen (sonst stünden Abmelden und
-	// Anmelden widersprüchlich nebeneinander, siehe Issue #132-Bugfix).
+	// Without an active session (no real login possible since secret == "",
+	// and no demo session either) there's nothing to log out of - the
+	// logout link stays hidden (otherwise logout and login would show up
+	// side by side contradictorily, see Issue #132 bugfix).
 	if strings.Contains(body, `id="logout-link"`) {
 		t.Error("Abmelden-Link sichtbar ohne aktive Session (secret == \"\", keine Demo-Session)")
 	}
@@ -48,10 +48,10 @@ func TestNav_LoginEntry_NoLoginPassword(t *testing.T) {
 	}
 }
 
-// TestNav_LoginEntry_NotLoggedIn covers acceptance criterion 5: der
-// klassische "nicht eingeloggt"-Fall (LOGIN_PASSWORD gesetzt, kein Cookie)
-// bleibt unverändert - weiterhin genau ein Einstiegspunkt, jetzt "Anmelden"
-// statt "Login" benannt, kein zusätzlicher Abmelden-Link.
+// TestNav_LoginEntry_NotLoggedIn covers acceptance criterion 5: the classic
+// "not logged in" case (LOGIN_PASSWORD set, no cookie) stays unchanged -
+// still exactly one entry point, now named "Anmelden" instead of "Login",
+// no additional logout link.
 func TestNav_LoginEntry_NotLoggedIn(t *testing.T) {
 	t.Setenv("LOGIN_PASSWORD", "geheim")
 	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
@@ -71,10 +71,10 @@ func TestNav_LoginEntry_NotLoggedIn(t *testing.T) {
 	}
 }
 
-// TestNav_RealLogin_NoDemoEntryNoBanner covers acceptance criteria 3 und 5:
-// ein regulär (mit echtem LOGIN_PASSWORD) eingeloggter Nutzer sieht weder
-// den Demo-Banner noch einen zusätzlichen Login-Einstiegspunkt - nur
-// "Abmelden", wie vor Issue #122.
+// TestNav_RealLogin_NoDemoEntryNoBanner covers acceptance criteria 3 and 5:
+// a regularly (real LOGIN_PASSWORD) logged-in user sees neither the demo
+// banner nor an additional login entry point - just "Abmelden" (logout), as
+// before Issue #122.
 func TestNav_RealLogin_NoDemoEntryNoBanner(t *testing.T) {
 	t.Setenv("LOGIN_PASSWORD", "geheim")
 	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
@@ -92,10 +92,9 @@ func TestNav_RealLogin_NoDemoEntryNoBanner(t *testing.T) {
 	}
 }
 
-// TestNav_DemoSession_ShowsBannerNotEntry covers acceptance criteria 2 und
-// 3: während einer laufenden Demo-Session ist der Banner sichtbar, kein
-// zusätzlicher Login-Einstiegspunkt (Abmelden reicht, um die Demo zu
-// verlassen).
+// TestNav_DemoSession_ShowsBannerNotEntry covers acceptance criteria 2 and
+// 3: during an active demo session the banner is visible, no additional
+// login entry point (logout is enough to leave the demo).
 func TestNav_DemoSession_ShowsBannerNotEntry(t *testing.T) {
 	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
 	cookies := demoLoginCookies(t, mux, demoPassword)

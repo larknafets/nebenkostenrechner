@@ -48,7 +48,7 @@ func TestHeizung_70_30_Verteilung(t *testing.T) {
 	if got.KostenHeizungW2 != 882.32 {
 		t.Errorf("KostenHeizungW2 = %v, want 882.32", got.KostenHeizungW2)
 	}
-	// Summe (vor Rundung) muss dem Total entsprechen (Acceptance Criteria).
+	// Sum (before rounding) must match the total (acceptance criteria).
 	if sum := got.KostenHeizungW1 + got.KostenHeizungW2; sum != got.TotalHeizungskostenUnrounded {
 		t.Errorf("Summe der gerundeten Kosten = %v, want %v (Rundung darf hier nicht abweichen)", sum, got.TotalHeizungskostenUnrounded)
 	}
@@ -58,9 +58,10 @@ func TestHeizung_WPVerbrauch_TatsaechlicherWertOhnePVAbzug(t *testing.T) {
 	db := openTestDB(t)
 	mustCreatePeriod(t, db, "2026-10-01", 0.22, baseReadings(nil))
 
-	// Netzbezug 6000 (nach W2-Zuteilung 0 Rest fuer WP) < WP-Unterzaehler
-	// 10000 -> die vollen 10000 kWh sind tatsächlicher WP-Verbrauch, davon
-	// wird aber nichts vom Netzbezug gedeckt (komplett durch PV gedeckt).
+	// Grid draw 6000 (0 remainder for the heat pump after apartment 2's
+	// allocation) < heat pump submeter 10000 -> the full 10000 kWh is actual
+	// heat pump consumption, but none of it is covered by grid draw (fully
+	// covered by PV).
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate:             "2026-11-01",
 		Strompreis:              store.Float64(0.22),
@@ -118,11 +119,11 @@ func TestHeizung_KeinWaermeVerbrauch_FaelltAufHaelftigeVerteilungZurueck(t *test
 	if err != nil {
 		t.Fatalf("calc.Heizung: %v", err)
 	}
-	// Issue #26: bei 0 Wärmeverbrauch (z.B. Sommer, Wärmepumpe lief nur für
-	// Warmwasser) darf der 70%-Wärmeanteil nicht auf 0/0 fallen - das würde
-	// 70% der Wärmepumpen-Stromkosten stillschweigend aus beiden
-	// Abrechnungen verschwinden lassen. Fallback ist eine hälftige
-	// Verteilung statt NaN oder Kostenverlust.
+	// Issue #26: at 0 heat consumption (e.g. summer, heat pump only ran for
+	// hot water) the 70% heat share must not fall through to 0/0 - that
+	// would silently make 70% of the heat pump's electricity cost vanish
+	// from both bills. The fallback is an even split instead of NaN or lost
+	// cost.
 	if got.RatioWaermeW1 != 0.5 || got.RatioWaermeW2 != 0.5 {
 		t.Errorf("bei 0 Wärmeverbrauch sollte RatioWaerme 0.5/0.5 sein, got W1=%v W2=%v", got.RatioWaermeW1, got.RatioWaermeW2)
 	}

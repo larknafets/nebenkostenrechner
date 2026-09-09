@@ -8,7 +8,7 @@ import (
 
 // ErrNoPreviousPeriod is returned by Verbrauch when the given period is the
 // oldest one on record, so no consumption can be derived yet (Verbrauch =
-// aktueller Stand minus Vormonat-Stand needs a Vormonat).
+// current reading minus previous period's reading needs a previous period).
 var ErrNoPreviousPeriod = errors.New("no previous period to compute consumption from")
 
 // Period is one periods row without its readings/occupancy - the shared
@@ -24,12 +24,12 @@ type Period struct {
 	EinspeisungPreis        float64
 }
 
-// GetPeriodByID fetches a single period by id. A Teilstand's not-yet-
-// entered price (Ticket #128, periods.<preis> IS NULL) reads back as 0
-// here, not nil - Period only ever feeds calc's Kosten-Berechnung
-// (internal/calc), which by design never runs against an incomplete
-// period (see PeriodComplete), so this coalesce is a safe default rather
-// than a real "was it entered" answer.
+// GetPeriodByID fetches a single period by id. A Teilstand's (partial
+// reading) not-yet-entered price (Ticket #128, periods.<preis> IS NULL)
+// reads back as 0 here, not nil - Period only ever feeds calc's cost
+// calculation (internal/calc), which by design never runs against an
+// incomplete period (see PeriodComplete), so this coalesce is a safe
+// default rather than a real "was it entered" answer.
 func GetPeriodByID(db *sql.DB, id int64) (*Period, error) {
 	var p Period
 	var strompreis, frischwasserPreis, abwasserPreis, einspeisungPreis sql.NullFloat64
@@ -49,9 +49,9 @@ func GetPeriodByID(db *sql.DB, id int64) (*Period, error) {
 }
 
 // Verbrauch returns, for every meter key, the consumption in this period:
-// this period's Zählerstand minus the chronologically next-older period's
-// Zählerstand for the same meter (Ticket #6). Returns ErrNoPreviousPeriod
-// if periodID is the oldest period on record.
+// this period's meter reading minus the chronologically next-older
+// period's meter reading for the same meter (Ticket #6). Returns
+// ErrNoPreviousPeriod if periodID is the oldest period on record.
 func Verbrauch(db *sql.DB, periodID int64) (map[string]float64, error) {
 	period, err := GetPeriodByID(db, periodID)
 	if err != nil {

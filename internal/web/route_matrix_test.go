@@ -10,20 +10,18 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// routeMatrix is Kandidat 3 aus dem Architecture Review nach dem Demo-Modus
-// (#118): eine von Hand gepflegte Durchsetzungs-Matrix (Ticket #112), die
-// NewMux's tatsächliches Verhalten gegenprüft - ein versehentlich fehlendes
-// a.RequireLogin(...) auf einer mutierenden Route bleibt sonst unsichtbar
-// (die Seite funktioniert einfach weiter, nur eben auch für nicht
-// eingeloggte Besucher - eine stille Sicherheitslücke, kein Crash, anders
-// als ein fehlendes withDB, das sofort panict und deshalb keinen eigenen
-// Test braucht).
+// routeMatrix is candidate 3 from the architecture review after demo mode
+// (#118): a hand-maintained enforcement matrix (Ticket #112) that checks
+// NewMux's actual behavior - an accidentally missing a.RequireLogin(...) on
+// a mutating route would otherwise stay invisible (the page just keeps
+// working, only now for visitors who aren't logged in either - a silent
+// security hole, not a crash, unlike a missing withDB, which panics
+// immediately and therefore needs no test of its own).
 //
-// Deckt nur RequireLogin ab, nicht withDB. Erkennt auch NICHT automatisch
-// eine komplett neue, in NewMux vergessene Route - wer eine Route
-// hinzufügt oder umbenennt, muss diese Tabelle von Hand mitziehen; Go's
-// http.ServeMux bietet keine öffentliche API, um registrierte Patterns
-// gegenzuprüfen.
+// Only covers RequireLogin, not withDB. Also does NOT automatically detect
+// a brand-new route forgotten in NewMux - whoever adds or renames a route
+// has to update this table by hand; Go's http.ServeMux offers no public API
+// to cross-check registered patterns against.
 var routeMatrix = []struct {
 	method string
 	path   string
@@ -31,17 +29,17 @@ var routeMatrix = []struct {
 }{
 	{"GET", "/ablesungen", false},
 	{"GET", "/ablesungen/export.csv", true},
-	// /ablesungen/neu und POST /ablesungen bewusst ungated - eine neue
-	// Ablesung anlegen ist auch nicht eingeloggt möglich.
+	// /ablesungen/neu and POST /ablesungen are deliberately ungated -
+	// creating a new meter reading is possible without being logged in.
 	{"GET", "/ablesungen/neu", false},
 	{"POST", "/ablesungen", false},
 	{"POST", "/ablesungen/import", true},
 	{"GET", "/ablesungen/1", false},
-	// GET .../bearbeiten und POST /ablesungen/1 fehlen hier bewusst - ihr
-	// Gating hängt seit Ticket #130 vom Vollständigkeits-Zustand der
-	// Ziel-Ablesung ab (requireLoginUnlessTeilstand), lässt sich also nicht
-	// mehr als fixer gated-bool ausdrücken. Siehe
-	// TestBearbeitenUndUpdate_TeilstandUngatedVollstaendigGated unten.
+	// GET .../bearbeiten and POST /ablesungen/1 are deliberately missing
+	// here - since Ticket #130 their gating depends on the target reading's
+	// completeness state (requireLoginUnlessTeilstand), so it can no longer
+	// be expressed as a fixed gated bool. See
+	// TestBearbeitenUndUpdate_TeilstandUngatedVollstaendigGated below.
 	{"POST", "/ablesungen/1/loeschen", true},
 	{"GET", "/dashboard", false},
 	{"GET", "/berechnungslogik", false},
@@ -56,11 +54,11 @@ var routeMatrix = []struct {
 	{"POST", "/fixkosten/1/loeschen", true},
 }
 
-// TestRouteMatrix_RequireLoginCoverage treibt jede Route in routeMatrix ohne
-// Session-Cookie an - RequireLogin prüft isLoggedIn, bevor der eigentliche
-// Handler (Formular-Parsing, DB-Zugriff) überhaupt läuft, ein leerer POST-
-// Body reicht also aus, um eine gated Route zuverlässig auf ihren Redirect
-// zu prüfen, ohne echte Daten anzulegen.
+// TestRouteMatrix_RequireLoginCoverage drives every route in routeMatrix
+// without a session cookie - RequireLogin checks isLoggedIn before the
+// actual handler (form parsing, DB access) even runs, so an empty POST body
+// is enough to reliably check a gated route's redirect without creating any
+// real data.
 func TestRouteMatrix_RequireLoginCoverage(t *testing.T) {
 	t.Setenv("LOGIN_PASSWORD", "geheim")
 	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
@@ -90,10 +88,10 @@ func bouncedToLogin(w *httptest.ResponseRecorder) bool {
 }
 
 // TestBearbeitenUndUpdate_TeilstandUngatedVollstaendigGated covers Ticket
-// #130's zustandsabhängiges Gating für GET .../bearbeiten und POST
-// /ablesungen/{id} - der einzige Teil von routeMatrix, der sich nicht mehr
-// als fixer gated-bool ausdrücken lässt, weil er vom Vollständigkeits-
-// Zustand der jeweiligen Ziel-Ablesung abhängt statt nur vom Pfad.
+// #130's state-dependent gating for GET .../bearbeiten and POST
+// /ablesungen/{id} - the one part of routeMatrix that can no longer be
+// expressed as a fixed gated bool, because it depends on the target
+// reading's completeness state instead of just the path.
 func TestBearbeitenUndUpdate_TeilstandUngatedVollstaendigGated(t *testing.T) {
 	t.Setenv("LOGIN_PASSWORD", "geheim")
 	db := openTestDB(t)
@@ -166,10 +164,10 @@ func TestBearbeitenUndUpdate_TeilstandUngatedVollstaendigGated(t *testing.T) {
 	})
 }
 
-// TestBearbeitenUndUpdate_NoPassword_NichtsAendertSich verifiziert AC3:
-// ohne gesetztes LOGIN_PASSWORD bleibt alles offen, unabhängig vom
-// Vollständigkeits-Zustand - requireLoginUnlessTeilstand darf hier keine
-// eigene Einschränkung einführen.
+// TestBearbeitenUndUpdate_NoPassword_NichtsAendertSich verifies AC3: without
+// LOGIN_PASSWORD set, everything stays open regardless of completeness
+// state - requireLoginUnlessTeilstand must not introduce a restriction of
+// its own here.
 func TestBearbeitenUndUpdate_NoPassword_NichtsAendertSich(t *testing.T) {
 	db := openTestDB(t)
 	mux := NewMux(db, openTestDB(t), "", "")

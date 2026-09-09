@@ -119,8 +119,7 @@ func TestFixkosten_LogikPersonen_Ratio(t *testing.T) {
 
 // TestFixkosten_LogikPersonen_KeinePersonen_FaelltAufHaelftigeVerteilungZurueck
 // mirrors Issue #26's Ratio2 zero-guard (see calc.Ratio2 doc comment): 0/0
-// Personen darf die Position nicht stillschweigend aus beiden Abrechnungen
-// verschwinden lassen.
+// occupants must not silently make the position vanish from both bills.
 func TestFixkosten_LogikPersonen_KeinePersonen_FaelltAufHaelftigeVerteilungZurueck(t *testing.T) {
 	db := openTestDB(t)
 	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]int64{1: 0, 2: 0}, map[int64]store.FixkostenPositionWert{
@@ -156,11 +155,11 @@ func TestFixkosten_TypMonatlich_ExpliziterWert(t *testing.T) {
 	}
 }
 
-// TestFixkosten_PositionOhneWert_Uebersprungen deckt #105/#107 ab: seit
-// Logik/Typ/Wert direkt an der Eingabe hängen (statt jahresweise in
-// kostenpositionen_jahre), gibt es keinen Fallback-Lookup mehr - eine
-// Position ohne eigenen Wert in dieser Eingabe wird einfach übersprungen,
-// statt eine Logik/Typ zu raten.
+// TestFixkosten_PositionOhneWert_Uebersprungen covers #105/#107: since
+// Logik/Typ/Wert hang directly off the entry (instead of per-year in
+// kostenpositionen_jahre), there's no fallback lookup anymore - a position
+// without its own value in this entry is simply skipped, instead of
+// guessing a Logik/Typ.
 func TestFixkosten_PositionOhneWert_Uebersprungen(t *testing.T) {
 	db := openTestDB(t)
 	id := mustCreateFixkostenEingabe(t, db, "2026-03-01", map[int64]int64{1: 1, 2: 1}, nil)

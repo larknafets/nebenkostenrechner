@@ -7,10 +7,10 @@ import (
 	"testing"
 )
 
-// TestSelectDB drives the Demo/Echt-Entscheidung directly (Architecture
-// Review nach dem Demo-Modus #118, Kandidat 4) - vorher nur über einen
-// vollen NewMux + echte SQLite-Dateien + simulierten HTTP-Login-Roundtrip
-// erreichbar (siehe demo_test.go), jetzt mit einem bloßen *http.Request.
+// TestSelectDB drives the demo/real DB decision directly (architecture
+// review after demo mode #118, candidate 4) - previously only reachable via
+// a full NewMux + real SQLite files + simulated HTTP login roundtrip (see
+// demo_test.go), now with a bare *http.Request.
 func TestSelectDB(t *testing.T) {
 	db := &sql.DB{}
 	demoDB := &sql.DB{}

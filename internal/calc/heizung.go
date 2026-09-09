@@ -7,12 +7,12 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// HeizungErgebnis is the Heizung/Warmwasser-Kostenverteilung result for one
+// HeizungErgebnis is the heating/hot water cost distribution result for one
 // period. See https://github.com/larknafets/nebenkostenrechner/issues/16:
-// die Wärmepumpen-Stromkosten (aus der Strom-Kostenberechnung, #14) werden
-// nach Wärmeverbrauch und Wohnungsgröße auf beide Wohnungen verteilt, gewichtet
-// mit der Periode-eigenen HeizungWaermeGewichtung (0.7/0.6/0.5, Default 0.7
-// - Issue #27; früher fix 70/30).
+// the heat pump's electricity cost (from the electricity cost calculation,
+// #14) is distributed to both apartments by heat consumption and apartment
+// size, weighted by the period's own HeizungWaermeGewichtung (0.7/0.6/0.5,
+// default 0.7 - Issue #27; previously fixed at 70/30).
 type HeizungErgebnis struct {
 	TotalHeizungskostenUnrounded float64
 
@@ -26,23 +26,24 @@ type HeizungErgebnis struct {
 	RatioFlaecheW1 float64
 	RatioFlaecheW2 float64
 
-	// KostenHeizung* sind kaufmännisch auf Cent gerundet (Issue #8).
+	// KostenHeizung* are rounded to the cent using commercial rounding
+	// (Issue #8).
 	KostenHeizungW1 float64
 	KostenHeizungW2 float64
 
-	// WPAnteil*KWh ist strom.WPAnteilKWh, mit denselben Gewichten wie
-	// KostenHeizung* auf die Wohnungen verteilt.
+	// WPAnteil*KWh is strom.WPAnteilKWh, distributed to the apartments with
+	// the same weights as KostenHeizung*.
 	WPAnteilW1KWh float64
 	WPAnteilW2KWh float64
 
-	// WPVerbrauch*KWh ist der tatsächliche (rohe, ohne PV-Abzug) WP-
-	// Stromverbrauch (strom.WPAnteilKWh+strom.PVAnteilWPKWh), mit denselben
-	// Gewichten wie WPAnteil*KWh auf die Wohnungen verteilt.
+	// WPVerbrauch*KWh is the actual (raw, without PV deduction) heat pump
+	// electricity consumption (strom.WPAnteilKWh+strom.PVAnteilWPKWh),
+	// distributed to the apartments with the same weights as WPAnteil*KWh.
 	WPVerbrauchW1KWh float64
 	WPVerbrauchW2KWh float64
 }
 
-// Heizung computes the Heizungskosten-Zuteilung for the given period.
+// Heizung computes the heating cost allocation for the given period.
 func Heizung(db *sql.DB, periodID int64) (*HeizungErgebnis, error) {
 	strom, err := Strom(db, periodID)
 	if err != nil {

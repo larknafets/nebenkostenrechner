@@ -23,26 +23,26 @@ const (
 	sessionCookieName = "nk_session"
 	sessionTTL        = 30 * 24 * time.Hour
 
-	// demoSessionCookieName marks a visitor's session as a Demo-Session
+	// demoSessionCookieName marks a visitor's session as a demo session
 	// (Issue #120) - a separate cookie from sessionCookieName, so the real
-	// Login-Kennwort mechanism (secret) stays completely untouched. A demo
-	// visitor also counts as "logged in" for UI/Routen-Zwecke (see
+	// login password mechanism (secret) stays completely untouched. A demo
+	// visitor also counts as "logged in" for UI/routing purposes (see
 	// isLoggedIn); this cookie additionally tells withDB which *sql.DB a
 	// request should use.
 	demoSessionCookieName = "nk_demo_session"
 
-	// demoPassword is fest im Code verankert (Issue #118 Implementation
-	// Decision) - kein ENV/Config, funktioniert immer, unabhängig davon ob
-	// LOGIN_PASSWORD gesetzt ist.
+	// demoPassword is hardcoded in the code (Issue #118 implementation
+	// decision) - no ENV/config, always works regardless of whether
+	// LOGIN_PASSWORD is set.
 	demoPassword = "demo"
 
-	// demoSessionSecret signs the Demo-Session-Cookie. Not a real secret -
+	// demoSessionSecret signs the demo session cookie. Not a real secret -
 	// demoPassword itself is public/hardcoded - just reuses signSession's
-	// HMAC-Mechanismus so a visitor can't forge/tamper the marker.
+	// HMAC mechanism so a visitor can't forge/tamper the marker.
 	demoSessionSecret = "nebenkostenrechner-demo-session"
 )
 
-// resolveLoginPassword reads the optional Login-Kennwort: LOGIN_PASSWORD env
+// resolveLoginPassword reads the optional login password: LOGIN_PASSWORD env
 // var first (Docker/.env), falling back to the Home Assistant Supervisor API
 // when unset - Supervisor does not map addon options onto container env vars
 // itself, and this app's distroless image has no shell for the usual
@@ -110,7 +110,7 @@ func fetchSupervisorLoginPassword(token string) (string, error) {
 // signSession returns a session cookie value valid until expiry:
 // "<unix-expiry>.<hex-hmac>". Stateless (no server-side session store, so it
 // survives restarts) and keyed by secret itself - changing the configured
-// Kennwort invalidates every outstanding session automatically, since the
+// password invalidates every outstanding session automatically, since the
 // HMAC key changes with it.
 func signSession(secret string, expiry time.Time) string {
 	exp := strconv.FormatInt(expiry.Unix(), 10)
@@ -137,10 +137,10 @@ func verifySession(secret, value string) bool {
 }
 
 // isLoggedIn reports whether r carries a valid session - always true when
-// no Kennwort is configured (secret == ""), the "Login-System deaktiviert"
-// case from Ticket #112, or when r carries a valid Demo-Session (Issue
-// #120) - a demo visitor gets full UI/Routen-Zugriff like a regulär
-// eingeloggter Nutzer, unabhängig davon ob LOGIN_PASSWORD gesetzt ist.
+// no password is configured (secret == ""), the "login system disabled"
+// case from Ticket #112, or when r carries a valid demo session (Issue
+// #120) - a demo visitor gets full UI/routing access like a regularly
+// logged-in user, regardless of whether LOGIN_PASSWORD is set.
 func isLoggedIn(r *http.Request, secret string) bool {
 	if secret == "" || isDemoSession(r) {
 		return true
@@ -183,9 +183,9 @@ func clearSessionCookie(w http.ResponseWriter) {
 	})
 }
 
-// setDemoSessionCookie logs the visitor into den Demo-Modus (Issue #120)
-// for sessionTTL - gleiche Form wie setSessionCookie, nur mit
-// demoSessionSecret statt dem echten secret signiert.
+// setDemoSessionCookie logs the visitor into demo mode (Issue #120)
+// for sessionTTL - same shape as setSessionCookie, just signed with
+// demoSessionSecret instead of the real secret.
 func setDemoSessionCookie(w http.ResponseWriter) {
 	expiry := time.Now().Add(sessionTTL)
 	http.SetCookie(w, &http.Cookie{
@@ -198,7 +198,7 @@ func setDemoSessionCookie(w http.ResponseWriter) {
 	})
 }
 
-// clearDemoSessionCookie logs the visitor out of dem Demo-Modus.
+// clearDemoSessionCookie logs the visitor out of demo mode.
 func clearDemoSessionCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     demoSessionCookieName,
@@ -210,9 +210,9 @@ func clearDemoSessionCookie(w http.ResponseWriter) {
 	})
 }
 
-// isDemoSession reports whether r carries a valid Demo-Session-Cookie -
-// unabhängig von secret/LOGIN_PASSWORD, da der Demo-Login immer
-// funktioniert (Issue #118 Implementation Decision).
+// isDemoSession reports whether r carries a valid demo session cookie -
+// independent of secret/LOGIN_PASSWORD, since the demo login always
+// works (Issue #118 implementation decision).
 func isDemoSession(r *http.Request) bool {
 	c, err := r.Cookie(demoSessionCookieName)
 	if err != nil {
@@ -221,28 +221,28 @@ func isDemoSession(r *http.Request) bool {
 	return verifySession(demoSessionSecret, c.Value)
 }
 
-// demoNavFlags computes die 3 Demo-Modus-bezogenen Nav-Fakten, die jede
-// Seite über die gemeinsame "nav"-Partial braucht (Issue #122): isDemo
-// (steuert den Demo-Banner), showLoginEntry (Sichtbarkeit des "Anmelden"-
-// Einstiegspunkts ins Login-Overlay) und showLogoutEntry (Sichtbarkeit des
-// "Abmelden"-Links). showLoginEntry wird gezeigt, sobald der Besucher weder
-// in einer Demo-Session ist noch mit einem echten, konfigurierten
-// LOGIN_PASSWORD eingeloggt ist - deckt sowohl den klassischen "nicht
-// eingeloggt"-Fall (secret gesetzt, kein gültiges Cookie) als auch den Fall
-// secret == "" ab, wo isLoggedIn zwar unconditionally true ist (alles
-// offen), es aber trotzdem einen sichtbaren Weg zum Demo-Login braucht.
-// showLogoutEntry ist bewusst NICHT einfach isLoggedIn: bei secret == ""
-// ist isLoggedIn immer true (alles offen), obwohl gar keine Session
-// existiert, aus der man sich abmelden könnte - "Abmelden" ist nur
-// sinnvoll bei einer echten Session (realLogin) oder einer Demo-Session.
+// demoNavFlags computes the 3 demo-mode-related nav facts that every
+// page needs via the shared "nav" partial (Issue #122): isDemo
+// (controls the demo banner), showLoginEntry (visibility of the "Login"
+// entry point into the login overlay) and showLogoutEntry (visibility of
+// the "Logout" link). showLoginEntry is shown as soon as the visitor is
+// neither in a demo session nor logged in with a real, configured
+// LOGIN_PASSWORD - covers both the classic "not logged in" case (secret
+// set, no valid cookie) and the secret == "" case, where isLoggedIn is
+// unconditionally true (everything open) but there's still a need for a
+// visible path to the demo login. showLogoutEntry is deliberately NOT
+// simply isLoggedIn: with secret == "", isLoggedIn is always true
+// (everything open) even though no session exists to log out of -
+// "Logout" only makes sense with a real session (realLogin) or a demo
+// session.
 func demoNavFlags(r *http.Request, secret string) (isDemo, showLoginEntry, showLogoutEntry bool) {
 	isDemo = isDemoSession(r)
 	realLogin := secret != "" && !isDemo && isLoggedIn(r, secret)
 	return isDemo, !isDemo && !realLogin, isDemo || realLogin
 }
 
-// navData is every page's shared Nav-Fakten - Base plus the 3 Login/Demo-
-// Facts, computed once per request instead of separately in each of the 9
+// navData is every page's shared nav facts - Base plus the 3 login/demo
+// facts, computed once per request instead of separately in each of the 9
 // page-handlers. Embedded (anonymous field) in every page's template-data
 // struct: text/template promotes embedded-struct fields for dot-access, so
 // layout.html keeps reading .Base/.IsLoggedIn/.IsDemoSession/.ShowLoginEntry
@@ -257,13 +257,12 @@ type navData struct {
 	ShowLogoutEntry bool
 }
 
-// auth bundles the 2 facts every login-related decision needs: das
-// konfigurierte Login-Kennwort (secret) und die Demo-Datenbank (gebraucht,
-// um sie bei einem erfolgreichen Demo-Login zurückzusetzen). Einmal in
-// NewMux gebaut (newAuth) und seitdem durchgereicht statt secret als
-// bloßer String durch ~13 Routen-Registrierungen und 11 Handler-
-// Konstruktoren - Architecture Review nach dem Demo-Modus (#118),
-// Kandidat 2.
+// auth bundles the 2 facts every login-related decision needs: the
+// configured login password (secret) and the demo database (needed to
+// reset it on a successful demo login). Built once in NewMux (newAuth)
+// and passed along ever since, instead of secret as a bare string through
+// ~13 route registrations and 11 handler constructors - architecture
+// review after demo mode (#118), candidate 2.
 type auth struct {
 	secret string
 	demoDB *sql.DB
@@ -288,9 +287,9 @@ func (a auth) NavData(r *http.Request) navData {
 }
 
 // RequireLogin gates a mutating or create-only route behind the
-// Login-Kennwort (Ticket #112's Durchsetzungs-Matrix): with no Kennwort
+// login password (Ticket #112's enforcement matrix): with no password
 // configured every route stays open (isLoggedIn always true), otherwise an
-// unauthenticated request bounces to the Login-Overlay (Ticket #113).
+// unauthenticated request bounces to the login overlay (Ticket #113).
 //
 // The bounce always lands on the Dashboard, never back on the gated URL
 // itself - a fully gated GET page (e.g. /ablesungen/neu) is itself wrapped
@@ -363,29 +362,29 @@ func loginRedirectTarget(r *http.Request) string {
 	return requestBase(r) + next
 }
 
-// HandleLogin's demo branch resets a.demoDB to its frischen 39-Monats-
-// Ausgangszustand on every erfolgreichen Demo-Login (Issue #121) - vor dem
-// Setzen des Session-Cookies, damit eine gewährte Demo-Session immer den
-// frischen Stand sieht, nie den einer vorherigen Session.
+// HandleLogin's demo branch resets a.demoDB to its fresh 39-month
+// initial state on every successful demo login (Issue #121) - before
+// setting the session cookie, so a granted demo session always sees the
+// fresh state, never that of a previous session.
 func (a auth) HandleLogin() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form: "+err.Error(), http.StatusBadRequest)
 			return
 		}
-		// demoPassword ist ein Sonderfall, geprüft vor dem regulären
-		// secret-Vergleich - funktioniert immer, auch bei secret == ""
-		// (Issue #118 Implementation Decision).
+		// demoPassword is a special case, checked before the regular
+		// secret comparison - always works, even when secret == ""
+		// (Issue #118 implementation decision).
 		if r.FormValue("password") == demoPassword {
 			if err := store.ResetDemoData(a.demoDB, time.Now()); err != nil {
 				http.Error(w, "demo reset: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			// Eine noch gültige echte Session-Cookie darf nicht liegen
-			// bleiben - isDemoSession wird zwar vor der echten Session
-			// geprüft (isLoggedIn/withDB), aber ein sauberer Login-Wechsel
-			// räumt beide Seiten auf, statt sich allein auf diese Prüf-
-			// reihenfolge zu verlassen.
+			// A still-valid real session cookie must not be left lying
+			// around - isDemoSession is checked before the real session
+			// (isLoggedIn/withDB), but a clean login switch cleans up
+			// both sides instead of relying solely on that check
+			// ordering.
 			clearSessionCookie(w)
 			setDemoSessionCookie(w)
 			http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
@@ -399,8 +398,8 @@ func (a auth) HandleLogin() http.HandlerFunc {
 			redirectToLoginOverlay(w, r, r.FormValue("next"), true)
 			return
 		}
-		// Symmetrisch zum Demo-Zweig oben: eine noch gültige Demo-Session-
-		// Cookie darf einen frischen echten Login nicht überstimmen.
+		// Symmetric to the demo branch above: a still-valid demo session
+		// cookie must not override a fresh real login.
 		clearDemoSessionCookie(w)
 		setSessionCookie(w, a.secret)
 		http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)

@@ -97,8 +97,8 @@ func TestStrom_SequentialAllocation(t *testing.T) {
 func TestStrom_WallboxDritteZuteilungsstufe(t *testing.T) {
 	db := openTestDB(t)
 	mustCreatePeriod(t, db, "2026-10-01", 0.30, baseReadings(nil))
-	// Netzbezug 1000, Wohnung2 400, Waermepumpe 300 -> Rest2 = 300 fuer die
-	// Wallbox, obwohl sie selbst 500 kWh verbraucht haette.
+	// Grid draw 1000, apartment 2 400, heat pump 300 -> rest2 = 300 for the
+	// wallbox, even though it would have consumed 500 kWh itself.
 	p2 := mustCreatePeriod(t, db, "2026-11-01", 0.30, baseReadings(map[string]float64{
 		"strom_gesamt":      1000,
 		"strom_wohnung2":    400,
@@ -124,8 +124,8 @@ func TestStrom_WallboxDritteZuteilungsstufe(t *testing.T) {
 func TestStrom_W2VerbrauchKWh_TatsaechlicherWertOhnePVAbzug(t *testing.T) {
 	db := openTestDB(t)
 	mustCreatePeriod(t, db, "2026-10-01", 0.30, baseReadings(nil))
-	// Netzbezug 400 < Wohnung2-Unterzaehler 500 -> 100 kWh von Wohnung 2
-	// werden durch PV gedeckt, sind aber trotzdem tatsächlicher Verbrauch.
+	// Grid draw 400 < apartment 2's submeter 500 -> 100 kWh of apartment 2's
+	// consumption is covered by PV, but is still actual consumption.
 	p2 := mustCreatePeriod(t, db, "2026-11-01", 0.30, baseReadings(map[string]float64{
 		"strom_gesamt":   400,
 		"strom_wohnung2": 500,
@@ -146,8 +146,8 @@ func TestStrom_W2VerbrauchKWh_TatsaechlicherWertOhnePVAbzug(t *testing.T) {
 func TestStrom_WallboxKeinRestUebrig(t *testing.T) {
 	db := openTestDB(t)
 	mustCreatePeriod(t, db, "2026-10-01", 0.30, baseReadings(nil))
-	// W2+WP verbrauchen bereits den gesamten Netzbezug - Wallbox-Nutzung
-	// muss dann vollstaendig durch PV gedeckt sein, Kosten 0.
+	// Apartment 2 + heat pump already consume the entire grid draw - wallbox
+	// usage must then be fully covered by PV, cost 0.
 	p2 := mustCreatePeriod(t, db, "2026-11-01", 0.30, baseReadings(map[string]float64{
 		"strom_gesamt":      500,
 		"strom_wohnung2":    300,
@@ -173,8 +173,8 @@ func TestStrom_WallboxKeinRestUebrig(t *testing.T) {
 func TestStrom_WaermepumpeGedeckeltAufRest(t *testing.T) {
 	db := openTestDB(t)
 	mustCreatePeriod(t, db, "2026-10-01", 0.22, baseReadings(nil))
-	// Netzbezug 1000, Wohnung2 verbraucht 900 -> nur 100 Rest für die
-	// Wärmepumpe, obwohl sie selbst 5000 kWh verbraucht hätte.
+	// Grid draw 1000, apartment 2 consumes 900 -> only 100 remains for the
+	// heat pump, even though it would have consumed 5000 kWh itself.
 	p2 := mustCreatePeriod(t, db, "2026-11-01", 0.22, baseReadings(map[string]float64{
 		"strom_gesamt":      1000,
 		"strom_wohnung2":    900,

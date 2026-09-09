@@ -7,18 +7,18 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// EinspeisungErgebnis is the PV-Einspeisevergütung result for one period -
-// whole-house, no apartment split (the Einspeisezähler isn't apartment-
+// EinspeisungErgebnis is the PV feed-in compensation result for one period -
+// whole-house, no apartment split (the feed-in meter isn't apartment-
 // specific), unlike StromErgebnis/WasserErgebnis/HeizungErgebnis (Ticket #47).
 type EinspeisungErgebnis struct {
 	EinspeisungKWh float64
 
-	// Ertrag is kaufmännisch auf Cent gerundet (Issue #8-Konvention).
+	// Ertrag is rounded to the cent using commercial rounding (Issue #8 convention).
 	Ertrag float64
 }
 
-// Einspeisung computes the PV-Einspeisevergütung for the given period:
-// eingespeiste kWh (Verbrauch des Einspeisezählers) mal Einspeisung-Preis.
+// Einspeisung computes the PV feed-in compensation for the given period:
+// fed-in kWh (consumption of the feed-in meter) times the feed-in price.
 func Einspeisung(db *sql.DB, periodID int64) (*EinspeisungErgebnis, error) {
 	period, err := store.GetPeriodByID(db, periodID)
 	if err != nil {

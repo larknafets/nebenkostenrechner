@@ -233,7 +233,7 @@ func TestVerbrauch_ErrNoPreviousPeriod(t *testing.T) {
 func TestVerbrauch_UeberLuecke(t *testing.T) {
 	db := openTestDB(t)
 	mustCreatePeriod(t, db, "2026-06-01", baseReadings(map[string]float64{"strom_gesamt": 100}))
-	// 4 Monate Luecke (Juli-Sept fehlen) statt der ueblichen 1.
+	// 4-month gap (July-Sept missing) instead of the usual 1.
 	p2 := mustCreatePeriod(t, db, "2026-10-01", baseReadings(map[string]float64{"strom_gesamt": 500}))
 
 	v, err := Verbrauch(db, p2)
@@ -311,10 +311,10 @@ func TestImportPeriods_AllOrNothing(t *testing.T) {
 			ReadingDate:             "2026-07-01",
 			HeizungWaermeGewichtung: 0.7,
 			Readings:                baseReadings(nil),
-			// Teilstand (Ticket #128) macht fehlende Readings/Preise nicht
-			// mehr zu einem Fehler - eine nicht existierende apartment_id
-			// verletzt aber weiterhin die FK-Constraint auf
-			// period_occupancy, bleibt also ein echter Fehlerauslöser.
+			// Teilstand (Ticket #128) means missing Readings/prices are no
+			// longer an error - but a nonexistent apartment_id still
+			// violates the FK constraint on period_occupancy, so it stays
+			// a genuine error trigger.
 			Personen: map[int64]int64{999: 1},
 		},
 	})
@@ -741,7 +741,7 @@ func TestEnsurePeriodsHeizungGewichtungColumn(t *testing.T) {
 		}
 		t.Cleanup(func() { db.Close() })
 
-		// Pre-#27-Schema: periods ohne heizung_waerme_gewichtung.
+		// Pre-#27 schema: periods without heizung_waerme_gewichtung.
 		if _, err := db.Exec(`CREATE TABLE periods (
 			id                 INTEGER PRIMARY KEY,
 			reading_date       TEXT NOT NULL,
@@ -770,7 +770,7 @@ func TestEnsurePeriodsHeizungGewichtungColumn(t *testing.T) {
 			t.Errorf("pre-existing row's heizung_waerme_gewichtung = %v, want 0.7 (backfilled default)", gewichtung)
 		}
 
-		// Idempotent: ein zweiter Aufruf darf nicht mit "duplicate column" fehlschlagen.
+		// Idempotent: a second call must not fail with "duplicate column".
 		if err := ensurePeriodsHeizungGewichtungColumn(db); err != nil {
 			t.Fatalf("second ensurePeriodsHeizungGewichtungColumn call: %v", err)
 		}
@@ -792,7 +792,7 @@ func TestEnsurePeriodsEinspeisungPreisColumn(t *testing.T) {
 		}
 		t.Cleanup(func() { db.Close() })
 
-		// Pre-#47-Schema: periods ohne einspeisung_preis.
+		// Pre-#47 schema: periods without einspeisung_preis.
 		if _, err := db.Exec(`CREATE TABLE periods (
 			id                        INTEGER PRIMARY KEY,
 			reading_date              TEXT NOT NULL,
@@ -822,7 +822,7 @@ func TestEnsurePeriodsEinspeisungPreisColumn(t *testing.T) {
 			t.Errorf("pre-existing row's einspeisung_preis = %v, want 0 (backfilled default)", preis)
 		}
 
-		// Idempotent: ein zweiter Aufruf darf nicht mit "duplicate column" fehlschlagen.
+		// Idempotent: a second call must not fail with "duplicate column".
 		if err := ensurePeriodsEinspeisungPreisColumn(db); err != nil {
 			t.Fatalf("second ensurePeriodsEinspeisungPreisColumn call: %v", err)
 		}
@@ -847,7 +847,7 @@ func TestEnsurePeriodsMonatColumn(t *testing.T) {
 		}
 		t.Cleanup(func() { db.Close() })
 
-		// Pre-#86-Schema: periods ohne monat.
+		// Pre-#86 schema: periods without monat.
 		if _, err := db.Exec(`CREATE TABLE periods (
 			id                 INTEGER PRIMARY KEY,
 			reading_date       TEXT NOT NULL,
@@ -876,7 +876,7 @@ func TestEnsurePeriodsMonatColumn(t *testing.T) {
 			t.Errorf("pre-existing row's monat = %q, want 2026-08-01 (backfilled from reading_date)", monat)
 		}
 
-		// Idempotent: ein zweiter Aufruf darf nicht mit "duplicate column" fehlschlagen.
+		// Idempotent: a second call must not fail with "duplicate column".
 		if err := ensurePeriodsMonatColumn(db); err != nil {
 			t.Fatalf("second ensurePeriodsMonatColumn call: %v", err)
 		}
@@ -1007,7 +1007,7 @@ func TestEnsureApartmentsFlurstueckGroesseColumn(t *testing.T) {
 		}
 		t.Cleanup(func() { db.Close() })
 
-		// Pre-#61-Schema: apartments ohne flurstueck_groesse.
+		// Pre-#61 schema: apartments without flurstueck_groesse.
 		if _, err := db.Exec(`CREATE TABLE apartments (
 			id   INTEGER PRIMARY KEY,
 			name TEXT NOT NULL,
@@ -1036,7 +1036,7 @@ func TestEnsureApartmentsFlurstueckGroesseColumn(t *testing.T) {
 			t.Errorf("pre-existing row's flurstueck_groesse = %v, want 0 (backfilled default)", flurstueckGroesse)
 		}
 
-		// Idempotent: ein zweiter Aufruf darf nicht mit "duplicate column" fehlschlagen.
+		// Idempotent: a second call must not fail with "duplicate column".
 		if err := ensureApartmentsFlurstueckGroesseColumn(db); err != nil {
 			t.Fatalf("second ensureApartmentsFlurstueckGroesseColumn call: %v", err)
 		}
@@ -1104,17 +1104,17 @@ func TestUpdateStammdaten_Roundtrip(t *testing.T) {
 	}
 }
 
-// TestEnsureFixkostenWerteLogikTypColumns deckt Issue #106 ab: eine
-// bestehende Installation, deren fixkosten_werte noch keine logik/typ-
-// Spalten hat, bekommt sie angelegt und jede vorhandene Fixkosten-Eingabe
-// wird aus kostenpositionen_jahre rückwirkend befüllt - Jahreswert bei Typ
-// "jährlich", expliziter Wert bzw. letzter bekannter Jahreswert/12-Fallback
-// bei "monatlich" (identisch zu calc.Fixkosten.monatswertFuer, hier aber
-// einmalig zur Migrationszeit statt bei jeder Berechnung).
+// TestEnsureFixkostenWerteLogikTypColumns covers Issue #106: an existing
+// installation whose fixkosten_werte doesn't yet have logik/typ columns
+// gets them added, and every existing Fixkosten-Eingabe gets backfilled
+// retroactively from kostenpositionen_jahre - annual value for Typ
+// "jaehrlich", explicit value or last-known annual-value/12 fallback for
+// "monatlich" (identical to calc.Fixkosten.monatswertFuer, but here just
+// once at migration time instead of on every Berechnung).
 func TestEnsureFixkostenWerteLogikTypColumns(t *testing.T) {
-	// kostenpositionen_jahre existiert seit #109 nicht mehr im regulären
-	// Schema (openTestDB) - dieser Test simuliert daher direkt per SQL eine
-	// Installation von vor #106/#109, in der es sie noch gab.
+	// kostenpositionen_jahre no longer exists in the regular schema
+	// (openTestDB) since #109 - this test therefore simulates directly via
+	// SQL an installation from before #106/#109, where it still existed.
 	db, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "old.db"))
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
@@ -1152,9 +1152,10 @@ func TestEnsureFixkostenWerteLogikTypColumns(t *testing.T) {
 		t.Fatalf("seed kostenpositionen: %v", err)
 	}
 
-	// Jahr 2025: Grundsteuer (ID 1) jährlich mit Jahreswert 1200, Internet
-	// (ID 13) monatlich. Jahr 2024: Internet war jährlich mit Jahreswert
-	// 480 - Fallback-Quelle für eine monatliche Eingabe ohne eigenen Wert.
+	// Jahr 2025: Grundsteuer (ID 1) jaehrlich with annual value 1200,
+	// Internet (ID 13) monatlich. Jahr 2024: Internet was jaehrlich with
+	// annual value 480 - fallback source for a monthly Eingabe without
+	// its own value.
 	if _, err := db.Exec(
 		`INSERT INTO kostenpositionen_jahre (kostenposition_id, jahr, logik, typ, jahreswert) VALUES
 		 (1, 2025, ?, ?, 1200), (13, 2025, ?, ?, 0), (13, 2024, ?, ?, 480)`,
@@ -1163,8 +1164,9 @@ func TestEnsureFixkostenWerteLogikTypColumns(t *testing.T) {
 		t.Fatalf("seed kostenpositionen_jahre: %v", err)
 	}
 
-	// Eingabe mit explizitem Internet-Wert (altes Schema: logik/typ leer,
-	// nur wert gesetzt - genau der Zustand von vor dieser Migration).
+	// Eingabe with an explicit Internet value (old schema: logik/typ
+	// empty, only wert set - exactly the state from before this
+	// migration).
 	res, err := db.Exec(`INSERT INTO fixkosten_eingaben (monat) VALUES ('2025-01-01')`)
 	if err != nil {
 		t.Fatalf("insert fixkosten_eingabe (mit Wert): %v", err)
@@ -1177,8 +1179,8 @@ func TestEnsureFixkostenWerteLogikTypColumns(t *testing.T) {
 		t.Fatalf("insert fixkosten_werte (mit Wert): %v", err)
 	}
 
-	// Eingabe ohne eigenen Internet-Wert - muss auf den 2024er Jahreswert/12
-	// zurückfallen.
+	// Eingabe without its own Internet value - must fall back to the 2024
+	// annual value / 12.
 	res, err = db.Exec(`INSERT INTO fixkosten_eingaben (monat) VALUES ('2025-02-01')`)
 	if err != nil {
 		t.Fatalf("insert fixkosten_eingabe (ohne Wert): %v", err)
@@ -1218,8 +1220,8 @@ func TestEnsureFixkostenWerteLogikTypColumns(t *testing.T) {
 		t.Errorf("Internet (ohneWert) = %+v, want {wohneinheit monatlich 40} (Fallback 480/12 aus 2024)", got)
 	}
 
-	// Idempotent: ein zweiter Aufruf darf nicht fehlschlagen und nichts
-	// verändern.
+	// Idempotent: a second call must not fail and must not change
+	// anything.
 	if err := backfillFixkostenWerteLogikTyp(db); err != nil {
 		t.Fatalf("second backfillFixkostenWerteLogikTyp call: %v", err)
 	}
@@ -1228,10 +1230,10 @@ func TestEnsureFixkostenWerteLogikTypColumns(t *testing.T) {
 	}
 }
 
-// TestEnsureFixkostenWerteLogikTypColumns_AlteInstallation deckt die
-// eigentliche Spalten-Migration ab (Issue #106): eine Tabelle im Schema von
-// vor #106 (ohne logik/typ) bekommt die Spalten angelegt, und ein zweiter
-// Aufruf schlägt nicht mit "duplicate column" fehl.
+// TestEnsureFixkostenWerteLogikTypColumns_AlteInstallation covers the
+// actual column migration (Issue #106): a table in the pre-#106 schema
+// (without logik/typ) gets the columns added, and a second call doesn't
+// fail with "duplicate column".
 func TestEnsureFixkostenWerteLogikTypColumns_AlteInstallation(t *testing.T) {
 	db, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "old.db"))
 	if err != nil {
@@ -1248,8 +1250,8 @@ func TestEnsureFixkostenWerteLogikTypColumns_AlteInstallation(t *testing.T) {
 	)`); err != nil {
 		t.Fatalf("create old-shape fixkosten_werte table: %v", err)
 	}
-	// backfillFixkostenWerteLogikTyp liest fixkosten_eingaben, auch wenn es
-	// (wie hier) keine gibt - Tabelle muss trotzdem existieren.
+	// backfillFixkostenWerteLogikTyp reads fixkosten_eingaben, even if
+	// there are none (as here) - the table still has to exist.
 	if _, err := db.Exec(`CREATE TABLE fixkosten_eingaben (id INTEGER PRIMARY KEY, monat TEXT NOT NULL)`); err != nil {
 		t.Fatalf("create fixkosten_eingaben table: %v", err)
 	}
@@ -1315,9 +1317,9 @@ func TestEnsurePeriodsNullablePriceColumns(t *testing.T) {
 			t.Fatalf("CreatePeriod: %v", err)
 		}
 
-		// Simuliert eine Bestands-DB von vor Ticket #128: Preis-Spalten
-		// zurück auf NOT NULL - die einzige vorhandene Row hat überall
-		// echte Werte, das Zurückbauen schlägt also nicht fehl.
+		// Simulates an existing DB from before Ticket #128: price columns
+		// back to NOT NULL - the one existing row has real values
+		// everywhere, so the rebuild doesn't fail.
 		for _, stmt := range []string{
 			`CREATE TABLE periods_old_shape (
 			    id                         INTEGER PRIMARY KEY,
@@ -1365,7 +1367,7 @@ func TestEnsurePeriodsNullablePriceColumns(t *testing.T) {
 			t.Errorf("PersonenByApartment after migration = %v, want {1:2, 2:1} (FK-verknüpfte period_occupancy-Rows erhalten)", got.PersonenByApartment)
 		}
 
-		// Idempotent: ein zweiter Aufruf darf nicht fehlschlagen oder erneut umbauen.
+		// Idempotent: a second call must not fail or rebuild again.
 		if err := ensurePeriodsNullablePriceColumns(db); err != nil {
 			t.Fatalf("second ensurePeriodsNullablePriceColumns call: %v", err)
 		}
@@ -1460,9 +1462,9 @@ func TestUpdatePeriod_Teilstand_PreservesUnspecifiedFields(t *testing.T) {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 
-	// Vervollständigen/Korrigieren-Runde: nur Strompreis wird diesmal
-	// mitgegeben, alles andere bleibt in diesem Aufruf leer/fehlend - darf
-	// die schon gespeicherten Werte nicht löschen.
+	// Vervollstaendigen/Korrigieren round: only Strompreis is given this
+	// time, everything else stays empty/absent in this call - must not
+	// delete the values already stored.
 	if err := UpdatePeriod(db, id, PeriodInput{
 		ReadingDate:             "2026-05-01",
 		Monat:                   "",
@@ -1517,7 +1519,7 @@ func TestUpdatePeriod_EmptyMonat_NoNeighborConflict(t *testing.T) {
 
 	if err := UpdatePeriod(db, p2, PeriodInput{
 		ReadingDate:             "2026-02-01",
-		Monat:                   "", // Teilstand: würde als "2026-01-01" oder "2026-04-01" mit einem Nachbarn kollidieren, wird aber übersprungen
+		Monat:                   "", // partial reading: would collide with a neighbor as "2026-01-01" or "2026-04-01", but gets skipped
 		Strompreis:              Float64(0.22),
 		FrischwasserPreis:       Float64(1.46),
 		AbwasserPreis:           Float64(4.87),

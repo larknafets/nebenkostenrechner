@@ -32,7 +32,7 @@ func attachCookies(req *http.Request, cookies []*http.Cookie) {
 }
 
 // TestHandleLogin_DemoPassword issues the demo login regardless of whether
-// LOGIN_PASSWORD (secret) is configured (Issue #118: "funktioniert immer").
+// LOGIN_PASSWORD (secret) is configured (Issue #118: "always works").
 func TestHandleLogin_DemoPassword(t *testing.T) {
 	for _, secret := range []string{"", "geheim"} {
 		t.Run("secret="+secret, func(t *testing.T) {
@@ -60,9 +60,10 @@ func TestHandleLogin_DemoPassword(t *testing.T) {
 	}
 }
 
-// TestDemoMode_WritesIsolatedFromRealDB is the spec's Kernanforderung
-// (Issue #118 Testing Decisions): an Ablesung created in Demo-Modus must
-// land exclusively in the Demo-Datenbank, never in the echte.
+// TestDemoMode_WritesIsolatedFromRealDB is the spec's core requirement
+// (Issue #118 Testing Decisions): a meter reading (Ablesung) created in
+// demo mode must land exclusively in the demo database, never in the real
+// one.
 func TestDemoMode_WritesIsolatedFromRealDB(t *testing.T) {
 	realDB := openTestDB(t)
 	demoDB := openTestDB(t)
@@ -70,9 +71,9 @@ func TestDemoMode_WritesIsolatedFromRealDB(t *testing.T) {
 
 	cookies := demoLoginCookies(t, mux, demoPassword)
 
-	// Demo-Login setzt die Demo-DB bereits auf ihren 39-Monats-Ausgangs-
-	// zustand zurück (Issue #121) - Baseline hier einmal einlesen, statt
-	// die genaue Anzahl zu hardcoden.
+	// Demo login already resets the demo DB to its 39-month starting state
+	// (Issue #121) - read the baseline once here instead of hardcoding the
+	// exact count.
 	baseline, err := store.AllPeriods(demoDB)
 	if err != nil {
 		t.Fatalf("AllPeriods(demoDB) baseline: %v", err)
@@ -104,8 +105,8 @@ func TestDemoMode_WritesIsolatedFromRealDB(t *testing.T) {
 		t.Errorf("len(realPeriods) = %d, want 0 - Demo-Änderung darf nie in der echten DB landen", len(realPeriods))
 	}
 
-	// Ohne Demo-Session (nicht angemeldet, secret == "") bleibt die echte,
-	// weiterhin leere Datenbank sichtbar.
+	// Without a demo session (not logged in, secret == "") the real,
+	// still-empty database stays visible.
 	req2 := httptest.NewRequest(http.MethodGet, "/ablesungen", nil)
 	w2 := httptest.NewRecorder()
 	mux.ServeHTTP(w2, req2)
@@ -114,10 +115,10 @@ func TestDemoMode_WritesIsolatedFromRealDB(t *testing.T) {
 	}
 }
 
-// TestDemoLogin_ResetsPreviousDemoSession covers Issue #121's Kernanforderung:
-// eine im Demo-Modus angelegte Ablesung ist nach einem erneuten Demo-Login
-// nicht mehr vorhanden, ein Reset auf die echte DB hat dabei keinerlei
-// Auswirkung.
+// TestDemoLogin_ResetsPreviousDemoSession covers Issue #121's core
+// requirement: a meter reading created in demo mode is no longer present
+// after a renewed demo login, and this reset has no effect whatsoever on
+// the real DB.
 func TestDemoLogin_ResetsPreviousDemoSession(t *testing.T) {
 	realDB := openTestDB(t)
 	demoDB := openTestDB(t)
@@ -129,10 +130,10 @@ func TestDemoLogin_ResetsPreviousDemoSession(t *testing.T) {
 		t.Fatalf("AllPeriods(demoDB) baseline: %v", err)
 	}
 
-	// 2099 liegt garantiert außerhalb des relativ zu "jetzt" generierten
-	// 39-Monats-Fensters (Issue #117) - eindeutig als injizierte Änderung
-	// erkennbar, im Gegensatz zu einem Monat, der ohnehin Teil der frischen
-	// Baseline sein könnte.
+	// 2099 is guaranteed to lie outside the 39-month window generated
+	// relative to "now" (Issue #117) - clearly identifiable as an injected
+	// change, unlike a month that could already be part of the fresh
+	// baseline.
 	form := periodFormValues("2099-01-15", "2099-01")
 	req := httptest.NewRequest(http.MethodPost, "/ablesungen", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -151,8 +152,8 @@ func TestDemoLogin_ResetsPreviousDemoSession(t *testing.T) {
 		t.Fatalf("len(afterFirstSession) = %d, want %d (baseline+1)", len(afterFirstSession), len(baseline)+1)
 	}
 
-	// Erneuter Demo-Login (2. Session) muss die Ablesung aus der 1. Session
-	// verwerfen und wieder exakt die Baseline zeigen.
+	// A renewed demo login (2nd session) must discard the reading from the
+	// 1st session and show exactly the baseline again.
 	demoLoginCookies(t, mux, demoPassword)
 
 	afterReset, err := store.AllPeriods(demoDB)
@@ -190,11 +191,11 @@ func findCookie(cookies []*http.Cookie, name string) *http.Cookie {
 // TestLogin_ClearsOtherSessionCookie covers a gap surfaced by the whole-
 // feature review of #118: handleLogin only ever set the cookie for the kind
 // of session it just granted, never clearing the other one - a stale
-// nk_demo_session cookie (30 Tage TTL) would outlive a subsequent echten
-// Login und (da isDemoSession vor dem echten Cookie geprüft wird) weiterhin
-// Demo-Daten ausliefern, trotz frischem echten Login. Jeder erfolgreiche
-// Login räumt jetzt symmetrisch die jeweils andere Session-Cookie ab, statt
-// sich allein auf die Prüfreihenfolge zu verlassen.
+// nk_demo_session cookie (30 day TTL) would outlive a subsequent real login
+// and (since isDemoSession is checked before the real cookie) keep serving
+// demo data despite a fresh real login. Every successful login now
+// symmetrically clears whichever other session cookie exists, instead of
+// relying solely on the check order.
 func TestLogin_ClearsOtherSessionCookie(t *testing.T) {
 	t.Setenv("LOGIN_PASSWORD", "geheim")
 	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
@@ -223,9 +224,9 @@ func valueOrMissing(c *http.Cookie) string {
 	return c.Value
 }
 
-// TestDemoMode_IndependentOfRealLogin covers the spec's letzten Punkt: ein
-// regulärer Login (echtes LOGIN_PASSWORD) bleibt unverändert auf die echte
-// Datenbank bezogen, unabhängig vom Demo-Modus.
+// TestDemoMode_IndependentOfRealLogin covers the spec's last point: a
+// regular login (real LOGIN_PASSWORD) stays tied to the real database
+// unchanged, independent of demo mode.
 func TestDemoMode_IndependentOfRealLogin(t *testing.T) {
 	const secret = "geheim"
 	realDB := openTestDB(t)

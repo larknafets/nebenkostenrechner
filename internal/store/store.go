@@ -268,9 +268,9 @@ func ensurePeriodsNullablePriceColumns(db *sql.DB) error {
 	}
 	defer tx.Rollback()
 
-	// Aufräumen falls ein früherer Migrationsversuch mittendrin abgebrochen
-	// ist (Prozess gekillt zwischen CREATE und DROP) und periods_new noch
-	// von damals herumliegt - sonst würde das CREATE unten fehlschlagen.
+	// Clean up in case an earlier migration attempt aborted midway (process
+	// killed between CREATE and DROP) and periods_new is still lying
+	// around from back then - otherwise the CREATE below would fail.
 	if _, err := tx.ExecContext(ctx, `DROP TABLE IF EXISTS periods_new`); err != nil {
 		return fmt.Errorf("drop stale periods_new: %w", err)
 	}

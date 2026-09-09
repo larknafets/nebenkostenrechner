@@ -87,11 +87,10 @@ func TestWasser_KeinePersonen_FaelltAufHaelftigeVerteilungZurueck(t *testing.T) 
 	if err != nil {
 		t.Fatalf("calc.Wasser: %v", err)
 	}
-	// Issue #26: bei 0 Personen (leere Felder, Leerstand) darf der
-	// Warmwasseraufbereitung-Anteil nicht auf 0/0 fallen - das würde das
-	// komplette WW-Volumen (und dessen Kosten) stillschweigend aus beiden
-	// Abrechnungen verschwinden lassen. Fallback ist eine hälftige
-	// Verteilung statt NaN oder Kostenverlust.
+	// Issue #26: at 0 occupants (empty fields, vacancy) the hot water
+	// preparation share must not fall through to 0/0 - that would silently
+	// make the entire hot water volume (and its cost) vanish from both
+	// bills. The fallback is an even split instead of NaN or lost cost.
 	if got.WWAnteilW1 != 10 || got.WWAnteilW2 != 10 {
 		t.Errorf("bei 0 Personen sollte WWAnteil hälftig verteilt werden (10/10 von 20m³), got W1=%v W2=%v", got.WWAnteilW1, got.WWAnteilW2)
 	}

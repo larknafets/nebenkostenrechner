@@ -38,8 +38,9 @@ var (
 	fixkostenFormTemplate   = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_form.html"))
 	fixkostenDetailTemplate = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_detail.html"))
 
-	// widget-layout Templates (Issue #77 ff.) - eigene Shell statt "layout",
-	// teilen sich nur "styles" (layout.html) mit dem Rest der App.
+	// widget-layout templates (Issue #77 ff.) - own shell instead of
+	// "layout", only shares "styles" (layout.html) with the rest of the
+	// app.
 	widgetJahressummeTemplate     = template.Must(template.New("widget_layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/monatsverlauf.html", "templates/widget_layout.html", "templates/widget_jahressumme.html"))
 	widgetVerbrauchswerteTemplate = template.Must(template.New("widget_layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/monatsverlauf.html", "templates/widget_layout.html", "templates/widget_verbrauchswerte.html"))
 	widgetUebersichtTemplate      = template.Must(template.New("widget_layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/monatsverlauf.html", "templates/widget_layout.html", "templates/widget_uebersicht.html"))
@@ -53,11 +54,11 @@ type meterDisplay struct {
 	Unit  string
 }
 
-// kategorieIconPaths maps a Jahressummen-Karte Kategorie-Zeile's exact
-// Label to its MDI-Icon path data - shown before the value, colored via the
+// kategorieIconPaths maps a yearly-totals card category row's exact Label
+// to its MDI icon path data - shown before the value, colored via the
 // surrounding .v-<Farbe> span (fill:currentColor). Keyed by Label rather
-// than Farbe since 2 Labels share the "pv" Farbe (PV-Anteil/Einspeise-
-// vergütung) but want visually distinct icons.
+// than Farbe since 2 Labels share the "pv" Farbe (PV-Anteil/
+// Einspeisevergütung) but want visually distinct icons.
 var kategorieIconPaths = map[string]string{
 	"Fixkosten":          "M3,22L4.5,20.5L6,22L7.5,20.5L9,22L10.5,20.5L12,22L13.5,20.5L15,22L16.5,20.5L18,22L19.5,20.5L21,22V2L19.5,3.5L18,2L16.5,3.5L15,2L13.5,3.5L12,2L10.5,3.5L9,2L7.5,3.5L6,2L4.5,3.5L3,2M18,9H6V7H18M18,13H6V11H18M18,17H6V15H18V17Z",
 	"Strom":              "M11 15H6L13 1V9H18L11 23V15Z",
@@ -68,7 +69,7 @@ var kategorieIconPaths = map[string]string{
 	"Einspeisevergütung": "M11.39 5.45L9.61 4.55L10.87 2H19.34L20.61 4.55L18.83 5.44L18.11 4H12.11L11.39 5.45M21.73 8H17.2L16.41 5H13.81L13 8H8.5L7.21 10.55L9 11.44L9.73 10H20.5L21.21 11.45L23 10.56L21.73 8M20.88 22H18.81L18.57 21.1L15.11 15.9L11.64 21.1L11.41 22H9.34L12.23 11H14.3L13.94 12.35L15.11 14.1L16.27 12.35L15.92 11H18L20.88 22M14.5 15L13.61 13.65L12.43 18.13L14.5 15M17.79 18.12L16.61 13.64L15.71 15L17.79 18.12M9 16L5 12V15H1V17H5V20L9 16Z",
 }
 
-// kategorieIcon renders the given Kategorie-Zeile Label's MDI-Icon as
+// kategorieIcon renders the given category row Label's MDI icon as
 // inline SVG (fill:currentColor, so it takes on the surrounding
 // .v-<Farbe> span's text color) - empty for an unmapped Label.
 func kategorieIcon(label string) template.HTML {
@@ -89,21 +90,22 @@ var templateFuncs = template.FuncMap{
 	"deDatum":       formatDatumDE,
 	"deDatumZeit":   formatDatumZeitDE,
 	"kategorieIcon": kategorieIcon,
-	// orZero unwraps a Teilstand-fähiges *float64-Feld (Ticket #129) für
-	// die Anzeige - html/template dereferenziert einen nil-Pointer sonst
-	// mit einem harten Fehler statt einfach 0 zu zeigen.
+	// orZero unwraps a Teilstand-capable (partial-reading-capable)
+	// *float64 field (Ticket #129) for display - html/template would
+	// otherwise dereference a nil pointer with a hard error instead of
+	// just showing 0.
 	"orZero": store.OrZero,
-	// hasReading/hasPersonen (Ticket #131): ob der Wizard einen Meter-/
-	// Personen-Wert im vervollständigenden EditReadings/PreviousPersonen
-	// prefillen darf - "index" allein liefert für einen fehlenden Key
-	// stillschweigend den Zero-Value zurück, was "nicht erfasst" nicht von
-	// einer echten 0 unterscheiden könnte.
+	// hasReading/hasPersonen (Ticket #131): whether the wizard may
+	// prefill a meter/occupant value from the completing
+	// EditReadings/PreviousPersonen - "index" alone silently returns the
+	// zero value for a missing key, which couldn't distinguish "not
+	// recorded" from an actual 0.
 	"hasReading":  func(m map[string]float64, k string) bool { _, ok := m[k]; return ok },
 	"hasPersonen": func(m map[int64]int64, id int64) bool { _, ok := m[id]; return ok },
-	// logikOptions is a zero-arg func rather than a per-page data field - it's
-	// a fixed, package-global list (see fixkosten.go), so the geteilte
-	// "monatsverlauf-wohnung-body"-Partial (monatsverlauf.html) braucht dafür
-	// keinen eigenen Datentransport von jedem Aufrufer.
+	// logikOptions is a zero-arg func rather than a per-page data field -
+	// it's a fixed, package-global list (see fixkosten.go), so the
+	// shared "monatsverlauf-wohnung-body" partial (monatsverlauf.html)
+	// needs no own data transport from every caller.
 	"logikOptions": func() []logikOption { return logikOptions },
 }
 
@@ -132,18 +134,18 @@ func parseFormFloat(r *http.Request, name, fieldLabel, apartmentID string) (floa
 }
 
 // NewMux wires up the wizard and read routes. Every mutating or create-only
-// route is wrapped in a.RequireLogin (Ticket #112's Durchsetzungs-Matrix) -
-// harmless no-ops when secret == "" (no Login-Kennwort configured) - mit
-// bewussten Ausnahmen für Teilstände (Ticket #129/#130): GET /ablesungen/neu
-// und POST /ablesungen sind immer ungated, eine neue Ablesung anlegen ist
-// auch nicht eingeloggt möglich. GET /ablesungen/{id}/bearbeiten und
-// POST /ablesungen/{id} sind über requireLoginUnlessTeilstand nur dann
-// ungated, wenn die Ziel-Ablesung selbst noch ein Teilstand ist -
-// vervollständigen ohne Login, korrigieren einer bereits vollständigen
-// Ablesung bleibt gated. Löschen bleibt für jede Ablesung immer gated.
+// route is wrapped in a.RequireLogin (Ticket #112's enforcement matrix) -
+// harmless no-ops when secret == "" (no login password configured) - with
+// deliberate exceptions for Teilstände/partial readings (Ticket #129/#130):
+// GET /ablesungen/neu and POST /ablesungen are always ungated, creating a
+// new reading is possible without login too. GET /ablesungen/{id}/bearbeiten
+// and POST /ablesungen/{id} are only ungated via requireLoginUnlessTeilstand
+// when the target reading itself is still a Teilstand - completing it
+// without login, correcting an already-complete reading stays gated.
+// Deleting always stays gated for every reading.
 // Every route that touches the DB is wrapped in withDB (Ticket #119/#120),
 // which picks db or demoDB per request depending on whether the visitor
-// carries a Demo-Session-Cookie.
+// carries a demo session cookie.
 func NewMux(db, demoDB *sql.DB, version, buildDate string) *http.ServeMux {
 	a := newAuth(resolveLoginPassword(), demoDB)
 	mux := http.NewServeMux()
@@ -193,23 +195,24 @@ func handleIndex() http.HandlerFunc {
 	}
 }
 
-// wizardData is the Ablesung form's template data - shared by "erfassen"
-// (a fresh Ablesung, prefilled from the previous period as a convenience)
-// and "korrigieren" (Ticket #34: editing the latest Ablesung in place,
-// prefilled with its own current values). HasPrevious/PreviousReadings/
-// PreviousReadingDate/OutlierAvg always describe the genuine previous
-// period - the negative-Verbrauch/Ausreißer-Warnung baseline the new
-// values are checked against - never the Ablesung being edited itself.
+// wizardData is the reading form's template data - shared by "erfassen"
+// (recording, a fresh reading, prefilled from the previous period as a
+// convenience) and "korrigieren" (correcting, Ticket #34: editing the
+// latest reading in place, prefilled with its own current values).
+// HasPrevious/PreviousReadings/PreviousReadingDate/OutlierAvg always
+// describe the genuine previous period - the negative-consumption/
+// outlier-warning baseline the new values are checked against - never
+// the reading being edited itself.
 type wizardData struct {
 	navData
 	Aktuell     string
 	FormAction  string
 	IsEdit      bool
 	ReadingDate string
-	// Monat is the Abrechnungsmonat field's value ("YYYY-MM", <input
-	// type="month">'s format), separate from ReadingDate - vorbelegt aus
-	// dem Ablesedatum in create mode, aus der Ablesung's eigenem Wert in
-	// edit mode (Issue #86).
+	// Monat is the billing month (Abrechnungsmonat) field's value
+	// ("YYYY-MM", <input type="month">'s format), separate from
+	// ReadingDate - prefilled from the reading date in create mode, from
+	// the reading's own value in edit mode (Issue #86).
 	Monat               string
 	Apartments          []store.Apartment
 	HasPrevious         bool
@@ -219,26 +222,27 @@ type wizardData struct {
 	OutlierAvg          map[string]float64
 
 	// EditReadings prefills the meter inputs' value= in edit mode with the
-	// Ablesung's own current Zählerstände - distinct from PreviousReadings
-	// above, which stays the actual previous period for the warning
-	// comparison.
+	// reading's own current meter readings (Zählerstände) - distinct from
+	// PreviousReadings above, which stays the actual previous period for
+	// the warning comparison.
 	EditReadings map[string]float64
 
-	// Prefill for the "Preise & Personen" step (Ticket #28): the previous
-	// period's values in create mode, or (Ticket #34) the Ablesung's own
-	// current values in edit mode - either way just an editable starting
-	// value, not a data-prev warning target like the meter readings above.
+	// Prefill for the "Preise & Personen" (prices & occupants) step
+	// (Ticket #28): the previous period's values in create mode, or
+	// (Ticket #34) the reading's own current values in edit mode -
+	// either way just an editable starting value, not a data-prev
+	// warning target like the meter readings above.
 	PreviousStrompreis        float64
 	PreviousFrischwasserPreis float64
 	PreviousAbwasserPreis     float64
 	PreviousEinspeisungPreis  float64
 	PreviousPersonen          map[int64]int64
-	// PreviousXErfasst (Ticket #131): ob der jeweilige Preis in einem
-	// vervollständigten Teilstand überhaupt schon gesetzt war - Previous*
-	// oben ist immer ein reiner float64 (store.OrZero-koalesziert), der
-	// "fehlt" und "0" nicht mehr unterscheiden kann; der Wizard braucht
-	// diese Unterscheidung aber fürs value=-Prefill (leer statt "0") und
-	// die Live-Fortschrittsanzeige.
+	// PreviousXErfasst (Ticket #131): whether the respective price was
+	// even already set in a completed Teilstand (partial reading) -
+	// Previous* above is always a plain float64 (store.OrZero-coalesced),
+	// which can no longer distinguish "missing" from "0"; the wizard
+	// needs that distinction for the value= prefill (empty instead of
+	// "0") and the live progress indicator.
 	PreviousStrompreisErfasst        bool
 	PreviousFrischwasserPreisErfasst bool
 	PreviousAbwasserPreisErfasst     bool
@@ -249,18 +253,19 @@ type wizardData struct {
 	// this can't just be left empty.
 	PreviousHeizungGewichtung float64
 
-	// NoPeriods gates the CSV-Import button (Ticket #54) - only offered as
-	// a bootstrap path into a genuinely empty database, never set in edit
-	// mode (handleEditWizardForm leaves it at its zero value, false).
+	// NoPeriods gates the CSV import button (Ticket #54) - only offered
+	// as a bootstrap path into a genuinely empty database, never set in
+	// edit mode (handleEditWizardForm leaves it at its zero value,
+	// false).
 	NoPeriods bool
 }
 
 // openTeilstandID returns the id of the chronologically newest period, if
-// it's a Teilstand - 0/false if there's no period yet or the newest one is
-// already complete. Only the newest period may ever be incomplete (Ticket
-// #129), so this is the one check that decides whether anlegen einer
-// weiteren neuen Ablesung blockiert werden muss, statt eine zweite offene
-// Ablesung zuzulassen.
+// it's a Teilstand (partial reading) - 0/false if there's no period yet
+// or the newest one is already complete. Only the newest period may ever
+// be incomplete (Ticket #129), so this is the one check that decides
+// whether creating another new reading must be blocked, instead of
+// allowing a second open reading.
 func openTeilstandID(db *sql.DB) (id int64, ok bool, err error) {
 	latest, err := store.GetLatestPeriod(db)
 	if err != nil {
@@ -276,9 +281,9 @@ func openTeilstandID(db *sql.DB) (id int64, ok bool, err error) {
 	return latest.ID, !complete, nil
 }
 
-// redirectIfOpenTeilstand redirects to the open Teilstand's
-// Vervollständigung and reports whether it did - the shared "block a
-// second open Ablesung" check for both handleWizardForm (GET) and
+// redirectIfOpenTeilstand redirects to the open Teilstand's completion
+// (Vervollständigung) and reports whether it did - the shared "block a
+// second open reading" check for both handleWizardForm (GET) and
 // handleCreateAblesung (POST). Callers must return immediately when this
 // reports true (or a non-nil err, which it has already turned into a 500).
 func redirectIfOpenTeilstand(w http.ResponseWriter, r *http.Request, db *sql.DB) (redirected bool) {
@@ -298,9 +303,9 @@ func handleWizardForm(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 
-		// Teilstand (Ticket #129): solange die neueste Ablesung noch offen
-		// ist, führt "Neue Ablesung" stattdessen zu deren Vervollständigung
-		// - keine zweite offene Ablesung parallel.
+		// Teilstand/partial reading (Ticket #129): as long as the newest
+		// reading is still open, "New reading" leads to completing it
+		// instead - no second open reading in parallel.
 		if redirectIfOpenTeilstand(w, r, db) {
 			return
 		}
@@ -311,9 +316,9 @@ func handleWizardForm(a auth) http.HandlerFunc {
 			return
 		}
 
-		// 4 periods give the 3 consumption diffs the Ausreißer-Warnung
+		// 4 periods give the 3 consumption diffs the outlier-warning
 		// baseline averages over (Ticket #13); the newest of them also
-		// doubles as "previous" for the negative-Verbrauch/gap checks
+		// doubles as "previous" for the negative-consumption/gap checks
 		// (Ticket #12).
 		recent, err := store.RecentPeriodReadings(db, 4)
 		if err != nil {
@@ -343,14 +348,15 @@ func handleWizardForm(a auth) http.HandlerFunc {
 			data.PreviousReadingDate = recent[0].ReadingDate
 		}
 		if previousPeriod != nil {
-			// store.OrZero: previousPeriod ist Teilstand-fähig (Ticket
-			// #128) - hier aber immer vollständig, da eine neue Ablesung
-			// nicht angelegt werden kann, während die vorherige noch ein
-			// Teilstand ist (openTeilstandID/redirectIfOpenTeilstand,
-			// Ticket #129). Die Erfasst-Flags unten sind entsprechend immer
-			// true, direkt aus derselben Quelle berechnet statt hart auf
-			// true gesetzt, damit sie korrekt bleiben, falls sich diese
-			// Invariante je ändert.
+			// store.OrZero: previousPeriod is Teilstand-capable (partial-
+			// reading-capable, Ticket #128) - but always complete here,
+			// since a new reading can't be created while the previous
+			// one is still a Teilstand (openTeilstandID/
+			// redirectIfOpenTeilstand, Ticket #129). The Erfasst
+			// (recorded) flags below are therefore always true,
+			// computed directly from the same source instead of
+			// hardcoded to true, so they stay correct if this invariant
+			// ever changes.
 			data.PreviousStrompreis = store.OrZero(previousPeriod.Strompreis)
 			data.PreviousFrischwasserPreis = store.OrZero(previousPeriod.FrischwasserPreis)
 			data.PreviousAbwasserPreis = store.OrZero(previousPeriod.AbwasserPreis)
@@ -371,14 +377,14 @@ func handleWizardForm(a auth) http.HandlerFunc {
 }
 
 // requireLoginUnlessTeilstand wraps next with a's login gate, except when
-// the request's {id} path value names a Teilstand (Ticket #130) -
-// vervollständigen einer offenen Ablesung braucht kein Login, genauso
-// wenig wie deren erstmaliges Anlegen (Ticket #129). Eine bereits
-// vollständige Ablesung bleibt gated wie bisher. Eine nicht (mehr)
-// existierende id liefert direkt 404 statt eines Login-Redirects - ihre
-// Existenz ist hier keine schützenswerte Information. Nur für Routen mit
-// einem numerischen {id} Pfad-Parameter gedacht, die zusätzlich schon
-// hinter withDB liegen (dbFromContext braucht dessen DB im Context).
+// the request's {id} path value names a Teilstand (partial reading,
+// Ticket #130) - completing an open reading needs no login, just as
+// little as creating it in the first place (Ticket #129). An already
+// complete reading stays gated as before. An id that doesn't (or no
+// longer) exist returns 404 directly instead of a login redirect - its
+// existence isn't information worth protecting here. Only intended for
+// routes with a numeric {id} path parameter that are also already behind
+// withDB (dbFromContext needs its DB in the context).
 func requireLoginUnlessTeilstand(a auth, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
@@ -404,12 +410,13 @@ func requireLoginUnlessTeilstand(a auth, next http.HandlerFunc) http.HandlerFunc
 	}
 }
 
-// handleEditWizardForm serves the "korrigieren" form for an arbitrary
-// Ablesung (Ticket #44 - generalized from Ticket #34's latest-only version),
-// prefilled with its own current values. The negative-Verbrauch/
-// Ausreißer-Warnung baseline always compares against the genuine previous
-// period - the one chronologically before the Ablesung being edited,
-// regardless of whether newer Ablesungen exist after it.
+// handleEditWizardForm serves the "korrigieren" (correcting) form for an
+// arbitrary reading (Ticket #44 - generalized from Ticket #34's
+// latest-only version), prefilled with its own current values. The
+// negative-consumption/outlier-warning baseline always compares against
+// the genuine previous period - the one chronologically before the
+// reading being edited, regardless of whether newer readings exist after
+// it.
 func handleEditWizardForm(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
@@ -456,8 +463,8 @@ func handleEditWizardForm(a auth) http.HandlerFunc {
 			PreviousEinspeisungPreis:  store.OrZero(target.EinspeisungPreis),
 			PreviousPersonen:          target.PersonenByApartment,
 			PreviousHeizungGewichtung: target.HeizungWaermeGewichtung,
-			// Ticket #131: target kann ein Teilstand sein - diese Flags
-			// lassen den Wizard "fehlt" von "0" unterscheiden.
+			// Ticket #131: target can be a Teilstand (partial reading) -
+			// these flags let the wizard distinguish "missing" from "0".
 			PreviousStrompreisErfasst:        target.Strompreis != nil,
 			PreviousFrischwasserPreisErfasst: target.FrischwasserPreis != nil,
 			PreviousAbwasserPreisErfasst:     target.AbwasserPreis != nil,
@@ -476,16 +483,17 @@ func handleEditWizardForm(a auth) http.HandlerFunc {
 	}
 }
 
-// heizungGewichtungOptions are the only allowed Heizungs-Split-Gewichtungen
+// heizungGewichtungOptions are the only allowed heating-split weightings
 // (Ticket #27) - a fixed choice, not a free-text field, so an invalid or
-// out-of-range value can't silently skew every apartment's Heizungskosten.
-// parsePeriodInput parses an Ablesung form (shared by handleCreateAblesung
+// out-of-range value can't silently skew every apartment's heating costs.
+// parsePeriodInput parses a reading form (shared by handleCreateAblesung
 // and handleUpdateAblesung - Ticket #34, same fields either way, only what
 // happens with the result differs).
 // monatInput is an <input type="month">'s value ("YYYY-MM") - the wizard-
-// facing Abrechnungsmonat format, distinct from periods.monat's persisted
-// "YYYY-MM-01" (Issue #86 code review: this was scattered as ad-hoc string
-// slicing/concatenation across parsePeriodInput and the edit form).
+// facing billing-month (Abrechnungsmonat) format, distinct from
+// periods.monat's persisted "YYYY-MM-01" (Issue #86 code review: this was
+// scattered as ad-hoc string slicing/concatenation across parsePeriodInput
+// and the edit form).
 type monatInput string
 
 // monatInputFromStored converts periods.monat ("YYYY-MM-01") to its
@@ -511,10 +519,10 @@ func (m monatInput) toStored() string {
 	return string(m)
 }
 
-// parseOptionalFloat parses a Teilstand-fähiges Formularfeld (Ticket #129):
-// bewusst leer gelassen (raw == "") ist kein Fehler, nur nil - ein
-// tatsächlich eingetippter, aber ungültiger Wert (z.B. Text statt Zahl)
-// bleibt ein Fehler.
+// parseOptionalFloat parses a Teilstand-capable (partial-reading-capable)
+// form field (Ticket #129): deliberately left blank (raw == "") is not an
+// error, just nil - a value actually typed in but invalid (e.g. text
+// instead of a number) stays an error.
 func parseOptionalFloat(raw string) (*float64, error) {
 	if raw == "" {
 		return nil, nil
@@ -531,7 +539,7 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 	for _, key := range store.MeterKeys {
 		raw := r.FormValue(key)
 		if raw == "" {
-			continue // Teilstand (Ticket #129): bewusst leer gelassen
+			continue // Teilstand (Ticket #129): deliberately left blank
 		}
 		v, err := strconv.ParseFloat(raw, 64)
 		if err != nil {
@@ -558,7 +566,7 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 		idStr := strconv.FormatInt(a.ID, 10)
 		raw := r.FormValue("personen_" + idStr)
 		if raw == "" {
-			continue // Teilstand (Ticket #129): bewusst leer gelassen
+			continue // Teilstand (Ticket #129): deliberately left blank
 		}
 		p, err := strconv.ParseInt(raw, 10, 64)
 		if err != nil {
@@ -588,9 +596,9 @@ func handleCreateAblesung() http.HandlerFunc {
 			return
 		}
 
-		// Teilstand (Ticket #129): siehe redirectIfOpenTeilstand - eine
-		// zweite offene Ablesung darf nicht entstehen, auch nicht über
-		// einen direkten POST (z.B. veraltetes Formular).
+		// Teilstand/partial reading (Ticket #129): see
+		// redirectIfOpenTeilstand - a second open reading must not be
+		// created, not even via a direct POST (e.g. a stale form).
 		if redirectIfOpenTeilstand(w, r, db) {
 			return
 		}
@@ -617,7 +625,7 @@ func handleCreateAblesung() http.HandlerFunc {
 	}
 }
 
-// handleUpdateAblesung corrects an existing Ablesung in place (Ticket #34,
+// handleUpdateAblesung corrects an existing reading in place (Ticket #34,
 // generalized to any period by Ticket #44 - no restriction to the latest
 // one anymore, see store.UpdatePeriod). The neighbor-date reorder guard
 // lives in store.UpdatePeriod itself; this handler only translates its
@@ -683,8 +691,8 @@ func handleUpdateAblesung() http.HandlerFunc {
 }
 
 // handleDeleteAblesung deletes a period (Ticket #45). Any period is
-// deletable, including the last remaining one - no "abgeschlossen" status
-// exists in this app; the client-side confirm() dialog is the only
+// deletable, including the last remaining one - no "closed" (abgeschlossen)
+// status exists in this app; the client-side confirm() dialog is the only
 // safety net (see ablesung.html).
 func handleDeleteAblesung() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -709,13 +717,14 @@ func handleDeleteAblesung() http.HandlerFunc {
 }
 
 // kosten bundles the 3 cost calculations for one period, together with a
-// user-facing note for the "no previous period yet" case both the "letzte
-// Ablesung" and Dashboard views need to show identically.
-// periodListItem is one period's Ablesedatum together with its Zeitraum,
-// combined into a single label (the gap to the chronologically previous
-// period, "keine Vorperiode" for the oldest) - the Ablesung-Detail "andere
-// Ablesung anzeigen" dropdown, where a single-line option leaves no room
-// for 2 columns.
+// user-facing note for the "no previous period yet" case both the
+// "letzte Ablesung" (latest reading) and Dashboard views need to show
+// identically.
+// periodListItem is one period's reading date (Ablesedatum) together
+// with its period (Zeitraum), combined into a single label (the gap to
+// the chronologically previous period, "keine Vorperiode" for the
+// oldest) - the reading detail's "show other reading" dropdown, where a
+// single-line option leaves no room for 2 columns.
 type periodListItem struct {
 	ID    int64
 	Label string
@@ -738,9 +747,10 @@ func periodListItems(periods []store.PeriodSummary) []periodListItem {
 	return out
 }
 
-// periodOverviewRow is one period's Ablesedatum and Zeitraum as 2 separate
-// values - the Ablesungen-Übersicht's table, which has room for its own
-// column per field (unlike the dropdown's single-line option).
+// periodOverviewRow is one period's reading date and period (Ablesedatum/
+// Zeitraum) as 2 separate values - the readings overview's table, which
+// has room for its own column per field (unlike the dropdown's single-
+// line option).
 type periodOverviewRow struct {
 	ID           int64
 	ReadingDate  string
@@ -748,22 +758,24 @@ type periodOverviewRow struct {
 	IstTeilstand bool
 }
 
-// periodMonatGroup is every Ablesung of one Abrechnungsmonat (Issue #86),
-// newest first - the Ablesungen-Übersicht's rowspan-Spalte (Ticket #83
-// Variante B): a Monat with 1 Ablesung renders a single row, a Monat with
-// several (untermonatige Ablesungen) spans the group under one Monat-cell.
+// periodMonatGroup is every reading of one billing month (Monat, Issue
+// #86), newest first - the readings overview's rowspan column (Ticket
+// #83 variant B): a month with 1 reading renders a single row, a month
+// with several (sub-monthly readings) spans the group under one month
+// cell.
 type periodMonatGroup struct {
 	MonatLabel string
 	Rows       []periodOverviewRow
 }
 
-// periodOverviewGroups builds one periodMonatGroup per distinct Monat,
+// periodOverviewGroups builds one periodMonatGroup per distinct month,
 // newest first, same order/predecessor rule as periodListItems for each
 // row's Zeitraum. periods must already be newest-first (store.AllPeriods'
 // own order). teilstandID marks that one row IstTeilstand (Ticket #131,
-// pass 0 when there's no open Teilstand) - only the newest period can ever
-// be one (enforced at creation, Ticket #129), so the caller only needs to
-// know that single id rather than checking every row's completeness.
+// pass 0 when there's no open Teilstand) - only the newest period can
+// ever be one (enforced at creation, Ticket #129), so the caller only
+// needs to know that single id rather than checking every row's
+// completeness.
 func periodOverviewGroups(periods []store.PeriodSummary, teilstandID int64) []periodMonatGroup {
 	var out []periodMonatGroup
 	var currentMonat string
@@ -829,11 +841,12 @@ func handleAblesungenListe(a auth) http.HandlerFunc {
 	}
 }
 
-// formatMeterDiff renders one Zähler's absolute change since the previous
-// Ablesung (Ticket #73), "+"-prefixed when it rose (the normal case - a
-// Zählerstand only falls after a meter swap/correction, where the bare
+// formatMeterDiff renders one meter's absolute change since the previous
+// reading (Ticket #73), "+"-prefixed when it rose (the normal case - a
+// meter reading only falls after a meter swap/correction, where the bare
 // minus sign from formatDecimalDE2 already reads correctly), padded to 2
-// Nachkommastellen (Ticket #76) like every other displayed Verbrauchswert.
+// decimal places (Ticket #76) like every other displayed consumption
+// value.
 func formatMeterDiff(current, previous float64) string {
 	diff := current - previous
 	sign := ""
@@ -843,9 +856,10 @@ func formatMeterDiff(current, previous float64) string {
 	return sign + formatDecimalDE2(diff)
 }
 
-// handleAblesungDetail shows one period's Zählerstände and full
-// Kostenaufstellung (Ticket #43, generalized from the old "letzte Ablesung"
-// view to any period by id), with a dropdown to jump to any other period.
+// handleAblesungDetail shows one period's meter readings and full cost
+// breakdown (Kostenaufstellung, Ticket #43, generalized from the old
+// "letzte Ablesung" view to any period by id), with a dropdown to jump to
+// any other period.
 func handleAblesungDetail(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
@@ -891,12 +905,12 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			zeitraumStart = vorperiode[0].ReadingDate
 		}
 
-		// Diff is each Zähler's absolute change since the previous Ablesung
+		// Diff is each meter's absolute change since the previous reading
 		// ("+23,00" / "-5,00"), formatted ready-to-print - empty for the
-		// oldest period (no Vorperiode to diff against). Erfasst (Ticket
-		// #131) is whether this Meter überhaupt eine Row hat - anders als
-		// Value (immer 0 für einen fehlenden Zählerstand, da Go's Map-
-		// Zugriff keine "fehlt"-Unterscheidung kennt).
+		// oldest period (no previous period to diff against). Erfasst
+		// (recorded, Ticket #131) is whether this meter has a row at all
+		// - unlike Value (always 0 for a missing meter reading, since
+		// Go's map access has no "missing" distinction).
 		var meters []struct {
 			Label   string
 			Value   float64
@@ -919,9 +933,10 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			meters = append(meters, entry)
 		}
 
-		// PersonenErfasst (Ticket #131): welche Wohnungen für diese Periode
-		// eine Personenzahl haben - period.PersonenByApartment selbst
-		// unterscheidet eine fehlende Wohnung nicht von "0 Personen".
+		// PersonenErfasst (occupants recorded, Ticket #131): which
+		// apartments have an occupant count for this period -
+		// period.PersonenByApartment itself doesn't distinguish a
+		// missing apartment from "0 occupants".
 		personenErfasst := make(map[int64]bool, len(apartments))
 		for _, ap := range apartments {
 			_, ok := period.PersonenByApartment[ap.ID]

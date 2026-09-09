@@ -18,10 +18,10 @@ type kosten struct {
 }
 
 func berechneKosten(db *sql.DB, periodID int64) (kosten, error) {
-	// Teilstand (Ticket #129): eine unvollständige Ablesung fließt nicht in
-	// die Berechnung ein - sonst würden fehlende Zählerstände/Preise
-	// stillschweigend als 0 gerechnet und einen falschen Kostenbetrag
-	// zeigen, statt "noch nicht berechenbar".
+	// Teilstand/partial reading (Ticket #129): an incomplete reading does
+	// not flow into the calculation - otherwise missing meter readings/
+	// prices would silently be treated as 0 and show a wrong cost amount
+	// instead of "not yet calculable".
 	complete, err := store.PeriodComplete(db, periodID)
 	if err != nil {
 		return kosten{}, fmt.Errorf("period complete: %w", err)
@@ -85,21 +85,22 @@ type kategorie struct {
 
 	ProzentGesamt float64
 
-	// Verbrauch2/Einheit2 is a second, optional Mengenangabe shown behind
-	// Verbrauch/Einheit in der Verbrauchswerte-Ansicht - nur für Heizung/
-	// Warmwasser gesetzt: Verbrauch ist dort der tatsächliche (rohe, ohne
-	// PV-Abzug) WP-Strom in kWh, Verbrauch2 der rohe Wärmemengenzähler-
-	// Verbrauch (MWh, reine Raumheizung) zum Vergleich. Einheit2 == "" heißt:
-	// kein zweiter Wert.
+	// Verbrauch2/Einheit2 is a second, optional quantity shown behind
+	// Verbrauch/Einheit in the consumption values view - only set for
+	// Heizung/Warmwasser (heating/hot water): Verbrauch there is the
+	// actual (raw, without PV deduction) heat pump electricity in kWh,
+	// Verbrauch2 the raw heat meter consumption (MWh, pure space heating)
+	// for comparison. Einheit2 == "" means: no second value.
 	Verbrauch2 float64
 	Einheit2   string
 }
 
 // kategorien builds the given apartment's cost breakdown for the period.
-// Wohnung 1's Strom has no own cost position - its Netzbezug stays implicit
-// (see calc.Strom) - so only Wohnung 2 gets a Strom-Kategorie. Frischwasser
-// and Abwasser are combined into a single Wasser-Kategorie since they share
-// one raw m³ consumption (no separate Abwasserzähler, see calc.Wasser).
+// Apartment 1's Strom (electricity) has no own cost position - its grid
+// draw stays implicit (see calc.Strom) - so only apartment 2 gets a Strom
+// category. Frischwasser (fresh water) and Abwasser (wastewater) are
+// combined into a single Wasser category since they share one raw m³
+// consumption (no separate wastewater meter, see calc.Wasser).
 func kategorien(apartmentID int64, k kosten) []kategorie {
 	var list []kategorie
 	if apartmentID == 2 {
@@ -129,17 +130,17 @@ func kategorien(apartmentID int64, k kosten) []kategorie {
 	return list
 }
 
-// periodKosten is one period's already-computed kosten, for the
-// Jahressummen-Karten and Monatsverlauf. ReadingDate stays in its raw
-// "YYYY-MM-DD" form (not pre-formatted) since downstream needs it for both
-// the month label and calendar-year grouping. Personen is this period's
-// Ablesung-Personenzahl je Wohnung (Ticket #75's Personen-Schnitt averages
-// this across a Jahr's Perioden).
+// periodKosten is one period's already-computed kosten, for the yearly-
+// totals cards and Monatsverlauf (monthly history). ReadingDate stays in
+// its raw "YYYY-MM-DD" form (not pre-formatted) since downstream needs it
+// for both the month label and calendar-year grouping. Personen is this
+// period's occupant count per apartment (Ticket #75's average occupant
+// count averages this across a year's periods).
 type periodKosten struct {
 	ReadingDate string
-	// Monat is this period's Abrechnungsmonat (Issue #86, "YYYY-MM-01") -
-	// the key groupKostenByMonat and the Jahreskarten group/filter by,
-	// distinct from ReadingDate which stays the exact Ablesedatum.
+	// Monat is this period's billing month (Issue #86, "YYYY-MM-01") -
+	// the key groupKostenByMonat and the yearly cards group/filter by,
+	// distinct from ReadingDate which stays the exact reading date.
 	Monat    string
 	K        kosten
 	Personen map[int64]int64

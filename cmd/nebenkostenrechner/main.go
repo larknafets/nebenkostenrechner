@@ -68,10 +68,9 @@ var (
 	buildDate = ""
 )
 
-// demoDBPath derives the Demo-Modus's eigene DB-Datei (Issue #120) - liegt
-// im selben Verzeichnis wie die echte DB, damit sie über Neustarts hinweg
-// auf demselben persistenten Volume (z. B. /data, HA-Addon addon_configs)
-// erhalten bleibt.
+// demoDBPath derives demo mode's own DB file (Issue #120) - lives in the
+// same directory as the real DB, so it survives restarts on the same
+// persistent volume (e.g. /data, HA add-on addon_configs).
 func demoDBPath(dbPath string) string {
 	return filepath.Join(filepath.Dir(dbPath), "demo.db")
 }
@@ -92,14 +91,14 @@ func main() {
 	}
 	defer db.Close()
 
-	// demoDB ist eine komplett separate Datenbank für den Demo-Modus (Issue
-	// #120) - entsteht beim allerersten Start automatisch (store.Open legt
-	// Schema+Seed an wie bei db) und wird, falls noch leer, sofort mit dem
-	// 39-Monats-Testdatensatz befüllt. Deckt nur den allerersten Start ab,
-	// bevor sich je jemand als "demo" angemeldet hat - jeder Demo-Login
-	// selbst setzt die Demo-DB ohnehin unconditionally zurück (Issue #121,
-	// store.ResetDemoData in handleLogin), diese Startup-Befüllung ist also
-	// nur der Fallback für den Zeitraum davor.
+	// demoDB is a completely separate database for demo mode (Issue #120) -
+	// created automatically on the very first start (store.Open sets up
+	// schema+seed just like for db) and, if still empty, immediately filled
+	// with the 39-month test dataset. This only covers the very first start,
+	// before anyone has ever logged in as "demo" - every demo login itself
+	// unconditionally resets the demo DB anyway (Issue #121,
+	// store.ResetDemoData in handleLogin), so this startup fill-in is just
+	// the fallback for the period before that.
 	demoDB, err := store.Open(demoDBPath(dbPath))
 	if err != nil {
 		log.Fatalf("open demo store: %v", err)
@@ -130,11 +129,11 @@ func main() {
 		addr = ":8080"
 	}
 
-	// widgetAddr serves NewWidgetMux's 2 read-only HA-Widget-Routen
-	// (Issue #77 ff.) on a 2nd, Ingress-freies Port - gedacht für ein
-	// Lovelace "Webpage card" Iframe, das HA-Ingress-Sessions nicht
-	// zuverlässig einbetten kann. Läuft immer mit (wie der Haupt-Server),
-	// eigener Default-Port analog zu LISTEN_ADDR.
+	// widgetAddr serves NewWidgetMux's 2 read-only HA widget routes
+	// (Issue #77 ff.) on a 2nd, ingress-free port - meant for a Lovelace
+	// "Webpage card" iframe, which can't reliably embed HA ingress sessions.
+	// Always runs alongside the main server, own default port analogous to
+	// LISTEN_ADDR.
 	widgetAddr := os.Getenv("WIDGET_LISTEN_ADDR")
 	if widgetAddr == "" {
 		widgetAddr = ":8081"
