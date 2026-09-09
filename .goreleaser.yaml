@@ -32,7 +32,9 @@ checksum:
 
 changelog:
   sort: desc
-  format: "{{ .Message }}"
+  abbrev: 7
+  format: >-
+    {{ .SHA }} {{ trimprefix (trimprefix (trimprefix (trimprefix (trimprefix .Message "feat: ") "fix: ") "refactor: ") "docs: ") "style: " }}
   groups:
     - title: "Features"
       regexp: '^feat(\(.+\))?:'
@@ -59,8 +61,6 @@ changelog:
 release:
   header: |
     # Changelog
-
-    Full release details: https://github.com/larknafets/nebenkostenrechner/releases
 
     ## {{ .Tag }} - {{ .Now.Format "2006-01-02" }}
   github:
