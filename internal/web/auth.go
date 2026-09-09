@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -49,18 +50,22 @@ const (
 // Empty means the login system stays disabled - everything visible.
 func resolveLoginPassword() string {
 	if pw := os.Getenv("LOGIN_PASSWORD"); pw != "" {
+		log.Printf("login: LOGIN_PASSWORD env gesetzt (Länge %d)", len(pw))
 		return pw
 	}
 	data, err := os.ReadFile("/data/options.json")
 	if err != nil {
+		log.Printf("login: /data/options.json nicht lesbar (%v) - Login-Kennwort bleibt leer", err)
 		return ""
 	}
 	var options struct {
 		LoginPassword string `json:"login_password"`
 	}
 	if err := json.Unmarshal(data, &options); err != nil {
+		log.Printf("login: /data/options.json nicht als JSON parsbar (%v) - Login-Kennwort bleibt leer", err)
 		return ""
 	}
+	log.Printf("login: /data/options.json gelesen, login_password-Feld Länge %d", len(options.LoginPassword))
 	return options.LoginPassword
 }
 
