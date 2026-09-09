@@ -39,6 +39,33 @@ func findApartment(apartments []store.Apartment, id int64) store.Apartment {
 	return store.Apartment{}
 }
 
+// widgetView bundles what any widget route might show for one entity -
+// always both Card/Verlauf (or SimpleCard/SimpleVerlauf), mirroring
+// buildEntityView's own "no card-only mode, avoiding speculative
+// generality" convention (Ticket #101) rather than a per-handler subset.
+// Exactly one of the Simple*/non-Simple pairs is set, matching whichever
+// widgetEntity matched.
+type widgetView struct {
+	Card          *dashboardJahresCard
+	SimpleCard    *dashboardSimpleCard
+	Verlauf       *dashboardVerlaufSpalte
+	SimpleVerlauf *dashboardSimpleSpalte
+}
+
+// resolveWidgetView builds both the yearly-totals card and the Verlauf for
+// whichever entity matched (apartmentID xor simple) - shared by all 3
+// widget handlers instead of each hand-writing the same simple/apartment
+// branch.
+func resolveWidgetView(dd dashboardData, apartmentID int64, simple *simpleSeries) widgetView {
+	if simple != nil {
+		c := buildSimpleJahresCard(*simple, dd.Jahr, dd.PeriodenKosten)
+		v := buildSimpleVerlauf(*simple, dd.PeriodenKosten)
+		return widgetView{SimpleCard: &c, SimpleVerlauf: &v}
+	}
+	c, v := buildEntityView(dd, apartmentID)
+	return widgetView{Card: &c, Verlauf: &v}
+}
+
 // handleWidgetJahressumme serves the ingress-free HA widget route (Issue
 // #77 ff.): exactly one entity's yearly-totals card, without nav/footer/
 // theme toggle - intended for a Lovelace "Webpage card" iframe. {entity}
@@ -66,13 +93,8 @@ func handleWidgetJahressumme(db *sql.DB) http.HandlerFunc {
 		}{HasAnyData: dd.HasAnyData, AnzeigeJahr: dd.Jahr, AnzeigeJahrLaufend: dd.Jahr == time.Now().Year()}
 
 		if dd.HasAnyData {
-			if simple != nil {
-				c := buildSimpleJahresCard(*simple, dd.Jahr, dd.PeriodenKosten)
-				data.SimpleCard = &c
-			} else {
-				c, _ := buildEntityView(dd, apartmentID)
-				data.Card = &c
-			}
+			view := resolveWidgetView(dd, apartmentID, simple)
+			data.Card, data.SimpleCard = view.Card, view.SimpleCard
 		}
 
 		if err := widgetJahressummeTemplate.ExecuteTemplate(w, "widget-layout", data); err != nil {
@@ -106,14 +128,8 @@ func handleWidgetVerbrauchswerte(db *sql.DB) http.HandlerFunc {
 		}{HasAnyData: dd.HasAnyData}
 
 		if dd.HasAnyData {
-			if simple != nil {
-				v := buildSimpleVerlauf(*simple, dd.PeriodenKosten)
-				data.SimpleVerlauf = &v
-			} else {
-				a := findApartment(dd.Apartments, apartmentID)
-				v := buildDashboardVerlauf(a.ID, a.Name, dd.PeriodenKosten, dd.FixkostenListe)
-				data.Verlauf = &v
-			}
+			view := resolveWidgetView(dd, apartmentID, simple)
+			data.Verlauf, data.SimpleVerlauf = view.Verlauf, view.SimpleVerlauf
 		}
 
 		if err := widgetVerbrauchswerteTemplate.ExecuteTemplate(w, "widget-layout", data); err != nil {
@@ -153,16 +169,9 @@ func handleWidgetUebersicht(db *sql.DB) http.HandlerFunc {
 		}{HasAnyData: dd.HasAnyData, AnzeigeJahr: dd.Jahr, AnzeigeJahrLaufend: dd.Jahr == time.Now().Year()}
 
 		if dd.HasAnyData {
-			if simple != nil {
-				c := buildSimpleJahresCard(*simple, dd.Jahr, dd.PeriodenKosten)
-				data.SimpleCard = &c
-				v := buildSimpleVerlauf(*simple, dd.PeriodenKosten)
-				data.SimpleVerlauf = &v
-			} else {
-				c, v := buildEntityView(dd, apartmentID)
-				data.Card = &c
-				data.Verlauf = &v
-			}
+			view := resolveWidgetView(dd, apartmentID, simple)
+			data.Card, data.SimpleCard = view.Card, view.SimpleCard
+			data.Verlauf, data.SimpleVerlauf = view.Verlauf, view.SimpleVerlauf
 		}
 
 		if err := widgetUebersichtTemplate.ExecuteTemplate(w, "widget-layout", data); err != nil {
