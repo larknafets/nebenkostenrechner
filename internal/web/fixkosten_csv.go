@@ -1,12 +1,9 @@
 package web
 
 import (
-	"bufio"
-	"encoding/csv"
+	"database/sql"
 	"fmt"
-	"io"
 	"net/http"
-	"sort"
 	"strings"
 	"time"
 
@@ -29,10 +26,7 @@ func buildFixkostenCsvHeader() []string {
 	return append(header, "personen_1", "personen_2", "abschlag_1", "abschlag_2")
 }
 
-// handleExportFixkostenCSV streams every Fixkosten-Eingabe as CSV (Issue
-// #132) - same Excel-DE dialect (semicolon-separated, comma-decimal, UTF-8
-// with BOM) as the Ablesungen export, same fixkostenCsvHeader the import
-// (Issue #133) reads back.
+// handleExportFixkostenCSV streams every Fixkosten-Eingabe as CSV (Issue #132).
 func handleExportFixkostenCSV() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		details, err := store.AllFixkostenEingabenDetails(dbFromContext(r.Context()))
@@ -40,40 +34,25 @@ func handleExportFixkostenCSV() http.HandlerFunc {
 			http.Error(w, "fixkosten eingaben: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-		w.Header().Set("Content-Disposition", `attachment; filename="fixkosten.csv"`)
-		w.Write([]byte{0xEF, 0xBB, 0xBF})
-
-		cw := csv.NewWriter(w)
-		cw.Comma = ';'
-		if err := cw.Write(fixkostenCsvHeader); err != nil {
-			return
-		}
-		for _, f := range details {
-			row := make([]string, 0, len(fixkostenCsvHeader))
-			row = append(row, f.Monat)
-			for _, kd := range store.KostenpositionDefaults {
-				w := f.Werte[kd.ID]
-				row = append(row, w.Logik, w.Typ, formatDecimalDE(w.Wert))
-			}
-			row = append(row,
-				formatDecimalDE(float64(f.Personen[1])),
-				formatDecimalDE(float64(f.Personen[2])),
-				formatDecimalDE(f.Abschlag[1]),
-				formatDecimalDE(f.Abschlag[2]),
-			)
-			if err := cw.Write(row); err != nil {
-				return
-			}
-		}
-		cw.Flush()
+		RunCSVExport(w, "fixkosten.csv", fixkostenCsvHeader, details, formatFixkostenCSVRow)
 	}
 }
 
-// fixkostenImportMaxBytes caps the CSV upload (Issue #133), same limit as
-// the Ablesungen import.
-const fixkostenImportMaxBytes = 2 << 20 // 2 MiB
+func formatFixkostenCSVRow(f *store.FixkostenEingabeDetails) []string {
+	row := make([]string, 0, len(fixkostenCsvHeader))
+	row = append(row, f.Monat)
+	for _, kd := range store.KostenpositionDefaults {
+		w := f.Werte[kd.ID]
+		row = append(row, w.Logik, w.Typ, formatDecimalDE(w.Wert))
+	}
+	row = append(row,
+		formatDecimalDE(float64(f.Personen[1])),
+		formatDecimalDE(float64(f.Personen[2])),
+		formatDecimalDE(f.Abschlag[1]),
+		formatDecimalDE(f.Abschlag[2]),
+	)
+	return row
+}
 
 // handleImportFixkostenCSV bootstraps a completely empty Fixkosten history
 // from a CSV in the fixkostenCsvHeader format (Issue #133) - rejected if
@@ -84,39 +63,22 @@ const fixkostenImportMaxBytes = 2 << 20 // 2 MiB
 func handleImportFixkostenCSV() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
-		existing, err := store.AllFixkostenEingaben(db)
-		if err != nil {
-			http.Error(w, "fixkosten eingaben: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if len(existing) > 0 {
-			http.Error(w, "Import nur möglich, solange noch keine Fixkosten-Eingabe existiert", http.StatusBadRequest)
-			return
+
+		cfg := ImportConfig[store.FixkostenInput]{
+			Header: fixkostenCsvHeader,
+			CheckExisting: func(db *sql.DB) (bool, error) {
+				existing, err := store.AllFixkostenEingaben(db)
+				return len(existing) > 0, err
+			},
+			ExistingErrMsg: "Import nur möglich, solange noch keine Fixkosten-Eingabe existiert",
+			ParseRow:       parseImportFixkostenRow,
+			EmptyErrMsg:    "CSV enthält keine Fixkosten-Eingaben",
+			SortKey:        func(in store.FixkostenInput) string { return in.Monat },
+			Insert:         store.ImportFixkostenEingaben,
 		}
 
-		r.Body = http.MaxBytesReader(w, r.Body, fixkostenImportMaxBytes)
-		if err := r.ParseMultipartForm(fixkostenImportMaxBytes); err != nil {
-			http.Error(w, "Datei zu groß oder ungültig (Limit 2 MB): "+err.Error(), http.StatusBadRequest)
-			return
-		}
-		file, _, err := r.FormFile("csv")
-		if err != nil {
-			http.Error(w, "keine CSV-Datei hochgeladen", http.StatusBadRequest)
-			return
-		}
-		defer file.Close()
-
-		inputs, err := parseImportFixkostenCSV(file)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		sort.Slice(inputs, func(i, j int) bool { return inputs[i].Monat < inputs[j].Monat })
-
-		ids, err := store.ImportFixkostenEingaben(db, inputs)
-		if err != nil {
-			http.Error(w, "import: "+err.Error(), http.StatusInternalServerError)
+		ids, _, ok := RunCSVImport(w, r, db, cfg)
+		if !ok {
 			return
 		}
 
@@ -125,58 +87,8 @@ func handleImportFixkostenCSV() http.HandlerFunc {
 	}
 }
 
-// parseImportFixkostenCSV reads fixkostenCsvHeader-formatted CSV (semicolon-
-// separated, comma-decimal, optional UTF-8 BOM) and validates every row
-// into a FixkostenInput. Returns the first hard error encountered - the
-// caller aborts the whole import on any error, so there's no point
-// collecting more than one.
-func parseImportFixkostenCSV(file io.Reader) ([]store.FixkostenInput, error) {
-	reader := bufio.NewReader(file)
-	if bom, err := reader.Peek(3); err == nil && bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF {
-		reader.Discard(3)
-	}
-
-	cr := csv.NewReader(reader)
-	cr.Comma = ';'
-
-	header, err := cr.Read()
-	if err != nil {
-		return nil, fmt.Errorf("CSV: Kopfzeile konnte nicht gelesen werden: %w", err)
-	}
-	colIdx := make(map[string]int, len(header))
-	for i, name := range header {
-		colIdx[strings.TrimSpace(name)] = i
-	}
-	for _, want := range fixkostenCsvHeader {
-		if _, ok := colIdx[want]; !ok {
-			return nil, fmt.Errorf("CSV: Spalte %q fehlt", want)
-		}
-	}
-
-	var inputs []store.FixkostenInput
-	line := 1
-	for {
-		record, err := cr.Read()
-		if err == io.EOF {
-			break
-		}
-		line++
-		if err != nil {
-			return nil, fmt.Errorf("Zeile %d: %v", line, err)
-		}
-
-		in, err := parseImportFixkostenRow(record, colIdx, line)
-		if err != nil {
-			return nil, err
-		}
-		inputs = append(inputs, in)
-	}
-	if len(inputs) == 0 {
-		return nil, fmt.Errorf("CSV enthält keine Fixkosten-Eingaben")
-	}
-	return inputs, nil
-}
-
+// parseImportFixkostenRow validates one CSV record (semicolon-separated,
+// comma-decimal) into a FixkostenInput.
 func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (store.FixkostenInput, error) {
 	cell := func(col string) string { return record[colIdx[col]] }
 

@@ -1,14 +1,12 @@
 package web
 
 import (
-	"bufio"
-	"encoding/csv"
+	"database/sql"
 	"fmt"
 	"io"
 	"math"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 	"time"
 
@@ -26,9 +24,7 @@ var csvHeader = append(append([]string{"reading_date", "monat"}, store.MeterKeys
 	"personen_1", "personen_2",
 )
 
-// handleExportCSV streams every reading as CSV (Ticket #53) - Excel-DE
-// dialect (semicolon-separated, comma-decimal, UTF-8 with BOM), same
-// csvHeader the import (Ticket #54) reads back.
+// handleExportCSV streams every reading as CSV (Ticket #53).
 func handleExportCSV() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		details, err := store.AllPeriodDetails(dbFromContext(r.Context()))
@@ -36,47 +32,31 @@ func handleExportCSV() http.HandlerFunc {
 			http.Error(w, "periods: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-		w.Header().Set("Content-Disposition", `attachment; filename="ablesungen.csv"`)
-		w.Write([]byte{0xEF, 0xBB, 0xBF})
-
-		cw := csv.NewWriter(w)
-		cw.Comma = ';'
-		if err := cw.Write(csvHeader); err != nil {
-			return
-		}
-		for _, p := range details {
-			row := make([]string, 0, len(csvHeader))
-			row = append(row, p.ReadingDate, p.Monat)
-			for _, key := range store.MeterKeys {
-				row = append(row, formatDecimalDE(p.Readings[key]))
-			}
-			row = append(row,
-				// store.OrZero: a partial reading (Ticket #128) exports
-				// its missing price here as "0" - CSV import/export
-				// of/for partial readings is explicitly not part of this
-				// spec (#127), so this can't actually occur in practice
-				// yet.
-				formatDecimalDE(store.OrZero(p.Strompreis)),
-				formatDecimalDE(store.OrZero(p.FrischwasserPreis)),
-				formatDecimalDE(store.OrZero(p.AbwasserPreis)),
-				formatDecimalDE(p.HeizungWaermeGewichtung),
-				formatDecimalDE(store.OrZero(p.EinspeisungPreis)),
-				formatDecimalDE(float64(p.PersonenByApartment[1])),
-				formatDecimalDE(float64(p.PersonenByApartment[2])),
-			)
-			if err := cw.Write(row); err != nil {
-				return
-			}
-		}
-		cw.Flush()
+		RunCSVExport(w, "ablesungen.csv", csvHeader, details, formatPeriodCSVRow)
 	}
 }
 
-// importMaxBytes caps the CSV upload (Ticket #54) - single-user app, no
-// real threat model, just a guard against an accidental huge file.
-const importMaxBytes = 2 << 20 // 2 MiB
+func formatPeriodCSVRow(p *store.LatestPeriod) []string {
+	row := make([]string, 0, len(csvHeader))
+	row = append(row, p.ReadingDate, p.Monat)
+	for _, key := range store.MeterKeys {
+		row = append(row, formatDecimalDE(p.Readings[key]))
+	}
+	row = append(row,
+		// store.OrZero: a partial reading (Ticket #128) exports its missing
+		// price here as "0" - CSV import/export of/for partial readings is
+		// explicitly not part of this spec (#127), so this can't actually
+		// occur in practice yet.
+		formatDecimalDE(store.OrZero(p.Strompreis)),
+		formatDecimalDE(store.OrZero(p.FrischwasserPreis)),
+		formatDecimalDE(store.OrZero(p.AbwasserPreis)),
+		formatDecimalDE(p.HeizungWaermeGewichtung),
+		formatDecimalDE(store.OrZero(p.EinspeisungPreis)),
+		formatDecimalDE(float64(p.PersonenByApartment[1])),
+		formatDecimalDE(float64(p.PersonenByApartment[2])),
+	)
+	return row
+}
 
 // importRow pairs a parsed PeriodInput with its original CSV line number,
 // so warnings can still point at the uploaded file after the rows are
@@ -95,44 +75,28 @@ type importRow struct {
 func handleImportCSV() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
-		existing, err := store.AllPeriods(db)
-		if err != nil {
-			http.Error(w, "periods: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if len(existing) > 0 {
-			http.Error(w, "Import nur möglich, solange noch keine Ablesung existiert", http.StatusBadRequest)
-			return
+
+		cfg := ImportConfig[importRow]{
+			Header: csvHeader,
+			CheckExisting: func(db *sql.DB) (bool, error) {
+				existing, err := store.AllPeriods(db)
+				return len(existing) > 0, err
+			},
+			ExistingErrMsg: "Import nur möglich, solange noch keine Ablesung existiert",
+			ParseRow:       parseImportRow,
+			EmptyErrMsg:    "CSV enthält keine Ablesungen",
+			SortKey:        func(row importRow) string { return row.input.ReadingDate },
+			Insert: func(db *sql.DB, rows []importRow) ([]int64, error) {
+				inputs := make([]store.PeriodInput, len(rows))
+				for i, row := range rows {
+					inputs[i] = row.input
+				}
+				return store.ImportPeriods(db, inputs)
+			},
 		}
 
-		r.Body = http.MaxBytesReader(w, r.Body, importMaxBytes)
-		if err := r.ParseMultipartForm(importMaxBytes); err != nil {
-			http.Error(w, "Datei zu groß oder ungültig (Limit 2 MB): "+err.Error(), http.StatusBadRequest)
-			return
-		}
-		file, _, err := r.FormFile("csv")
-		if err != nil {
-			http.Error(w, "keine CSV-Datei hochgeladen", http.StatusBadRequest)
-			return
-		}
-		defer file.Close()
-
-		rows, err := parseImportCSV(file)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		sort.Slice(rows, func(i, j int) bool { return rows[i].input.ReadingDate < rows[j].input.ReadingDate })
-
-		inputs := make([]store.PeriodInput, len(rows))
-		for i, row := range rows {
-			inputs[i] = row.input
-		}
-
-		ids, err := store.ImportPeriods(db, inputs)
-		if err != nil {
-			http.Error(w, "import: "+err.Error(), http.StatusInternalServerError)
+		ids, rows, ok := RunCSVImport(w, r, db, cfg)
+		if !ok {
 			return
 		}
 
@@ -146,75 +110,37 @@ func handleImportCSV() http.HandlerFunc {
 }
 
 // parseImportCSV reads csvHeader-formatted CSV (semicolon-separated,
-// comma-decimal, optional UTF-8 BOM) and validates every row into a
-// PeriodInput. Returns the first hard error encountered (missing/broken
-// values, invalid date/heating weighting) - the caller aborts the whole
-// import on any error, so there's no point collecting more than one.
+// comma-decimal, optional UTF-8 BOM) and validates every row into an
+// importRow, without touching the DB or HTTP layer - kept as a leaf entry
+// point so row-parsing tests don't need a *http.Request/*sql.DB.
 func parseImportCSV(file io.Reader) ([]importRow, error) {
-	reader := bufio.NewReader(file)
-	if bom, err := reader.Peek(3); err == nil && bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF {
-		reader.Discard(3)
-	}
-
-	cr := csv.NewReader(reader)
-	cr.Comma = ';'
-
-	header, err := cr.Read()
-	if err != nil {
-		return nil, fmt.Errorf("CSV: Kopfzeile konnte nicht gelesen werden: %w", err)
-	}
-	colIdx := make(map[string]int, len(header))
-	for i, name := range header {
-		colIdx[strings.TrimSpace(name)] = i
-	}
-	for _, want := range csvHeader {
-		if _, ok := colIdx[want]; !ok {
-			return nil, fmt.Errorf("CSV: Spalte %q fehlt", want)
-		}
-	}
-
-	var rows []importRow
-	line := 1
-	for {
-		record, err := cr.Read()
-		if err == io.EOF {
-			break
-		}
-		line++
-		if err != nil {
-			return nil, fmt.Errorf("Zeile %d: %v", line, err)
-		}
-
-		in, err := parseImportRow(record, colIdx, line)
-		if err != nil {
-			return nil, err
-		}
-		rows = append(rows, importRow{input: in, line: line})
-	}
-	if len(rows) == 0 {
-		return nil, fmt.Errorf("CSV enthält keine Ablesungen")
-	}
-	return rows, nil
+	return parseImportCSVRows(file, ImportConfig[importRow]{
+		Header:      csvHeader,
+		ParseRow:    parseImportRow,
+		EmptyErrMsg: "CSV enthält keine Ablesungen",
+	})
 }
 
-func parseImportRow(record []string, colIdx map[string]int, line int) (store.PeriodInput, error) {
+// parseImportRow validates one CSV record (semicolon-separated, comma-decimal)
+// into a PeriodInput, paired with its line number for later warnings.
+func parseImportRow(record []string, colIdx map[string]int, line int) (importRow, error) {
 	cell := func(col string) string { return record[colIdx[col]] }
 
 	readingDate := strings.TrimSpace(cell("reading_date"))
 	if _, err := time.Parse("2006-01-02", readingDate); err != nil {
-		return store.PeriodInput{}, fmt.Errorf("Zeile %d: ungültiges Ablesedatum %q (Format JJJJ-MM-TT)", line, readingDate)
+		return importRow{}, fmt.Errorf("Zeile %d: ungültiges Ablesedatum %q (Format JJJJ-MM-TT)", line, readingDate)
 	}
 
 	monat := strings.TrimSpace(cell("monat"))
 	if _, err := time.Parse("2006-01-02", monat); err != nil {
-		return store.PeriodInput{}, fmt.Errorf("Zeile %d: ungültiger Abrechnungsmonat %q (Format JJJJ-MM-01)", line, monat)
+		return importRow{}, fmt.Errorf("Zeile %d: ungültiger Abrechnungsmonat %q (Format JJJJ-MM-01)", line, monat)
 	}
 
 	readings := make(map[string]float64, len(store.MeterKeys))
 	for _, key := range store.MeterKeys {
 		v, err := parseDecimalDE(cell(key))
 		if err != nil {
-			return store.PeriodInput{}, fmt.Errorf("Zeile %d: ungültiger Wert für %s: %q", line, key, cell(key))
+			return importRow{}, fmt.Errorf("Zeile %d: ungültiger Wert für %s: %q", line, key, cell(key))
 		}
 		readings[key] = v
 	}
@@ -224,12 +150,12 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (store.Per
 	abwasserPreis, err3 := parseDecimalDE(cell("abwasser_preis"))
 	einspeisungPreis, err4 := parseDecimalDE(cell("einspeisung_preis"))
 	if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
-		return store.PeriodInput{}, fmt.Errorf("Zeile %d: ungültiger Preiswert", line)
+		return importRow{}, fmt.Errorf("Zeile %d: ungültiger Preiswert", line)
 	}
 
 	heizungGewichtung, err := parseHeizungGewichtung(strings.ReplaceAll(cell("heizung_gewichtung"), ",", "."))
 	if err != nil {
-		return store.PeriodInput{}, fmt.Errorf("Zeile %d: %v", line, err)
+		return importRow{}, fmt.Errorf("Zeile %d: %v", line, err)
 	}
 
 	personen := make(map[int64]int64, 2)
@@ -237,21 +163,24 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (store.Per
 		personenCol := fmt.Sprintf("personen_%d", id)
 		p, err := parseDecimalDE(cell(personenCol))
 		if err != nil {
-			return store.PeriodInput{}, fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q", line, id, cell(personenCol))
+			return importRow{}, fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q", line, id, cell(personenCol))
 		}
 		personen[id] = int64(p)
 	}
 
-	return store.PeriodInput{
-		ReadingDate:             readingDate,
-		Monat:                   monat,
-		Strompreis:              store.Float64(strompreis),
-		FrischwasserPreis:       store.Float64(frischwasserPreis),
-		AbwasserPreis:           store.Float64(abwasserPreis),
-		HeizungWaermeGewichtung: heizungGewichtung,
-		EinspeisungPreis:        store.Float64(einspeisungPreis),
-		Readings:                readings,
-		Personen:                personen,
+	return importRow{
+		input: store.PeriodInput{
+			ReadingDate:             readingDate,
+			Monat:                   monat,
+			Strompreis:              store.Float64(strompreis),
+			FrischwasserPreis:       store.Float64(frischwasserPreis),
+			AbwasserPreis:           store.Float64(abwasserPreis),
+			HeizungWaermeGewichtung: heizungGewichtung,
+			EinspeisungPreis:        store.Float64(einspeisungPreis),
+			Readings:                readings,
+			Personen:                personen,
+		},
+		line: line,
 	}, nil
 }
 
