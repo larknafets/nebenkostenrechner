@@ -632,52 +632,20 @@ func GetLatestPeriod(db *sql.DB) (*LatestPeriod, error) {
 // GetPeriodDetails returns the given period together with its readings and
 // occupancy, or nil if it doesn't exist - the per-id generalization of
 // GetLatestPeriod (Ticket #43/#44: viewing/editing an Ablesung isn't limited
-// to the latest period anymore).
+// to the latest period anymore). Reuses AllPeriodDetails' single hydration
+// path rather than its own queries - data volume here is tens to low
+// hundreds of rows, so a full fetch-then-filter costs nothing measurable.
 func GetPeriodDetails(db *sql.DB, id int64) (*LatestPeriod, error) {
-	row := db.QueryRow(
-		`SELECT id, reading_date, monat, strompreis, frischwasser_preis, abwasser_preis, heizung_waerme_gewichtung, einspeisung_preis
-		 FROM periods WHERE id = ?`,
-		id,
-	)
-	p := LatestPeriod{
-		Readings:            map[string]float64{},
-		PersonenByApartment: map[int64]int64{},
-	}
-	if err := row.Scan(&p.ID, &p.ReadingDate, &p.Monat, &p.Strompreis, &p.FrischwasserPreis, &p.AbwasserPreis, &p.HeizungWaermeGewichtung, &p.EinspeisungPreis); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("query period %d: %w", id, err)
-	}
-
-	rows, err := db.Query(
-		`SELECT m.key, r.zaehlerstand
-		 FROM meter_readings r JOIN meters m ON m.id = r.meter_id
-		 WHERE r.period_id = ?`,
-		p.ID,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("query readings: %w", err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var key string
-		var value float64
-		if err := rows.Scan(&key, &value); err != nil {
-			return nil, fmt.Errorf("scan reading: %w", err)
-		}
-		p.Readings[key] = value
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	p.PersonenByApartment, err = PersonenByApartment(db, p.ID)
+	periods, err := AllPeriodDetails(db)
 	if err != nil {
 		return nil, err
 	}
-
-	return &p, nil
+	for _, p := range periods {
+		if p.ID == id {
+			return p, nil
+		}
+	}
+	return nil, nil
 }
 
 // PeriodReadingsBefore returns up to `limit` periods chronologically before
