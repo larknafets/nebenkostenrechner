@@ -173,14 +173,15 @@ func handleWizardForm(a auth) http.HandlerFunc {
 			// computed directly from the same source instead of
 			// hardcoded to true, so they stay correct if this invariant
 			// ever changes.
+			status := newTeilstandStatus(previousPeriod, apartments)
 			data.PreviousStrompreis = store.OrZero(previousPeriod.Strompreis)
 			data.PreviousFrischwasserPreis = store.OrZero(previousPeriod.FrischwasserPreis)
 			data.PreviousAbwasserPreis = store.OrZero(previousPeriod.AbwasserPreis)
 			data.PreviousEinspeisungPreis = store.OrZero(previousPeriod.EinspeisungPreis)
-			data.PreviousStrompreisErfasst = previousPeriod.Strompreis != nil
-			data.PreviousFrischwasserPreisErfasst = previousPeriod.FrischwasserPreis != nil
-			data.PreviousAbwasserPreisErfasst = previousPeriod.AbwasserPreis != nil
-			data.PreviousEinspeisungPreisErfasst = previousPeriod.EinspeisungPreis != nil
+			data.PreviousStrompreisErfasst = status.StrompreisErfasst
+			data.PreviousFrischwasserPreisErfasst = status.FrischwasserErfasst
+			data.PreviousAbwasserPreisErfasst = status.AbwasserErfasst
+			data.PreviousEinspeisungPreisErfasst = status.EinspeisungPreisErfasst
 			data.PreviousPersonen = previousPeriod.PersonenByApartment
 			data.PreviousHeizungGewichtung = previousPeriod.HeizungWaermeGewichtung
 		}
@@ -264,27 +265,29 @@ func handleEditWizardForm(a auth) http.HandlerFunc {
 			return
 		}
 
+		// Ticket #131: target can be a Teilstand (partial reading) - these
+		// flags let the wizard distinguish "missing" from "0".
+		status := newTeilstandStatus(target, apartments)
+
 		data := wizardData{
-			navData:                   a.NavData(r),
-			Aktuell:                   "ablesungen",
-			FormAction:                fmt.Sprintf("%s/ablesungen/%d", requestBase(r), target.ID),
-			IsEdit:                    true,
-			ReadingDate:               target.ReadingDate,
-			Monat:                     string(monatInputFromStored(target.Monat)),
-			Apartments:                apartments,
-			EditReadings:              target.Readings,
-			PreviousStrompreis:        store.OrZero(target.Strompreis),
-			PreviousFrischwasserPreis: store.OrZero(target.FrischwasserPreis),
-			PreviousAbwasserPreis:     store.OrZero(target.AbwasserPreis),
-			PreviousEinspeisungPreis:  store.OrZero(target.EinspeisungPreis),
-			PreviousPersonen:          target.PersonenByApartment,
-			PreviousHeizungGewichtung: target.HeizungWaermeGewichtung,
-			// Ticket #131: target can be a Teilstand (partial reading) -
-			// these flags let the wizard distinguish "missing" from "0".
-			PreviousStrompreisErfasst:        target.Strompreis != nil,
-			PreviousFrischwasserPreisErfasst: target.FrischwasserPreis != nil,
-			PreviousAbwasserPreisErfasst:     target.AbwasserPreis != nil,
-			PreviousEinspeisungPreisErfasst:  target.EinspeisungPreis != nil,
+			navData:                          a.NavData(r),
+			Aktuell:                          "ablesungen",
+			FormAction:                       fmt.Sprintf("%s/ablesungen/%d", requestBase(r), target.ID),
+			IsEdit:                           true,
+			ReadingDate:                      target.ReadingDate,
+			Monat:                            string(monatInputFromStored(target.Monat)),
+			Apartments:                       apartments,
+			EditReadings:                     target.Readings,
+			PreviousStrompreis:               store.OrZero(target.Strompreis),
+			PreviousFrischwasserPreis:        store.OrZero(target.FrischwasserPreis),
+			PreviousAbwasserPreis:            store.OrZero(target.AbwasserPreis),
+			PreviousEinspeisungPreis:         store.OrZero(target.EinspeisungPreis),
+			PreviousPersonen:                 target.PersonenByApartment,
+			PreviousHeizungGewichtung:        target.HeizungWaermeGewichtung,
+			PreviousStrompreisErfasst:        status.StrompreisErfasst,
+			PreviousFrischwasserPreisErfasst: status.FrischwasserErfasst,
+			PreviousAbwasserPreisErfasst:     status.AbwasserErfasst,
+			PreviousEinspeisungPreisErfasst:  status.EinspeisungPreisErfasst,
 		}
 		if len(recent) > 0 {
 			data.HasPrevious = true

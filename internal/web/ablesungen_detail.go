@@ -93,12 +93,14 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			zeitraumStart = vorperiode[0].ReadingDate
 		}
 
+		status := newTeilstandStatus(period, apartments)
+
 		// Diff is each meter's absolute change since the previous reading
 		// ("+23,00" / "-5,00"), formatted ready-to-print - empty for the
 		// oldest period (no previous period to diff against). Erfasst
-		// (recorded, Ticket #131) is whether this meter has a row at all
-		// - unlike Value (always 0 for a missing meter reading, since
-		// Go's map access has no "missing" distinction).
+		// (recorded, Ticket #131) comes from status.MeterErfasst - unlike
+		// Value (always 0 for a missing meter reading, since Go's map
+		// access has no "missing" distinction).
 		var meters []struct {
 			Label   string
 			Value   float64
@@ -107,28 +109,17 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			Erfasst bool
 		}
 		for _, m := range meterDisplays {
-			_, erfasst := period.Readings[m.Key]
 			entry := struct {
 				Label   string
 				Value   float64
 				Unit    string
 				Diff    string
 				Erfasst bool
-			}{Label: m.Label, Value: period.Readings[m.Key], Unit: m.Unit, Erfasst: erfasst}
+			}{Label: m.Label, Value: period.Readings[m.Key], Unit: m.Unit, Erfasst: status.MeterErfasst[m.Key]}
 			if len(vorperiode) > 0 {
 				entry.Diff = formatMeterDiff(period.Readings[m.Key], vorperiode[0].Readings[m.Key])
 			}
 			meters = append(meters, entry)
-		}
-
-		// PersonenErfasst (occupants recorded, Ticket #131): which
-		// apartments have an occupant count for this period -
-		// period.PersonenByApartment itself doesn't distinguish a
-		// missing apartment from "0 occupants".
-		personenErfasst := make(map[int64]bool, len(apartments))
-		for _, ap := range apartments {
-			_, ok := period.PersonenByApartment[ap.ID]
-			personenErfasst[ap.ID] = ok
 		}
 
 		k, err := berechneKosten(db, period.ID)
@@ -137,63 +128,44 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			return
 		}
 
-		complete, err := store.PeriodComplete(db, period.ID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		istTeilstand := !complete
-
 		data := struct {
 			navData
-			Aktuell         string
-			Period          *store.LatestPeriod
-			AllPeriods      []periodListItem
-			Apartments      []store.Apartment
-			Personen        map[int64]int64
-			PersonenErfasst map[int64]bool
-			ZeitraumStart   string
-			Meters          []struct {
+			teilstandStatus
+			Aktuell       string
+			Period        *store.LatestPeriod
+			AllPeriods    []periodListItem
+			Apartments    []store.Apartment
+			Personen      map[int64]int64
+			ZeitraumStart string
+			Meters        []struct {
 				Label   string
 				Value   float64
 				Unit    string
 				Diff    string
 				Erfasst bool
 			}
-			Strom                   *calc.StromErgebnis
-			Wasser                  *calc.WasserErgebnis
-			Heizung                 *calc.HeizungErgebnis
-			Einspeisung             *calc.EinspeisungErgebnis
-			KostenNote              string
-			IstTeilstand            bool
-			MonatErfasst            bool
-			MonatLabel              string
-			StrompreisErfasst       bool
-			FrischwasserErfasst     bool
-			AbwasserErfasst         bool
-			EinspeisungPreisErfasst bool
+			Strom       *calc.StromErgebnis
+			Wasser      *calc.WasserErgebnis
+			Heizung     *calc.HeizungErgebnis
+			Einspeisung *calc.EinspeisungErgebnis
+			KostenNote  string
+			MonatLabel  string
 		}{
-			navData:                 a.NavData(r),
-			Aktuell:                 "ablesungen-detail",
-			Period:                  period,
-			AllPeriods:              periodListItems(allPeriods),
-			Apartments:              apartments,
-			Personen:                period.PersonenByApartment,
-			PersonenErfasst:         personenErfasst,
-			ZeitraumStart:           zeitraumStart,
-			Meters:                  meters,
-			Strom:                   k.Strom,
-			Wasser:                  k.Wasser,
-			Heizung:                 k.Heizung,
-			Einspeisung:             k.Einspeisung,
-			KostenNote:              k.KostenNote,
-			IstTeilstand:            istTeilstand,
-			MonatErfasst:            period.Monat != "",
-			MonatLabel:              germanPeriodLabel(period.Monat),
-			StrompreisErfasst:       period.Strompreis != nil,
-			FrischwasserErfasst:     period.FrischwasserPreis != nil,
-			AbwasserErfasst:         period.AbwasserPreis != nil,
-			EinspeisungPreisErfasst: period.EinspeisungPreis != nil,
+			navData:         a.NavData(r),
+			teilstandStatus: status,
+			Aktuell:         "ablesungen-detail",
+			Period:          period,
+			AllPeriods:      periodListItems(allPeriods),
+			Apartments:      apartments,
+			Personen:        period.PersonenByApartment,
+			ZeitraumStart:   zeitraumStart,
+			Meters:          meters,
+			Strom:           k.Strom,
+			Wasser:          k.Wasser,
+			Heizung:         k.Heizung,
+			Einspeisung:     k.Einspeisung,
+			KostenNote:      k.KostenNote,
+			MonatLabel:      germanPeriodLabel(period.Monat),
 		}
 
 		if err := ablesungTemplate.ExecuteTemplate(w, "layout", data); err != nil {
