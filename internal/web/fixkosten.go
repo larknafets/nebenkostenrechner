@@ -75,6 +75,7 @@ type fixkostenFormData struct {
 	Aktuell          string
 	FormAction       string
 	IsEdit           bool
+	NoEingaben       bool   // gates the CSV import button (Issue #133), only offered while the DB is empty
 	Monat            string // "YYYY-MM", <input type="month"> value
 	Apartments       []store.Apartment
 	PreviousPersonen map[int64]int64
@@ -138,6 +139,7 @@ func handleFixkostenForm(a auth) http.HandlerFunc {
 			navData:    a.NavData(r),
 			Aktuell:    "fixkosten",
 			FormAction: requestBase(r) + "/fixkosten",
+			NoEingaben: latest == nil,
 			Monat:      monat,
 			Apartments: apartments,
 		}
@@ -370,6 +372,10 @@ type fixkostenListItem struct {
 	SummeW2 float64
 }
 
+// handleFixkostenListe lists every recorded Fixkosten-Eingabe. ImportedCount
+// surfaces the CSV import's result (Issue #133) - passed via query param
+// since the app has no session/flash mechanism, same convention as
+// handleAblesungenListe.
 func handleFixkostenListe(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
@@ -392,14 +398,18 @@ func handleFixkostenListe(a auth) http.HandlerFunc {
 			})
 		}
 
+		importedCount, _ := strconv.Atoi(r.URL.Query().Get("imported"))
+
 		data := struct {
 			navData
-			Aktuell  string
-			Eingaben []fixkostenListItem
+			Aktuell       string
+			Eingaben      []fixkostenListItem
+			ImportedCount int
 		}{
-			navData:  a.NavData(r),
-			Aktuell:  "fixkosten",
-			Eingaben: items,
+			navData:       a.NavData(r),
+			Aktuell:       "fixkosten",
+			Eingaben:      items,
+			ImportedCount: importedCount,
 		}
 
 		if err := fixkostenListeTemplate.ExecuteTemplate(w, "layout", data); err != nil {

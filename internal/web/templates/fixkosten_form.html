@@ -2,6 +2,16 @@
 <h1>{{if .IsEdit}}Fixkosten-Eingabe korrigieren{{else}}Fixkosten-Eingabe erfassen{{end}}</h1>
 {{template "nav" .}}
 
+{{if .NoEingaben}}
+<form method="post" action="{{.Base}}/fixkosten/import" enctype="multipart/form-data" class="panel" style="margin-bottom:1rem">
+  <div class="field">
+    <label>Oder: Fixkosten-Eingaben aus CSV importieren (gleiches Format wie der CSV-Export)</label>
+    <input type="file" name="csv" accept=".csv,text/csv" required>
+  </div>
+  <button type="submit" class="secondary">CSV Import</button>
+</form>
+{{end}}
+
 <form method="post" action="{{.FormAction}}" class="panel">
   <div class="field" style="max-width:220px">
     <label>Monat</label>

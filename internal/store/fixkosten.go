@@ -366,6 +366,119 @@ func AllAbschlaege(db *sql.DB) (map[int64]map[int64]float64, error) {
 	return out, rows.Err()
 }
 
+// AllFixkostenEingabenDetails returns every Fixkosten-Eingabe with its full
+// Werte/Personen/Abschlag, oldest first - the CSV export's data source
+// (Issue #132). 4 batched queries total (eingaben, werte, personen,
+// abschlaege), not one per Eingabe, same shape as AllPeriodDetails.
+func AllFixkostenEingabenDetails(db *sql.DB) ([]*FixkostenEingabeDetails, error) {
+	rows, err := db.Query(`SELECT id, monat FROM fixkosten_eingaben ORDER BY monat ASC, id ASC`)
+	if err != nil {
+		return nil, fmt.Errorf("query fixkosten eingaben: %w", err)
+	}
+	defer rows.Close()
+
+	byID := map[int64]*FixkostenEingabeDetails{}
+	var out []*FixkostenEingabeDetails
+	for rows.Next() {
+		f := &FixkostenEingabeDetails{
+			Personen: map[int64]int64{},
+			Werte:    map[int64]FixkostenPositionWert{},
+			Abschlag: map[int64]float64{},
+		}
+		if err := rows.Scan(&f.ID, &f.Monat); err != nil {
+			return nil, fmt.Errorf("scan fixkosten eingabe: %w", err)
+		}
+		byID[f.ID] = f
+		out = append(out, f)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	werteRows, err := db.Query(`SELECT fixkosten_eingabe_id, kostenposition_id, wert, logik, typ FROM fixkosten_werte`)
+	if err != nil {
+		return nil, fmt.Errorf("query fixkosten werte: %w", err)
+	}
+	defer werteRows.Close()
+	for werteRows.Next() {
+		var eingabeID, kostenpositionID int64
+		var w FixkostenPositionWert
+		if err := werteRows.Scan(&eingabeID, &kostenpositionID, &w.Wert, &w.Logik, &w.Typ); err != nil {
+			return nil, fmt.Errorf("scan fixkosten wert: %w", err)
+		}
+		if f, ok := byID[eingabeID]; ok {
+			f.Werte[kostenpositionID] = w
+		}
+	}
+	if err := werteRows.Err(); err != nil {
+		return nil, err
+	}
+
+	personenRows, err := db.Query(`SELECT fixkosten_eingabe_id, apartment_id, personen FROM fixkosten_personen`)
+	if err != nil {
+		return nil, fmt.Errorf("query fixkosten personen: %w", err)
+	}
+	defer personenRows.Close()
+	for personenRows.Next() {
+		var eingabeID, apartmentID, personen int64
+		if err := personenRows.Scan(&eingabeID, &apartmentID, &personen); err != nil {
+			return nil, fmt.Errorf("scan fixkosten personen: %w", err)
+		}
+		if f, ok := byID[eingabeID]; ok {
+			f.Personen[apartmentID] = personen
+		}
+	}
+	if err := personenRows.Err(); err != nil {
+		return nil, err
+	}
+
+	abschlagRows, err := db.Query(`SELECT fixkosten_eingabe_id, apartment_id, wert FROM nebenkosten_abschlaege`)
+	if err != nil {
+		return nil, fmt.Errorf("query nebenkosten abschlaege: %w", err)
+	}
+	defer abschlagRows.Close()
+	for abschlagRows.Next() {
+		var eingabeID, apartmentID int64
+		var wert float64
+		if err := abschlagRows.Scan(&eingabeID, &apartmentID, &wert); err != nil {
+			return nil, fmt.Errorf("scan nebenkosten abschlag: %w", err)
+		}
+		if f, ok := byID[eingabeID]; ok {
+			f.Abschlag[apartmentID] = wert
+		}
+	}
+	if err := abschlagRows.Err(); err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+// ImportFixkostenEingaben bulk-inserts every given Fixkosten-Eingabe in one
+// transaction (Issue #133) - bootstrap-only CSV import, same all-or-nothing
+// shape as ImportPeriods.
+func ImportFixkostenEingaben(db *sql.DB, inputs []FixkostenInput) (ids []int64, err error) {
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	ids = make([]int64, 0, len(inputs))
+	for _, in := range inputs {
+		id, err := insertFixkostenTx(tx, in)
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit tx: %w", err)
+	}
+	return ids, nil
+}
+
 // GetLatestFixkostenEingabe returns the most recently dated Fixkosten-
 // Eingabe, or nil if none exist yet - the "neu erfassen" form's prefill
 // source (Issue #60 Story 2/9).

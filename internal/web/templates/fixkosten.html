@@ -8,6 +8,10 @@
 </div>
 {{end}}
 
+{{if .ImportedCount}}
+<p class="panel" style="border-color:#2e7d32; margin-top:1rem">✓ {{.ImportedCount}} Fixkosten-Eingaben importiert.</p>
+{{end}}
+
 {{if not .Eingaben}}
 {{if .IsLoggedIn}}
 <p class="muted" style="margin-top:1rem">Noch keine Fixkosten-Eingabe erfasst. <a href="{{.Base}}/fixkosten/neu">Jetzt erfassen</a>.</p>
@@ -30,5 +34,11 @@
     </tbody>
   </table>
 </div>
+
+{{if .IsLoggedIn}}
+<div class="btn-row">
+  <a href="{{.Base}}/fixkosten/export.csv" class="button secondary">CSV Export</a>
+</div>
+{{end}}
 {{end}}
 {{end}}
