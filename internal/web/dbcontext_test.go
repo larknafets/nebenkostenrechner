@@ -24,7 +24,7 @@ func TestSelectDB(t *testing.T) {
 
 	t.Run("mit gültiger Demo-Session-Cookie", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		setDemoSessionCookie(w)
+		demoKind.set(w)
 		r := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
 		for _, c := range w.Result().Cookies() {
 			r.AddCookie(c)

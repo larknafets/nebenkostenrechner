@@ -136,34 +136,50 @@ func verifySession(secret, value string) bool {
 	return hmac.Equal([]byte(sig), []byte(wantSig))
 }
 
-// isLoggedIn reports whether r carries a valid session - always true when
-// no password is configured (secret == ""), the "login system disabled"
-// case from Ticket #112, or when r carries a valid demo session (Issue
-// #120) - a demo visitor gets full UI/routing access like a regularly
-// logged-in user, regardless of whether LOGIN_PASSWORD is set.
-func isLoggedIn(r *http.Request, secret string) bool {
-	if secret == "" || isDemoSession(r) {
-		return true
-	}
-	c, err := r.Cookie(sessionCookieName)
+// sessionKind is one of the 2 cookie-based session mechanisms this app
+// knows (real login vs demo login) - same shape (stateless HMAC-signed
+// cookie, sessionTTL), differing only in cookie name and signing secret.
+// Extracting this (architecture review after demo mode #118, candidate 3)
+// replaces what used to be 4 hand-written, near-identical set/clear
+// functions with one set of methods.
+type sessionKind struct {
+	cookieName string
+	secret     string
+}
+
+// demoKind is the demo session's cookie/secret pair - fixed regardless of
+// LOGIN_PASSWORD, since the demo login always works (Issue #118
+// implementation decision).
+var demoKind = sessionKind{cookieName: demoSessionCookieName, secret: demoSessionSecret}
+
+// realKind is the real login's cookie/secret pair for this auth instance -
+// secret is a.secret, so an empty secret's "login disabled" meaning is
+// still entirely a's caller's concern, not sessionKind's.
+func (a auth) realKind() sessionKind {
+	return sessionKind{cookieName: sessionCookieName, secret: a.secret}
+}
+
+// active reports whether r carries a valid, unexpired cookie for this kind.
+func (k sessionKind) active(r *http.Request) bool {
+	c, err := r.Cookie(k.cookieName)
 	if err != nil {
 		return false
 	}
-	return verifySession(secret, c.Value)
+	return verifySession(k.secret, c.Value)
 }
 
-// setSessionCookie logs the visitor in for sessionTTL. HttpOnly (never
+// set logs the visitor into this kind for sessionTTL. HttpOnly (never
 // readable from JS) and SameSite=Lax (the app only ever runs same-origin,
 // whether direct or behind HA-Ingress - no cross-site posting scenario to
 // guard against, see Ticket #112). No Secure attribute: the app has no
 // notion of its own whether it's reached over TLS (HA-Ingress may terminate
 // TLS in front of it), and Secure isn't required for the Same-Origin-Proxy
 // setup Ingress uses.
-func setSessionCookie(w http.ResponseWriter, secret string) {
+func (k sessionKind) set(w http.ResponseWriter) {
 	expiry := time.Now().Add(sessionTTL)
 	http.SetCookie(w, &http.Cookie{
-		Name:     sessionCookieName,
-		Value:    signSession(secret, expiry),
+		Name:     k.cookieName,
+		Value:    signSession(k.secret, expiry),
 		Path:     "/",
 		Expires:  expiry,
 		HttpOnly: true,
@@ -171,37 +187,10 @@ func setSessionCookie(w http.ResponseWriter, secret string) {
 	})
 }
 
-// clearSessionCookie logs the visitor out.
-func clearSessionCookie(w http.ResponseWriter) {
+// clear logs the visitor out of this kind.
+func (k sessionKind) clear(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     sessionCookieName,
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-	})
-}
-
-// setDemoSessionCookie logs the visitor into demo mode (Issue #120)
-// for sessionTTL - same shape as setSessionCookie, just signed with
-// demoSessionSecret instead of the real secret.
-func setDemoSessionCookie(w http.ResponseWriter) {
-	expiry := time.Now().Add(sessionTTL)
-	http.SetCookie(w, &http.Cookie{
-		Name:     demoSessionCookieName,
-		Value:    signSession(demoSessionSecret, expiry),
-		Path:     "/",
-		Expires:  expiry,
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-	})
-}
-
-// clearDemoSessionCookie logs the visitor out of demo mode.
-func clearDemoSessionCookie(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     demoSessionCookieName,
+		Name:     k.cookieName,
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,
@@ -211,14 +200,34 @@ func clearDemoSessionCookie(w http.ResponseWriter) {
 }
 
 // isDemoSession reports whether r carries a valid demo session cookie -
-// independent of secret/LOGIN_PASSWORD, since the demo login always
-// works (Issue #118 implementation decision).
+// independent of secret/LOGIN_PASSWORD. Kept as its own entry point (rather
+// than folded into resolveSession) since selectDB (dbcontext.go) and
+// HandleLogin's demo-password branch need exactly this, with no secret in
+// scope and no interest in real-session precedence.
 func isDemoSession(r *http.Request) bool {
-	c, err := r.Cookie(demoSessionCookieName)
-	if err != nil {
-		return false
+	return demoKind.active(r)
+}
+
+// resolveSession is the one place session precedence is decided: "demo",
+// "real", or "none" - demo wins when both cookies happen to be valid at
+// once. isLoggedIn and demoNavFlags both read from this instead of each
+// re-deriving the same precedence.
+func resolveSession(r *http.Request, secret string) string {
+	if demoKind.active(r) {
+		return "demo"
 	}
-	return verifySession(demoSessionSecret, c.Value)
+	if secret != "" && (sessionKind{cookieName: sessionCookieName, secret: secret}).active(r) {
+		return "real"
+	}
+	return "none"
+}
+
+// isLoggedIn reports whether r carries a valid session - always true when
+// no password is configured (secret == ""), the "login system disabled"
+// case from Ticket #112, or when resolveSession finds a valid demo or real
+// session.
+func isLoggedIn(r *http.Request, secret string) bool {
+	return secret == "" || resolveSession(r, secret) != "none"
 }
 
 // demoNavFlags computes the 3 demo-mode-related nav facts that every
@@ -236,8 +245,9 @@ func isDemoSession(r *http.Request) bool {
 // "Logout" only makes sense with a real session (realLogin) or a demo
 // session.
 func demoNavFlags(r *http.Request, secret string) (isDemo, showLoginEntry, showLogoutEntry bool) {
-	isDemo = isDemoSession(r)
-	realLogin := secret != "" && !isDemo && isLoggedIn(r, secret)
+	kind := resolveSession(r, secret)
+	isDemo = kind == "demo"
+	realLogin := kind == "real"
 	return isDemo, !isDemo && !realLogin, isDemo || realLogin
 }
 
@@ -385,8 +395,8 @@ func (a auth) HandleLogin() http.HandlerFunc {
 			// (isLoggedIn/withDB), but a clean login switch cleans up
 			// both sides instead of relying solely on that check
 			// ordering.
-			clearSessionCookie(w)
-			setDemoSessionCookie(w)
+			a.realKind().clear(w)
+			demoKind.set(w)
 			http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
 			return
 		}
@@ -400,16 +410,16 @@ func (a auth) HandleLogin() http.HandlerFunc {
 		}
 		// Symmetric to the demo branch above: a still-valid demo session
 		// cookie must not override a fresh real login.
-		clearDemoSessionCookie(w)
-		setSessionCookie(w, a.secret)
+		demoKind.clear(w)
+		a.realKind().set(w)
 		http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
 	}
 }
 
 func (a auth) HandleLogout() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		clearSessionCookie(w)
-		clearDemoSessionCookie(w)
+		a.realKind().clear(w)
+		demoKind.clear(w)
 		http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
 	}
 }
