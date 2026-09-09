@@ -18,3 +18,4 @@ Single-context: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
 ## Language convention
 - GitHub issue titles, bodies, and comments (map, tickets, resolution comments, everything on the tracker) are always written in German.
 - Commit messages for this project are always written in German.
+- Code comments (in .go, .html, and any other source file) are always written in English, regardless of the language used elsewhere in the ticket/commit for that change.
