@@ -65,8 +65,6 @@ changelog:
       order: 999
 
 release:
-  header: |
-    ## Changelog
   github:
     owner: larknafets
     name: nebenkostenrechner

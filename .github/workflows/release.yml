@@ -94,14 +94,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Each release's own body already carries its own "# Changelog"
-          # H1 (goreleaser's release.header) - stripped here since this
-          # loop supplies its own "## tag - date" per entry instead. Some
-          # already-published releases also still carry an old-style
-          # "## <tag> - <date>" line right after it (from before
-          # release.header dropped that line) - stripped too, but only
-          # "## " (exactly 2 #, negative lookahead blocks "### ") so a
-          # real "### Features" group heading is never eaten.
           gh api repos/larknafets/nebenkostenrechner/releases --paginate | jq -s '
             [.[][] | select(.draft == false and .prerelease == false)]
             | sort_by(.published_at)
