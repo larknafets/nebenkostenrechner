@@ -37,29 +37,29 @@ changelog:
     {{ .SHA }} {{ trimprefix (trimprefix (trimprefix (trimprefix (trimprefix .Message "feat: ") "fix: ") "refactor: ") "docs: ") "style: " }}
   filters:
     exclude:
-      - "^chore:"
-      - "^test:"
-      - "^perf:"
-      - "^ci:"
-      - "^build:"
-      - "^ops:"
-      - "^docs:"
-      - "^style:"
+      - "^chore"
+      - "^test"
+      - "^perf"
+      - "^ci"
+      - "^build"
+      - "^ops"
+      - "^docs"
+      - "^style"
   groups:
     - title: "Breaking Changes"
-      regexp: '(?i)\(BC\)'
+      regexp: '(?i)\(BC\)|\bBREAKING CHANGE\b'
       order: 10
     - title: "Experimental Features"
       regexp: '(?i)\(experimental\)'
       order: 25
-    - title: "New Features"
-      regexp: '^feat:'
-      order: 20
     - title: "Bug Fixes"
-      regexp: '^fix:'
+      regexp: '(?i)^fix(\(.+\))?:|\bfix\b'
       order: 30
+    - title: "New Features"
+      regexp: '(?i)^feat(\(.+\))?:|\badd\b'
+      order: 20
     - title: "Refactoring"
-      regexp: '^refactor:'
+      regexp: '(?i)^refactor(\(.+\))?:'
       order: 40
     - title: "Other Changes"
       order: 999
