@@ -35,28 +35,34 @@ changelog:
   abbrev: 7
   format: >-
     {{ .SHA }} {{ trimprefix (trimprefix (trimprefix (trimprefix (trimprefix .Message "feat: ") "fix: ") "refactor: ") "docs: ") "style: " }}
-  groups:
-    - title: "Features"
-      regexp: '^feat(\(.+\))?:'
-      order: 0
-    - title: "Fixes"
-      regexp: '^fix(\(.+\))?:'
-      order: 1
-    - title: "Refactoring"
-      regexp: '^refactor(\(.+\))?:'
-      order: 2
-    - title: "Documentation"
-      regexp: '^docs(\(.+\))?:'
-      order: 3
-    - title: "Style"
-      regexp: '^style(\(.+\))?:'
-      order: 4
-    - title: "Other"
-      order: 999
   filters:
     exclude:
-      - "^test:"
       - "^chore:"
+      - "^test:"
+      - "^perf:"
+      - "^ci:"
+      - "^build:"
+      - "^ops:"
+      - "^docs:"
+      - "^style:"
+  groups:
+    - title: "Breaking Changes"
+      regexp: '(?i)\(BC\)'
+      order: 10
+    - title: "Experimental Features"
+      regexp: '(?i)\(experimental\)'
+      order: 25
+    - title: "New Features"
+      regexp: '^feat:'
+      order: 20
+    - title: "Bug Fixes"
+      regexp: '^fix:'
+      order: 30
+    - title: "Refactoring"
+      regexp: '^refactor:'
+      order: 40
+    - title: "Other Changes"
+      order: 999
 
 release:
   header: |
