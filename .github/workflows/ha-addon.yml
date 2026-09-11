@@ -37,7 +37,7 @@ jobs:
             | "## \(.tag_name) - \(.published_at | split("T")[0])\n\n\((.body // "No release notes.")
             | gsub("(?m)^\\* [0-9a-f]{7,40} "; "* ")
             | sub("^# Changelog\n\n"; "")
-            | sub("^##(?!#)[^\n]*\n\n"; "")
+            | sub("^##(?!#)[^\n]*\n"; "")
             )"
           ' -r > /tmp/changelog_entries.md
 
