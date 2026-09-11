@@ -38,6 +38,7 @@ jobs:
             | gsub("(?m)^\\* [0-9a-f]{7,40} "; "* ")
             | sub("^# Changelog\n\n"; "")
             | sub("^##(?!#)[^\n]*\n\n"; "")
+            )"
           ' -r > /tmp/changelog_entries.md
 
           printf '%s\n\n%s\n\n' '# Changelog' 'Full release details: https://github.com/larknafets/nebenkostenrechner/releases' > ./hassio/nebenkostenrechner/CHANGELOG.md
