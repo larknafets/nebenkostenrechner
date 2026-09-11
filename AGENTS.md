@@ -1,16 +1,7 @@
-# AGENTS.md
-
-
-
 ## Agent skills
 
-### Issue tracker
-
-GitHub Issues via `gh` CLI (larknafets/nebenkostenrechner). See `docs/agents/issue-tracker.md`.
-
-### Domain docs
-
-Single-context: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
+- **Issue tracker**: GitHub Issues via `gh` CLI (larknafets/nebenkostenrechner). See `docs/agents/issue-tracker.md`.
+- **Domain docs**: Single-context: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Plan mode
 
@@ -23,18 +14,10 @@ Single-context: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Git rules
 
-### Commit messages
-
-See `docs/agents/git-commit-messages.md`.
-
-### Branche naming
-
-See `docs/agents/git-branches.md`.
-
-### Releases and versioning
-
-See `docs/agents/git-releases.md`.
+- **Commit messages**: `docs/agents/git-commit-messages.md`
+- **Branch naming**: `docs/agents/git-branches.md`
+- **Releases and versioning**: `docs/agents/git-releases.md`
 
 ## Language convention
 
-See `docs/agents/language-convention.md`.
+`docs/agents/language-convention.md`
