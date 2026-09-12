@@ -125,6 +125,7 @@ func NewMux(db, demoDB *sql.DB, version, buildDate string) *http.ServeMux {
 	mux.HandleFunc("POST /ablesungen/{id}", withDB(db, demoDB, requireLoginUnlessTeilstand(a, handleUpdateAblesung())))
 	mux.HandleFunc("POST /ablesungen/{id}/loeschen", withDB(db, demoDB, a.RequireLogin(handleDeleteAblesung())))
 	mux.HandleFunc("GET /dashboard", withDB(db, demoDB, handleDashboard(version, buildDate, a)))
+	mux.HandleFunc("GET /update-check", handleUpdateCheck(version))
 	mux.HandleFunc("GET /berechnungslogik", handleBerechnungslogik(a))
 	mux.HandleFunc("GET /stammdaten", withDB(db, demoDB, handleStammdatenForm(a)))
 	mux.HandleFunc("POST /stammdaten", withDB(db, demoDB, a.RequireLogin(handleUpdateStammdaten())))

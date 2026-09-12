@@ -48,6 +48,21 @@ func checkForUpdate(currentVersion string) (latest string, available bool) {
 	return entry.latest, isNewerVersion(entry.latest, currentVersion)
 }
 
+// handleUpdateCheck serves checkForUpdate over JSON so the Dashboard's
+// client-side JS can re-trigger a cache refresh on tab interaction, not
+// just on the next full page load (Ticket: interaction-triggered update
+// check).
+func handleUpdateCheck(version string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		latest, available := checkForUpdate(version)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(struct {
+			Available bool   `json:"available"`
+			Latest    string `json:"latest"`
+		}{Available: available, Latest: latest})
+	}
+}
+
 func refreshReleaseCache() {
 	latest, err := fetchLatestReleaseFrom(releaseAPIURL, &http.Client{Timeout: releaseHTTPTimeout})
 	if err != nil {
