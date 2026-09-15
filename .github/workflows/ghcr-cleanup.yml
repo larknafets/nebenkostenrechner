@@ -1,0 +1,22 @@
+name: GHCR cleanup
+
+on:
+  schedule:
+    - cron: "23 4 * * 0"
+  workflow_dispatch:
+
+permissions:
+  packages: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Delete untagged and partial images
+        uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1
+        with:
+          package: nebenkostenrechner
+          delete-untagged: true
+          delete-partial-images: true
+          older-than: "1 day" # keeps digests from an in-flight manifest-list build
