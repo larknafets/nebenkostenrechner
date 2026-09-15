@@ -2,7 +2,7 @@
 
 Commits are how *you* track change; a **version** is how your *consumers* track it. The moment anything else depends on your code — another team, a published package, a deployed client — "latest on main" stops being a sufficient answer to "what am I running, and is it safe to upgrade?" A version number and a changelog are the contract that answers it.
 
-## Semantic Versioning
+## Semantic versioning
 
 For anything with consumers, version `MAJOR.MINOR.PATCH` and let the number carry meaning:
 
