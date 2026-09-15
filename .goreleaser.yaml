@@ -34,7 +34,7 @@ changelog:
   sort: desc
   abbrev: 7
   format: >-
-    {{ .SHA }} {{ trimprefix (trimprefix (trimprefix (trimprefix (trimprefix (trimprefix (trimprefix (trimprefix .Message "feat: ") "feat!: ") "fix: ") "fix!: ") "refactor: ") "refactor!: ") "revert: ") "revert!: " }}
+    {{ .SHA }} {{ regexReplaceAll `^\w+(\([^)]*\))?!?:\s*` .Message "" }}
   filters:
     exclude:
       - "^chore"
