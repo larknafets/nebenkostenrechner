@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout ha-addons
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: larknafets/ha-addons
           token: ${{ secrets.HASSIO_DEPLOY_TOKEN }}
