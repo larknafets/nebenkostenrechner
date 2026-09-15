@@ -2,7 +2,7 @@
 
 - Branch from `main`
 - Keep branches short-lived (merge within 1-3 days) — long-lived branches are hidden costs
-- Delete branches after merge
+- Delete branches after merge, except `prototype/*`
 - Prefer feature flags over long-lived branches for incomplete features
 
 Branch names follow this structure:
@@ -18,6 +18,6 @@ Branch names follow this structure:
 | `hotfix/` | Urgent fixes | `hotfix/security-patch` |
 | `release/` | Release preparation | `release/v1.2.0` |
 | `chore/` | Non-code tasks | `chore/update-dependencies` |
-| `prototype/` | design prototypes for decisions | `prototype/login-dashboard` |
+| `prototype/` | Design prototypes for decisions | `prototype/login-dashboard` |
 
 Trunk branches (`main`, `master`, `develop`) do not require a prefix.

@@ -6,8 +6,9 @@ Write commit messages terse and exact. Conventional Commits format. No fluff. Wh
 
 ### Subject line
 
-- `<type>: <imperative summary>`
-- Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `chore`, `build`, `ci`, `style`, `revert`
+- `<type>(<scope>): <imperative summary>`
+- Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `chore`, `build`, `ci`, `style`, `revert`; always lower case
+- The `<scope>` is always lower case and can be empty (e.g. if the change is a global or difficult to assign to a single component), in which case the parentheses are omitted.
 - Imperative mood: "add", "fix", "remove" - not "added", "adds", "adding"
 - ≤50 chars when possible, hard cap 72
 - No trailing period
@@ -18,22 +19,23 @@ Write commit messages terse and exact. Conventional Commits format. No fluff. Wh
 - Add body only for: non-obvious *why*, breaking changes, migration notes, linked issues
 - Wrap at 72 chars
 - Bullets `-` not `*`
-- Reference issues/PRs at end: `Closes #42`, `Refs #17`
+- Reference issues/PRs/discussions at end: `Closes #42`, `Refs #17`
 
 ### What NEVER goes in
 
 - "This commit does X", "I", "we", "now", "currently" - the diff says what
 - "As requested by..."
 - "Generated with Claude Code" or any AI attribution
+- Emoji
 - Restating the file name when scope already says it
 
 ## Examples
 
 Diff: new endpoint for user profile with body explaining the why
-- ❌ "feat: add a new endpoint to get user profile information from the database"
+- ❌ "feat: Add a new endpoint to get user profile information from the database"
 - ✅
   ```
-  feat(api): add GET /users/:id/profile
+  feat(api): Add GET /users/:id/profile
 
   Mobile client needs profile data without the full user payload
   to reduce LTE bandwidth on cold-launch screens.
@@ -44,7 +46,7 @@ Diff: new endpoint for user profile with body explaining the why
 Diff: breaking API change
 - ✅
   ```
-  feat(api)!: rename /v1/orders to /v1/checkout
+  feat(api)!: Rename /v1/orders to /v1/checkout
 
   BREAKING CHANGE: clients on /v1/orders must migrate to /v1/checkout
   before 2026-06-01. Old route returns 410 after that date.
