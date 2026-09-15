@@ -23,6 +23,10 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Read Go version
+        id: goversion
+        run: echo "version=$(grep '^go ' go.mod | cut -d' ' -f2)" >> "$GITHUB_OUTPUT"
+
       - name: Run tests
         run: go test ./...
 
@@ -63,6 +67,7 @@ jobs:
           build-args: |
             VERSION=${{ github.ref_name }}
             BUILD_DATE=${{ steps.build_date.outputs.date }}
+            GO_VERSION=${{ steps.goversion.outputs.version }}
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
