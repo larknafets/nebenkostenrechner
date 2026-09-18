@@ -18,9 +18,24 @@ jobs:
           token: ${{ secrets.HASSIO_DEPLOY_TOKEN }}
           path: ./hassio
 
+      - name: Resolve release tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          tag=$(gh api repos/larknafets/nebenkostenrechner/tags --paginate \
+            --jq "first(.[] | select(.commit.sha == \"${HEAD_SHA}\") | .name)")
+          if [ -z "$tag" ]; then
+            echo "No tag found for commit ${HEAD_SHA}" >&2
+            exit 1
+          fi
+          echo "name=${tag}" >> "$GITHUB_OUTPUT"
+
       - name: Update version
         env:
-          GITHUB_REF_NAME: ${{ github.event.workflow_run.head_branch }}
+          GITHUB_REF_NAME: ${{ steps.tag.outputs.name }}
         run: |
           version="${GITHUB_REF_NAME#v}"
           sed -i -e "s/^version:.*/version: \"${version}\"/" ./hassio/nebenkostenrechner/config.yaml
@@ -46,7 +61,7 @@ jobs:
 
       - name: Push
         env:
-          GITHUB_REF_NAME: ${{ github.event.workflow_run.head_branch }}
+          GITHUB_REF_NAME: ${{ steps.tag.outputs.name }}
         run: |
           cd ./hassio
           git config user.name github-actions
