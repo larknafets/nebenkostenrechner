@@ -18,13 +18,17 @@ func JahrFromMonat(monat string) (int, error) {
 	return t.Year(), nil
 }
 
-// Logik values for fixkosten_werte.logik - the 4 allocation rules a
+// Logik values for fixkosten_werte.logik - the allocation rules a
 // Kostenposition can be split between Wohnung 1/2 by (Issue #60).
+// LogikWohnung1/LogikWohnung2 allocate a position fully (100%) to one of
+// the 2 apartments instead of splitting it (Issue #143).
 const (
 	LogikWohneinheit = "wohneinheit"
 	LogikFlurstueck  = "flurstueck"
 	LogikQM          = "qm"
 	LogikPersonen    = "personen"
+	LogikWohnung1    = "wohnung1"
+	LogikWohnung2    = "wohnung2"
 )
 
 // Typ values for fixkosten_werte.typ.

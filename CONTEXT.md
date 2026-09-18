@@ -59,14 +59,14 @@ Die ins Netz eingespeiste PV-Überschussmenge (Zähler `strom_einspeisung`) und 
 Die Seite für Werte, die sich selten ändern und nicht Teil einer monatlichen Erfassung sind: Wohnungsgröße/Flurstücksgröße je Wohnung (aktuelle Einzelwerte). Änderungen wirken sofort auf alle Monate, nicht eingefroren wie ein Ablesungs- oder Fixkosten-Eingabe-Wert.
 
 **Fixkosten-Eingabe**:
-Eine monatliche Erfassung, analog zur Ablesung: Personenzahl je Wohnung (eigenständig, nicht die der Ablesung) und für jede der 14 Kostenpositionen ihre Berechnungslogik, ihr Typ und ihr Wert. Anders als die Ablesung hängt sie nicht von einer Vorperiode ab (kein Verbrauch, keine Zählerstand-Differenz); Logik/Typ/Wert sind, wie Personen und der Nebenkostenabschlag, je Eingabe unabhängig gespeichert und von der letzten Eingabe vorbelegt, nicht jahresweise zentral gepflegt.
+Eine monatliche Erfassung, analog zur Ablesung: Personenzahl je Wohnung (eigenständig, nicht die der Ablesung) und für jede der 16 Kostenpositionen ihre Berechnungslogik, ihr Typ und ihr Wert. Anders als die Ablesung hängt sie nicht von einer Vorperiode ab (kein Verbrauch, keine Zählerstand-Differenz); Logik/Typ/Wert sind, wie Personen und der Nebenkostenabschlag, je Eingabe unabhängig gespeichert und von der letzten Eingabe vorbelegt, nicht jahresweise zentral gepflegt.
 _Avoid_: Fixkosten-Eintrag, Fixkosten-Periode
 
 **Kostenposition**:
-Eine der 14 festen Positionen (Grundsteuer, Wohngebäudeversicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise Strom/Wasser/Abwasser/Internet, Wärmepumpen-Wartung) - Struktur so fix wie die Zähler, geseeded wie `meters`. Ihre Logik/Typ/Wert sind dagegen an der jeweiligen Fixkosten-Eingabe gepflegte Daten.
+Eine der 16 festen Positionen (Grundsteuer, Wohngebäudeversicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise Strom/Wasser/Abwasser/Internet, Wärmepumpen-Wartung, Streaming-Dienste, Sonstige Kosten) - Struktur so fix wie die Zähler, geseeded wie `meters`. Ihre Logik/Typ/Wert sind dagegen an der jeweiligen Fixkosten-Eingabe gepflegte Daten.
 
 **Berechnungslogik**:
-Die Regel, nach der eine Kostenposition auf Wohnung 1/2 aufgeteilt wird: Je Wohneinheit (50/50), Je anteiliges Flurstück, Je anteilige Wohnungsgröße, oder Je Anzahl Personen (aus derselben Fixkosten-Eingabe).
+Die Regel, nach der eine Kostenposition auf Wohnung 1/2 aufgeteilt wird: Je Wohneinheit (50/50), Je anteiliges Flurstück, Je anteilige Wohnungsgröße, Je Anzahl Personen (aus derselben Fixkosten-Eingabe), oder vollständig Wohnung 1 bzw. Wohnung 2 (100/0).
 _Avoid_: Verteilungsschlüssel, Split (das ist die Heizungs-Gewichtung, ein anderer Begriff)
 
 **Typ (jährlich/monatlich)**:

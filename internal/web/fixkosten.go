@@ -20,6 +20,8 @@ var logikLabels = map[string]string{
 	store.LogikFlurstueck:  "Je anteiliges Flurstück",
 	store.LogikQM:          "Je anteilige Wohnungsgröße",
 	store.LogikPersonen:    "Je Anzahl Personen",
+	store.LogikWohnung1:    "Wohnung 1",
+	store.LogikWohnung2:    "Wohnung 2",
 }
 
 // logikOption is one <select> choice for a cost position's allocation logic.
@@ -32,6 +34,8 @@ var logikOptions = []logikOption{
 	{store.LogikFlurstueck, logikLabels[store.LogikFlurstueck]},
 	{store.LogikQM, logikLabels[store.LogikQM]},
 	{store.LogikPersonen, logikLabels[store.LogikPersonen]},
+	{store.LogikWohnung1, logikLabels[store.LogikWohnung1]},
+	{store.LogikWohnung2, logikLabels[store.LogikWohnung2]},
 }
 
 // parseFixkostenMonat turns the form's <input type="month"> value ("YYYY-MM")

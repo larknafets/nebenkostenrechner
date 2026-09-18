@@ -222,6 +222,8 @@ var demoKostenpositionWerte = map[string]float64{
 	"abwasser":         9.80,  // monthly
 	"internet":         39.90, // monthly
 	"wp_wartung":       14.50, // monthly
+	"streaming":        0,     // monthly, keine historischen Daten (Issue #143)
+	"sonstige":         0,     // monthly, keine historischen Daten (Issue #143)
 }
 
 // demoAbschlag is the monthly Nebenkostenabschlag (utility installment)

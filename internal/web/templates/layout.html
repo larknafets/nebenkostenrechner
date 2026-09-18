@@ -164,6 +164,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
     --danger: #b91c1c; --warning: #b45309;
     --cat-strom: #f59e0b; --cat-heizung: #ef4444; --cat-wasser: #3b82f6; --cat-fix: #8b5cf6;
     --logik-wohneinheit: #8b5cf6; --logik-flurstueck: #22c55e; --logik-qm: #ec4899; --logik-personen: #06b6d4;
+    --logik-wohnung1: #f59e0b; --logik-wohnung2: #6366f1;
     --tooltip-bg: #1c1e21; --tooltip-text: #ffffff;
   }
   @media (prefers-color-scheme: dark) {
@@ -174,6 +175,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
       --danger: #f87171; --warning: #fbbf24;
       --cat-strom: #fbbf24; --cat-heizung: #f87171; --cat-wasser: #60a5fa; --cat-fix: #a78bfa;
       --logik-wohneinheit: #a78bfa; --logik-flurstueck: #4ade80; --logik-qm: #f472b6; --logik-personen: #22d3ee;
+      --logik-wohnung1: #fbbf24; --logik-wohnung2: #818cf8;
       --tooltip-bg: #e8eaed; --tooltip-text: #14161a;
     }
   }
@@ -184,6 +186,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
     --danger: #f87171; --warning: #fbbf24;
     --cat-strom: #fbbf24; --cat-heizung: #f87171; --cat-wasser: #60a5fa; --cat-fix: #a78bfa;
     --logik-wohneinheit: #a78bfa; --logik-flurstueck: #4ade80; --logik-qm: #f472b6; --logik-personen: #22d3ee;
+    --logik-wohnung1: #fbbf24; --logik-wohnung2: #818cf8;
     --tooltip-bg: #e8eaed; --tooltip-text: #14161a;
   }
   * { box-sizing: border-box; }
@@ -246,6 +249,8 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   .logik-flurstueck { background: var(--logik-flurstueck); }
   .logik-qm { background: var(--logik-qm); }
   .logik-personen { background: var(--logik-personen); }
+  .logik-wohnung1 { background: var(--logik-wohnung1); }
+  .logik-wohnung2 { background: var(--logik-wohnung2); }
   .stat-kategorien { margin-top: .4rem; display: flex; flex-wrap: wrap; gap: .1rem .75rem; }
   .stat-kategorien span { font-weight: normal; }
 

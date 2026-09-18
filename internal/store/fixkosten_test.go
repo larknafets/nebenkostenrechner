@@ -27,14 +27,15 @@ func TestKostenpositionen_Seed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Kostenpositionen: %v", err)
 	}
-	if len(kps) != 14 {
-		t.Fatalf("Kostenpositionen = %d, want 14", len(kps))
+	if len(kps) != 16 {
+		t.Fatalf("Kostenpositionen = %d, want 16", len(kps))
 	}
 
 	wantKeys := []string{
 		"grundsteuer", "gebaeudevers", "deich_grund", "deich_bau", "kreisverband",
 		"abfall_haushalt", "abfall_personen", "abfall_biomuell", "abfall_restmuell",
 		"strom_grundpreis", "trinkwasser", "abwasser", "internet", "wp_wartung",
+		"streaming", "sonstige",
 	}
 	for i, want := range wantKeys {
 		if kps[i].Key != want {

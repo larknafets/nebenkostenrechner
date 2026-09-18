@@ -128,6 +128,10 @@ func splitRatio(logik string, qmW1, qmW2, flurstueckW1, flurstueckW2, personenW1
 		return Ratio2(qmW1, qmW2)
 	case store.LogikPersonen:
 		return Ratio2(personenW1, personenW2)
+	case store.LogikWohnung1:
+		return 1, 0
+	case store.LogikWohnung2:
+		return 0, 1
 	default: // store.LogikWohneinheit
 		return 0.5, 0.5
 	}

@@ -619,6 +619,8 @@ var KostenpositionDefaults = []KostenpositionDefault{
 	{ID: 12, Key: "abwasser", Label: "Grundgebühr Abwasser", Logik: LogikWohneinheit, Typ: TypMonatlich},
 	{ID: 13, Key: "internet", Label: "Grundgebühr Internet", Logik: LogikWohneinheit, Typ: TypMonatlich},
 	{ID: 14, Key: "wp_wartung", Label: "Wartungskosten Wärmepumpe", Logik: LogikWohneinheit, Typ: TypMonatlich},
+	{ID: 15, Key: "streaming", Label: "Streaming-Dienste", Logik: LogikWohneinheit, Typ: TypMonatlich},
+	{ID: 16, Key: "sonstige", Label: "Sonstige Kosten", Logik: LogikWohneinheit, Typ: TypMonatlich},
 }
 
 // seed inserts the fixed master data for the 2 apartments and 9 meters if

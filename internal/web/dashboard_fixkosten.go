@@ -85,7 +85,7 @@ func fixkostenGruppen(apartmentID int64, erg *calc.FixkostenErgebnis) []dashboar
 	for _, p := range erg.Positionen {
 		sums[p.Logik] += p.KostenFor(apartmentID)
 	}
-	logiken := []string{store.LogikWohneinheit, store.LogikFlurstueck, store.LogikQM, store.LogikPersonen}
+	logiken := []string{store.LogikWohneinheit, store.LogikFlurstueck, store.LogikQM, store.LogikPersonen, store.LogikWohnung1, store.LogikWohnung2}
 	out := make([]dashboardSegment, len(logiken))
 	for i, logik := range logiken {
 		out[i] = dashboardSegment{Farbe: "logik-" + logik, Label: logikLabels[logik], Kosten: calc.Round2(sums[logik])}
