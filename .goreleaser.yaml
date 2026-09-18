@@ -33,8 +33,12 @@ checksum:
 changelog:
   sort: desc
   abbrev: 7
+  # regexReplaceAll ist in GoReleaser OSS nicht als Template-Funktion
+  # verfuegbar (nur reReplaceAll in GoReleaser Pro) - stattdessen den
+  # Commit-Typ-Praefix (inkl. optionalem (scope) und !) ohne Regex
+  # erkennen und abschneiden, mit split/trimsuffix/trimprefix.
   format: >-
-    {{ .SHA }} {{ regexReplaceAll `^\w+(\([^)]*\))?!?:\s*` .Message "" }}
+    {{ $head := index (split .Message ": ") 0 }}{{ $head = trimsuffix $head "!" }}{{ if contains $head "(" }}{{ $head = index (split $head "(") 0 }}{{ end }}{{ if or (eq $head "feat") (eq $head "fix") (eq $head "refactor") (eq $head "revert") }}{{ .SHA }} {{ trimprefix .Message (printf "%s: " (index (split .Message ": ") 0)) }}{{ else }}{{ .SHA }} {{ .Message }}{{ end }}
   filters:
     exclude:
       - "^chore"
