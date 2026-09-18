@@ -102,7 +102,7 @@ Kosten_Abwasser_X     = Abwasser_X * Abwasserpreis</pre>
 
 <div class="panel" style="margin-top:1rem">
   <h2>Fixkosten/Grundgebühren</h2>
-  <p>Die 14 festen <a href="{{.Base}}/stammdaten">Kostenpositionen</a> (Grundsteuer, Wohngebäudeversicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise Strom/Wasser/Abwasser/Internet, Wärmepumpen-Wartung) werden getrennt von Strom/Heizung/Wasser berechnet, auf der monatlichen <a href="{{.Base}}/fixkosten">Fixkosten-Eingabe</a>. Jede Position hat pro Jahr einen Typ:</p>
+  <p>Die 16 festen <a href="{{.Base}}/stammdaten">Kostenpositionen</a> (Grundsteuer, Wohngebäudeversicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise Strom/Wasser/Abwasser/Internet, Wärmepumpen-Wartung, Streaming-Dienste, Sonstige Kosten) werden getrennt von Strom/Heizung/Wasser berechnet, auf der monatlichen <a href="{{.Base}}/fixkosten">Fixkosten-Eingabe</a>. Jede Position hat pro Jahr einen Typ:</p>
   <pre class="formula">Monatswert("jährlich")  = Jahreswert / 12                       (aus den Stammdaten, im Formular nicht editierbar)
 Monatswert("monatlich") = expliziter Wert der Fixkosten-Eingabe  (fehlt er, z.B. nach Typwechsel:
                                                                    letzter_bekannter_Jahreswert / 12, sonst 0)</pre>
@@ -110,13 +110,15 @@ Monatswert("monatlich") = expliziter Wert der Fixkosten-Eingabe  (fehlt er, z.B.
   <pre class="formula">Je Wohneinheit          : 50 / 50
 Je anteiliges Flurstück : flurstueck_W1 / (flurstueck_W1 + flurstueck_W2)   (Stammdaten)
 Je anteilige Wohnungsgröße : qm_W1 / (qm_W1 + qm_W2)                        (Stammdaten)
-Je Anzahl Personen      : Personen_W1 / (Personen_W1 + Personen_W2)         (aus der Fixkosten-Eingabe)</pre>
-  <p class="muted">Sind bei "Je anteiliges Flurstück"/"Je anteilige Wohnungsgröße"/"Je Anzahl Personen" beide Werte 0, fällt die Aufteilung auf hälftig zurück statt zu verschwinden - gleiche Regel wie bei der Heizungs-Wärme-Ratio oben. Jede Position wird einzeln je Wohnung kaufmännisch gerundet, siehe Rundung unten.</p>
+Je Anzahl Personen      : Personen_W1 / (Personen_W1 + Personen_W2)         (aus der Fixkosten-Eingabe)
+Wohnung 1               : 100 / 0
+Wohnung 2               : 0 / 100</pre>
+  <p class="muted">Sind bei "Je anteiliges Flurstück"/"Je anteilige Wohnungsgröße"/"Je Anzahl Personen" beide Werte 0, fällt die Aufteilung auf hälftig zurück statt zu verschwinden - gleiche Regel wie bei der Heizungs-Wärme-Ratio oben. "Wohnung 1"/"Wohnung 2" rechnen die Position immer vollständig einer Seite zu, ohne Ratio. Jede Position wird einzeln je Wohnung kaufmännisch gerundet, siehe Rundung unten.</p>
 </div>
 
 <div class="panel" style="margin-top:1rem">
   <h2>Rundung</h2>
-  <p>Jede Kostenposition (Strom, Heizung/Warmwasser, Frischwasser, Abwasser, jede der 14 Fixkosten-Positionen) wird einzeln je Wohnung kaufmännisch auf Cent gerundet (0,5 Cent immer aufgerundet), erst nach der vollständigen Berechnung mit float-Genauigkeit. Die angezeigte Gesamtsumme je Wohnung kann dadurch um 1-2 Cent von der rechnerisch exakten Summe abweichen - das ist akzeptiert, es gibt keinen Korrekturmechanismus.</p>
+  <p>Jede Kostenposition (Strom, Heizung/Warmwasser, Frischwasser, Abwasser, jede der 16 Fixkosten-Positionen) wird einzeln je Wohnung kaufmännisch auf Cent gerundet (0,5 Cent immer aufgerundet), erst nach der vollständigen Berechnung mit float-Genauigkeit. Die angezeigte Gesamtsumme je Wohnung kann dadurch um 1-2 Cent von der rechnerisch exakten Summe abweichen - das ist akzeptiert, es gibt keinen Korrekturmechanismus.</p>
 </div>
 
 <div class="panel" style="margin-top:1rem">

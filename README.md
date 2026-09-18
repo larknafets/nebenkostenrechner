@@ -113,7 +113,7 @@ Einspeisevergütung = Verbrauch(strom_einspeisung) * Einspeisung_Preis
 
 ### Fixkosten/Grundgebühren
 
-Die festen Kostenpositionen (Grundsteuer, Wohngebäudeversicherung, Deichbeitrag Grund und Boden, Deichbeitrag Bauliche Anlagen, Kreisverband Wesermarsch, Abfallwirtschaft Grundgebühr Haushalt/Personen/Biomüll/Restmüll, Grundgebühr Strom, Grundgebühr Trinkwasser/Abwasser, Grundgebühr Internet, Wärmepumpenwartung) werden unabhängig von Strom/Heizung/Wasser auf einer eigenen monatlichen Fixkosteneingabe erfasst und berechnet. Jede Position trägt in dieser Eingabe ihre eigene Berechnungslogik, ihren Typ und ihren Wert (vorbelegt von der letzten Eingabe, frei überschreibbar):
+Die festen Kostenpositionen (Grundsteuer, Wohngebäudeversicherung, Deichbeitrag Grund und Boden, Deichbeitrag Bauliche Anlagen, Kreisverband Wesermarsch, Abfallwirtschaft Grundgebühr Haushalt/Personen/Biomüll/Restmüll, Grundgebühr Strom, Grundgebühr Trinkwasser/Abwasser, Grundgebühr Internet, Wärmepumpenwartung, Streaming-Dienste, Sonstige Kosten) werden unabhängig von Strom/Heizung/Wasser auf einer eigenen monatlichen Fixkosteneingabe erfasst und berechnet. Jede Position trägt in dieser Eingabe ihre eigene Berechnungslogik, ihren Typ und ihren Wert (vorbelegt von der letzten Eingabe, frei überschreibbar):
 
 ```
 Monatswert("jährlich")  = Jahreswert / 12          (Jahreswert = erfasster Wert dieser Eingabe)
@@ -127,9 +127,11 @@ Je Wohneinheit             : 50 / 50
 Je anteiliges Flurstück    : flurstueck_W1 / (flurstueck_W1 + flurstueck_W2)   (Stammdaten)
 Je anteilige Wohnungsgröße : qm_W1 / (qm_W1 + qm_W2)                            (Stammdaten)
 Je Anzahl Personen         : Personen_W1 / (Personen_W1 + Personen_W2)         (Fixkosten-Eingabe)
+Wohnung 1                  : 100 / 0
+Wohnung 2                  : 0 / 100
 ```
 
-Sind bei den letzten drei Logiken beide Werte 0, fällt die Aufteilung auf hälftig zurück (gleiche Regel wie bei der Heizungswärme-Ratio).
+Sind bei "Je anteiliges Flurstück", "Je anteilige Wohnungsgröße" oder "Je Anzahl Personen" beide Werte 0, fällt die Aufteilung auf hälftig zurück (gleiche Regel wie bei der Heizungswärme-Ratio). "Wohnung 1"/"Wohnung 2" rechnen die Position immer vollständig einer Seite zu, ohne Ratio.
 
 ### Nebenkostenabschlag (Guthaben/Nachzahlung)
 
@@ -143,7 +145,7 @@ Fortlaufend seit Erfassungsbeginn kumuliert, kein Reset zum Jahreswechsel. Posit
 
 ### Rundung
 
-Jede Kostenposition (Strom, Heizung/Warmwasser, Frischwasser, Abwasser, jede der 14 Fixkostenpositionen) wird einzeln je Wohnung **kaufmännisch auf Cent gerundet** (0,5 Cent immer aufgerundet), erst nach der vollständigen Berechnung mit float-Genauigkeit. Die angezeigte Gesamtsumme je Wohnung kann dadurch um 1-2 Cent von der rechnerisch exakten Summe abweichen - das ist akzeptiert, es gibt keinen Korrekturmechanismus.
+Jede Kostenposition (Strom, Heizung/Warmwasser, Frischwasser, Abwasser, jede der 16 Fixkostenpositionen) wird einzeln je Wohnung **kaufmännisch auf Cent gerundet** (0,5 Cent immer aufgerundet), erst nach der vollständigen Berechnung mit float-Genauigkeit. Die angezeigte Gesamtsumme je Wohnung kann dadurch um 1-2 Cent von der rechnerisch exakten Summe abweichen - das ist akzeptiert, es gibt keinen Korrekturmechanismus.
 
 ### Preise & Personenzahl
 
