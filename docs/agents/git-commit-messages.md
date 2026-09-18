@@ -7,7 +7,19 @@ Write commit messages terse and exact. Conventional Commits format. No fluff. Wh
 ### Subject line
 
 - `<type>(<scope>): <imperative summary>`
-- Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `chore`, `build`, `ci`, `style`, `revert`; always lower case
+- Types, always lower case:
+  - `feat`: a new feature
+  - `fix`: a bug fix
+  - `chore`: changes unrelated to a fix or feature, not touching src or test files (e.g. updating dependencies)
+  - `refactor`: refactored code that neither fixes a bug nor adds a feature
+  - `docs`: updates to documentation such as the README or other markdown files
+  - `style`: changes that don't affect code meaning (whitespace, missing semicolons, etc.)
+  - `test`: new or corrected tests
+  - `perf`: performance improvements
+  - `ci`: continuous integration, files under `.github/workflows/` (when/how the pipeline runs)
+  - `build`: the release/packaging tool's own config, e.g. `.goreleaser.yaml`, `Dockerfile` (how the artifact is produced), or external dependencies
+  - `revert`: reverts a previous commit
+- A bug in a `ci` or `build` file goes under that type, not `fix`.
 - The `<scope>` is always lower case and can be empty (e.g. if the change is a global or difficult to assign to a single component), in which case the parentheses are omitted.
 - Imperative mood: "add", "fix", "remove" - not "added", "adds", "adding"
 - ≤50 chars when possible, hard cap 72
