@@ -56,7 +56,7 @@ func handleUpdateCheck(version string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		latest, available := checkForUpdate(version)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(struct {
+		_ = json.NewEncoder(w).Encode(struct {
 			Available bool   `json:"available"`
 			Latest    string `json:"latest"`
 		}{Available: available, Latest: latest})

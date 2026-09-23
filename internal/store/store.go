@@ -260,7 +260,7 @@ func ensurePeriodsNullablePriceColumns(db *sql.DB) error {
 	if _, err := conn.ExecContext(ctx, `PRAGMA foreign_keys = OFF`); err != nil {
 		return fmt.Errorf("disable foreign keys: %w", err)
 	}
-	defer conn.ExecContext(ctx, `PRAGMA foreign_keys = ON`)
+	defer func() { _, _ = conn.ExecContext(ctx, `PRAGMA foreign_keys = ON`) }()
 
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {

@@ -90,7 +90,7 @@ func RunCSVImport[T any](w http.ResponseWriter, r *http.Request, db *sql.DB, cfg
 func parseImportCSVRows[T any](file io.Reader, cfg ImportConfig[T]) ([]T, error) {
 	reader := bufio.NewReader(file)
 	if bom, err := reader.Peek(3); err == nil && bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF {
-		reader.Discard(3)
+		_, _ = reader.Discard(3)
 	}
 
 	cr := csv.NewReader(reader)

@@ -70,8 +70,12 @@ func fixkostenCSVUploadRequest(t *testing.T, csvText string) *http.Request {
 	if err != nil {
 		t.Fatalf("CreateFormFile: %v", err)
 	}
-	part.Write([]byte(csvText))
-	mw.Close()
+	if _, err := part.Write([]byte(csvText)); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if err := mw.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
 
 	req := httptest.NewRequest(http.MethodPost, "/fixkosten/import", &buf)
 	req.Header.Set("Content-Type", mw.FormDataContentType())
