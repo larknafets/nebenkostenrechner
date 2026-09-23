@@ -4,6 +4,12 @@ Write commit messages terse and exact. Conventional Commits format. No fluff. Wh
 
 ## Rules
 
+### Splitting commits
+
+- One commit = one logical change. Split when a diff mixes unrelated concerns (e.g. tooling setup vs. a doc/convention change), even if done in the same session.
+- Each commit must build/pass on its own where feasible - don't split a change so a part is broken mid-history.
+- Don't split further than one logical unit (e.g. don't split one feature's src + its own tests into two commits).
+
 ### Subject line
 
 - `<type>(<scope>): <imperative summary>`
@@ -21,6 +27,8 @@ Write commit messages terse and exact. Conventional Commits format. No fluff. Wh
   - `revert`: reverts a previous commit
 - A bug in a `ci` or `build` file goes under that type, not `fix`.
 - The `<scope>` is always lower case and can be empty (e.g. if the change is a global or difficult to assign to a single component), in which case the parentheses are omitted.
+- Component name is the default scope. Only when no component fits (global/cross-cutting change) and an issue or discussion number exists, use `#<nr>` as scope instead of leaving it empty. Never combine component and issue number in one scope.
+- Issue/discussion number in scope never replaces the body reference (`Closes #42`, `Refs #17`) - both stay.
 - Imperative mood: "add", "fix", "remove" - not "added", "adds", "adding"
 - ≤50 chars when possible, hard cap 72
 - No trailing period
@@ -53,6 +61,14 @@ Diff: new endpoint for user profile with body explaining the why
   to reduce LTE bandwidth on cold-launch screens.
 
   Closes #128
+  ```
+
+Diff: global change with no fitting component, tracked in issue #42
+- ✅
+  ```
+  refactor(#42): switch logging to structured JSON
+
+  Refs #42
   ```
 
 Diff: breaking API change
