@@ -30,9 +30,21 @@ func Einspeisung(db *sql.DB, periodID int64) (*EinspeisungErgebnis, error) {
 		return nil, fmt.Errorf("verbrauch: %w", err)
 	}
 
-	kwh := verbrauch["strom_einspeisung"]
+	return berechneEinspeisung(einspeisungEingabe{EinspeisungPreis: period.EinspeisungPreis, Verbrauch: verbrauch}), nil
+}
+
+// einspeisungEingabe is everything the feed-in compensation reads.
+type einspeisungEingabe struct {
+	EinspeisungPreis float64
+	Verbrauch        map[string]float64
+}
+
+// berechneEinspeisung is the compensation itself, a pure function of its
+// input.
+func berechneEinspeisung(in einspeisungEingabe) *EinspeisungErgebnis {
+	kwh := in.Verbrauch["strom_einspeisung"]
 	return &EinspeisungErgebnis{
 		EinspeisungKWh: kwh,
-		Ertrag:         Round2(kwh * period.EinspeisungPreis),
-	}, nil
+		Ertrag:         Round2(kwh * in.EinspeisungPreis),
+	}
 }

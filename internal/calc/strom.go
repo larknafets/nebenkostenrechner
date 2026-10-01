@@ -51,6 +51,13 @@ type StromErgebnis struct {
 	KostenWallbox float64
 }
 
+// stromEingabe is everything the electricity allocation reads: the
+// period's price and its meter consumptions (store.Verbrauch).
+type stromEingabe struct {
+	Strompreis float64
+	Verbrauch  map[string]float64
+}
+
 // Strom computes the electricity cost allocation for the given period.
 func Strom(db *sql.DB, periodID int64) (*StromErgebnis, error) {
 	period, err := store.GetPeriodByID(db, periodID)
@@ -63,6 +70,12 @@ func Strom(db *sql.DB, periodID int64) (*StromErgebnis, error) {
 		return nil, fmt.Errorf("verbrauch: %w", err)
 	}
 
+	return berechneStrom(stromEingabe{Strompreis: period.Strompreis, Verbrauch: verbrauch}), nil
+}
+
+// berechneStrom is the allocation itself, a pure function of its input.
+func berechneStrom(in stromEingabe) *StromErgebnis {
+	verbrauch := in.Verbrauch
 	netzbezugGesamt := verbrauch["strom_gesamt"]
 
 	w2Anteil := min(netzbezugGesamt, verbrauch["strom_wohnung2"])
@@ -80,8 +93,8 @@ func Strom(db *sql.DB, periodID int64) (*StromErgebnis, error) {
 		PVAnteilW2KWh:           max(0, verbrauch["strom_wohnung2"]-w2Anteil),
 		PVAnteilWPKWh:           max(0, verbrauch["strom_waermepumpe"]-wpAnteil),
 		PVAnteilWallboxKWh:      max(0, verbrauch["strom_wallbox"]-wallboxAnteil),
-		KostenW2:                Round2(w2Anteil * period.Strompreis),
-		KostenWPGesamtUnrounded: wpAnteil * period.Strompreis,
-		KostenWallbox:           Round2(wallboxAnteil * period.Strompreis),
-	}, nil
+		KostenW2:                Round2(w2Anteil * in.Strompreis),
+		KostenWPGesamtUnrounded: wpAnteil * in.Strompreis,
+		KostenWallbox:           Round2(wallboxAnteil * in.Strompreis),
+	}
 }

@@ -33,6 +33,15 @@ type WasserErgebnis struct {
 	KostenAbwasserW2     float64
 }
 
+// wasserEingabe is everything the water allocation reads: the period's
+// prices, its meter consumptions (store.Verbrauch) and the occupants of
+// both apartments.
+type wasserEingabe struct {
+	FrischwasserPreis, AbwasserPreis float64
+	Verbrauch                        map[string]float64
+	PersonenW1, PersonenW2           int64
+}
+
 // Wasser computes the water cost allocation for the given period.
 func Wasser(db *sql.DB, periodID int64) (*WasserErgebnis, error) {
 	period, err := store.GetPeriodByID(db, periodID)
@@ -49,7 +58,17 @@ func Wasser(db *sql.DB, periodID int64) (*WasserErgebnis, error) {
 	if err != nil {
 		return nil, fmt.Errorf("personen: %w", err)
 	}
-	p1, p2 := personen[1], personen[2]
+
+	return berechneWasser(wasserEingabe{
+		FrischwasserPreis: period.FrischwasserPreis, AbwasserPreis: period.AbwasserPreis,
+		Verbrauch: verbrauch, PersonenW1: personen[1], PersonenW2: personen[2],
+	}), nil
+}
+
+// berechneWasser is the allocation itself, a pure function of its input.
+func berechneWasser(in wasserEingabe) *WasserErgebnis {
+	verbrauch := in.Verbrauch
+	p1, p2 := in.PersonenW1, in.PersonenW2
 
 	wwGesamt := verbrauch["wasser_warmwasseraufbereitung"]
 	ratioP1, ratioP2 := Ratio2(float64(p1), float64(p2))
@@ -71,9 +90,9 @@ func Wasser(db *sql.DB, periodID int64) (*WasserErgebnis, error) {
 		AbwasserW1:     frischwasserW1,
 		AbwasserW2:     frischwasserW2,
 
-		KostenFrischwasserW1: Round2(frischwasserW1 * period.FrischwasserPreis),
-		KostenFrischwasserW2: Round2(frischwasserW2 * period.FrischwasserPreis),
-		KostenAbwasserW1:     Round2(frischwasserW1 * period.AbwasserPreis),
-		KostenAbwasserW2:     Round2(frischwasserW2 * period.AbwasserPreis),
-	}, nil
+		KostenFrischwasserW1: Round2(frischwasserW1 * in.FrischwasserPreis),
+		KostenFrischwasserW2: Round2(frischwasserW2 * in.FrischwasserPreis),
+		KostenAbwasserW1:     Round2(frischwasserW1 * in.AbwasserPreis),
+		KostenAbwasserW2:     Round2(frischwasserW2 * in.AbwasserPreis),
+	}
 }
