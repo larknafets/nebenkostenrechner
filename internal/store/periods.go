@@ -80,6 +80,57 @@ func UpdateStammdaten(db *sql.DB, in map[int64]StammdatenInput) error {
 	return tx.Commit()
 }
 
+// Haus is the house-wide Stammdaten (the single row of the haus table).
+type Haus struct {
+	// StromWeiterberechnen says whether the electricity consumption of
+	// Wohnung 2 is passed on in the Jahresabrechnung (Issue #163). Not a
+	// Betriebskostenart, only passed on by agreement.
+	StromWeiterberechnen bool
+}
+
+// GetHaus returns the house-wide Stammdaten.
+func GetHaus(db *sql.DB) (Haus, error) {
+	var h Haus
+	if err := db.QueryRow(`SELECT strom_weiterberechnen FROM haus WHERE id = 1`).Scan(&h.StromWeiterberechnen); err != nil {
+		return Haus{}, fmt.Errorf("query haus: %w", err)
+	}
+	return h, nil
+}
+
+// StammdatenFlags are the Stammdaten switches the Jahresabrechnung reads
+// (Issue #163): which Kostenpositionen are umlagefähig and whether the
+// electricity consumption of Wohnung 2 is passed on. Current values, no
+// history - a change takes effect for every month and year.
+type StammdatenFlags struct {
+	// Umlagefaehig maps a kostenposition id to its flag. Only the given
+	// positions are touched.
+	Umlagefaehig         map[int64]bool
+	StromWeiterberechnen bool
+}
+
+// UpdateStammdatenFlags writes the given flags in one transaction.
+func UpdateStammdatenFlags(db *sql.DB, in StammdatenFlags) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	for kostenpositionID, umlagefaehig := range in.Umlagefaehig {
+		if _, err := tx.Exec(
+			`UPDATE kostenpositionen SET umlagefaehig = ? WHERE id = ?`,
+			boolToInt(umlagefaehig), kostenpositionID,
+		); err != nil {
+			return fmt.Errorf("update umlagefaehig for kostenposition %d: %w", kostenpositionID, err)
+		}
+	}
+	if _, err := tx.Exec(`UPDATE haus SET strom_weiterberechnen = ? WHERE id = 1`, boolToInt(in.StromWeiterberechnen)); err != nil {
+		return fmt.Errorf("update strom_weiterberechnen: %w", err)
+	}
+
+	return tx.Commit()
+}
+
 // PeriodInput is one monthly reading, ready to be persisted.
 type PeriodInput struct {
 	ReadingDate string // YYYY-MM-DD

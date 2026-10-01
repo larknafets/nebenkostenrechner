@@ -11,6 +11,11 @@ Auf der `/stammdaten`-Seite gepflegt werden folgende Daten gepflegt. und gelten 
 | Wohnung 1 | 116,23 m² | - |
 | Wohnung 2 | 86 m² | - |
 
+Außerdem stehen hier zwei Schalter für die künftige Jahresabrechnung. Sie wirken auf alle Monate und Jahre, Dashboard und Monatsverlauf zeigen weiterhin alle Positionen und ändern sich nicht:
+
+- **Umlagefähig** je Kostenposition (Ja/Nein): Nur umlagefähige Positionen erscheinen in der Jahresabrechnung. Vorbelegt mit Ja für Grundsteuer, Wohngebäudeversicherung, Deichbeitrag Grund und Boden, Deichbeitrag Bauliche Anlagen, Kreisverband Wesermarsch, die vier Abfallwirtschafts-Positionen, Grundgebühr Strom, Trinkwasser und Abwasser sowie Wärmepumpenwartung. Vorbelegt mit Nein für Grundgebühr Internet, Streaming-Dienste und Sonstige Kosten. Teilweise umlagefähige Positionen teilst du über die Berechnungslogik der Fixkosteneingabe auf (z. B. "Wohnung 1" für den nicht umlagefähigen Teil).
+- **Stromverbrauch Wohnung 2 weiterberechnen** (Ja/Nein, vorbelegt Ja): Der Haushaltsstrom ist keine Betriebskostenart und wird nur laut Vereinbarung weiterberechnet.
+
 Die Fixkostenkostenpositionen (Berechnungslogik, Typ jährlich/monatlich, Wert) sowie der Nebenkostenabschlag werden dagegen nicht hier, sondern direkt an der jeweiligen Fixkosteneingabe gepflegt - siehe [Fixkosten/Grundgebühren](#fixkostengrundgebühren) und [Nebenkostenabschlag](#nebenkostenabschlag-guthabennachzahlung) unten.
 
 Personenzahl ist variabel und wird separat pro Ablesung *und* pro Fixkosteneingabe erfasst (zwei unabhängige Werte, nicht gemeinsam versioniert).

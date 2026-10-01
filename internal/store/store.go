@@ -72,6 +72,11 @@ func Open(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("migrate periods price columns nullable: %w", err)
 	}
 
+	if err := ensureKostenpositionenUmlagefaehigColumn(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("migrate kostenpositionen umlagefaehig column: %w", err)
+	}
+
 	if err := seed(db); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("seed master data: %w", err)
@@ -187,6 +192,61 @@ func ensureApartmentsFlurstueckGroesseColumn(db *sql.DB) error {
 
 	_, err = db.Exec(`ALTER TABLE apartments ADD COLUMN flurstueck_groesse REAL NOT NULL DEFAULT 0`)
 	return err
+}
+
+// ensureKostenpositionenUmlagefaehigColumn adds the umlagefaehig column to a
+// kostenpositionen table that predates it (Issue #163) and sets every
+// existing row to the starting value from KostenpositionDefaults. The
+// starting values are applied only in the call that adds the column, so a
+// flag the user changed later is never overwritten by a restart. On a
+// brand-new database the column already comes from schema.sql, the check
+// finds it and does nothing - the rows are seeded with their starting
+// value by seed().
+func ensureKostenpositionenUmlagefaehigColumn(db *sql.DB) error {
+	rows, err := db.Query(`PRAGMA table_info(kostenpositionen)`)
+	if err != nil {
+		return fmt.Errorf("inspect kostenpositionen columns: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var cid, notnull, pk int
+		var name, ctype string
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			return fmt.Errorf("scan kostenpositionen column: %w", err)
+		}
+		if name == "umlagefaehig" {
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	rows.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(`ALTER TABLE kostenpositionen ADD COLUMN umlagefaehig INTEGER NOT NULL DEFAULT 1`); err != nil {
+		return fmt.Errorf("add umlagefaehig column: %w", err)
+	}
+	for _, kp := range KostenpositionDefaults {
+		if _, err := tx.Exec(`UPDATE kostenpositionen SET umlagefaehig = ? WHERE id = ?`, boolToInt(kp.Umlagefaehig), kp.ID); err != nil {
+			return fmt.Errorf("set umlagefaehig for kostenposition %q: %w", kp.Key, err)
+		}
+	}
+	return tx.Commit()
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 // ensurePeriodsMonatColumn adds the monat column to an existing periods
@@ -601,26 +661,30 @@ type KostenpositionDefault struct {
 	Label string
 	Logik string
 	Typ   string
+	// Umlagefaehig is the starting value of the Umlagefähig flag (Issue
+	// #163) - per the research on BetrKV § 2 and the agreed Grundgebühr
+	// Strom exception. Afterwards it is a user-edited Stammdaten value.
+	Umlagefaehig bool
 }
 
 // KostenpositionDefaults is the fixed, ordered list of the 14 Kostenpositionen.
 var KostenpositionDefaults = []KostenpositionDefault{
-	{ID: 1, Key: "grundsteuer", Label: "Grundsteuer", Logik: LogikQM, Typ: TypJaehrlich},
-	{ID: 2, Key: "gebaeudevers", Label: "Wohngebäudeversicherung", Logik: LogikQM, Typ: TypJaehrlich},
-	{ID: 3, Key: "deich_grund", Label: "Deichbeitrag Grund und Boden", Logik: LogikFlurstueck, Typ: TypJaehrlich},
-	{ID: 4, Key: "deich_bau", Label: "Deichbeitrag Bauliche Anlagen", Logik: LogikFlurstueck, Typ: TypJaehrlich},
-	{ID: 5, Key: "kreisverband", Label: "Kreisverband Wesermarsch der Wasser- und Bodenverbände", Logik: LogikFlurstueck, Typ: TypJaehrlich},
-	{ID: 6, Key: "abfall_haushalt", Label: "Abfallwirtschaft Grundgebühr Haushalt", Logik: LogikWohneinheit, Typ: TypJaehrlich},
-	{ID: 7, Key: "abfall_personen", Label: "Abfallwirtschaft Grundgebühr Personen", Logik: LogikPersonen, Typ: TypJaehrlich},
-	{ID: 8, Key: "abfall_biomuell", Label: "Abfallwirtschaft Biomüll", Logik: LogikWohneinheit, Typ: TypJaehrlich},
-	{ID: 9, Key: "abfall_restmuell", Label: "Abfallwirtschaft Restmüll", Logik: LogikWohneinheit, Typ: TypJaehrlich},
-	{ID: 10, Key: "strom_grundpreis", Label: "Grundgebühr Strom", Logik: LogikWohneinheit, Typ: TypMonatlich},
-	{ID: 11, Key: "trinkwasser", Label: "Grundgebühr Trinkwasser", Logik: LogikWohneinheit, Typ: TypMonatlich},
-	{ID: 12, Key: "abwasser", Label: "Grundgebühr Abwasser", Logik: LogikWohneinheit, Typ: TypMonatlich},
-	{ID: 13, Key: "internet", Label: "Grundgebühr Internet", Logik: LogikWohneinheit, Typ: TypMonatlich},
-	{ID: 14, Key: "wp_wartung", Label: "Wartungskosten Wärmepumpe", Logik: LogikWohneinheit, Typ: TypMonatlich},
-	{ID: 15, Key: "streaming", Label: "Streaming-Dienste", Logik: LogikWohneinheit, Typ: TypMonatlich},
-	{ID: 16, Key: "sonstige", Label: "Sonstige Kosten", Logik: LogikWohneinheit, Typ: TypMonatlich},
+	{ID: 1, Key: "grundsteuer", Label: "Grundsteuer", Logik: LogikQM, Typ: TypJaehrlich, Umlagefaehig: true},
+	{ID: 2, Key: "gebaeudevers", Label: "Wohngebäudeversicherung", Logik: LogikQM, Typ: TypJaehrlich, Umlagefaehig: true},
+	{ID: 3, Key: "deich_grund", Label: "Deichbeitrag Grund und Boden", Logik: LogikFlurstueck, Typ: TypJaehrlich, Umlagefaehig: true},
+	{ID: 4, Key: "deich_bau", Label: "Deichbeitrag Bauliche Anlagen", Logik: LogikFlurstueck, Typ: TypJaehrlich, Umlagefaehig: true},
+	{ID: 5, Key: "kreisverband", Label: "Kreisverband Wesermarsch der Wasser- und Bodenverbände", Logik: LogikFlurstueck, Typ: TypJaehrlich, Umlagefaehig: true},
+	{ID: 6, Key: "abfall_haushalt", Label: "Abfallwirtschaft Grundgebühr Haushalt", Logik: LogikWohneinheit, Typ: TypJaehrlich, Umlagefaehig: true},
+	{ID: 7, Key: "abfall_personen", Label: "Abfallwirtschaft Grundgebühr Personen", Logik: LogikPersonen, Typ: TypJaehrlich, Umlagefaehig: true},
+	{ID: 8, Key: "abfall_biomuell", Label: "Abfallwirtschaft Biomüll", Logik: LogikWohneinheit, Typ: TypJaehrlich, Umlagefaehig: true},
+	{ID: 9, Key: "abfall_restmuell", Label: "Abfallwirtschaft Restmüll", Logik: LogikWohneinheit, Typ: TypJaehrlich, Umlagefaehig: true},
+	{ID: 10, Key: "strom_grundpreis", Label: "Grundgebühr Strom", Logik: LogikWohneinheit, Typ: TypMonatlich, Umlagefaehig: true},
+	{ID: 11, Key: "trinkwasser", Label: "Grundgebühr Trinkwasser", Logik: LogikWohneinheit, Typ: TypMonatlich, Umlagefaehig: true},
+	{ID: 12, Key: "abwasser", Label: "Grundgebühr Abwasser", Logik: LogikWohneinheit, Typ: TypMonatlich, Umlagefaehig: true},
+	{ID: 13, Key: "internet", Label: "Grundgebühr Internet", Logik: LogikWohneinheit, Typ: TypMonatlich, Umlagefaehig: false},
+	{ID: 14, Key: "wp_wartung", Label: "Wartungskosten Wärmepumpe", Logik: LogikWohneinheit, Typ: TypMonatlich, Umlagefaehig: true},
+	{ID: 15, Key: "streaming", Label: "Streaming-Dienste", Logik: LogikWohneinheit, Typ: TypMonatlich, Umlagefaehig: false},
+	{ID: 16, Key: "sonstige", Label: "Sonstige Kosten", Logik: LogikWohneinheit, Typ: TypMonatlich, Umlagefaehig: false},
 }
 
 // seed inserts the fixed master data for the 2 apartments and 9 meters if
@@ -677,13 +741,21 @@ func seed(db *sql.DB) error {
 	// in code but an already-seeded row silently kept the old text until
 	// this upsert.
 	for _, kp := range KostenpositionDefaults {
+		// umlagefaehig is only set on the INSERT: it is a user-edited
+		// Stammdaten value (Issue #163), so the DO UPDATE must never reset it.
 		if _, err := db.Exec(
-			`INSERT INTO kostenpositionen (id, key, label) VALUES (?, ?, ?)
+			`INSERT INTO kostenpositionen (id, key, label, umlagefaehig) VALUES (?, ?, ?, ?)
 			 ON CONFLICT(id) DO UPDATE SET label = excluded.label`,
-			kp.ID, kp.Key, kp.Label,
+			kp.ID, kp.Key, kp.Label, boolToInt(kp.Umlagefaehig),
 		); err != nil {
 			return fmt.Errorf("seed kostenposition %q: %w", kp.Key, err)
 		}
+	}
+
+	// haus (Issue #163): the single house-wide Stammdaten row, with the
+	// column defaults as starting values.
+	if _, err := db.Exec(`INSERT INTO haus (id) VALUES (1) ON CONFLICT(id) DO NOTHING`); err != nil {
+		return fmt.Errorf("seed haus: %w", err)
 	}
 
 	return nil

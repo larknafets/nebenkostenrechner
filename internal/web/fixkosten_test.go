@@ -2,7 +2,11 @@ package web
 
 import (
 	"database/sql"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
@@ -96,5 +100,62 @@ func TestLogikLabels_CoversAllLogikKonstanten(t *testing.T) {
 		if logikLabels[logik] == "" {
 			t.Errorf("logikLabels missing entry for %q", logik)
 		}
+	}
+}
+
+// TestStammdaten_FlagsAnzeigenUndSpeichern verifies the /stammdaten flags
+// (Issue #163): the page lists every Kostenposition with its current
+// Umlagefähig state plus the Strom flag, and the POST handler saves
+// them - an unchecked checkbox is absent from the form and means "No".
+func TestStammdaten_FlagsAnzeigenUndSpeichern(t *testing.T) {
+	db := openTestDB(t)
+	a := newAuth("", nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/stammdaten", nil)
+	w := httptest.NewRecorder()
+	handleStammdatenForm(a)(w, requestWithDB(req, db))
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	for _, want := range []string{"Streaming-Dienste", "Grundgebühr Strom", "Stromverbrauch Wohnung 2 weiterberechnen", `name="umlagefaehig_10" value="1" checked`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("GET /stammdaten body does not contain %q", want)
+		}
+	}
+	if strings.Contains(body, `name="umlagefaehig_15" value="1" checked`) {
+		t.Error("Streaming-Dienste is checked by default, want unchecked (Startwert Nein)")
+	}
+
+	// Streaming on, everything else (incl. Strom flag) left unchecked.
+	form := url.Values{
+		"qm_1": {"100"}, "flurstueck_groesse_1": {"600"},
+		"qm_2": {"50"}, "flurstueck_groesse_2": {"400"},
+		"umlagefaehig_15": {"1"},
+	}
+	post := httptest.NewRequest(http.MethodPost, "/stammdaten", strings.NewReader(form.Encode()))
+	post.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	pw := httptest.NewRecorder()
+	handleUpdateStammdaten()(pw, requestWithDB(post, db))
+	if pw.Code != http.StatusFound {
+		t.Fatalf("POST status = %d, want %d (body: %s)", pw.Code, http.StatusFound, pw.Body.String())
+	}
+
+	kps, err := store.Kostenpositionen(db)
+	if err != nil {
+		t.Fatalf("Kostenpositionen: %v", err)
+	}
+	for _, kp := range kps {
+		want := kp.ID == 15
+		if kp.Umlagefaehig != want {
+			t.Errorf("%s: Umlagefaehig = %v, want %v", kp.Key, kp.Umlagefaehig, want)
+		}
+	}
+	haus, err := store.GetHaus(db)
+	if err != nil {
+		t.Fatalf("GetHaus: %v", err)
+	}
+	if haus.StromWeiterberechnen {
+		t.Error("StromWeiterberechnen = true, want false (checkbox absent from the form)")
 	}
 }

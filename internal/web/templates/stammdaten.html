@@ -13,6 +13,18 @@
     {{end}}
   </div>
 
+  <div class="panel">
+    <h3>Jahresabrechnung</h3>
+    <p class="muted">Gilt für alle Monate und Jahre. Dashboard und Verlauf zeigen weiterhin alle Positionen.</p>
+    <div class="field">
+      <label><input type="checkbox" name="strom_weiterberechnen" value="1" {{if .Haus.StromWeiterberechnen}}checked{{end}} {{if not .IsLoggedIn}}disabled{{end}}> Stromverbrauch Wohnung 2 weiterberechnen</label>
+    </div>
+    <h3>Umlagefähige Kostenpositionen</h3>
+    {{range .Kostenpositionen}}
+    <div class="field"><label><input type="checkbox" name="umlagefaehig_{{.ID}}" value="1" {{if .Umlagefaehig}}checked{{end}} {{if not $.IsLoggedIn}}disabled{{end}}> {{.Label}}</label></div>
+    {{end}}
+  </div>
+
   {{if .IsLoggedIn}}
   <div class="btn-row">
     <button type="submit" class="primary dirty-save" disabled>Speichern</button>

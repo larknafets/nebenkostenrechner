@@ -31,14 +31,29 @@ func handleStammdatenForm(a auth) http.HandlerFunc {
 			return
 		}
 
+		kostenpositionen, err := store.Kostenpositionen(db)
+		if err != nil {
+			http.Error(w, "kostenpositionen: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		haus, err := store.GetHaus(db)
+		if err != nil {
+			http.Error(w, "haus: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		data := struct {
 			navData
-			Aktuell    string
-			Apartments []store.Apartment
+			Aktuell          string
+			Apartments       []store.Apartment
+			Kostenpositionen []store.Kostenposition
+			Haus             store.Haus
 		}{
-			navData:    a.NavData(r),
-			Aktuell:    "stammdaten",
-			Apartments: apartments,
+			navData:          a.NavData(r),
+			Aktuell:          "stammdaten",
+			Apartments:       apartments,
+			Kostenpositionen: kostenpositionen,
+			Haus:             haus,
 		}
 
 		if err := stammdatenTemplate.ExecuteTemplate(w, "layout", data); err != nil {
@@ -48,7 +63,7 @@ func handleStammdatenForm(a auth) http.HandlerFunc {
 }
 
 // handleUpdateStammdaten saves every apartment's Wohnungsgröße/
-// Flurstücksgröße from the /stammdaten form.
+// Flurstücksgröße and the umlagefähig/Strom flags from the /stammdaten form.
 func handleUpdateStammdaten() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
@@ -79,8 +94,27 @@ func handleUpdateStammdaten() http.HandlerFunc {
 			in[a.ID] = store.StammdatenInput{QM: qm, FlurstueckGroesse: flurstueckGroesse}
 		}
 
+		kostenpositionen, err := store.Kostenpositionen(db)
+		if err != nil {
+			http.Error(w, "kostenpositionen: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// An unchecked checkbox is simply absent from the form, so a
+		// missing field means "No".
+		flags := store.StammdatenFlags{
+			Umlagefaehig:         make(map[int64]bool, len(kostenpositionen)),
+			StromWeiterberechnen: r.FormValue("strom_weiterberechnen") == "1",
+		}
+		for _, kp := range kostenpositionen {
+			flags.Umlagefaehig[kp.ID] = r.FormValue("umlagefaehig_"+strconv.FormatInt(kp.ID, 10)) == "1"
+		}
+
 		if err := store.UpdateStammdaten(db, in); err != nil {
 			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if err := store.UpdateStammdatenFlags(db, flags); err != nil {
+			http.Error(w, "save flags: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 

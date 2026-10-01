@@ -1122,7 +1122,7 @@ func TestEnsureFixkostenWerteLogikTypColumns(t *testing.T) {
 	t.Cleanup(func() { db.Close() })
 
 	for _, stmt := range []string{
-		`CREATE TABLE kostenpositionen (id INTEGER PRIMARY KEY, key TEXT NOT NULL UNIQUE, label TEXT NOT NULL)`,
+		`CREATE TABLE kostenpositionen (id INTEGER PRIMARY KEY, key TEXT NOT NULL UNIQUE, label TEXT NOT NULL, umlagefaehig INTEGER NOT NULL DEFAULT 1)`,
 		`CREATE TABLE kostenpositionen_jahre (
 			id                INTEGER PRIMARY KEY,
 			kostenposition_id INTEGER NOT NULL,
@@ -1628,5 +1628,151 @@ func TestGetPeriodByID_TeilstandPricesReadAsZero(t *testing.T) {
 	}
 	if got.Strompreis != 0 || got.FrischwasserPreis != 0 || got.AbwasserPreis != 0 || got.EinspeisungPreis != 0 {
 		t.Errorf("prices = %v/%v/%v/%v, want alle 0", got.Strompreis, got.FrischwasserPreis, got.AbwasserPreis, got.EinspeisungPreis)
+	}
+}
+
+// TestKostenpositionen_UmlagefaehigStartwerte verifies the Umlagefähig
+// starting values (Issue #163) on a fresh database: Ja for the BetrKV
+// positions plus Grundgebühr Strom, Nein for Internet, Streaming and
+// Sonstige Kosten.
+func TestKostenpositionen_UmlagefaehigStartwerte(t *testing.T) {
+	db := openTestDB(t)
+
+	kps, err := Kostenpositionen(db)
+	if err != nil {
+		t.Fatalf("Kostenpositionen: %v", err)
+	}
+	nein := map[string]bool{"internet": true, "streaming": true, "sonstige": true}
+	if len(kps) != 16 {
+		t.Fatalf("len(kostenpositionen) = %d, want 16", len(kps))
+	}
+	for _, kp := range kps {
+		if want := !nein[kp.Key]; kp.Umlagefaehig != want {
+			t.Errorf("%s: Umlagefaehig = %v, want %v", kp.Key, kp.Umlagefaehig, want)
+		}
+	}
+}
+
+func TestEnsureKostenpositionenUmlagefaehigColumn(t *testing.T) {
+	t.Run("fuegt Spalte hinzu und setzt die Startwerte, zweiter Aufruf ueberschreibt nichts", func(t *testing.T) {
+		db, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "old.db"))
+		if err != nil {
+			t.Fatalf("open sqlite: %v", err)
+		}
+		t.Cleanup(func() { db.Close() })
+
+		// Pre-#163 shape: kostenpositionen without umlagefaehig.
+		if _, err := db.Exec(`CREATE TABLE kostenpositionen (
+			id    INTEGER PRIMARY KEY,
+			key   TEXT NOT NULL UNIQUE,
+			label TEXT NOT NULL
+		)`); err != nil {
+			t.Fatalf("create old-shape table: %v", err)
+		}
+		for _, kp := range KostenpositionDefaults {
+			if _, err := db.Exec(`INSERT INTO kostenpositionen (id, key, label) VALUES (?, ?, ?)`, kp.ID, kp.Key, kp.Label); err != nil {
+				t.Fatalf("insert %s: %v", kp.Key, err)
+			}
+		}
+
+		if err := ensureKostenpositionenUmlagefaehigColumn(db); err != nil {
+			t.Fatalf("ensureKostenpositionenUmlagefaehigColumn: %v", err)
+		}
+		for _, kp := range KostenpositionDefaults {
+			var got bool
+			if err := db.QueryRow(`SELECT umlagefaehig FROM kostenpositionen WHERE id = ?`, kp.ID).Scan(&got); err != nil {
+				t.Fatalf("query %s: %v", kp.Key, err)
+			}
+			if got != kp.Umlagefaehig {
+				t.Errorf("%s: umlagefaehig = %v, want %v", kp.Key, got, kp.Umlagefaehig)
+			}
+		}
+
+		// A flag the user changed afterwards must survive a second call.
+		if _, err := db.Exec(`UPDATE kostenpositionen SET umlagefaehig = 1 WHERE key = 'streaming'`); err != nil {
+			t.Fatalf("user change: %v", err)
+		}
+		if err := ensureKostenpositionenUmlagefaehigColumn(db); err != nil {
+			t.Fatalf("second ensureKostenpositionenUmlagefaehigColumn call: %v", err)
+		}
+		var streaming bool
+		if err := db.QueryRow(`SELECT umlagefaehig FROM kostenpositionen WHERE key = 'streaming'`).Scan(&streaming); err != nil {
+			t.Fatalf("query streaming: %v", err)
+		}
+		if !streaming {
+			t.Error("streaming umlagefaehig reset by the second migration call, want the user's value kept")
+		}
+	})
+
+	t.Run("neue Tabelle hat die Spalte bereits - no-op", func(t *testing.T) {
+		db := openTestDB(t)
+		if err := ensureKostenpositionenUmlagefaehigColumn(db); err != nil {
+			t.Fatalf("ensureKostenpositionenUmlagefaehigColumn on an already-current schema: %v", err)
+		}
+	})
+}
+
+// TestStammdatenFlags_RoundtripUndNeustart verifies the flag write path
+// (Issue #163): the flags persist, a partial input only touches the
+// positions it names, and a restart (Open again) neither resets them nor
+// re-applies the starting values.
+func TestStammdatenFlags_RoundtripUndNeustart(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "flags.db")
+	db, err := Open(path)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+
+	haus, err := GetHaus(db)
+	if err != nil {
+		t.Fatalf("GetHaus: %v", err)
+	}
+	if !haus.StromWeiterberechnen {
+		t.Error("StromWeiterberechnen = false on a fresh database, want true (Startwert Ja)")
+	}
+
+	// Streaming (id 15) on, Grundsteuer (id 1) off, Strom off.
+	if err := UpdateStammdatenFlags(db, StammdatenFlags{
+		Umlagefaehig:         map[int64]bool{15: true, 1: false},
+		StromWeiterberechnen: false,
+	}); err != nil {
+		t.Fatalf("UpdateStammdatenFlags: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+
+	db, err = Open(path)
+	if err != nil {
+		t.Fatalf("reopen store: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	kps, err := Kostenpositionen(db)
+	if err != nil {
+		t.Fatalf("Kostenpositionen: %v", err)
+	}
+	for _, kp := range kps {
+		switch kp.ID {
+		case 15:
+			if !kp.Umlagefaehig {
+				t.Error("Streaming: Umlagefaehig = false after restart, want true (user's change)")
+			}
+		case 1:
+			if kp.Umlagefaehig {
+				t.Error("Grundsteuer: Umlagefaehig = true after restart, want false (user's change)")
+			}
+		case 2:
+			if !kp.Umlagefaehig {
+				t.Error("Wohngebaeudeversicherung: Umlagefaehig = false, want true (partial update must not touch it)")
+			}
+		}
+	}
+	haus, err = GetHaus(db)
+	if err != nil {
+		t.Fatalf("GetHaus after restart: %v", err)
+	}
+	if haus.StromWeiterberechnen {
+		t.Error("StromWeiterberechnen = true after restart, want false (user's change)")
 	}
 }

@@ -207,3 +207,33 @@ func TestFixkosten_SummenKonsistenz(t *testing.T) {
 		t.Errorf("KostenW1+KostenW2 = %v, sumMonatswerte = %v, diff %v > 0.05 (Rundungsdrift zu gross)", got.KostenW1+got.KostenW2, sumMonatswerte, diff)
 	}
 }
+
+// TestFixkosten_UnabhaengigVomUmlagefaehigFlag verifies that the Umlagefähig
+// flag (Issue #163) does not change the cost calculation: Dashboard,
+// Verlauf and Saldo keep every position, only the Jahresabrechnung
+// filters.
+func TestFixkosten_UnabhaengigVomUmlagefaehigFlag(t *testing.T) {
+	db := openTestDB(t)
+	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]int64{1: 2, 2: 1}, map[int64]store.FixkostenPositionWert{
+		15: {Logik: store.LogikWohneinheit, Typ: store.TypMonatlich, Wert: 20}, // streaming
+	})
+
+	before, err := calc.Fixkosten(db, id)
+	if err != nil {
+		t.Fatalf("calc.Fixkosten: %v", err)
+	}
+	if err := store.UpdateStammdatenFlags(db, store.StammdatenFlags{
+		Umlagefaehig:         map[int64]bool{15: false, 1: false},
+		StromWeiterberechnen: false,
+	}); err != nil {
+		t.Fatalf("UpdateStammdatenFlags: %v", err)
+	}
+	after, err := calc.Fixkosten(db, id)
+	if err != nil {
+		t.Fatalf("calc.Fixkosten after flag change: %v", err)
+	}
+
+	if before.KostenW1 != after.KostenW1 || before.KostenW2 != after.KostenW2 || len(before.Positionen) != len(after.Positionen) {
+		t.Errorf("Fixkosten changed with the flags: before %+v, after %+v", before, after)
+	}
+}
