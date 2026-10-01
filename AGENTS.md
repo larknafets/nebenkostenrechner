@@ -9,7 +9,7 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 
 ## Models
 
-- Subagents with their own model live in `.claude/agents/`. Today: `ci-status` (Haiku): finds why a check or workflow run is red, read-only.
+- Subagents with their own model live in `.claude/agents/`. That folder is local to one machine and not versioned (`.claude/` is in `.gitignore`), so a fresh clone has none. Today: `ci-status` (Haiku): finds why a check or workflow run is red, read-only.
 - Use Haiku only for tasks that read a lot and report briefly (CI logs, searching many files). Not for a single command (`git status`, one commit): starting a subagent costs more than the command. Fixed queries with a fixed result belong in a script, waiting belongs in a background loop (`until ...`), neither needs a model.
 - Never give Haiku irreversible or outward actions (merge, delete a branch, push), refactors, reviews, `calc`, migrations or anything touching money or data.
 - A rule in an agent's prompt ("read only") is not a block. If an agent must not write, deny the commands in the permission settings.
