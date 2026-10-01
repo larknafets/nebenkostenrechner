@@ -32,9 +32,16 @@ type abrechnungMangel struct {
 	// Aktion labels the link that fixes it, e.g. "Fixkosten erfassen".
 	Aktion string
 	// Pfad is the target inside the app, without the base path (the page
-	// prefixes requestBase). Empty if there is nothing to link to.
+	// prefixes requestBase). It is empty only for a finding the user cannot
+	// fix in the app: a year before the first Ablesung simply has no data,
+	// there is nothing to enter or correct. See HatZiel.
 	Pfad string
 }
+
+// HatZiel reports whether the finding links to a place where it can be
+// fixed. A finding without one is deliberately not fixable, the page shows
+// its text without a link.
+func (m abrechnungMangel) HatZiel() bool { return m.Pfad != "" }
 
 // abrechnungZeitraum is the billing period of one Jahresabrechnung.
 type abrechnungZeitraum struct {
@@ -222,7 +229,12 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, res *abrechnungPr
 	first := periods[0]
 	firstDate, err := time.Parse("2006-01-02", first.ReadingDate)
 	if err != nil {
-		res.Maengel = append(res.Maengel, abrechnungMangel{Art: mangelKeinZeitraum, Text: "Das Datum der ersten Ablesung ist ungültig: " + first.ReadingDate})
+		res.Maengel = append(res.Maengel, abrechnungMangel{
+			Art:    mangelKeinZeitraum,
+			Text:   "Das Datum der ersten Ablesung ist ungültig: " + first.ReadingDate,
+			Aktion: "Ablesung korrigieren",
+			Pfad:   "/ablesungen/" + strconv.FormatInt(first.ID, 10) + "/bearbeiten",
+		})
 		return z, ablesungVon, fixkostenVon, false
 	}
 	// The Abrechnungsmonat decides which month the first Ablesung belongs

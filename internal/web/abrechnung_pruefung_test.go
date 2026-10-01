@@ -250,14 +250,34 @@ func TestPruefeAbrechnung_KeinZeitraum(t *testing.T) {
 	t.Run("noch keine Ablesung", func(t *testing.T) {
 		got, _ := pruefeAbrechnungDaten(abrechnungPruefDaten{Apartments: apartments, Haus: haus}, 2027, 2)
 		if got.Zeitraum != nil || fmt.Sprint(arten(got)) != fmt.Sprint([]mangelArt{mangelKeinZeitraum}) {
-			t.Errorf("got Zeitraum %+v, Arten %v, want no Zeitraum and one kein_zeitraum", got.Zeitraum, arten(got))
+			t.Fatalf("got Zeitraum %+v, Arten %v, want no Zeitraum and one kein_zeitraum", got.Zeitraum, arten(got))
+		}
+		if m := got.Maengel[0]; !m.HatZiel() || m.Pfad != "/ablesungen/neu" {
+			t.Errorf("finding: Pfad %q, want a link to /ablesungen/neu (the first Ablesung can be entered)", m.Pfad)
 		}
 	})
 	t.Run("Jahr vor der ersten Ablesung", func(t *testing.T) {
 		d := ersteJahrDaten()
 		got, _ := pruefeAbrechnungDaten(d, 2025, 2)
 		if got.Zeitraum != nil || len(got.Maengel) != 1 || !strings.Contains(got.Maengel[0].Text, "Für 2025 gibt es keine Daten") {
-			t.Errorf("got Zeitraum %+v, Maengel %v, want no Zeitraum and the 2025 message", got.Zeitraum, maengelTexte(got))
+			t.Fatalf("got Zeitraum %+v, Maengel %v, want no Zeitraum and the 2025 message", got.Zeitraum, maengelTexte(got))
+		}
+		// Nothing can be entered or corrected for such a year, so there is
+		// deliberately no link (PR #174 review).
+		if m := got.Maengel[0]; m.HatZiel() || m.Aktion != "" {
+			t.Errorf("finding %q has Pfad %q and Aktion %q, want none: it is not fixable in the app", m.Text, m.Pfad, m.Aktion)
+		}
+	})
+	t.Run("ungueltiges Datum der ersten Ablesung verlinkt die Ablesung", func(t *testing.T) {
+		d := ersteJahrDaten()
+		d.Periods[0].ReadingDate = "kaputt"
+		got, _ := pruefeAbrechnungDaten(d, 2026, 2)
+		if got.Zeitraum != nil || len(got.Maengel) != 1 || !strings.Contains(got.Maengel[0].Text, "kaputt") {
+			t.Fatalf("got Zeitraum %+v, Maengel %v, want no Zeitraum and the invalid-date message", got.Zeitraum, maengelTexte(got))
+		}
+		m := got.Maengel[0]
+		if !m.HatZiel() || m.Pfad != "/ablesungen/1/bearbeiten" || m.Aktion != "Ablesung korrigieren" {
+			t.Errorf("finding: Pfad %q Aktion %q, want a link to /ablesungen/1/bearbeiten labelled Ablesung korrigieren", m.Pfad, m.Aktion)
 		}
 	})
 	t.Run("laufendes Jahr nennt die fehlenden Monate", func(t *testing.T) {
