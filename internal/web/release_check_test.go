@@ -42,6 +42,7 @@ func TestIsNewerVersion(t *testing.T) {
 		{"v0.8.0", "dev", false},
 		{"garbage", "v0.7.0", false},
 		{"v0.8.0", "", false},
+		{"v0.8.0", "nightly.20261001-e3c101d", false}, // a nightly never claims an update
 	}
 	for _, c := range cases {
 		if got := isNewerVersion(c.latest, c.current); got != c.want {
