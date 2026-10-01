@@ -70,3 +70,6 @@ release:
   github:
     owner: larknafets
     name: nebenkostenrechner
+  # Compare link to the previous release; empty for the very first release.
+  footer: |
+    {{ if .PreviousTag }}Full release notes: [{{ .PreviousTag }}...{{ .Tag }}](https://github.com/larknafets/nebenkostenrechner/compare/{{ .PreviousTag }}...{{ .Tag }}){{ end }}
