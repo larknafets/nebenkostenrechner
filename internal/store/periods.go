@@ -53,12 +53,15 @@ type Meter struct {
 	Key   string
 	Label string
 	Unit  string
+	// ApartmentID is the apartment a meter belongs to, 0 for a house-wide
+	// meter.
+	ApartmentID int64
 }
 
 // Meters returns the 9 meters ordered by id, the Anhang's source for the
 // meter labels and units.
 func Meters(db *sql.DB) ([]Meter, error) {
-	rows, err := db.Query(`SELECT key, label, unit FROM meters ORDER BY id`)
+	rows, err := db.Query(`SELECT key, label, unit, COALESCE(apartment_id, 0) FROM meters ORDER BY id`)
 	if err != nil {
 		return nil, fmt.Errorf("query meters: %w", err)
 	}
@@ -67,7 +70,7 @@ func Meters(db *sql.DB) ([]Meter, error) {
 	var out []Meter
 	for rows.Next() {
 		var m Meter
-		if err := rows.Scan(&m.Key, &m.Label, &m.Unit); err != nil {
+		if err := rows.Scan(&m.Key, &m.Label, &m.Unit, &m.ApartmentID); err != nil {
 			return nil, fmt.Errorf("scan meter: %w", err)
 		}
 		out = append(out, m)

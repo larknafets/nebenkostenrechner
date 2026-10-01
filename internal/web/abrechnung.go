@@ -43,6 +43,15 @@ type abrechnungStrom struct {
 type abrechnungVerbrauchZeile struct {
 	Zaehler, Einheit        string
 	Beginn, Ende, Verbrauch float64
+	// Eigen is true for a meter of the settled apartment, shown in bold.
+	Eigen bool
+}
+
+// abrechnungBezugsgroesse is one row of the Bezugsgrößen table: the
+// reference value of a Verteilerschlüssel per apartment and in total.
+type abrechnungBezugsgroesse struct {
+	Schluessel     string
+	W1, W2, Gesamt float64
 }
 
 // abrechnungHeizungMonat is one Abrechnungsmonat of the heating table in
@@ -92,6 +101,7 @@ type abrechnung struct {
 	Verbrauch      []abrechnungVerbrauchZeile
 	HeizungMonate  []abrechnungHeizungMonat
 	PersonenMonate []abrechnungPersonenMonat
+	Bezugsgroessen []abrechnungBezugsgroesse
 	Gewichtung     float64
 	Apartments     []store.Apartment
 }
@@ -265,7 +275,8 @@ func berechneAbrechnung(db *sql.DB, jahr int, apartmentID int64) (abrechnungErge
 	}
 	ab.Saldo = newAbschlagSaldo(calc.Round2(saldo))
 
-	ab.Verbrauch = verbrauchUebersicht(periods, apartments, meters, imZeitraum)
+	ab.Verbrauch = verbrauchUebersicht(periods, apartments, meters, imZeitraum, apartmentID)
+	ab.Bezugsgroessen = bezugsgroessen(apartments)
 	ab.PersonenMonate = personenMonate(monate, eingabeJeMonat, periods, apartments)
 
 	return abrechnungErgebnis{Pruefung: pruefung, Abrechnung: ab}, nil
@@ -346,7 +357,7 @@ func heizungSchluessel(gewichtung float64) string {
 // period's first one - or, in the first Erfassungsjahr, the stand of that
 // first Ablesung itself (the Ausgangsstand). The end is the stand of the
 // period's last Ablesung. Teilstände are ignored.
-func verbrauchUebersicht(periods []*store.LatestPeriod, apartments []store.Apartment, meters []store.Meter, imZeitraum map[string]bool) []abrechnungVerbrauchZeile {
+func verbrauchUebersicht(periods []*store.LatestPeriod, apartments []store.Apartment, meters []store.Meter, imZeitraum map[string]bool, apartmentID int64) []abrechnungVerbrauchZeile {
 	var complete []*store.LatestPeriod
 	for _, p := range periods {
 		if !newTeilstandStatus(p, apartments).IstTeilstand {
@@ -376,9 +387,31 @@ func verbrauchUebersicht(periods []*store.LatestPeriod, apartments []store.Apart
 	out := make([]abrechnungVerbrauchZeile, 0, len(meters))
 	for _, m := range meters {
 		b, e := beginn.Readings[m.Key], ende.Readings[m.Key]
-		out = append(out, abrechnungVerbrauchZeile{Zaehler: m.Label, Einheit: m.Unit, Beginn: b, Ende: e, Verbrauch: e - b})
+		unit := m.Unit
+		if unit == "m3" {
+			unit = "m³"
+		}
+		out = append(out, abrechnungVerbrauchZeile{Zaehler: m.Label, Einheit: unit, Beginn: b, Ende: e, Verbrauch: e - b, Eigen: m.ApartmentID == apartmentID})
 	}
 	return out
+}
+
+// bezugsgroessen lists the Wohnfläche and Flurstück of both apartments with
+// their totals - the reference values of the Verteilerschlüssel.
+func bezugsgroessen(apartments []store.Apartment) []abrechnungBezugsgroesse {
+	wohnflaeche := abrechnungBezugsgroesse{Schluessel: "Wohnfläche (m²)"}
+	flurstueck := abrechnungBezugsgroesse{Schluessel: "Flurstück (m²)"}
+	for _, a := range apartments {
+		switch a.ID {
+		case 1:
+			wohnflaeche.W1, flurstueck.W1 = a.QM, a.FlurstueckGroesse
+		case 2:
+			wohnflaeche.W2, flurstueck.W2 = a.QM, a.FlurstueckGroesse
+		}
+	}
+	wohnflaeche.Gesamt = wohnflaeche.W1 + wohnflaeche.W2
+	flurstueck.Gesamt = flurstueck.W1 + flurstueck.W2
+	return []abrechnungBezugsgroesse{wohnflaeche, flurstueck}
 }
 
 // personenMonate lists the occupant count of every month from both sources:

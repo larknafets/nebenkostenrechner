@@ -1,5 +1,75 @@
 {{define "content"}}
-<h1>Abrechnung</h1>
+<style>
+  /* Layout der Jahresabrechnung (Variante D des Prototyps): Kopf, zweispaltiger
+     Hauptteil mit Seitenleiste, Anhang auf eigener Seite. Am Bildschirm folgt
+     es dem Theme der App, gedruckt wird immer hell auf DIN A4. */
+  .app { max-width: 960px; }
+  .abrechnung h2 { font-size: 1.15rem; margin: 0 0 .25rem; }
+  .abrechnung h3 { font-size: .95rem; margin: 1rem 0 .35rem; }
+  .abrechnung p { margin: 0 0 .5rem; }
+  .abrechnung .klein { font-size: .8rem; }
+  .abrechnung table { width: 100%; border-collapse: collapse; margin: 0 0 .75rem; font-size: .85rem; }
+  .abrechnung th, .abrechnung td { padding: .3rem .4rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+  .abrechnung th { font-size: .72rem; text-transform: uppercase; letter-spacing: .02em; color: var(--muted); border-bottom: 1.5px solid var(--text); }
+  .abrechnung .r { text-align: right; font-variant-numeric: tabular-nums; }
+  .abrechnung th.sel { color: var(--text); font-weight: 800; }
+  .abrechnung tr.b td, .abrechnung td.b { font-weight: 700; }
+  .abrechnung tr.summe td { font-weight: 700; border-top: 1.5px solid var(--text); border-bottom: 0; }
+  .abr-banner { border: 1.5px dashed var(--muted); padding: .5rem .75rem; margin: 0 0 1rem; font-weight: 600; }
+  .abr-parteien { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: .75rem 0; }
+  .abr-ergebnis { border: 2px solid var(--text); padding: .6rem 1rem; margin: .75rem 0 1rem; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+  .abr-ergebnis .betrag { font-size: 1.5rem; font-weight: 800; }
+  .abr-ergebnis .nachzahlung { color: var(--danger); }
+  .abr-ergebnis .guthaben { color: var(--success); }
+  .abr-body { display: grid; grid-template-columns: 1fr 16rem; gap: 1.5rem; align-items: start; }
+  .abr-seite { border-left: 1.5px solid var(--text); padding-left: 1rem; }
+  .abr-seite h3:first-child { margin-top: 0; }
+  .abr-seite td.r { white-space: nowrap; }
+  .anhang { margin-top: 1.5rem; }
+  .anhang table { font-size: .85rem; }
+
+  /* Druck und PDF: immer DIN A4, hell, ohne Bedienelemente. */
+  @page { size: A4; margin: 14mm 15mm; }
+  @media print {
+    :root, :root[data-theme="dark"], :root[data-theme="light"] {
+      --bg: #fff !important; --panel: #fff !important; --border: #cfd3da !important; --text: #000 !important;
+      --muted: #555 !important; --danger: #b91c1c !important; --success: #15803d !important;
+    }
+    body { background: #fff !important; color: #000 !important; font-size: 10pt; }
+    .app { max-width: none; padding: 0; }
+    .abrechnung { border: 0; padding: 0; background: #fff; }
+    .abrechnung table { font-size: 8.5pt; margin-bottom: .4rem; }
+    .abrechnung th, .abrechnung td { padding: .15rem .3rem; }
+    .abrechnung h3 { margin: .6rem 0 .25rem; }
+    .abrechnung p { margin-bottom: .3rem; }
+    .abr-parteien { margin: .4rem 0; }
+    .abr-ergebnis { margin: .4rem 0 .6rem; padding: .35rem .8rem; }
+    .abr-ergebnis .betrag { font-size: 1.25rem; }
+    .abrechnung tr { break-inside: avoid; }
+    .abrechnung h2, .abrechnung h3 { break-after: avoid; }
+    .abr-ergebnis, .abr-seite { break-inside: avoid; }
+    .abr-body { grid-template-columns: 1fr 58mm; gap: 6mm; }
+    .anhang { break-before: page; margin-top: 0; }
+  }
+
+  /* Mobil: Kopf mit Ergebnis oben, Tabellen als gestapelte Karten, die
+     Seitenleiste unter den Tabellen. Nur am Bildschirm: Die druckbare Breite
+     einer A4-Seite liegt ebenfalls unter 760px und darf nicht in dieses
+     Layout fallen. */
+  @media screen and (max-width: 760px) {
+    .abr-parteien, .abr-body { grid-template-columns: 1fr; }
+    .abr-ergebnis { flex-direction: column; align-items: flex-start; gap: .25rem; }
+    .abr-seite { border-left: 0; padding-left: 0; border-top: 1.5px solid var(--text); padding-top: .75rem; }
+    .abrechnung table, .abrechnung tbody, .abrechnung tr, .abrechnung td { display: block; width: 100%; }
+    .abrechnung thead { display: none; }
+    .abrechnung tr { border: 1px solid var(--border); border-radius: 6px; padding: .4rem .6rem; margin-bottom: .4rem; }
+    .abrechnung td { border: 0; padding: .1rem 0; text-align: left !important; }
+    .abrechnung td[data-l]::before { content: attr(data-l) ": "; color: var(--muted); font-size: .75rem; }
+    .abrechnung tr.summe { border-color: var(--text); }
+  }
+</style>
+
+<h1 class="no-print">Abrechnung</h1>
 {{template "nav" .}}
 
 {{if .KeineDaten}}
@@ -40,14 +110,14 @@
 {{end}}
 
 <div class="panel abrechnung" style="margin-top:1rem">
-  {{if .Eigennutzung}}<p><strong>Interne Übersicht, keine Betriebskostenabrechnung</strong></p>{{end}}
+  {{if .Eigennutzung}}<div class="abr-banner">Interne Übersicht, keine Betriebskostenabrechnung</div>{{end}}
 
   <h2>Nebenkostenabrechnung {{$ab.Jahr}}</h2>
   <p class="muted">Objekt: <span style="white-space:pre-line">{{.Haus.ObjektAnschrift}}</span><br>
   Zeitraum: {{deDatum .Von}} bis {{deDatum .Bis}} | Erstellt am: {{deDatum .Erstellt}}</p>
-  {{if $ab.Zeitraum.Zusatz}}<p class="muted">{{$ab.Zeitraum.Zusatz}}</p>{{end}}
+  {{if $ab.Zeitraum.Zusatz}}<p class="muted klein">{{$ab.Zeitraum.Zusatz}}</p>{{end}}
 
-  <div class="grid grid-2">
+  <div class="abr-parteien">
     <div>
       <strong>Vermieter</strong>
       <p style="white-space:pre-line">{{.Haus.VermieterName}}
@@ -64,89 +134,166 @@
     </div>
   </div>
 
-  <p><strong>{{$ab.Saldo.Label}}: {{.SaldoText}}</strong></p>
+  <div class="abr-ergebnis">
+    <span>{{$ab.Saldo.Label}}</span>
+    <span class="betrag {{$ab.Saldo.CSSClass}}">{{.SaldoText}}</span>
+  </div>
 
-  <h3>Kosten</h3>
-  <table class="letzte">
-    <thead><tr><th>Position</th><th>Gesamtkosten Haus</th><th>Verteilerschlüssel</th><th>Anteil</th><th>Betrag</th></tr></thead>
-    <tbody>
-      {{range $ab.Fixkosten}}
-      <tr><td>{{.Position}}{{if .Geteilt}} <span class="muted">({{monatKurz .Von}} bis {{monatKurz .Bis}})</span>{{end}}</td><td>{{deEUR .Gesamt}}&nbsp;€</td><td>{{.Schluessel}}</td><td>{{de1 .Prozent}}&nbsp;%</td><td>{{deEUR .Betrag}}&nbsp;€</td></tr>
+  <div class="abr-body">
+    <div class="abr-haupt">
+      <h3>Fixkosten</h3>
+      <table>
+        <thead><tr><th>Position</th><th class="r">Haus</th><th class="r">Anteil</th><th class="r">Betrag</th></tr></thead>
+        <tbody>
+          {{range $ab.Fixkosten}}
+          <tr>
+            <td data-l="Position">{{.Position}}{{if .Geteilt}} <span class="muted">({{monatKurz .Von}} bis {{monatKurz .Bis}})</span>{{end}}<br><span class="muted klein">{{.Schluessel}}</span></td>
+            <td class="r" data-l="Haus">{{deEUR .Gesamt}}&nbsp;€</td>
+            <td class="r" data-l="Anteil">{{de1 .Prozent}}&nbsp;%</td>
+            <td class="r b" data-l="Betrag">{{deEUR .Betrag}}&nbsp;€</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+
+      <h3>Verbrauchsabhängig</h3>
+      <table>
+        <thead><tr><th>Position</th><th class="r">Haus</th><th class="r">Anteil</th><th class="r">Betrag</th></tr></thead>
+        <tbody>
+          {{with $ab.Heizung}}{{if .Gesamt}}
+          <tr>
+            <td data-l="Position">{{.Position}}<br><span class="muted klein">{{.Schluessel}}</span></td>
+            <td class="r" data-l="Haus">{{deEUR .Gesamt}}&nbsp;€</td>
+            <td class="r" data-l="Anteil">{{de1 .Prozent}}&nbsp;%</td>
+            <td class="r b" data-l="Betrag">{{deEUR .Betrag}}&nbsp;€</td>
+          </tr>{{end}}{{end}}
+          {{with $ab.Wasser}}{{if .Gesamt}}
+          <tr>
+            <td data-l="Position">{{.Position}}<br><span class="muted klein">{{.Schluessel}}</span></td>
+            <td class="r" data-l="Haus">{{deEUR .Gesamt}}&nbsp;€</td>
+            <td class="r" data-l="Anteil">{{de1 .Prozent}}&nbsp;%</td>
+            <td class="r b" data-l="Betrag">{{deEUR .Betrag}}&nbsp;€</td>
+          </tr>{{end}}{{end}}
+        </tbody>
+      </table>
+
+      {{if $ab.StromW2}}
+      <h3>Stromverbrauch Wohnung 2 <span class="muted">(laut Vereinbarung weiterberechnet)</span></h3>
+      <table>
+        <tbody><tr>
+          <td data-l="Verbrauch">{{de0 $ab.StromW2.VerbrauchKWh}}&nbsp;kWh</td>
+          <td class="r b" data-l="Betrag">{{deEUR $ab.StromW2.Kosten}}&nbsp;€</td>
+        </tr></tbody>
+      </table>
       {{end}}
-      {{with $ab.Heizung}}{{if .Gesamt}}<tr><td>{{.Position}}</td><td>{{deEUR .Gesamt}}&nbsp;€</td><td>{{.Schluessel}}</td><td>{{de1 .Prozent}}&nbsp;%</td><td>{{deEUR .Betrag}}&nbsp;€</td></tr>{{end}}{{end}}
-      {{with $ab.Wasser}}{{if .Gesamt}}<tr><td>{{.Position}}</td><td>{{deEUR .Gesamt}}&nbsp;€</td><td>{{.Schluessel}}</td><td>{{de1 .Prozent}}&nbsp;%</td><td>{{deEUR .Betrag}}&nbsp;€</td></tr>{{end}}{{end}}
-      <tr><td colspan="4"><strong>Summe Betriebskosten</strong></td><td><strong>{{deEUR $ab.Betriebskosten}}&nbsp;€</strong></td></tr>
-    </tbody>
-  </table>
+    </div>
 
-  {{if $ab.StromW2}}
-  <h3>Stromverbrauch Wohnung 2 <span class="muted">(laut Vereinbarung weiterberechnet)</span></h3>
-  <table class="letzte">
-    <tbody><tr><td>{{de0 $ab.StromW2.VerbrauchKWh}}&nbsp;kWh</td><td>{{deEUR $ab.StromW2.Kosten}}&nbsp;€</td></tr></tbody>
-  </table>
-  {{end}}
+    <aside class="abr-seite">
+      <h3>Saldoberechnung</h3>
+      <table>
+        <tbody>
+          <tr><td data-l="Betriebskosten">Betriebskosten</td><td class="r">{{deEUR $ab.Betriebskosten}}&nbsp;€</td></tr>
+          {{if $ab.StromW2}}<tr><td data-l="Strom Wohnung 2">Strom Wohnung 2</td><td class="r">{{deEUR $ab.StromW2.Kosten}}&nbsp;€</td></tr>{{end}}
+          <tr><td data-l="Vorauszahlungen">Vorauszahlungen</td><td class="r">- {{deEUR $ab.Vorauszahlungen}}&nbsp;€</td></tr>
+          <tr class="summe"><td data-l="Ergebnis">{{$ab.Saldo.Label}}</td><td class="r {{$ab.Saldo.CSSClass}}">{{.SaldoText}}</td></tr>
+        </tbody>
+      </table>
 
-  <h3>Vorauszahlungen und Saldo</h3>
-  <table class="letzte">
-    <tbody>
-      <tr><td>Summe Betriebskosten</td><td>{{deEUR $ab.Betriebskosten}}&nbsp;€</td></tr>
-      {{if $ab.StromW2}}<tr><td>Stromverbrauch Wohnung 2</td><td>{{deEUR $ab.StromW2.Kosten}}&nbsp;€</td></tr>{{end}}
-      <tr><td>Vorauszahlungen</td><td>- {{deEUR $ab.Vorauszahlungen}}&nbsp;€</td></tr>
-      <tr><td><strong>{{$ab.Saldo.Label}}</strong></td><td><strong>{{.SaldoText}}</strong></td></tr>
-    </tbody>
-  </table>
-
-  <h3>Hinweise</h3>
-  {{if not .Eigennutzung}}
-  <p>Belege können auf Verlangen eingesehen werden (§ 556 Abs. 4 BGB). Einwendungen gegen diese Abrechnung sind spätestens zwölf Monate nach Zugang zu erheben (§ 556 Abs. 3 BGB).</p>
-  {{end}}
-  <p>Rundungsdifferenzen von wenigen Cent sind möglich.</p>
-  {{if and (not .Eigennutzung) $ab.Saldo.Nachzahlung .Haus.IBAN}}
-  <p>Bankverbindung: {{.Haus.VermieterName}}, IBAN {{.Haus.IBAN}}</p>
-  {{end}}
+      <h3>Hinweise</h3>
+      {{if not .Eigennutzung}}
+      <p class="klein">Belege können auf Verlangen eingesehen werden (§ 556 Abs. 4 BGB). Einwendungen gegen diese Abrechnung sind spätestens zwölf Monate nach Zugang zu erheben (§ 556 Abs. 3 BGB).</p>
+      {{end}}
+      <p class="klein">Rundungsdifferenzen von wenigen Cent sind möglich.</p>
+      {{if and (not .Eigennutzung) $ab.Saldo.Nachzahlung .Haus.IBAN}}
+      <p class="klein">Bankverbindung: {{.Haus.VermieterName}}, IBAN {{.Haus.IBAN}}</p>
+      {{end}}
+    </aside>
+  </div>
 
   <div class="anhang">
     <h2>Anhang</h2>
 
     <h3>Verbrauchsübersicht</h3>
-    <table class="letzte">
-      <thead><tr><th>Zähler</th><th>Stand Beginn</th><th>Stand Ende</th><th>Verbrauch</th></tr></thead>
+    <table>
+      <thead><tr><th>Zähler</th><th class="r">Stand Beginn</th><th class="r">Stand Ende</th><th class="r">Verbrauch</th></tr></thead>
       <tbody>
-        {{range $ab.Verbrauch}}<tr><td>{{.Zaehler}}</td><td>{{de3 .Beginn}}&nbsp;{{.Einheit}}</td><td>{{de3 .Ende}}&nbsp;{{.Einheit}}</td><td>{{de3 .Verbrauch}}&nbsp;{{.Einheit}}</td></tr>{{end}}
+        {{range $ab.Verbrauch}}
+        <tr {{if .Eigen}}class="b"{{end}}>
+          <td data-l="Zähler">{{.Zaehler}}</td>
+          <td class="r" data-l="Beginn">{{de3 .Beginn}}&nbsp;{{.Einheit}}</td>
+          <td class="r" data-l="Ende">{{de3 .Ende}}&nbsp;{{.Einheit}}</td>
+          <td class="r" data-l="Verbrauch">{{de3 .Verbrauch}}&nbsp;{{.Einheit}}</td>
+        </tr>
+        {{end}}
       </tbody>
     </table>
 
     <h3>Heizung und Warmwasser je Monat</h3>
-    <table class="letzte">
-      <thead><tr><th>Monat</th><th>WP-Strom (kWh)</th><th>Wärme Wohnung 1 (MWh)</th><th>Wärme Wohnung 2 (MWh)</th><th>Anteil {{.Apartment.Name}}</th></tr></thead>
+    <table>
+      <thead><tr>
+        <th>Monat</th><th class="r">WP-Strom (kWh)</th>
+        <th class="r{{if eq $.ApartmentID 1}} sel{{end}}">Wärme Wohnung 1 (MWh)</th>
+        <th class="r{{if eq $.ApartmentID 2}} sel{{end}}">Wärme Wohnung 2 (MWh)</th>
+        <th class="r sel">Anteil {{.Apartment.Name}}</th>
+      </tr></thead>
       <tbody>
-        {{range $ab.HeizungMonate}}<tr><td>{{monat .Monat}}</td><td>{{de0 .WPStromKWh}}</td><td>{{de2 .WaermeW1MWh}}</td><td>{{de2 .WaermeW2MWh}}</td><td>{{deEUR .Anteil}}&nbsp;€</td></tr>{{end}}
+        {{range $ab.HeizungMonate}}
+        <tr>
+          <td data-l="Monat">{{monat .Monat}}</td>
+          <td class="r" data-l="WP-Strom (kWh)">{{de0 .WPStromKWh}}</td>
+          <td class="r{{if eq $.ApartmentID 1}} b{{end}}" data-l="Wärme Wohnung 1 (MWh)">{{de2 .WaermeW1MWh}}</td>
+          <td class="r{{if eq $.ApartmentID 2}} b{{end}}" data-l="Wärme Wohnung 2 (MWh)">{{de2 .WaermeW2MWh}}</td>
+          <td class="r b" data-l="Anteil">{{deEUR .Anteil}}&nbsp;€</td>
+        </tr>
+        {{end}}
       </tbody>
     </table>
 
     <h3>Bezugsgrößen der Verteilerschlüssel</h3>
-    <table class="letzte">
-      <thead><tr><th>Schlüssel</th>{{range $ab.Apartments}}<th>{{.Name}}</th>{{end}}</tr></thead>
+    <table>
+      <thead><tr>
+        <th>Schlüssel</th>
+        <th class="r{{if eq $.ApartmentID 1}} sel{{end}}">Wohnung 1</th>
+        <th class="r{{if eq $.ApartmentID 2}} sel{{end}}">Wohnung 2</th>
+        <th class="r">Gesamt</th>
+      </tr></thead>
       <tbody>
-        <tr><td>Wohnfläche (m²)</td>{{range $ab.Apartments}}<td>{{de .QM}}</td>{{end}}</tr>
-        <tr><td>Flurstück (m²)</td>{{range $ab.Apartments}}<td>{{de .FlurstueckGroesse}}</td>{{end}}</tr>
+        {{range $ab.Bezugsgroessen}}
+        <tr>
+          <td data-l="Schlüssel">{{.Schluessel}}</td>
+          <td class="r{{if eq $.ApartmentID 1}} b{{end}}" data-l="Wohnung 1">{{de .W1}}</td>
+          <td class="r{{if eq $.ApartmentID 2}} b{{end}}" data-l="Wohnung 2">{{de .W2}}</td>
+          <td class="r" data-l="Gesamt">{{de .Gesamt}}</td>
+        </tr>
+        {{end}}
       </tbody>
     </table>
 
     <h3>Personenzahl je Monat</h3>
-    <table class="letzte">
+    <table>
       <thead>
-        <tr><th rowspan="2">Monat</th><th colspan="2">Fixkosten-Eingabe (Schlüssel Personen)</th><th colspan="2">Ablesung (Warmwasser)</th></tr>
-        <tr><th>Wohnung 1</th><th>Wohnung 2</th><th>Wohnung 1</th><th>Wohnung 2</th></tr>
+        <tr><th rowspan="2">Monat</th><th colspan="2" class="r">Fixkosten-Eingabe (Schlüssel Personen)</th><th colspan="2" class="r">Ablesung (Warmwasser)</th></tr>
+        <tr>
+          <th class="r{{if eq $.ApartmentID 1}} sel{{end}}">Wohnung 1</th><th class="r{{if eq $.ApartmentID 2}} sel{{end}}">Wohnung 2</th>
+          <th class="r{{if eq $.ApartmentID 1}} sel{{end}}">Wohnung 1</th><th class="r{{if eq $.ApartmentID 2}} sel{{end}}">Wohnung 2</th>
+        </tr>
       </thead>
       <tbody>
-        {{range $ab.PersonenMonate}}<tr><td>{{monat .Monat}}</td><td>{{personen .Fixkosten 1}}</td><td>{{personen .Fixkosten 2}}</td><td>{{personen .Ablesung 1}}</td><td>{{personen .Ablesung 2}}</td></tr>{{end}}
+        {{range $ab.PersonenMonate}}
+        <tr>
+          <td data-l="Monat">{{monat .Monat}}</td>
+          <td class="r{{if eq $.ApartmentID 1}} b{{end}}" data-l="Fixkosten Wohnung 1">{{personen .Fixkosten 1}}</td>
+          <td class="r{{if eq $.ApartmentID 2}} b{{end}}" data-l="Fixkosten Wohnung 2">{{personen .Fixkosten 2}}</td>
+          <td class="r{{if eq $.ApartmentID 1}} b{{end}}" data-l="Ablesung Wohnung 1">{{personen .Ablesung 1}}</td>
+          <td class="r{{if eq $.ApartmentID 2}} b{{end}}" data-l="Ablesung Wohnung 2">{{personen .Ablesung 2}}</td>
+        </tr>
+        {{end}}
       </tbody>
     </table>
-    <p class="muted">Die Personenzahl der Fixkosten-Eingabe bestimmt den Schlüssel "Personen", die der Ablesung verteilt den Verbrauch der Warmwasseraufbereitung auf beide Wohnungen.</p>
+    <p class="muted klein">Die Personenzahl der Fixkosten-Eingabe bestimmt den Schlüssel "Personen", die der Ablesung verteilt den Verbrauch der Warmwasseraufbereitung auf beide Wohnungen.</p>
 
     <h3>Verteilerschlüssel</h3>
-    <p class="muted"><strong>Je Wohneinheit:</strong> beide Wohnungen zu gleichen Teilen. <strong>Wohnfläche:</strong> Anteil an der Gesamtwohnfläche laut Tabelle. <strong>Flurstück:</strong> Anteil am Grundstück laut Tabelle. <strong>Personen:</strong> Personenzahl je Monat laut Fixkosten-Eingabe, über den Zeitraum gewichtet. <strong>Heizung und Warmwasser:</strong> Die Kosten des Wärmepumpenstroms werden nach gemessenem Wärmeverbrauch und nach Wohnfläche im Verhältnis {{.GewichtungWaerme}} % zu {{.GewichtungFlaeche}} % verteilt.</p>
+    <p class="muted klein"><strong>Je Wohneinheit:</strong> beide Wohnungen zu gleichen Teilen. <strong>Wohnfläche:</strong> Anteil an der Gesamtwohnfläche laut Tabelle. <strong>Flurstück:</strong> Anteil am Grundstück laut Tabelle. <strong>Personen:</strong> Personenzahl je Monat laut Fixkosten-Eingabe, über den Zeitraum gewichtet. <strong>Heizung und Warmwasser:</strong> Die Kosten des Wärmepumpenstroms werden nach gemessenem Wärmeverbrauch und nach Wohnfläche im Verhältnis {{.GewichtungWaerme}} % zu {{.GewichtungFlaeche}} % verteilt.</p>
   </div>
 </div>
 

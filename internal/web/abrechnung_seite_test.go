@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -148,7 +149,7 @@ func TestAbrechnungSeite_Hinweise(t *testing.T) {
 			t.Fatalf("status = %d", code)
 		}
 		mustContain(t, body,
-			"Nachzahlung: - ",
+			`betrag nachzahlung">- `,
 			"Frist: Die Abrechnung muss dem Mieter bis zum 31.12.2027 zugehen",
 			"Aufbewahrung: Den verschickten Stand als PDF aufbewahren",
 			"Wechsel des Verteilerschlüssels im Jahr bei: Wohngebäudeversicherung",
@@ -167,8 +168,8 @@ func TestAbrechnungSeite_Hinweise(t *testing.T) {
 			t.Fatalf("raise Abschlag: %v", err)
 		}
 		_, body := getAbrechnung(t, mux, "?jahr=2026&wohnung=2", nil)
-		mustContain(t, body, "Guthaben: ", "Aufbewahrung: Den verschickten Stand")
-		mustNotContain(t, body, "Frist: Die Abrechnung muss", "Bankverbindung", "Nachzahlung: - ")
+		mustContain(t, body, `betrag guthaben">`, "Aufbewahrung: Den verschickten Stand")
+		mustNotContain(t, body, "Frist: Die Abrechnung muss", "Bankverbindung", `betrag nachzahlung">`)
 	})
 }
 
@@ -196,4 +197,104 @@ func TestAbrechnungSeite_NichtAngemeldetKeineDaten(t *testing.T) {
 		t.Fatalf("status = %d, want a redirect to the login", code)
 	}
 	mustNotContain(t, body, "Erika Beispiel", "Max Mustermann")
+}
+
+// TestAbrechnungSeite_Layout checks the structure of the A4 layout (Variante
+// D of the prototype): head with result box, two columns with a sidebar, the
+// Anhang on its own page, and the print/mobile rules.
+func TestAbrechnungSeite_Layout(t *testing.T) {
+	mux := demoMux(t)
+	_, body := getAbrechnung(t, mux, "?jahr=2025&wohnung=2", nil)
+
+	t.Run("Aufbau", func(t *testing.T) {
+		mustContain(t, body,
+			`class="abr-ergebnis"`, `class="abr-body"`, `class="abr-haupt"`, `<aside class="abr-seite">`,
+			"<h3>Fixkosten</h3>", "<h3>Verbrauchsabhängig</h3>", "<h3>Saldoberechnung</h3>",
+			`<div class="anhang">`, "<h3>Verbrauchsübersicht</h3>", "<h3>Bezugsgrößen der Verteilerschlüssel</h3>", "<h3>Personenzahl je Monat</h3>")
+		// The sidebar carries the calculation and the notes, the notes name the legal basis.
+		mustContain(t, body, "Belege können auf Verlangen eingesehen werden", "Rundungsdifferenzen")
+		// The month table of the heating has no weighting and no Personen column.
+		mustNotContain(t, body, "Gewichtung</th>")
+	})
+
+	t.Run("Druck: immer DIN A4, hell, ohne Bedienelemente", func(t *testing.T) {
+		mustContain(t, body,
+			"@page { size: A4; margin: 14mm 15mm; }",
+			"break-before: page",
+			"--bg: #fff !important", "--text: #000 !important",
+			`class="muted no-print"`,          // the navigation
+			`class="theme-toggle no-print"`,   // the theme switch
+			`<h1 class="no-print">Abrechnung`) // the page title above the document
+	})
+
+	t.Run("Mobil nur am Bildschirm", func(t *testing.T) {
+		// The printable width of an A4 page is below 760px too: a plain
+		// max-width rule would print the card layout (8 pages instead of 3).
+		mustContain(t, body, "@media screen and (max-width: 760px)", `data-l="Betrag"`)
+		mustNotContain(t, body, "@media (max-width: 760px)")
+	})
+}
+
+// TestAbrechnungSeite_GewaehlteWohnungFett checks that the values of the
+// settled apartment are bold in the Anhang, for both apartments.
+func TestAbrechnungSeite_GewaehlteWohnungFett(t *testing.T) {
+	mux := demoMux(t)
+
+	_, w2 := getAbrechnung(t, mux, "?jahr=2025&wohnung=2", nil)
+	mustContain(t, w2,
+		`class="r b" data-l="Wärme Wohnung 2 (MWh)"`, `class="r" data-l="Wärme Wohnung 1 (MWh)"`,
+		`class="r b" data-l="Wohnung 2"`, `class="r" data-l="Wohnung 1"`,
+		`class="r b" data-l="Fixkosten Wohnung 2"`, `class="r" data-l="Fixkosten Wohnung 1"`,
+		`<th class="r sel">Anteil Wohnung 2</th>`)
+	// Its own meters: Strom, Wasser and Wärme of Wohnung 2, nothing of Wohnung 1.
+	if got := strings.Count(w2, `<tr class="b">`); got != 3 {
+		t.Errorf("bold meter rows for Wohnung 2 = %d, want 3 (Strom, Wasser, Wärme)", got)
+	}
+
+	_, w1 := getAbrechnung(t, mux, "?jahr=2025&wohnung=1", nil)
+	mustContain(t, w1,
+		`class="r b" data-l="Wärme Wohnung 1 (MWh)"`, `class="r" data-l="Wärme Wohnung 2 (MWh)"`,
+		`class="r b" data-l="Wohnung 1"`, `<th class="r sel">Anteil Wohnung 1</th>`)
+	if got := strings.Count(w1, `<tr class="b">`); got != 1 {
+		t.Errorf("bold meter rows for Wohnung 1 = %d, want 1 (only its heat meter)", got)
+	}
+}
+
+func TestBerechneAbrechnung_VerbrauchEigenUndBezugsgroessen(t *testing.T) {
+	db := teiljahrDB(t, true)
+	for _, tc := range []struct {
+		apartmentID int64
+		wantEigen   []string
+	}{
+		{2, []string{"Zwischenstromzähler Wohnung 2", "Zwischenwasserzähler Wohnung 2", "Wärmemengenzähler Wohnung 2"}},
+		{1, []string{"Wärmemengenzähler Wohnung 1"}},
+	} {
+		erg, err := berechneAbrechnung(db, 2026, tc.apartmentID)
+		if err != nil || erg.Abrechnung == nil {
+			t.Fatalf("Wohnung %d: err %v, Maengel %v", tc.apartmentID, err, maengelTexte(erg.Pruefung))
+		}
+		var eigen []string
+		for _, v := range erg.Abrechnung.Verbrauch {
+			if v.Eigen {
+				eigen = append(eigen, v.Zaehler)
+			}
+		}
+		if fmt.Sprint(eigen) != fmt.Sprint(tc.wantEigen) {
+			t.Errorf("Wohnung %d: own meters = %v, want %v", tc.apartmentID, eigen, tc.wantEigen)
+		}
+	}
+
+	erg, _ := berechneAbrechnung(db, 2026, 2)
+	b := erg.Abrechnung.Bezugsgroessen
+	if len(b) != 2 || b[0].Schluessel != "Wohnfläche (m²)" || b[0].W1 != 100 || b[0].W2 != 50 || b[0].Gesamt != 150 {
+		t.Errorf("Wohnfläche = %+v, want 100 / 50 / 150", b)
+	}
+	if b[1].Schluessel != "Flurstück (m²)" || b[1].W1 != 600 || b[1].W2 != 400 || b[1].Gesamt != 1000 {
+		t.Errorf("Flurstück = %+v, want 600 / 400 / 1000", b[1])
+	}
+	for _, v := range erg.Abrechnung.Verbrauch {
+		if strings.Contains(v.Einheit, "m3") {
+			t.Errorf("Einheit %q of %s, want m³", v.Einheit, v.Zaehler)
+		}
+	}
 }
