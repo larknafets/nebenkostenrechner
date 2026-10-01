@@ -27,6 +27,9 @@ type abrechnungZeile struct {
 	// effective share Betrag/Gesamt - it can differ by a few cents from
 	// "Gesamt times the Schlüssel" because of that rounding.
 	Gesamt, Betrag, Prozent float64
+	// Geteilt is true if the position has several lines because its
+	// Verteilerschlüssel changed during the period.
+	Geteilt bool
 }
 
 // abrechnungStrom is the electricity consumption of Wohnung 2 passed on by
@@ -183,7 +186,11 @@ func berechneAbrechnung(db *sql.DB, jahr int, apartmentID int64) (abrechnungErge
 		if !kp.Umlagefaehig {
 			continue
 		}
-		ab.Fixkosten = append(ab.Fixkosten, fixkostenZeilen(kp, monate, fixErgebnis, apartmentID)...)
+		zeilen := fixkostenZeilen(kp, monate, fixErgebnis, apartmentID)
+		for i := range zeilen {
+			zeilen[i].Geteilt = len(zeilen) > 1
+		}
+		ab.Fixkosten = append(ab.Fixkosten, zeilen...)
 	}
 
 	// Verbrauch: every complete Ablesung of the period, except the Ausgangs-

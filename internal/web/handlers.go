@@ -28,6 +28,7 @@ var (
 
 	berechnungslogikTemplate = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/berechnungslogik.html"))
 	stammdatenTemplate       = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/stammdaten.html"))
+	abrechnungTemplate       = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/abrechnung.html"))
 
 	fixkostenListeTemplate  = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten.html"))
 	fixkostenFormTemplate   = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_form.html"))
@@ -75,6 +76,9 @@ var templateFuncs = template.FuncMap{
 	"de3":           formatDecimalDE3,
 	"deEUR":         formatEuroDE,
 	"deDatum":       formatDatumDE,
+	"monat":         germanPeriodLabel,
+	"monatKurz":     germanPeriodLabelShort,
+	"personen":      personenZelle,
 	"deDatumZeit":   formatDatumZeitDE,
 	"kategorieIcon": kategorieIcon,
 	// orZero unwraps a Teilstand-capable (partial-reading-capable)
@@ -127,6 +131,7 @@ func NewMux(db, demoDB *sql.DB, version, buildDate string) *http.ServeMux {
 	mux.HandleFunc("GET /dashboard", withDB(db, demoDB, handleDashboard(version, buildDate, a)))
 	mux.HandleFunc("GET /update-check", handleUpdateCheck(version))
 	mux.HandleFunc("GET /berechnungslogik", handleBerechnungslogik(a))
+	mux.HandleFunc("GET /abrechnung", withDB(db, demoDB, a.RequireLogin(handleAbrechnung(a))))
 	mux.HandleFunc("GET /stammdaten", withDB(db, demoDB, handleStammdatenForm(a)))
 	mux.HandleFunc("POST /stammdaten", withDB(db, demoDB, a.RequireLogin(handleUpdateStammdaten())))
 	mux.HandleFunc("GET /fixkosten", withDB(db, demoDB, handleFixkostenListe(a)))

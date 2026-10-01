@@ -152,6 +152,15 @@ Saldo(Monat) = Saldo(Vormonat) + Abschlag(Monat) - (Fixkosten(Monat) + Verbrauch
 
 Fortlaufend seit Erfassungsbeginn kumuliert, kein Reset zum Jahreswechsel. Positiv heißt Guthaben, negativ Nachzahlung, exakt 0 Ausgeglichen. Ein Monat ohne Fixkosteneingabe lässt den Saldo unverändert, statt ihn verschwinden zu lassen.
 
+### Jahresabrechnung (`/abrechnung`)
+
+Die Seite `/abrechnung?jahr=2027&wohnung=2` zeigt die Betriebskostenabrechnung einer Wohnung für ein Jahr, live aus den vorhandenen Daten berechnet (nichts wird gespeichert). Sie liegt hinter dem Login (mit gesetztem `LOGIN_PASSWORD` erscheint der Menüpunkt "Abrechnung" nur angemeldet), weil sie Namen, Anschriften und die IBAN enthält. Ohne gesetztes `LOGIN_PASSWORD` ist sie offen wie alles andere.
+
+- **Auswahl:** Die Jahresliste enthält alle Jahre mit Ablesungen oder Fixkosten-Eingaben, die Wohnung wählst du über zwei Schaltflächen mit Name und Wohnungsstatus. Vorbelegt sind das neueste Jahr, das vollständig ist (sonst das neueste), und die erste vermietete Wohnung. Ein ungültiges Jahr oder eine ungültige Wohnung in der URL fällt auf diese Vorbelegung zurück.
+- **Nicht abrechenbar:** Fehlen Daten, zeigt die Seite statt der Abrechnung die Liste aller Mängel mit je einem Link zum Beheben (fehlende oder unvollständige Ablesung, fehlende oder doppelte Fixkosten-Eingabe, fehlende Pflicht-Stammdaten). Im ersten Erfassungsjahr beginnt der Zeitraum mit dem Datum der ersten Ablesung (Ausgangsstand), Fixkosten und Vorauszahlungen gelten dort ab dem Folgemonat.
+- **Inhalt:** Kopf mit Vermieter, Mieter und Zeitraum, Ergebnis (Guthaben, Nachzahlung mit vorangestelltem Minus), Kostenübersicht je Position (Gesamtkosten, Verteilerschlüssel, Anteil, Betrag), bei Bedarf der weiterberechnete Strom von Wohnung 2, Vorauszahlungen, Saldo, Hinweise und ein Anhang (Verbrauchsübersicht, Heizung je Monat, Bezugsgrößen, Personenzahl je Monat). Bei Eigennutzung steht oben "Interne Übersicht, keine Betriebskostenabrechnung", ohne Mieter-Block und Rechtshinweise.
+- **Nur am Bildschirm:** Auswahl, Drucken-Knopf und eine Hinweisbox (Frist bis 31.12. des Folgejahres bei einer Nachzahlung, PDF aufbewahren, Warnung bei einem Wechsel des Verteilerschlüssels im Jahr) erscheinen nicht im Druck. Zum Sichern als PDF: Drucken, Ziel PDF. Die App speichert den verschickten Stand nicht.
+
 ### Rundung
 
 Jede Kostenposition (Strom, Heizung/Warmwasser, Frischwasser, Abwasser, jede der 16 Fixkostenpositionen) wird einzeln je Wohnung **kaufmännisch auf Cent gerundet** (0,5 Cent immer aufgerundet), erst nach der vollständigen Berechnung mit float-Genauigkeit. Die angezeigte Gesamtsumme je Wohnung kann dadurch um 1-2 Cent von der rechnerisch exakten Summe abweichen - das ist akzeptiert, es gibt keinen Korrekturmechanismus.

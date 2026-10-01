@@ -1,0 +1,166 @@
+{{define "content"}}
+<h1>Abrechnung</h1>
+{{template "nav" .}}
+
+{{if .KeineDaten}}
+<div class="panel"><p>Noch keine Daten für eine Abrechnung. Erst Ablesungen und Fixkosten erfassen.</p></div>
+{{else}}
+
+{{/* Auswahl (nur am Bildschirm): Die Wohnungs-Schaltflächen stehen vor dem
+     versteckten Feld, damit bei einem Klick darauf ihr Wert zuerst gelesen
+     wird. "Anzeigen" sendet nur das versteckte Feld und behält die Wohnung. */}}
+<form method="get" action="{{.Base}}/abrechnung" class="no-print">
+  <div class="panel">
+    <div class="field" style="max-width:200px">
+      <label>Jahr</label>
+      <select name="jahr">
+        {{range .Jahre}}<option value="{{.}}" {{if eq . $.Jahr}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </div>
+    <div class="btn-row">
+      {{range .Apartments}}
+      <button type="submit" name="wohnung" value="{{.ID}}" class="{{if eq .ID $.ApartmentID}}primary{{else}}secondary{{end}}">{{.Name}} ({{if eq .Status "vermietet"}}vermietet{{else}}Eigennutzung{{end}})</button>
+      {{end}}
+      <input type="hidden" name="wohnung" value="{{.ApartmentID}}">
+      <button type="submit" class="secondary">Anzeigen</button>
+      {{if .Ergebnis.Abrechnung}}<button type="button" class="secondary" onclick="window.print()">Drucken</button>{{end}}
+    </div>
+    {{if .Ergebnis.Abrechnung}}<p class="muted">Zum Sichern als PDF: Drucken, Ziel PDF.</p>{{end}}
+  </div>
+</form>
+
+{{if .Ergebnis.Abrechnung}}
+{{$ab := .Ergebnis.Abrechnung}}
+
+{{if .Hinweise}}
+<div class="panel no-print" style="margin-top:1rem">
+  <strong>Hinweise zur Abrechnung</strong>
+  <ul>{{range .Hinweise}}<li>{{.}}</li>{{end}}</ul>
+</div>
+{{end}}
+
+<div class="panel abrechnung" style="margin-top:1rem">
+  {{if .Eigennutzung}}<p><strong>Interne Übersicht, keine Betriebskostenabrechnung</strong></p>{{end}}
+
+  <h2>Nebenkostenabrechnung {{$ab.Jahr}}</h2>
+  <p class="muted">Objekt: <span style="white-space:pre-line">{{.Haus.ObjektAnschrift}}</span><br>
+  Zeitraum: {{deDatum .Von}} bis {{deDatum .Bis}} | Erstellt am: {{deDatum .Erstellt}}</p>
+  {{if $ab.Zeitraum.Zusatz}}<p class="muted">{{$ab.Zeitraum.Zusatz}}</p>{{end}}
+
+  <div class="grid grid-2">
+    <div>
+      <strong>Vermieter</strong>
+      <p style="white-space:pre-line">{{.Haus.VermieterName}}
+{{.Haus.VermieterAnschrift}}</p>
+    </div>
+    <div>
+      {{if .Eigennutzung}}
+      <strong>{{.Apartment.Name}} (Eigennutzung)</strong>
+      {{else}}
+      <strong>Mieter</strong>
+      <p style="white-space:pre-line">{{.Apartment.MieterName}}
+{{.Apartment.MieterAnschrift}}</p>
+      {{end}}
+    </div>
+  </div>
+
+  <p><strong>{{$ab.Saldo.Label}}: {{.SaldoText}}</strong></p>
+
+  <h3>Kosten</h3>
+  <table class="letzte">
+    <thead><tr><th>Position</th><th>Gesamtkosten Haus</th><th>Verteilerschlüssel</th><th>Anteil</th><th>Betrag</th></tr></thead>
+    <tbody>
+      {{range $ab.Fixkosten}}
+      <tr><td>{{.Position}}{{if .Geteilt}} <span class="muted">({{monatKurz .Von}} bis {{monatKurz .Bis}})</span>{{end}}</td><td>{{deEUR .Gesamt}}&nbsp;€</td><td>{{.Schluessel}}</td><td>{{de1 .Prozent}}&nbsp;%</td><td>{{deEUR .Betrag}}&nbsp;€</td></tr>
+      {{end}}
+      {{with $ab.Heizung}}{{if .Gesamt}}<tr><td>{{.Position}}</td><td>{{deEUR .Gesamt}}&nbsp;€</td><td>{{.Schluessel}}</td><td>{{de1 .Prozent}}&nbsp;%</td><td>{{deEUR .Betrag}}&nbsp;€</td></tr>{{end}}{{end}}
+      {{with $ab.Wasser}}{{if .Gesamt}}<tr><td>{{.Position}}</td><td>{{deEUR .Gesamt}}&nbsp;€</td><td>{{.Schluessel}}</td><td>{{de1 .Prozent}}&nbsp;%</td><td>{{deEUR .Betrag}}&nbsp;€</td></tr>{{end}}{{end}}
+      <tr><td colspan="4"><strong>Summe Betriebskosten</strong></td><td><strong>{{deEUR $ab.Betriebskosten}}&nbsp;€</strong></td></tr>
+    </tbody>
+  </table>
+
+  {{if $ab.StromW2}}
+  <h3>Stromverbrauch Wohnung 2 <span class="muted">(laut Vereinbarung weiterberechnet)</span></h3>
+  <table class="letzte">
+    <tbody><tr><td>{{de0 $ab.StromW2.VerbrauchKWh}}&nbsp;kWh</td><td>{{deEUR $ab.StromW2.Kosten}}&nbsp;€</td></tr></tbody>
+  </table>
+  {{end}}
+
+  <h3>Vorauszahlungen und Saldo</h3>
+  <table class="letzte">
+    <tbody>
+      <tr><td>Summe Betriebskosten</td><td>{{deEUR $ab.Betriebskosten}}&nbsp;€</td></tr>
+      {{if $ab.StromW2}}<tr><td>Stromverbrauch Wohnung 2</td><td>{{deEUR $ab.StromW2.Kosten}}&nbsp;€</td></tr>{{end}}
+      <tr><td>Vorauszahlungen</td><td>- {{deEUR $ab.Vorauszahlungen}}&nbsp;€</td></tr>
+      <tr><td><strong>{{$ab.Saldo.Label}}</strong></td><td><strong>{{.SaldoText}}</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Hinweise</h3>
+  {{if not .Eigennutzung}}
+  <p>Belege können auf Verlangen eingesehen werden (§ 556 Abs. 4 BGB). Einwendungen gegen diese Abrechnung sind spätestens zwölf Monate nach Zugang zu erheben (§ 556 Abs. 3 BGB).</p>
+  {{end}}
+  <p>Rundungsdifferenzen von wenigen Cent sind möglich.</p>
+  {{if and (not .Eigennutzung) $ab.Saldo.Nachzahlung .Haus.IBAN}}
+  <p>Bankverbindung: {{.Haus.VermieterName}}, IBAN {{.Haus.IBAN}}</p>
+  {{end}}
+
+  <div class="anhang">
+    <h2>Anhang</h2>
+
+    <h3>Verbrauchsübersicht</h3>
+    <table class="letzte">
+      <thead><tr><th>Zähler</th><th>Stand Beginn</th><th>Stand Ende</th><th>Verbrauch</th></tr></thead>
+      <tbody>
+        {{range $ab.Verbrauch}}<tr><td>{{.Zaehler}}</td><td>{{de3 .Beginn}}&nbsp;{{.Einheit}}</td><td>{{de3 .Ende}}&nbsp;{{.Einheit}}</td><td>{{de3 .Verbrauch}}&nbsp;{{.Einheit}}</td></tr>{{end}}
+      </tbody>
+    </table>
+
+    <h3>Heizung und Warmwasser je Monat</h3>
+    <table class="letzte">
+      <thead><tr><th>Monat</th><th>WP-Strom (kWh)</th><th>Wärme Wohnung 1 (MWh)</th><th>Wärme Wohnung 2 (MWh)</th><th>Anteil {{.Apartment.Name}}</th></tr></thead>
+      <tbody>
+        {{range $ab.HeizungMonate}}<tr><td>{{monat .Monat}}</td><td>{{de0 .WPStromKWh}}</td><td>{{de2 .WaermeW1MWh}}</td><td>{{de2 .WaermeW2MWh}}</td><td>{{deEUR .Anteil}}&nbsp;€</td></tr>{{end}}
+      </tbody>
+    </table>
+
+    <h3>Bezugsgrößen der Verteilerschlüssel</h3>
+    <table class="letzte">
+      <thead><tr><th>Schlüssel</th>{{range $ab.Apartments}}<th>{{.Name}}</th>{{end}}</tr></thead>
+      <tbody>
+        <tr><td>Wohnfläche (m²)</td>{{range $ab.Apartments}}<td>{{de .QM}}</td>{{end}}</tr>
+        <tr><td>Flurstück (m²)</td>{{range $ab.Apartments}}<td>{{de .FlurstueckGroesse}}</td>{{end}}</tr>
+      </tbody>
+    </table>
+
+    <h3>Personenzahl je Monat</h3>
+    <table class="letzte">
+      <thead>
+        <tr><th rowspan="2">Monat</th><th colspan="2">Fixkosten-Eingabe (Schlüssel Personen)</th><th colspan="2">Ablesung (Warmwasser)</th></tr>
+        <tr><th>Wohnung 1</th><th>Wohnung 2</th><th>Wohnung 1</th><th>Wohnung 2</th></tr>
+      </thead>
+      <tbody>
+        {{range $ab.PersonenMonate}}<tr><td>{{monat .Monat}}</td><td>{{personen .Fixkosten 1}}</td><td>{{personen .Fixkosten 2}}</td><td>{{personen .Ablesung 1}}</td><td>{{personen .Ablesung 2}}</td></tr>{{end}}
+      </tbody>
+    </table>
+    <p class="muted">Die Personenzahl der Fixkosten-Eingabe bestimmt den Schlüssel "Personen", die der Ablesung verteilt den Verbrauch der Warmwasseraufbereitung auf beide Wohnungen.</p>
+
+    <h3>Verteilerschlüssel</h3>
+    <p class="muted"><strong>Je Wohneinheit:</strong> beide Wohnungen zu gleichen Teilen. <strong>Wohnfläche:</strong> Anteil an der Gesamtwohnfläche laut Tabelle. <strong>Flurstück:</strong> Anteil am Grundstück laut Tabelle. <strong>Personen:</strong> Personenzahl je Monat laut Fixkosten-Eingabe, über den Zeitraum gewichtet. <strong>Heizung und Warmwasser:</strong> Die Kosten des Wärmepumpenstroms werden nach gemessenem Wärmeverbrauch und nach Wohnfläche im Verhältnis {{.GewichtungWaerme}} % zu {{.GewichtungFlaeche}} % verteilt.</p>
+  </div>
+</div>
+
+{{else}}
+<div class="panel" style="margin-top:1rem">
+  <h2>Abrechnung {{.Jahr}} nicht möglich</h2>
+  <p>Folgende Angaben fehlen oder sind widersprüchlich:</p>
+  <ul>
+    {{range .Ergebnis.Pruefung.Maengel}}
+    <li>{{.Text}}{{if .HatZiel}} <a href="{{$.Base}}{{.Pfad}}">{{.Aktion}}</a>{{end}}</li>
+    {{end}}
+  </ul>
+</div>
+{{end}}
+
+{{end}}
+{{end}}
