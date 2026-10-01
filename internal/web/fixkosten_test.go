@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -303,5 +304,88 @@ func TestStammdaten_HeizungGewichtung(t *testing.T) {
 	}
 	if strings.Contains(body, `value="0.7" checked`) {
 		t.Error("70/30 is checked although 60/40 was saved")
+	}
+}
+
+// fixkostenForm builds a complete /fixkosten form for the given month
+// ("YYYY-MM") - every Kostenposition on Wohneinheit/monatlich with value 10.
+func fixkostenForm(monat string) url.Values {
+	v := url.Values{
+		"monat":      {monat},
+		"personen_1": {"2"}, "personen_2": {"1"},
+		"abschlag_1": {"0"}, "abschlag_2": {"100"},
+	}
+	for _, kd := range store.KostenpositionDefaults {
+		id := strconv.FormatInt(kd.ID, 10)
+		v.Set("logik_"+id, store.LogikWohneinheit)
+		v.Set("typ_"+id, store.TypMonatlich)
+		v.Set("wert_"+id, "10")
+	}
+	return v
+}
+
+// TestFixkosten_EineEingabeJeMonat verifies Issue #161 at the form level:
+// a second Eingabe for a month, and moving one onto an occupied month, are
+// answered with HTTP 400 and a readable German message, nothing is saved.
+func TestFixkosten_EineEingabeJeMonat(t *testing.T) {
+	db := openTestDB(t)
+
+	post := func(path string, form url.Values, id string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
+		if id == "" {
+			handleCreateFixkosten()(w, requestWithDB(req, db))
+		} else {
+			req.SetPathValue("id", id)
+			handleUpdateFixkosten()(w, requestWithDB(req, db))
+		}
+		return w
+	}
+
+	if w := post("/fixkosten", fixkostenForm("2026-09"), ""); w.Code != http.StatusFound {
+		t.Fatalf("first create status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())
+	}
+	w := post("/fixkosten", fixkostenForm("2026-09"), "")
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("second create for the same month: status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+	for _, want := range []string{"September 2026", "bereits eine Fixkosten-Eingabe"} {
+		if !strings.Contains(w.Body.String(), want) {
+			t.Errorf("message %q does not contain %q", w.Body.String(), want)
+		}
+	}
+
+	if w := post("/fixkosten", fixkostenForm("2026-10"), ""); w.Code != http.StatusFound {
+		t.Fatalf("create for 2026-10 status = %d, want %d", w.Code, http.StatusFound)
+	}
+	eingaben, err := store.AllFixkostenEingaben(db)
+	if err != nil {
+		t.Fatalf("AllFixkostenEingaben: %v", err)
+	}
+	if len(eingaben) != 2 {
+		t.Fatalf("eingaben = %d, want 2 (September and Oktober)", len(eingaben))
+	}
+
+	// eingaben are newest first: [0] = Oktober. Moving it onto September fails.
+	okt := strconv.FormatInt(eingaben[0].ID, 10)
+	if w := post("/fixkosten/"+okt, fixkostenForm("2026-09"), okt); w.Code != http.StatusBadRequest {
+		t.Errorf("update onto an occupied month: status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+	// Correcting it under its own month works.
+	if w := post("/fixkosten/"+okt, fixkostenForm("2026-10"), okt); w.Code != http.StatusFound {
+		t.Errorf("update keeping its own month: status = %d, want %d", w.Code, http.StatusFound)
+	}
+}
+
+func TestValidateFixkostenMonateEindeutig(t *testing.T) {
+	in := func(monat string) store.FixkostenInput { return store.FixkostenInput{Monat: monat} }
+
+	if err := validateFixkostenMonateEindeutig([]store.FixkostenInput{in("2026-01-01"), in("2026-02-01")}); err != nil {
+		t.Errorf("distinct months: unexpected error %v", err)
+	}
+	err := validateFixkostenMonateEindeutig([]store.FixkostenInput{in("2026-01-01"), in("2026-02-01"), in("2026-01-01")})
+	if err == nil || !strings.Contains(err.Error(), "Januar 2026") {
+		t.Errorf("duplicate month: err = %v, want an error naming Januar 2026", err)
 	}
 }

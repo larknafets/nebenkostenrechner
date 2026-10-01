@@ -122,6 +122,8 @@ Einspeisevergütung = Verbrauch(strom_einspeisung) * Einspeisung_Preis
 
 Die festen Kostenpositionen (Grundsteuer, Wohngebäudeversicherung, Deichbeitrag Grund und Boden, Deichbeitrag Bauliche Anlagen, Kreisverband Wesermarsch, Abfallwirtschaft Grundgebühr Haushalt/Personen/Biomüll/Restmüll, Grundgebühr Strom, Grundgebühr Trinkwasser/Abwasser, Grundgebühr Internet, Wärmepumpenwartung, Streaming-Dienste, Sonstige Kosten) werden unabhängig von Strom/Heizung/Wasser auf einer eigenen monatlichen Fixkosteneingabe erfasst und berechnet. Jede Position trägt in dieser Eingabe ihre eigene Berechnungslogik, ihren Typ und ihren Wert (vorbelegt von der letzten Eingabe, frei überschreibbar):
 
+Je Monat gibt es genau eine Fixkosten-Eingabe. Eine zweite für denselben Monat sowie das Verschieben auf einen belegten Monat werden abgelehnt, ebenso ein CSV-Import mit einem doppelten Monat. Enthält eine bestehende Datenbank schon doppelte Monate, startet die App trotzdem und nennt die betroffenen Monate im Log. Die doppelten Eingaben lassen sich unter `/fixkosten` löschen oder in einen freien Monat verschieben, eine Eingabe kann dabei auch unter ihrem eigenen Monat weiter korrigiert werden. Der Schutz per UNIQUE-Index wird beim nächsten Start angelegt, sobald keine Doppelten mehr existieren.
+
 ```
 Monatswert("jährlich")  = Jahreswert / 12          (Jahreswert = erfasster Wert dieser Eingabe)
 Monatswert("monatlich") = erfasster Wert dieser Eingabe

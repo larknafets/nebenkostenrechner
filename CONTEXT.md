@@ -70,7 +70,7 @@ _Avoid_: umlegbar, abrechenbar (das ist die Vollständigkeit eines Abrechnungsja
 Ein haus-weites Ja/Nein-Flag in den Stammdaten, ob der Stromverbrauch von Wohnung 2 (Haushaltsstrom, Zwischenzähler) in der Jahresabrechnung weiterberechnet wird. Der Haushaltsstrom ist keine Betriebskostenart, deshalb ein eigenes Flag statt des Umlagefähig-Flags einer Kostenposition.
 
 **Fixkosten-Eingabe**:
-Eine monatliche Erfassung, analog zur Ablesung: Personenzahl je Wohnung (eigenständig, nicht die der Ablesung) und für jede der 16 Kostenpositionen ihre Berechnungslogik, ihr Typ und ihr Wert. Anders als die Ablesung hängt sie nicht von einer Vorperiode ab (kein Verbrauch, keine Zählerstand-Differenz); Logik/Typ/Wert sind, wie Personen und der Nebenkostenabschlag, je Eingabe unabhängig gespeichert und von der letzten Eingabe vorbelegt, nicht jahresweise zentral gepflegt.
+Eine monatliche Erfassung, analog zur Ablesung, aber **genau eine je Monat** (beim Anlegen, beim Ändern des Monats und beim CSV-Import erzwungen, per UNIQUE-Index abgesichert; anders als bei Ablesungen gibt es keine untermonatigen Zusatzeingaben): Personenzahl je Wohnung (eigenständig, nicht die der Ablesung) und für jede der 16 Kostenpositionen ihre Berechnungslogik, ihr Typ und ihr Wert. Anders als die Ablesung hängt sie nicht von einer Vorperiode ab (kein Verbrauch, keine Zählerstand-Differenz); Logik/Typ/Wert sind, wie Personen und der Nebenkostenabschlag, je Eingabe unabhängig gespeichert und von der letzten Eingabe vorbelegt, nicht jahresweise zentral gepflegt.
 _Avoid_: Fixkosten-Eintrag, Fixkosten-Periode
 
 **Kostenposition**:
