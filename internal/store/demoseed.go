@@ -34,10 +34,28 @@ func SeedDemoData(db *sql.DB, now time.Time) error {
 // - a fresh real install seeds these at 0 (nobody's filled in /stammdaten
 // yet), which would degrade the heating-split/parcel-fixed-cost logic to
 // their 50/50 fallback and make the demo look broken.
+//
+// The tenant/landlord data is made up (Issue #164), so the demo's
+// Jahresabrechnung is not blocked by missing mandatory Stammdaten. The demo
+// database is always fresh, so the flags keep their starting values: only
+// the Strom flag is written explicitly, SaveStammdaten always writes it.
 func seedDemoStammdaten(db *sql.DB) error {
-	return UpdateStammdaten(db, map[int64]StammdatenInput{
-		1: {QM: 116.23, FlurstueckGroesse: 460},
-		2: {QM: 86, FlurstueckGroesse: 340},
+	return SaveStammdaten(db, StammdatenSave{
+		Apartments: map[int64]StammdatenInput{
+			1: {QM: 116.23, FlurstueckGroesse: 460},
+			2: {QM: 86, FlurstueckGroesse: 340},
+		},
+		Flags: StammdatenFlags{StromWeiterberechnen: true},
+		Wohnungen: map[int64]WohnungDetails{
+			1: {MieterName: "Max Mustermann", MieterAnschrift: "Beispielweg 1\n12345 Musterstadt", Status: StatusEigennutzung},
+			2: {MieterName: "Erika Beispiel", MieterAnschrift: "Beispielweg 1, Wohnung 2\n12345 Musterstadt", Status: StatusVermietet},
+		},
+		Haus: HausDetails{
+			VermieterName:      "Max Mustermann",
+			VermieterAnschrift: "Beispielweg 1\n12345 Musterstadt",
+			ObjektAnschrift:    "Beispielweg 1\n12345 Musterstadt",
+			IBAN:               "DE00 0000 0000 0000 0000 00",
+		},
 	})
 }
 
