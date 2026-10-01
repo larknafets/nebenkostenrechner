@@ -434,17 +434,17 @@ func TestUpdatePeriod_AddsMissingOccupancy(t *testing.T) {
 	}
 }
 
-// TestDateNeighborBounds verifies the "korrigieren" date-reorder guard
+// TestNeighborValues verifies the "korrigieren" date-reorder guard
 // (Ticket #44 review finding): a period's own date is excluded from the
 // bounds computation, and only the closest neighbors on either side count.
-func TestDateNeighborBounds(t *testing.T) {
+func TestNeighborValues(t *testing.T) {
 	all := []PeriodSummary{
 		{ID: 1, ReadingDate: "2026-06-01"},
 		{ID: 2, ReadingDate: "2026-07-01"},
 		{ID: 3, ReadingDate: "2026-08-01"},
 	}
 
-	prev, next, hasPrev, hasNext := dateNeighborBounds(all, 2, "2026-07-01")
+	prev, next, hasPrev, hasNext := neighborValues(all, 2, "2026-07-01", dateOrderRule.value)
 	if !hasPrev || prev != "2026-06-01" {
 		t.Errorf("prev = %q, %v, want 2026-06-01, true", prev, hasPrev)
 	}
@@ -453,13 +453,13 @@ func TestDateNeighborBounds(t *testing.T) {
 	}
 
 	// Oldest period: no prev bound.
-	_, _, hasPrev, _ = dateNeighborBounds(all, 1, "2026-06-01")
+	_, _, hasPrev, _ = neighborValues(all, 1, "2026-06-01", dateOrderRule.value)
 	if hasPrev {
 		t.Error("oldest period: hasPrev = true, want false")
 	}
 
 	// Newest period: no next bound.
-	_, _, _, hasNext = dateNeighborBounds(all, 3, "2026-08-01")
+	_, _, _, hasNext = neighborValues(all, 3, "2026-08-01", dateOrderRule.value)
 	if hasNext {
 		t.Error("newest period: hasNext = true, want false")
 	}
@@ -1488,7 +1488,7 @@ func TestUpdatePeriod_Teilstand_PreservesUnspecifiedFields(t *testing.T) {
 }
 
 // TestUpdatePeriod_EmptyMonat_NoNeighborConflict verifies AC4:
-// checkMonatNeighbors must not reject an empty Monat as a chronological
+// checkReadingOrder must not reject an empty Monat as a chronological
 // conflict, even when a real (non-empty) value at that position would
 // conflict with a neighbor.
 func TestUpdatePeriod_EmptyMonat_NoNeighborConflict(t *testing.T) {
@@ -2100,5 +2100,40 @@ func TestHeizungGewichtung_SaveUndNeustart(t *testing.T) {
 	}
 	if has, _ := hasColumn(db, "periods", "heizung_waerme_gewichtung"); has {
 		t.Error("periods has heizung_waerme_gewichtung again after a restart")
+	}
+}
+
+// TestOrderRule_Check pins the one shared order rule for both fields: Date
+// is strict (equal to a neighbor is a violation), Monat tolerates equality.
+func TestOrderRule_Check(t *testing.T) {
+	all := []PeriodSummary{
+		{ID: 1, ReadingDate: "2026-06-01", Monat: "2026-06"},
+		{ID: 2, ReadingDate: "2026-07-01", Monat: "2026-07"},
+		{ID: 3, ReadingDate: "2026-08-01", Monat: "2026-08"},
+	}
+	check := func(r orderRule, v string) error { return r.check(all, 2, "2026-07-01", v) }
+
+	var dEarly *PeriodDateTooEarlyError
+	var dLate *PeriodDateTooLateError
+	var mEarly *PeriodMonatTooEarlyError
+	var mLate *PeriodMonatTooLateError
+
+	if err := check(dateOrderRule, "2026-06-01"); !errors.As(err, &dEarly) || dEarly.Neighbor != "2026-06-01" {
+		t.Errorf("date == prev: err = %v, want PeriodDateTooEarlyError", err)
+	}
+	if err := check(dateOrderRule, "2026-08-01"); !errors.As(err, &dLate) || dLate.Neighbor != "2026-08-01" {
+		t.Errorf("date == next: err = %v, want PeriodDateTooLateError", err)
+	}
+	if err := check(dateOrderRule, "2026-07-15"); err != nil {
+		t.Errorf("date in gap: err = %v, want nil", err)
+	}
+	if err := check(monatOrderRule, "2026-06"); err != nil {
+		t.Errorf("monat == prev: err = %v, want nil", err)
+	}
+	if err := check(monatOrderRule, "2026-05"); !errors.As(err, &mEarly) || mEarly.Neighbor != "2026-06" {
+		t.Errorf("monat < prev: err = %v, want PeriodMonatTooEarlyError", err)
+	}
+	if err := check(monatOrderRule, "2026-09"); !errors.As(err, &mLate) || mLate.Neighbor != "2026-08" {
+		t.Errorf("monat > next: err = %v, want PeriodMonatTooLateError", err)
 	}
 }

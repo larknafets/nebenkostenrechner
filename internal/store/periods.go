@@ -217,7 +217,7 @@ func (e *PeriodDateTooLateError) Error() string {
 // neighborValues finds, among `all` periods excluding periodID, the
 // closest ReadingDate below and above `currentDate`, returning what
 // `value` reads off each of those two neighbors - the shared lookup behind
-// dateNeighborBounds and monatNeighborBounds (Issue #86 code review: these
+// dateOrderRule and monatOrderRule (Issue #86 code review: these
 // were an exact structural duplicate, differing only in which field they
 // read off the neighbor). The range is the one a correction may move
 // periodID's own field within without silently reordering it past a
@@ -240,15 +240,8 @@ func neighborValues(all []PeriodSummary, periodID int64, currentDate string, val
 	return
 }
 
-// dateNeighborBounds is neighborValues reading each neighbor's own
-// ReadingDate.
-func dateNeighborBounds(all []PeriodSummary, periodID int64, currentDate string) (prev, next string, hasPrev, hasNext bool) {
-	return neighborValues(all, periodID, currentDate, func(p PeriodSummary) string { return p.ReadingDate })
-}
-
 // periodNeighborContext fetches periodID's own (pre-edit) ReadingDate and
-// every period, for a neighbor-bounds check - the shared setup behind
-// checkDateNeighbors and checkMonatNeighbors.
+// every period, for the neighbor-bounds check in checkReadingOrder.
 func periodNeighborContext(db *sql.DB, periodID int64) (currentDate string, all []PeriodSummary, err error) {
 	if err := db.QueryRow(`SELECT reading_date FROM periods WHERE id = ?`, periodID).Scan(&currentDate); err != nil {
 		if err == sql.ErrNoRows {
@@ -264,25 +257,71 @@ func periodNeighborContext(db *sql.DB, periodID int64) (currentDate string, all 
 	return currentDate, all, nil
 }
 
-// checkDateNeighbors validates in.ReadingDate against periodID's
-// chronological neighbors before UpdatePeriod writes it. The neighbor
-// bounds are computed around periodID's *current* (pre-edit) date, not the
-// new one - a correction may only move the date within the gap it already
-// occupies, not jump elsewhere and skip the check.
-func checkDateNeighbors(db *sql.DB, periodID int64, readingDate string) error {
+// orderRule is one chronological-order rule: which field of a period must
+// stay within its neighbors' values, whether equality counts as a
+// violation, and which error reports a violation on either side. Date and
+// Monat differ only in these four things, so the check itself
+// (checkReadingOrder) is written once.
+type orderRule struct {
+	value  func(PeriodSummary) string
+	strict bool // true: equal to a neighbor is a violation (<= / >=)
+	early  func(neighbor string) error
+	late   func(neighbor string) error
+}
+
+// dateOrderRule: ReadingDate must lie strictly between its neighbors'.
+var dateOrderRule = orderRule{
+	value:  func(p PeriodSummary) string { return p.ReadingDate },
+	strict: true,
+	early:  func(n string) error { return &PeriodDateTooEarlyError{Neighbor: n} },
+	late:   func(n string) error { return &PeriodDateTooLateError{Neighbor: n} },
+}
+
+// monatOrderRule: Monat must not pass its neighbors' (Issue #86). Unlike
+// ReadingDate, equal to a neighbor's Monat is fine (multiple Ablesungen may
+// share an Abrechnungsmonat).
+var monatOrderRule = orderRule{
+	value: func(p PeriodSummary) string { return p.Monat },
+	early: func(n string) error { return &PeriodMonatTooEarlyError{Neighbor: n} },
+	late:  func(n string) error { return &PeriodMonatTooLateError{Neighbor: n} },
+}
+
+// check returns the error for v against the neighbors of the period at
+// currentDate (excluding periodID), or nil.
+func (r orderRule) check(all []PeriodSummary, periodID int64, currentDate, v string) error {
+	prev, next, hasPrev, hasNext := neighborValues(all, periodID, currentDate, r.value)
+	if hasPrev && (v < prev || (r.strict && v == prev)) {
+		return r.early(prev)
+	}
+	if hasNext && (v > next || (r.strict && v == next)) {
+		return r.late(next)
+	}
+	return nil
+}
+
+// checkReadingOrder validates in.ReadingDate and in.Monat against
+// periodID's chronological neighbors before UpdatePeriod writes them. The
+// neighbor bounds are computed around periodID's *current* (pre-edit) date,
+// not the new one - a correction may only move a value within the gap it
+// already occupies, not jump elsewhere and skip the check. The context is
+// loaded once for both rules; the date is checked first. Only UpdatePeriod
+// calls this; CreatePeriod leaves both unvalidated.
+func checkReadingOrder(db *sql.DB, periodID int64, in PeriodInput) error {
 	currentDate, all, err := periodNeighborContext(db, periodID)
 	if err != nil {
 		return err
 	}
 
-	prev, next, hasPrev, hasNext := dateNeighborBounds(all, periodID, currentDate)
-	if hasPrev && readingDate <= prev {
-		return &PeriodDateTooEarlyError{Neighbor: prev}
+	if err := dateOrderRule.check(all, periodID, currentDate, in.ReadingDate); err != nil {
+		return err
 	}
-	if hasNext && readingDate >= next {
-		return &PeriodDateTooLateError{Neighbor: next}
+	if in.Monat == "" {
+		// Teilstand (Ticket #128): an Abrechnungsmonat not entered yet is
+		// not a chronological conflict with a neighboring period - skip
+		// until it's actually entered.
+		return nil
 	}
-	return nil
+	return monatOrderRule.check(all, periodID, currentDate, in.Monat)
 }
 
 // PeriodMonatTooEarlyError is returned by UpdatePeriod when in.Monat would
@@ -305,56 +344,16 @@ func (e *PeriodMonatTooLateError) Error() string {
 	return fmt.Sprintf("monat must not be after the next period's monat (%s)", e.Neighbor)
 }
 
-// monatNeighborBounds is neighborValues reading each neighbor's Monat -
-// dateNeighborBounds' counterpart for the ones in.Monat must stay within
-// (Issue #86). Unlike ReadingDate, equal to a neighbor's Monat is fine
-// (multiple Ablesungen may share an Abrechnungsmonat), so the caller
-// compares with < / >, not <= / >=.
-func monatNeighborBounds(all []PeriodSummary, periodID int64, currentDate string) (prev, next string, hasPrev, hasNext bool) {
-	return neighborValues(all, periodID, currentDate, func(p PeriodSummary) string { return p.Monat })
-}
-
-// checkMonatNeighbors validates in.Monat against periodID's chronological
-// neighbors before UpdatePeriod writes it - the monat-monotonicity
-// counterpart to checkDateNeighbors. Only UpdatePeriod calls this;
-// CreatePeriod leaves Monat unvalidated, consistent with ReadingDate's own
-// unvalidated creation path.
-func checkMonatNeighbors(db *sql.DB, periodID int64, monat string) error {
-	if monat == "" {
-		// Teilstand (Ticket #128): an Abrechnungsmonat not entered yet is
-		// not a chronological conflict with a neighboring period - skip
-		// until it's actually entered.
-		return nil
-	}
-
-	currentDate, all, err := periodNeighborContext(db, periodID)
-	if err != nil {
-		return err
-	}
-
-	prev, next, hasPrev, hasNext := monatNeighborBounds(all, periodID, currentDate)
-	if hasPrev && monat < prev {
-		return &PeriodMonatTooEarlyError{Neighbor: prev}
-	}
-	if hasNext && monat > next {
-		return &PeriodMonatTooLateError{Neighbor: next}
-	}
-	return nil
-}
-
 // UpdatePeriod overwrites an existing period's fields, readings, and
 // occupancy in place - no new row, no history of the previous values
 // (Ticket #34: only the latest period is ever editable, in-place, no
 // audit log). Costs aren't stored anywhere (berechneKosten/Verbrauch read
 // live from the DB on every request), so overwriting here is all that's
 // needed for the change to show up - nothing to invalidate. The neighbor-date
-// invariant (see checkDateNeighbors) is enforced here, not just by the web
+// invariant (see checkReadingOrder) is enforced here, not just by the web
 // wizard, so any caller gets the same protection.
 func UpdatePeriod(db *sql.DB, periodID int64, in PeriodInput) error {
-	if err := checkDateNeighbors(db, periodID, in.ReadingDate); err != nil {
-		return err
-	}
-	if err := checkMonatNeighbors(db, periodID, in.Monat); err != nil {
+	if err := checkReadingOrder(db, periodID, in); err != nil {
 		return err
 	}
 
