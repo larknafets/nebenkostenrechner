@@ -35,16 +35,16 @@ Preise (aktuell, werden pro Monat neu erfasst statt zentral versioniert):
 
 | Key | Beschreibung | Einheit |
 |---|---|---|
-| `strom_gesamt` | Stromzähler Gesamt (Netzbezug) | kWh |
+| `strom_gesamt` | Stromzähler Netzbezug (1.8.0) | kWh |
+| `strom_einspeisung` | Einspeisezähler (2.8.0, PV) | kWh |
 | `strom_wohnung2` | Zwischenstromzähler Wohnung 2 | kWh |
-| `strom_waermepumpe` | Zwischenstromzähler Wärmepumpe | kWh |
 | `strom_wallbox` | Zwischenzähler Wallboxen | kWh |
+| `strom_waermepumpe` | Zwischenstromzähler Wärmepumpe | kWh |
+| `waerme_wohnung1` | Wärmemengenzähler Wohnung 1 | **MWh** |
+| `waerme_wohnung2` | Wärmemengenzähler Wohnung 2 | **MWh** |
 | `wasser_gesamt` | Wasserzähler Gesamt | m³ |
 | `wasser_wohnung2` | Zwischenwasserzähler Wohnung 2 | m³ |
 | `wasser_warmwasseraufbereitung` | Zwischenwasserzähler Warmwasseraufbereitung | m³ |
-| `waerme_wohnung1` | Wärmemengenzähler Wohnung 1 | **MWh** |
-| `waerme_wohnung2` | Wärmemengenzähler Wohnung 2 | **MWh** |
-| `strom_einspeisung` | Einspeisezähler (PV) | kWh |
 
 Ableserhythmus: 1x/Monat. Verbrauch = aktueller Zählerstand minus Stand der chronologisch nächstälteren Ablesung (einfache Differenz, funktioniert automatisch auch über Lücken hinweg).
 

@@ -1940,12 +1940,12 @@ func TestEnsureApartmentsAndHausDetailsColumns(t *testing.T) {
 	}
 
 	var strom bool
-	var iban string
-	if err := db.QueryRow(`SELECT strom_weiterberechnen, iban FROM haus WHERE id = 1`).Scan(&strom, &iban); err != nil {
+	var iban, kontoinhaber string
+	if err := db.QueryRow(`SELECT strom_weiterberechnen, iban, kontoinhaber FROM haus WHERE id = 1`).Scan(&strom, &iban, &kontoinhaber); err != nil {
 		t.Fatalf("query haus: %v", err)
 	}
-	if strom || iban != "" {
-		t.Errorf("haus after migration = strom:%v iban:%q, want the existing flag 0 kept and iban empty", strom, iban)
+	if strom || iban != "" || kontoinhaber != "" {
+		t.Errorf("haus after migration = strom:%v iban:%q kontoinhaber:%q, want the existing flag 0 kept and iban/kontoinhaber empty", strom, iban, kontoinhaber)
 	}
 
 	// A status the user changed afterwards survives a second call.

@@ -180,6 +180,7 @@ func TestStammdaten_MieterUndVermieterNurAngemeldet(t *testing.T) {
 		"vermieter_anschrift":   {"Hauptstraße 5"},
 		"objekt_anschrift":      {"Beispielweg 1, 12345 Musterstadt"},
 		"iban":                  {"DE00 1234 5678"},
+		"kontoinhaber":          {"Max und Erika Beispielkonto"},
 		"strom_weiterberechnen": {"1"},
 	}
 	post := httptest.NewRequest(http.MethodPost, "/stammdaten", strings.NewReader(form.Encode()))
@@ -201,7 +202,7 @@ func TestStammdaten_MieterUndVermieterNurAngemeldet(t *testing.T) {
 		t.Errorf("MieterAnschrift = %q, want line breaks normalized to \\n", got)
 	}
 
-	secrets := []string{"Erika Beispiel", "Max Mustermann", "Hauptstraße 5", "DE00 1234 5678", "12345 Musterstadt"}
+	secrets := []string{"Erika Beispiel", "Max Mustermann", "Hauptstraße 5", "DE00 1234 5678", "Max und Erika Beispielkonto", "12345 Musterstadt"}
 
 	// Logged in (no LOGIN_PASSWORD configured): everything is visible.
 	req := httptest.NewRequest(http.MethodGet, "/stammdaten", nil)
@@ -230,7 +231,7 @@ func TestStammdaten_MieterUndVermieterNurAngemeldet(t *testing.T) {
 			t.Errorf("GET /stammdaten (not logged in) leaks %q", secret)
 		}
 	}
-	for _, field := range []string{`name="mieter_name_`, `name="vermieter_name"`, `name="iban"`} {
+	for _, field := range []string{`name="mieter_name_`, `name="vermieter_name"`, `name="iban"`, `name="kontoinhaber"`} {
 		if strings.Contains(body, field) {
 			t.Errorf("GET /stammdaten (not logged in) renders the field %s", field)
 		}
