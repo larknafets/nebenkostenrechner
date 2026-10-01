@@ -96,5 +96,12 @@ Die Grundstücksgröße je Wohnung (`apartments.flurstueck_groesse`), Grundlage 
 Die monatliche Vorauszahlung je Wohnung (Tabelle `nebenkosten_abschlaege`), an der jeweiligen Fixkosten-Eingabe erfasst wie ein monatlich-typisierter Wert, aber keine Kostenposition - deckt Fixkosten UND Verbräuche gemeinsam ab, zählt nicht in die Fixkosten-Summen und hat keine Berechnungslogik (direkter Wert je Wohnung, kein Split).
 _Avoid_: Abschlag ohne "Nebenkosten"-Präfix (zu unspezifisch), Vorauszahlung
 
+**Abrechnungszeitraum**:
+Der Zeitraum einer Jahresabrechnung: das Kalenderjahr, im ersten Erfassungsjahr ab dem Datum der ersten Ablesung (dem Ausgangsstand, der selbst keinen Verbrauch liefert) bis 31.12. Fixkosten-Eingaben und Nebenkostenabschläge sind dort erst ab dem Folgemonat des Ausgangsstands nötig. Der Verbrauch jeder späteren Ablesung ist die Differenz zur vorherigen, deshalb ist er im Zeitraum immer berechenbar.
+
+**Mangel** (Abrechnungsprüfung):
+Ein Grund, warum für ein Jahr und eine Wohnung noch keine Jahresabrechnung entstehen kann: fehlende oder unvollständige Ablesung (Teilstand) eines Abrechnungsmonats, fehlende oder mehrfache Fixkosten-Eingabe eines Monats, fehlende Pflicht-Stammdaten. Die Prüfung liefert alle Mängel auf einmal, jeweils mit dem Ort zum Beheben, statt einer Abrechnung. Ein fehlender Nebenkostenabschlag ist kein Mangel (zählt als 0).
+_Avoid_: Fehler, Warnung
+
 **Guthaben / Nachzahlung**:
 Der fortlaufend seit Erfassungsbeginn kumulierte Saldo aus Nebenkostenabschlag minus Fixkosten minus Verbräuche einer Wohnung (kein Reset zum Jahreswechsel). Positiv heißt Guthaben, negativ Nachzahlung, exakt null Ausgeglichen. Im Code der Typ `AbschlagSaldo` (`internal/web/abschlag_saldo.go`).
