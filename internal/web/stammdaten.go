@@ -93,7 +93,7 @@ func handleStammdatenForm(a auth) http.HandlerFunc {
 				apartments[i].MieterName = ""
 				apartments[i].MieterAnschrift = ""
 			}
-			haus.VermieterName, haus.VermieterAnschrift, haus.ObjektAnschrift, haus.IBAN = "", "", "", ""
+			haus.VermieterName, haus.VermieterAnschrift, haus.ObjektAnschrift, haus.IBAN, haus.Kontoinhaber = "", "", "", "", ""
 		}
 
 		data := struct {
@@ -192,6 +192,7 @@ func handleUpdateStammdaten() http.HandlerFunc {
 				VermieterAnschrift: formText(r, "vermieter_anschrift"),
 				ObjektAnschrift:    formText(r, "objekt_anschrift"),
 				IBAN:               formText(r, "iban"),
+				Kontoinhaber:       formText(r, "kontoinhaber"),
 			},
 		}
 		if err := store.SaveStammdaten(db, save); err != nil {

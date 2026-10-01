@@ -156,19 +156,21 @@ type Haus struct {
 
 	// VermieterName/VermieterAnschrift/ObjektAnschrift/IBAN fill the head
 	// and the payment note of the Jahresabrechnung (Issue #164). Personal
-	// data: shown and edited only for logged-in users. IBAN is optional.
+	// data: shown and edited only for logged-in users. IBAN is optional;
+	// Kontoinhaber is the account holder shown with it, empty = Vermieter.
 	VermieterName      string
 	VermieterAnschrift string
 	ObjektAnschrift    string
 	IBAN               string
+	Kontoinhaber       string
 }
 
 // GetHaus returns the house-wide Stammdaten.
 func GetHaus(db *sql.DB) (Haus, error) {
 	var h Haus
 	if err := db.QueryRow(
-		`SELECT strom_weiterberechnen, heizung_waerme_gewichtung, vermieter_name, vermieter_anschrift, objekt_anschrift, iban FROM haus WHERE id = 1`,
-	).Scan(&h.StromWeiterberechnen, &h.HeizungWaermeGewichtung, &h.VermieterName, &h.VermieterAnschrift, &h.ObjektAnschrift, &h.IBAN); err != nil {
+		`SELECT strom_weiterberechnen, heizung_waerme_gewichtung, vermieter_name, vermieter_anschrift, objekt_anschrift, iban, kontoinhaber FROM haus WHERE id = 1`,
+	).Scan(&h.StromWeiterberechnen, &h.HeizungWaermeGewichtung, &h.VermieterName, &h.VermieterAnschrift, &h.ObjektAnschrift, &h.IBAN, &h.Kontoinhaber); err != nil {
 		return Haus{}, fmt.Errorf("query haus: %w", err)
 	}
 	return h, nil
@@ -235,6 +237,7 @@ type HausDetails struct {
 	VermieterAnschrift string
 	ObjektAnschrift    string
 	IBAN               string
+	Kontoinhaber       string
 }
 
 // StammdatenSave is everything one /stammdaten form submission writes.
@@ -277,8 +280,8 @@ func SaveStammdaten(db *sql.DB, in StammdatenSave) error {
 			}
 		}
 		if _, err := tx.Exec(
-			`UPDATE haus SET vermieter_name = ?, vermieter_anschrift = ?, objekt_anschrift = ?, iban = ? WHERE id = 1`,
-			in.Haus.VermieterName, in.Haus.VermieterAnschrift, in.Haus.ObjektAnschrift, in.Haus.IBAN,
+			`UPDATE haus SET vermieter_name = ?, vermieter_anschrift = ?, objekt_anschrift = ?, iban = ?, kontoinhaber = ? WHERE id = 1`,
+			in.Haus.VermieterName, in.Haus.VermieterAnschrift, in.Haus.ObjektAnschrift, in.Haus.IBAN, in.Haus.Kontoinhaber,
 		); err != nil {
 			return fmt.Errorf("update haus details: %w", err)
 		}

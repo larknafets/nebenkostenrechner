@@ -89,7 +89,7 @@
     </div>
     <div class="btn-row">
       {{range .Apartments}}
-      <button type="submit" name="wohnung" value="{{.ID}}" class="{{if eq .ID $.ApartmentID}}primary{{else}}secondary{{end}}">{{.Name}} ({{if eq .Status "vermietet"}}vermietet{{else}}Eigennutzung{{end}})</button>
+      <button type="submit" name="wohnung" value="{{.ID}}" class="{{if eq .ID $.ApartmentID}}primary{{else}}secondary{{end}}">{{.Name}} ({{if eq .Status "vermietet"}}Vermietung{{else}}Eigennutzung{{end}})</button>
       {{end}}
       <input type="hidden" name="wohnung" value="{{.ApartmentID}}">
       <button type="submit" class="secondary">Anzeigen</button>
@@ -205,7 +205,7 @@
       {{end}}
       <p class="klein">Rundungsdifferenzen von wenigen Cent sind möglich.</p>
       {{if and (not .Eigennutzung) $ab.Saldo.Nachzahlung .Haus.IBAN}}
-      <p class="klein">Bankverbindung: {{.Haus.VermieterName}}, IBAN {{.Haus.IBAN}}</p>
+      <p class="klein">Bankverbindung: {{if .Haus.Kontoinhaber}}{{.Haus.Kontoinhaber}}{{else}}{{.Haus.VermieterName}}{{end}}, IBAN {{.Haus.IBAN}}</p>
       {{end}}
     </aside>
   </div>

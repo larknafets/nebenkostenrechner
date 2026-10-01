@@ -59,7 +59,8 @@ CREATE TABLE IF NOT EXISTS haus (
     vermieter_name         TEXT NOT NULL DEFAULT '',
     vermieter_anschrift    TEXT NOT NULL DEFAULT '',
     objekt_anschrift       TEXT NOT NULL DEFAULT '',
-    iban                   TEXT NOT NULL DEFAULT ''
+    iban                   TEXT NOT NULL DEFAULT '',
+    kontoinhaber           TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS fixkosten_eingaben (

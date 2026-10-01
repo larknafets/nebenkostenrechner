@@ -95,7 +95,7 @@ func TestAbrechnungSeite_Vorbelegung(t *testing.T) {
 	mustContain(t, body,
 		"Nebenkostenabrechnung 2025",
 		`<option value="2025" selected>`,
-		`value="2" class="primary">Wohnung 2 (vermietet)`,
+		`value="2" class="primary">Wohnung 2 (Vermietung)`,
 		`value="1" class="secondary">Wohnung 1 (Eigennutzung)`,
 		"Zeitraum: 01.01.2025 bis 31.12.2025",
 		"</html>")
@@ -161,6 +161,15 @@ func TestAbrechnungSeite_Hinweise(t *testing.T) {
 			"(Okt 2026 bis Nov 2026)")
 		// The notes and controls are screen-only.
 		mustContain(t, body, `class="panel no-print"`, `class="no-print"`, "Zum Sichern als PDF: Drucken, Ziel PDF", `onclick="window.print()"`, "@media print { .no-print")
+	})
+
+	t.Run("Kontoinhaber ersetzt den Vermieter bei der Bankverbindung", func(t *testing.T) {
+		if _, err := db.Exec(`UPDATE haus SET kontoinhaber = 'Max und Erika Mustermann'`); err != nil {
+			t.Fatalf("set kontoinhaber: %v", err)
+		}
+		t.Cleanup(func() { _, _ = db.Exec(`UPDATE haus SET kontoinhaber = ''`) })
+		_, body := getAbrechnung(t, mux, "?jahr=2026&wohnung=2", nil)
+		mustContain(t, body, "Bankverbindung: Max und Erika Mustermann, IBAN DE00 1234 5678")
 	})
 
 	t.Run("Guthaben: keine Frist, keine IBAN", func(t *testing.T) {

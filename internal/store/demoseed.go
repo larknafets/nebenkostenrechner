@@ -56,6 +56,7 @@ func seedDemoStammdaten(db *sql.DB) error {
 			VermieterAnschrift: "Beispielweg 1\n12345 Musterstadt",
 			ObjektAnschrift:    "Beispielweg 1\n12345 Musterstadt",
 			IBAN:               "DE00 0000 0000 0000 0000 00",
+			Kontoinhaber:       "Max Mustermann",
 		},
 	})
 }

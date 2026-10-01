@@ -2,7 +2,11 @@
 <h1>Stammdaten</h1>
 {{template "nav" .}}
 
-<form method="post" action="{{.Base}}/stammdaten" class="dirty-form">
+<style>
+  .stammdaten-form { display: grid; gap: 1rem; }
+  .stammdaten-form input[type=text], .stammdaten-form textarea { width: 100%; padding: .5rem .6rem; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; font-family: inherit; }
+</style>
+<form method="post" action="{{.Base}}/stammdaten" class="dirty-form stammdaten-form">
   <div class="grid grid-2">
     {{range .Apartments}}
     <div class="panel">
@@ -11,7 +15,7 @@
       <div class="field"><label>Flurstücksgröße (m²)</label><input type="number" step="any" name="flurstueck_groesse_{{.ID}}" value="{{.FlurstueckGroesse}}" required {{if not $.IsLoggedIn}}disabled{{end}}></div>
       <div class="field"><label>Wohnungsstatus</label>
         <select name="status_{{.ID}}" {{if not $.IsLoggedIn}}disabled{{end}}>
-          <option value="vermietet" {{if eq .Status "vermietet"}}selected{{end}}>vermietet</option>
+          <option value="vermietet" {{if eq .Status "vermietet"}}selected{{end}}>Vermietung</option>
           <option value="eigennutzung" {{if eq .Status "eigennutzung"}}selected{{end}}>Eigennutzung</option>
         </select>
       </div>
@@ -31,6 +35,7 @@
     <div class="field"><label>Anschrift des Vermieters</label><textarea name="vermieter_anschrift" rows="3">{{.Haus.VermieterAnschrift}}</textarea></div>
     <div class="field"><label>Anschrift des Objekts</label><textarea name="objekt_anschrift" rows="3">{{.Haus.ObjektAnschrift}}</textarea></div>
     <div class="field"><label>IBAN (optional)</label><input type="text" name="iban" value="{{.Haus.IBAN}}"></div>
+    <div class="field"><label>Kontoinhaber (optional, sonst der Vermieter)</label><input type="text" name="kontoinhaber" value="{{.Haus.Kontoinhaber}}"></div>
   </div>
   {{end}}
 

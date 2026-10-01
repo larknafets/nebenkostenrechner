@@ -336,7 +336,7 @@ func ensureApartmentsDetailsColumns(db *sql.DB) error {
 	return tx.Commit()
 }
 
-// ensureHausDetailsColumns adds the Vermieter/Objekt/IBAN columns to a haus
+// ensureHausDetailsColumns adds the Vermieter/Objekt/IBAN/Kontoinhaber columns to a haus
 // table created by Issue #163, before it had them (Issue #164). A brand-new
 // database gets them from schema.sql.
 func ensureHausDetailsColumns(db *sql.DB) error {
@@ -347,6 +347,7 @@ func ensureHausDetailsColumns(db *sql.DB) error {
 		{"vermieter_anschrift", `ALTER TABLE haus ADD COLUMN vermieter_anschrift TEXT NOT NULL DEFAULT ''`},
 		{"objekt_anschrift", `ALTER TABLE haus ADD COLUMN objekt_anschrift TEXT NOT NULL DEFAULT ''`},
 		{"iban", `ALTER TABLE haus ADD COLUMN iban TEXT NOT NULL DEFAULT ''`},
+		{"kontoinhaber", `ALTER TABLE haus ADD COLUMN kontoinhaber TEXT NOT NULL DEFAULT ''`},
 	} {
 		has, err := hasColumn(db, "haus", c.column)
 		if err != nil {
