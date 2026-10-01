@@ -1829,7 +1829,7 @@ func TestStammdatenDetails_StartwerteUndNeustart(t *testing.T) {
 			2: {MieterName: "Erika Beispiel", MieterAnschrift: "Beispielweg 1\nWohnung 2\n12345 Musterstadt", Status: StatusVermietet},
 			1: {Status: StatusVermietet},
 		},
-		Haus: HausDetails{VermieterName: "Max Mustermann", VermieterAnschrift: "Beispielweg 1", ObjektAnschrift: "Beispielweg 1, 12345 Musterstadt", IBAN: "DE00 0000"},
+		Haus: HausDetails{VermieterName: "Max Mustermann", VermieterAnschrift: "Beispielweg 1", ObjektAnschrift: "Beispielweg 1, 12345 Musterstadt", IBAN: "DE00 0000", Kontoinhaber: "Max und Erika Mustermann"},
 	}); err != nil {
 		t.Fatalf("SaveStammdaten: %v", err)
 	}
@@ -1863,7 +1863,7 @@ func TestStammdatenDetails_StartwerteUndNeustart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetHaus: %v", err)
 	}
-	if haus.VermieterName != "Max Mustermann" || haus.IBAN != "DE00 0000" || haus.ObjektAnschrift != "Beispielweg 1, 12345 Musterstadt" {
+	if haus.VermieterName != "Max Mustermann" || haus.IBAN != "DE00 0000" || haus.Kontoinhaber != "Max und Erika Mustermann" || haus.ObjektAnschrift != "Beispielweg 1, 12345 Musterstadt" {
 		t.Errorf("Haus = %+v after restart, want the saved values", haus)
 	}
 	if !haus.StromWeiterberechnen {

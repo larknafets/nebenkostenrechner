@@ -11,7 +11,7 @@ Auf der `/stammdaten`-Seite gepflegt werden folgende Daten gepflegt. und gelten 
 | Wohnung 1 | 116,23 m² | - |
 | Wohnung 2 | 86 m² | - |
 
-Je Wohnung gibt es außerdem einen **Wohnungsstatus** ("vermietet" oder "Eigennutzung", vorbelegt Wohnung 1 Eigennutzung, Wohnung 2 vermietet), den Namen des Mieters bzw. Bewohners und die Zustellanschrift. Für das Haus gibt es Vermieter-Name, Vermieter-Anschrift, Objektanschrift und eine optionale IBAN. Diese Angaben füllen die künftige Jahresabrechnung. Die personenbezogenen Felder (Namen, Anschriften, IBAN) sind nur für angemeldete Nutzer sichtbar und änderbar, der Wohnungsstatus ist für alle sichtbar. Ohne gesetztes `LOGIN_PASSWORD` ist jeder angemeldet.
+Je Wohnung gibt es außerdem einen **Wohnungsstatus** ("Vermietung" oder "Eigennutzung", vorbelegt Wohnung 1 Eigennutzung, Wohnung 2 Vermietung), den Namen des Mieters bzw. Bewohners und die Zustellanschrift. Für das Haus gibt es Vermieter-Name, Vermieter-Anschrift, Objektanschrift und eine optionale IBAN mit optionalem Kontoinhaber (leer = Vermieter). Diese Angaben füllen die künftige Jahresabrechnung. Die personenbezogenen Felder (Namen, Anschriften, IBAN) sind nur für angemeldete Nutzer sichtbar und änderbar, der Wohnungsstatus ist für alle sichtbar. Ohne gesetztes `LOGIN_PASSWORD` ist jeder angemeldet.
 
 Dazu kommt die **Heizung/Warmwasser-Gewichtung** (siehe [Heizung](#heizungwarmwasser-konfigurierbarer-split-default-7030)), die im Gegensatz zu den beiden folgenden Schaltern auch Dashboard und Verlauf beeinflusst. Außerdem stehen hier zwei Schalter für die künftige Jahresabrechnung. Sie wirken auf alle Monate und Jahre, Dashboard und Monatsverlauf zeigen weiterhin alle Positionen und ändern sich nicht:
 

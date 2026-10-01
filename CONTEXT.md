@@ -59,7 +59,7 @@ Die ins Netz eingespeiste PV-Überschussmenge (Zähler `strom_einspeisung`) und 
 Die Seite für Werte, die sich selten ändern und nicht Teil einer monatlichen Erfassung sind: Wohnungsgröße/Flurstücksgröße je Wohnung, Wohnungsstatus, Mieter- und Vermieter-Angaben, das Umlagefähig-Flag je Kostenposition und das Flag "Stromverbrauch weiterberechnen" (aktuelle Einzelwerte). Mieter-/Bewohnername, Zustellanschrift, Vermieter, Objektanschrift und IBAN sind personenbezogen: sie sind nur für angemeldete Nutzer sichtbar und änderbar (ohne gesetztes `LOGIN_PASSWORD` ist jeder angemeldet). Änderungen wirken sofort auf alle Monate, nicht eingefroren wie ein Ablesungs- oder Fixkosten-Eingabe-Wert.
 
 **Wohnungsstatus**:
-Je Wohnung "vermietet" oder "Eigennutzung" (Stammdaten, Startwert Wohnung 1 Eigennutzung, Wohnung 2 vermietet). Steuert nur, wie die Jahresabrechnung dargestellt wird (Mieter-Block, Rechtshinweise, Pflichtfelder) und nie die Berechnung oder die Heizungs-Gewichtung. Kein Personenbezug, deshalb auch ohne Anmeldung sichtbar (nicht änderbar).
+Je Wohnung "Vermietung" oder "Eigennutzung" (Stammdaten, Startwert Wohnung 1 Eigennutzung, Wohnung 2 Vermietung). Steuert nur, wie die Jahresabrechnung dargestellt wird (Mieter-Block, Rechtshinweise, Pflichtfelder) und nie die Berechnung oder die Heizungs-Gewichtung. Kein Personenbezug, deshalb auch ohne Anmeldung sichtbar (nicht änderbar).
 _Avoid_: Vermietungsstatus, Nutzungsart
 
 **Umlagefähig**:
