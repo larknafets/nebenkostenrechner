@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -98,6 +99,18 @@ var ErrFixkostenEingabeNotFound = errors.New("fixkosten eingabe not found")
 // Jahresabrechnung and the Dashboard both rely on it.
 var ErrFixkostenMonatBelegt = errors.New("fixkosten eingabe fuer diesen monat existiert bereits")
 
+// monatUniqueErr maps a violation of the UNIQUE index on
+// fixkosten_eingaben.monat to ErrFixkostenMonatBelegt, so a write that got
+// past the preflight check (e.g. a concurrent request for the same month)
+// still ends in the same readable conflict instead of a raw SQLite error.
+// Any other error is returned unchanged.
+func monatUniqueErr(err error, monat string) error {
+	if err != nil && strings.Contains(err.Error(), "UNIQUE constraint failed: fixkosten_eingaben.monat") {
+		return fmt.Errorf("%w: %s", ErrFixkostenMonatBelegt, monat)
+	}
+	return err
+}
+
 // monatBelegtTx reports whether another Fixkosten-Eingabe than exceptID
 // already owns monat. exceptID 0 means "any" (a new Eingabe). The UNIQUE
 // index on monat is the backstop, this check gives the readable error.
@@ -123,6 +136,9 @@ func insertFixkostenTx(tx *sql.Tx, in FixkostenInput) (eingabeID int64, err erro
 
 	res, err := tx.Exec(`INSERT INTO fixkosten_eingaben (monat) VALUES (?)`, in.Monat)
 	if err != nil {
+		if mapped := monatUniqueErr(err, in.Monat); mapped != err {
+			return 0, mapped
+		}
 		return 0, fmt.Errorf("insert fixkosten eingabe: %w", err)
 	}
 	eingabeID, err = res.LastInsertId()
@@ -212,6 +228,9 @@ func UpdateFixkostenEingabe(db *sql.DB, eingabeID int64, in FixkostenInput) erro
 
 	res, err := tx.Exec(`UPDATE fixkosten_eingaben SET monat = ? WHERE id = ?`, in.Monat, eingabeID)
 	if err != nil {
+		if mapped := monatUniqueErr(err, in.Monat); mapped != err {
+			return mapped
+		}
 		return fmt.Errorf("update fixkosten eingabe: %w", err)
 	}
 	if n, err := res.RowsAffected(); err != nil {

@@ -411,3 +411,30 @@ func TestOpen_MitDoppeltenFixkostenMonaten(t *testing.T) {
 		t.Error("index missing after a restart without duplicates")
 	}
 }
+
+// TestMonatUniqueErr verifies the safety net for a write that gets past the
+// preflight check (PR #173 review): a real violation of the UNIQUE index is
+// mapped to ErrFixkostenMonatBelegt, every other error passes through.
+func TestMonatUniqueErr(t *testing.T) {
+	db := openTestDB(t)
+	if _, err := db.Exec(`INSERT INTO fixkosten_eingaben (monat) VALUES ('2026-03-01')`); err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+	_, rawErr := db.Exec(`INSERT INTO fixkosten_eingaben (monat) VALUES ('2026-03-01')`)
+	if rawErr == nil {
+		t.Fatal("raw duplicate insert succeeded, want the UNIQUE index to reject it")
+	}
+
+	mapped := monatUniqueErr(rawErr, "2026-03-01")
+	if !errors.Is(mapped, ErrFixkostenMonatBelegt) {
+		t.Errorf("monatUniqueErr(%v) = %v, want ErrFixkostenMonatBelegt", rawErr, mapped)
+	}
+
+	other := errors.New("database is locked")
+	if got := monatUniqueErr(other, "2026-03-01"); got != other {
+		t.Errorf("monatUniqueErr(other error) = %v, want it returned unchanged", got)
+	}
+	if got := monatUniqueErr(nil, "2026-03-01"); got != nil {
+		t.Errorf("monatUniqueErr(nil) = %v, want nil", got)
+	}
+}
