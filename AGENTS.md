@@ -22,6 +22,7 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 - **Commit messages**: `docs/agents/git-commit-messages.md`
 - **Branch naming**: `docs/agents/git-branches.md`
 - **Releases and versioning**: `docs/agents/git-releases.md`
+- **Agents in a worktree**: Subagents isolated in a git worktree must call `/usr/bin/git` instead of plain `git`. The RTK and caveman hooks rewrite `git ...` to `rtk git ...`, and Claude Code rejects that in an isolated agent because it cannot verify the worktree directory. `/usr/bin/git` is not rewritten and runs in the agent's own worktree. Tell the agent in its prompt.
 
 ## Language convention
 
