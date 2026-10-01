@@ -246,6 +246,8 @@ Ein manueller Reset (z. B. nach einem Bug) ist ohne eigene Route möglich: `demo
 
 Für den Betrieb als Home Assistant Add-on (inkl. Ingress-Integration) siehe das Add-on-Repository [`larknafets/ha-addons`](https://github.com/larknafets/ha-addons).
 
+Das Repository enthält zwei Add-ons zur Wahl: **Nebenkosten** (Release, aktualisiert sich bei jedem Tag `v*`) und **Nebenkosten (Nightly)** (täglicher Stand von `main`, `stage: experimental`). Der Nightly hat eigene Daten und einen eigenen Port (8082 statt 8081 für die Widget-Routen), beide Add-ons können gleichzeitig installiert sein. Ein Wechsel nimmt die Daten nicht mit, und der Nightly kann Datenbank-Migrationen enthalten, die der Release nicht kennt - nie die Datenbank vom Nightly zurück in den Release kopieren. Der Workflow `nightly.yml` baut jede Nacht (nur wenn es in den letzten 24 Stunden einen Commit gab), behält die letzten 7 Images und lässt sich manuell für einen beliebigen Branch starten.
+
 ### Dashboard-Widgets (Home Assistant Lovelace)
 
 Für einzelne, kleine Karten im eigenen Dashboard - statt der ganzen App über Ingress - stellt der Server auf einem eigenen, 2. Port (`WIDGET_LISTEN_ADDR`) 3 zusätzliche, read-only Routen bereit, gedacht für ein Lovelace "Webpage card"/Iframe. HA-Ingress-URLs lassen sich nicht zuverlässig in ein beliebiges Iframe einbetten (Ingress-Session muss erst durch Besuch des Addon-Panels geprimt werden), deshalb ein eigener, Ingress-freier Port - bewusst ohne Login und ohne jede mutierende Route, kleinstmögliche Angriffsfläche.
