@@ -113,3 +113,23 @@ func TestNav_DemoSession_ShowsBannerNotEntry(t *testing.T) {
 		t.Error("zusätzlicher Login-Einstiegspunkt sichtbar während einer laufenden Demo-Session")
 	}
 }
+
+// TestFooterVersion_UpdateDotHidden: the update dot is hidden without a
+// known update, and the stylesheet must not override the hidden attribute
+// (".footer-version a { display: flex }" did, so the dot always showed).
+func TestFooterVersion_UpdateDotHidden(t *testing.T) {
+	mux := NewMux(openTestDB(t), openTestDB(t), "v0.13.0", "2026-10-01T18:01:25Z")
+	body := getDashboard(t, mux, nil)
+
+	i := strings.Index(body, `id="update-dot"`)
+	if i < 0 {
+		t.Fatal("Update-Punkt (id=\"update-dot\") fehlt, obwohl eine Version gesetzt ist")
+	}
+	tag := body[i : i+strings.Index(body[i:], ">")]
+	if !strings.Contains(tag, "hidden") {
+		t.Errorf("Update-Punkt ohne hidden, obwohl kein Update bekannt ist: %s", tag)
+	}
+	if !strings.Contains(body, ".footer-version a.update-dot[hidden] { display: none; }") {
+		t.Error("das Stylesheet überschreibt hidden nicht ab, der Update-Punkt wäre immer sichtbar")
+	}
+}
