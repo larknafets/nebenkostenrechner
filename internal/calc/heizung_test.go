@@ -164,12 +164,12 @@ func TestHeizung_GewichtungAusDenStammdaten(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create period: %v", err)
 	}
-	if err := store.UpdateStammdaten(db, map[int64]store.StammdatenInput{
-		1: {QM: 100, FlurstueckGroesse: 100},
-		2: {QM: 100, FlurstueckGroesse: 100},
-	}); err != nil {
-		t.Fatalf("UpdateStammdaten: %v", err)
-	}
+	saveStammdaten(t, db, func(s *store.StammdatenSave) {
+		s.Apartments = map[int64]store.StammdatenInput{
+			1: {QM: 100, FlurstueckGroesse: 100},
+			2: {QM: 100, FlurstueckGroesse: 100},
+		}
+	})
 
 	at := func(gewichtung float64) *calc.HeizungErgebnis {
 		t.Helper()
