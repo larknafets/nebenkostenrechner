@@ -17,16 +17,16 @@ type meterDisplay struct {
 }
 
 var meterDisplays = []meterDisplay{
-	{"strom_gesamt", "Strom Gesamt (Netzbezug)", "kWh"},
+	{"strom_gesamt", "Strom Netzbezug (1.8.0)", "kWh"},
+	{"strom_einspeisung", "Strom Einspeisung (2.8.0)", "kWh"},
 	{"strom_wohnung2", "Strom Wohnung 2", "kWh"},
-	{"strom_waermepumpe", "Strom Wärmepumpe", "kWh"},
 	{"strom_wallbox", "Strom Wallboxen", "kWh"},
+	{"strom_waermepumpe", "Strom Wärmepumpe", "kWh"},
+	{"waerme_wohnung1", "Wärme Wohnung 1", "MWh"},
+	{"waerme_wohnung2", "Wärme Wohnung 2", "MWh"},
 	{"wasser_gesamt", "Wasser Gesamt", "m³"},
 	{"wasser_wohnung2", "Wasser Wohnung 2", "m³"},
 	{"wasser_warmwasseraufbereitung", "Wasser Warmwasseraufbereitung", "m³"},
-	{"waerme_wohnung1", "Wärme Wohnung 1", "MWh"},
-	{"waerme_wohnung2", "Wärme Wohnung 2", "MWh"},
-	{"strom_einspeisung", "Einspeisung (PV)", "kWh"},
 }
 
 // formatMeterDiff renders one meter's absolute change since the previous
