@@ -100,8 +100,7 @@ func TestBearbeitenUndUpdate_TeilstandUngatedVollstaendigGated(t *testing.T) {
 	mux := NewMux(db, openTestDB(t), "", "")
 
 	teilstandID, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		HeizungWaermeGewichtung: 0.7,
+		ReadingDate: "2026-11-01",
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod (Teilstand): %v", err)

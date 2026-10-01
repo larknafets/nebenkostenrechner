@@ -63,11 +63,6 @@ type wizardData struct {
 	PreviousFrischwasserPreisErfasst bool
 	PreviousAbwasserPreisErfasst     bool
 	PreviousEinspeisungPreisErfasst  bool
-	// PreviousHeizungGewichtung always has a valid value (defaulting to
-	// 0.7, Ticket #27's default) since the radio group needs exactly one
-	// option checked - unlike the blank-when-absent price fields above,
-	// this can't just be left empty.
-	PreviousHeizungGewichtung float64
 
 	// NoPeriods gates the CSV import button (Ticket #54) - only offered
 	// as a bootstrap path into a genuinely empty database, never set in
@@ -149,14 +144,13 @@ func handleWizardForm(a auth) http.HandlerFunc {
 		}
 
 		data := wizardData{
-			navData:                   a.NavData(r),
-			Aktuell:                   "ablesungen",
-			FormAction:                requestBase(r) + "/ablesungen",
-			ReadingDate:               time.Now().Format("2006-01-02"),
-			Monat:                     time.Now().Format("2006-01"),
-			Apartments:                apartments,
-			PreviousHeizungGewichtung: 0.7,
-			NoPeriods:                 previousPeriod == nil,
+			navData:     a.NavData(r),
+			Aktuell:     "ablesungen",
+			FormAction:  requestBase(r) + "/ablesungen",
+			ReadingDate: time.Now().Format("2006-01-02"),
+			Monat:       time.Now().Format("2006-01"),
+			Apartments:  apartments,
+			NoPeriods:   previousPeriod == nil,
 		}
 		if len(recent) > 0 {
 			data.HasPrevious = true
@@ -183,7 +177,6 @@ func handleWizardForm(a auth) http.HandlerFunc {
 			data.PreviousAbwasserPreisErfasst = status.AbwasserErfasst
 			data.PreviousEinspeisungPreisErfasst = status.EinspeisungPreisErfasst
 			data.PreviousPersonen = previousPeriod.PersonenByApartment
-			data.PreviousHeizungGewichtung = previousPeriod.HeizungWaermeGewichtung
 		}
 		data.OutlierAvg, data.HasOutlierBaseline = outlierAvg(recent)
 
@@ -283,7 +276,6 @@ func handleEditWizardForm(a auth) http.HandlerFunc {
 			PreviousAbwasserPreis:            store.OrZero(target.AbwasserPreis),
 			PreviousEinspeisungPreis:         store.OrZero(target.EinspeisungPreis),
 			PreviousPersonen:                 target.PersonenByApartment,
-			PreviousHeizungGewichtung:        target.HeizungWaermeGewichtung,
 			PreviousStrompreisErfasst:        status.StrompreisErfasst,
 			PreviousFrischwasserPreisErfasst: status.FrischwasserErfasst,
 			PreviousAbwasserPreisErfasst:     status.AbwasserErfasst,
@@ -302,9 +294,6 @@ func handleEditWizardForm(a auth) http.HandlerFunc {
 	}
 }
 
-// heizungGewichtungOptions are the only allowed heating-split weightings
-// (Ticket #27) - a fixed choice, not a free-text field, so an invalid or
-// out-of-range value can't silently skew every apartment's heating costs.
 // parsePeriodInput parses a reading form (shared by handleCreateAblesung
 // and handleUpdateAblesung - Ticket #34, same fields either way, only what
 // happens with the result differs).
@@ -375,11 +364,6 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 		return store.PeriodInput{}, fmt.Errorf("invalid price value")
 	}
 
-	heizungGewichtung, err := parseHeizungGewichtung(r.FormValue("heizung_gewichtung"))
-	if err != nil {
-		return store.PeriodInput{}, err
-	}
-
 	personen := make(map[int64]int64, len(apartments))
 	for _, a := range apartments {
 		idStr := strconv.FormatInt(a.ID, 10)
@@ -395,15 +379,14 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 	}
 
 	return store.PeriodInput{
-		ReadingDate:             r.FormValue("reading_date"),
-		Monat:                   monatInput(r.FormValue("monat")).toStored(),
-		Strompreis:              strompreis,
-		FrischwasserPreis:       frischwasserPreis,
-		AbwasserPreis:           abwasserPreis,
-		HeizungWaermeGewichtung: heizungGewichtung,
-		EinspeisungPreis:        einspeisungPreis,
-		Readings:                readings,
-		Personen:                personen,
+		ReadingDate:       r.FormValue("reading_date"),
+		Monat:             monatInput(r.FormValue("monat")).toStored(),
+		Strompreis:        strompreis,
+		FrischwasserPreis: frischwasserPreis,
+		AbwasserPreis:     abwasserPreis,
+		EinspeisungPreis:  einspeisungPreis,
+		Readings:          readings,
+		Personen:          personen,
 	}, nil
 }
 

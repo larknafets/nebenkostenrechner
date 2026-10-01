@@ -20,7 +20,7 @@ import (
 // (Issue #61 moved apartment size off the reading onto /stammdaten - hard
 // cut, no backward compatibility with the old format).
 var csvHeader = append(append([]string{"reading_date", "monat"}, store.MeterKeys...),
-	"strompreis", "frischwasser_preis", "abwasser_preis", "heizung_gewichtung", "einspeisung_preis",
+	"strompreis", "frischwasser_preis", "abwasser_preis", "einspeisung_preis",
 	"personen_1", "personen_2",
 )
 
@@ -50,7 +50,6 @@ func formatPeriodCSVRow(p *store.LatestPeriod) []string {
 		formatDecimalDE(store.OrZero(p.Strompreis)),
 		formatDecimalDE(store.OrZero(p.FrischwasserPreis)),
 		formatDecimalDE(store.OrZero(p.AbwasserPreis)),
-		formatDecimalDE(p.HeizungWaermeGewichtung),
 		formatDecimalDE(store.OrZero(p.EinspeisungPreis)),
 		formatDecimalDE(float64(p.PersonenByApartment[1])),
 		formatDecimalDE(float64(p.PersonenByApartment[2])),
@@ -153,11 +152,6 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 		return importRow{}, fmt.Errorf("Zeile %d: ungültiger Preiswert", line)
 	}
 
-	heizungGewichtung, err := parseHeizungGewichtung(strings.ReplaceAll(cell("heizung_gewichtung"), ",", "."))
-	if err != nil {
-		return importRow{}, fmt.Errorf("Zeile %d: %v", line, err)
-	}
-
 	personen := make(map[int64]int64, 2)
 	for _, id := range [2]int64{1, 2} {
 		personenCol := fmt.Sprintf("personen_%d", id)
@@ -170,15 +164,14 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 
 	return importRow{
 		input: store.PeriodInput{
-			ReadingDate:             readingDate,
-			Monat:                   monat,
-			Strompreis:              store.Float64(strompreis),
-			FrischwasserPreis:       store.Float64(frischwasserPreis),
-			AbwasserPreis:           store.Float64(abwasserPreis),
-			HeizungWaermeGewichtung: heizungGewichtung,
-			EinspeisungPreis:        store.Float64(einspeisungPreis),
-			Readings:                readings,
-			Personen:                personen,
+			ReadingDate:       readingDate,
+			Monat:             monat,
+			Strompreis:        store.Float64(strompreis),
+			FrischwasserPreis: store.Float64(frischwasserPreis),
+			AbwasserPreis:     store.Float64(abwasserPreis),
+			EinspeisungPreis:  store.Float64(einspeisungPreis),
+			Readings:          readings,
+			Personen:          personen,
 		},
 		line: line,
 	}, nil

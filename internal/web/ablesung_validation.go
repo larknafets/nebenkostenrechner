@@ -1,26 +1,12 @@
 package web
 
 import (
-	"fmt"
-
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
 // ablesung_validation.go holds the reading (Ablesung) input rules shared by
 // both input adapters - the wizard form and the CSV import (Issue #86/#87
 // follow-up architecture review): same rules, same seam, two callers.
-
-var heizungGewichtungOptions = map[string]float64{"0.7": 0.7, "0.6": 0.6, "0.5": 0.5}
-
-// parseHeizungGewichtung validates the wizard's heating weighting
-// (Heizung-Gewichtung) form value against heizungGewichtungOptions.
-func parseHeizungGewichtung(raw string) (float64, error) {
-	v, ok := heizungGewichtungOptions[raw]
-	if !ok {
-		return 0, fmt.Errorf("invalid Heizung-Gewichtung %q (muss 0.7, 0.6 oder 0.5 sein)", raw)
-	}
-	return v, nil
-}
 
 // outlierAvg computes the outlier-warning baseline (Ticket #13) from up
 // to 4 recent periods (newest first): the average of the 3 consumption

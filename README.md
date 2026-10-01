@@ -13,7 +13,7 @@ Auf der `/stammdaten`-Seite gepflegt werden folgende Daten gepflegt. und gelten 
 
 Je Wohnung gibt es außerdem einen **Wohnungsstatus** ("vermietet" oder "Eigennutzung", vorbelegt Wohnung 1 Eigennutzung, Wohnung 2 vermietet), den Namen des Mieters bzw. Bewohners und die Zustellanschrift. Für das Haus gibt es Vermieter-Name, Vermieter-Anschrift, Objektanschrift und eine optionale IBAN. Diese Angaben füllen die künftige Jahresabrechnung. Die personenbezogenen Felder (Namen, Anschriften, IBAN) sind nur für angemeldete Nutzer sichtbar und änderbar, der Wohnungsstatus ist für alle sichtbar. Ohne gesetztes `LOGIN_PASSWORD` ist jeder angemeldet.
 
-Außerdem stehen hier zwei Schalter für die künftige Jahresabrechnung. Sie wirken auf alle Monate und Jahre, Dashboard und Monatsverlauf zeigen weiterhin alle Positionen und ändern sich nicht:
+Dazu kommt die **Heizung/Warmwasser-Gewichtung** (siehe [Heizung](#heizungwarmwasser-konfigurierbarer-split-default-7030)), die im Gegensatz zu den beiden folgenden Schaltern auch Dashboard und Verlauf beeinflusst. Außerdem stehen hier zwei Schalter für die künftige Jahresabrechnung. Sie wirken auf alle Monate und Jahre, Dashboard und Monatsverlauf zeigen weiterhin alle Positionen und ändern sich nicht:
 
 - **Umlagefähig** je Kostenposition (Ja/Nein): Nur umlagefähige Positionen erscheinen in der Jahresabrechnung. Vorbelegt mit Ja für Grundsteuer, Wohngebäudeversicherung, Deichbeitrag Grund und Boden, Deichbeitrag Bauliche Anlagen, Kreisverband Wesermarsch, die vier Abfallwirtschafts-Positionen, Grundgebühr Strom, Trinkwasser und Abwasser sowie Wärmepumpenwartung. Vorbelegt mit Nein für Grundgebühr Internet, Streaming-Dienste und Sonstige Kosten. Teilweise umlagefähige Positionen teilst du über die Berechnungslogik der Fixkosteneingabe auf (z. B. "Wohnung 1" für den nicht umlagefähigen Teil).
 - **Stromverbrauch Wohnung 2 weiterberechnen** (Ja/Nein, vorbelegt Ja): Der Haushaltsstrom ist keine Betriebskostenart und wird nur laut Vereinbarung weiterberechnet.
@@ -48,7 +48,7 @@ Preise (aktuell, werden pro Monat neu erfasst statt zentral versioniert):
 
 Ableserhythmus: 1x/Monat. Verbrauch = aktueller Zählerstand minus Stand der chronologisch nächstälteren Ablesung (einfache Differenz, funktioniert automatisch auch über Lücken hinweg).
 
-Eine Ablesung darf auch nur teilweise ausgefüllt gespeichert werden (**Teilstand**) - einzelne Zählerstände, Preise, Personenzahl oder der Abrechnungsmonat können fehlen und später nachgetragen werden (nur Ablesedatum und Heizungs-Gewichtung sind immer zwingend). Ein Teilstand fließt nicht in die Berechnung ein (Dashboard, Verbrauch) und ist in der Ablesungen-Liste/-Detailansicht als "unvollständig" markiert. Nur die jeweils neueste Ablesung darf ein Teilstand sein - solange sie es ist, führt "Neue Ablesung" stattdessen zu ihrer Vervollständigung. Anlegen und Vervollständigen sind beide auch ohne Login möglich, siehe `LOGIN_PASSWORD` unten.
+Eine Ablesung darf auch nur teilweise ausgefüllt gespeichert werden (**Teilstand**) - einzelne Zählerstände, Preise, Personenzahl oder der Abrechnungsmonat können fehlen und später nachgetragen werden (nur das Ablesedatum ist immer zwingend). Ein Teilstand fließt nicht in die Berechnung ein (Dashboard, Verbrauch) und ist in der Ablesungen-Liste/-Detailansicht als "unvollständig" markiert. Nur die jeweils neueste Ablesung darf ein Teilstand sein - solange sie es ist, führt "Neue Ablesung" stattdessen zu ihrer Vervollständigung. Anlegen und Vervollständigen sind beide auch ohne Login möglich, siehe `LOGIN_PASSWORD` unten.
 
 `strom_wallbox` fließt als dritte Zuteilungsstufe in die Strom-Netzbezug-Zuteilung ein (siehe unten) - sie wird vom nach Wohnung 2/Wärmepumpe verbleibenden Netzbezug abgezogen, bevor der Rest implizit Wohnung 1 zufällt. Keine eigene Wohnungszuteilung, kein eigener Wallbox-Tarif.
 
@@ -80,7 +80,7 @@ Visuelle Übersicht der Zählerverschachtelung und der PV-Verrechnungskaskade: [
 
 ### Heizung/Warmwasser (konfigurierbarer Split, Default 70/30)
 
-Die Wärmepumpenstromkosten (siehe oben) werden nach Wärmemengenzählerverhältnis und Wohnungsgrößenverhältnis auf die beiden Wohnungen verteilt. Die Gewichtung wird pro Periode im Wizard gewählt (70/30, 60/40 oder 50/50) und ab dann für diese Periode eingefroren. `qm_W1`/`qm_W2` kommen dagegen live von den Stammdaten, nicht von der Periode.
+Die Wärmepumpenstromkosten (siehe oben) werden nach Wärmemengenzählerverhältnis und Wohnungsgrößenverhältnis auf die beiden Wohnungen verteilt. Die Gewichtung (70/30, 60/40 oder 50/50, vorbelegt 70/30) ist ein einzelner Wert auf der `/stammdaten`-Seite, weil der Mietvertrag die Heizkostenverteilung für das ganze Jahr festlegt. Sie gilt für alle Monate, auch rückwirkend, und wird nicht mehr bei der Ablesung gewählt. Beim Update einer bestehenden Datenbank übernimmt die Migration einmalig den Wert der neuesten Ablesung. `qm_W1`/`qm_W2` kommen ebenfalls live von den Stammdaten, nicht von der Periode. Die Heizungsverteilung verwendet keine Personenzahl.
 
 ```
 Ratio_Waerme_W1  = Verbrauch(waerme_wohnung1) / (Verbrauch(waerme_wohnung1) + Verbrauch(waerme_wohnung2))
@@ -175,7 +175,7 @@ SQLite, kein ORM (`modernc.org/sqlite` + `database/sql`):
 ```
 apartments(id, name, qm, flurstueck_groesse)
 meters(id, key UNIQUE, type, unit, apartment_id NULLABLE -> apartments.id, label)
-periods(id, reading_date DATE, strompreis, frischwasser_preis, abwasser_preis, heizung_waerme_gewichtung, einspeisung_preis)
+periods(id, reading_date DATE, strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis)
 meter_readings(id, period_id -> periods.id, meter_id -> meters.id, zaehlerstand, UNIQUE(period_id, meter_id))
 period_occupancy(id, period_id -> periods.id, apartment_id -> apartments.id, personen, UNIQUE(period_id, apartment_id))
 

@@ -76,14 +76,6 @@
       <div class="field"><label>Abwasser (EUR/m³)</label><input type="number" step="any" name="abwasser_preis" {{if .PreviousAbwasserPreisErfasst}}value="{{.PreviousAbwasserPreis}}"{{end}}></div>
       <div class="field"><label>Einspeisung (EUR/kWh)</label><input type="number" step="any" name="einspeisung_preis" {{if .PreviousEinspeisungPreisErfasst}}value="{{.PreviousEinspeisungPreis}}"{{end}}></div>
     </div>
-    <div class="field">
-      <label>Heizung/Warmwasser-Gewichtung (Wärmeverbrauch / Wohnungsgröße)</label>
-      <div class="radio-options">
-        <label class="radio-option"><input type="radio" name="heizung_gewichtung" value="0.7" {{if eq .PreviousHeizungGewichtung 0.7}}checked{{end}}> 70% / 30%</label>
-        <label class="radio-option"><input type="radio" name="heizung_gewichtung" value="0.6" {{if eq .PreviousHeizungGewichtung 0.6}}checked{{end}}> 60% / 40%</label>
-        <label class="radio-option"><input type="radio" name="heizung_gewichtung" value="0.5" {{if eq .PreviousHeizungGewichtung 0.5}}checked{{end}}> 50% / 50%</label>
-      </div>
-    </div>
   </div>
 
   <div class="wizard-actions">
@@ -183,7 +175,7 @@
   }
 
   // Teilstand (Ticket #131): live Fortschritt über alle optionalen Felder
-  // (jedes Feld außer Ablesedatum/Heizungs-Gewichtung, siehe Ticket #129) -
+  // (jedes Feld außer dem Ablesedatum, siehe Ticket #129) -
   // Fortschrittsbalken, Zähler pro Schritt, Feld-Farbmarkierung, und ein
   // einziger Speichern-Button, dessen Beschriftung live daraus abgeleitet
   // wird statt eines zweiten "Vollständig speichern"-Buttons.

@@ -5,11 +5,11 @@ Monatliche Nebenkostenabrechnung für ein Zweifamilienhaus mit Wärmepumpe und P
 ## Language
 
 **Ablesung**:
-Eine monatliche Erfassung: Zählerstände, Preise, Personenzahl je Wohnung und Heizungs-Gewichtung zu einem Ablesedatum. Im Code auch "Periode" genannt.
+Eine monatliche Erfassung: Zählerstände, Preise und Personenzahl je Wohnung zu einem Ablesedatum. Im Code auch "Periode" genannt.
 _Avoid_: Eintrag, Datensatz
 
 **Teilstand**:
-Eine Ablesung, bei der nicht alle Felder gefüllt sind (Zählerstände, Preise, Personenzahl, oder Abrechnungsmonat - nur Ablesedatum und Heizungs-Gewichtung sind immer zwingend). Fließt nicht in die Berechnung ein - erst nach Vervollständigung wird sie zur regulären Ablesung. Nur die neueste Ablesung darf ein Teilstand sein.
+Eine Ablesung, bei der nicht alle Felder gefüllt sind (Zählerstände, Preise, Personenzahl, oder Abrechnungsmonat - nur das Ablesedatum ist immer zwingend). Fließt nicht in die Berechnung ein - erst nach Vervollständigung wird sie zur regulären Ablesung. Nur die neueste Ablesung darf ein Teilstand sein.
 _Avoid_: unvollständige Ablesung (funktioniert, aber "Teilstand" ist der feste Begriff)
 
 **Zählerstand**:
@@ -43,7 +43,7 @@ _Avoid_: Heizungsstrom (verschleiert, dass Warmwasser mit drin steckt)
 Die von den Wärmemengenzählern (`waerme_wohnung1`/`waerme_wohnung2`) gemessene Wärmemenge in MWh - reine Raumheizung, keine Warmwasserbereitung.
 
 **Heizungs-Gewichtung**:
-Der pro Ablesung gewählte Split (70/30, 60/40 oder 50/50), nach dem der WP-Strom zwischen Wärmeverbrauchs-Verhältnis und Wohnungsgrößen-Verhältnis der beiden Wohnungen gewichtet wird.
+Der Split (70/30, 60/40 oder 50/50, Startwert 70/30), nach dem der WP-Strom zwischen Wärmeverbrauchs-Verhältnis und Wohnungsgrößen-Verhältnis der beiden Wohnungen gewichtet wird. Ein einzelner Stammdaten-Wert für alle Monate, weil der Mietvertrag die Verteilung für das ganze Jahr festlegt - nicht mehr je Ablesung gewählt. Eine Änderung wirkt rückwirkend auf alle Monate. Die Heizungsverteilung nutzt keine Personenzahl.
 
 **Warmwasseraufbereitung**:
 Ein Wasser-Begriff (Zähler `wasser_warmwasseraufbereitung`), nicht zu verwechseln mit "WP-Strom (Heizung + Warmwasser)" oben - hier geht es um Frischwasser-Verbrauch für die Aufbereitung, nicht um Wärmepumpen-Strom.

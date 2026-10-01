@@ -15,13 +15,12 @@ var ErrNoPreviousPeriod = errors.New("no previous period to compute consumption 
 // shape cost calculations key off (see LatestPeriod for the fuller
 // read-view shape used by the UI).
 type Period struct {
-	ID                      int64
-	ReadingDate             string
-	Strompreis              float64
-	FrischwasserPreis       float64
-	AbwasserPreis           float64
-	HeizungWaermeGewichtung float64
-	EinspeisungPreis        float64
+	ID                int64
+	ReadingDate       string
+	Strompreis        float64
+	FrischwasserPreis float64
+	AbwasserPreis     float64
+	EinspeisungPreis  float64
 }
 
 // GetPeriodByID fetches a single period by id. A Teilstand's (partial
@@ -34,10 +33,10 @@ func GetPeriodByID(db *sql.DB, id int64) (*Period, error) {
 	var p Period
 	var strompreis, frischwasserPreis, abwasserPreis, einspeisungPreis sql.NullFloat64
 	err := db.QueryRow(
-		`SELECT id, reading_date, strompreis, frischwasser_preis, abwasser_preis, heizung_waerme_gewichtung, einspeisung_preis
+		`SELECT id, reading_date, strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis
 		 FROM periods WHERE id = ?`,
 		id,
-	).Scan(&p.ID, &p.ReadingDate, &strompreis, &frischwasserPreis, &abwasserPreis, &p.HeizungWaermeGewichtung, &einspeisungPreis)
+	).Scan(&p.ID, &p.ReadingDate, &strompreis, &frischwasserPreis, &abwasserPreis, &einspeisungPreis)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("period %d not found", id)

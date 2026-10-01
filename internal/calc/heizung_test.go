@@ -13,11 +13,10 @@ func TestHeizung_70_30_Verteilung(t *testing.T) {
 	mustCreatePeriod(t, db, "2026-10-01", 0.22, baseReadings(nil))
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		Strompreis:              store.Float64(0.22),
-		FrischwasserPreis:       store.Float64(1.46),
-		AbwasserPreis:           store.Float64(4.87),
-		HeizungWaermeGewichtung: 0.7,
+		ReadingDate:       "2026-11-01",
+		Strompreis:        store.Float64(0.22),
+		FrischwasserPreis: store.Float64(1.46),
+		AbwasserPreis:     store.Float64(4.87),
 		Readings: baseReadings(map[string]float64{
 			"strom_gesamt":      18420,
 			"strom_wohnung2":    6120,
@@ -63,11 +62,10 @@ func TestHeizung_WPVerbrauch_TatsaechlicherWertOhnePVAbzug(t *testing.T) {
 	// heat pump consumption, but none of it is covered by grid draw (fully
 	// covered by PV).
 	id, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		Strompreis:              store.Float64(0.22),
-		FrischwasserPreis:       store.Float64(1.46),
-		AbwasserPreis:           store.Float64(4.87),
-		HeizungWaermeGewichtung: 0.7,
+		ReadingDate:       "2026-11-01",
+		Strompreis:        store.Float64(0.22),
+		FrischwasserPreis: store.Float64(1.46),
+		AbwasserPreis:     store.Float64(4.87),
 		Readings: baseReadings(map[string]float64{
 			"strom_gesamt":      0,
 			"strom_waermepumpe": 10000,
@@ -100,11 +98,10 @@ func TestHeizung_KeinWaermeVerbrauch_FaelltAufHaelftigeVerteilungZurueck(t *test
 	mustCreatePeriod(t, db, "2026-10-01", 0.22, baseReadings(nil))
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		Strompreis:              store.Float64(0.22),
-		FrischwasserPreis:       store.Float64(1.46),
-		AbwasserPreis:           store.Float64(4.87),
-		HeizungWaermeGewichtung: 0.7,
+		ReadingDate:       "2026-11-01",
+		Strompreis:        store.Float64(0.22),
+		FrischwasserPreis: store.Float64(1.46),
+		AbwasserPreis:     store.Float64(4.87),
 		Readings: baseReadings(map[string]float64{
 			"strom_gesamt":      1000,
 			"strom_waermepumpe": 500,
@@ -141,5 +138,57 @@ func TestHeizung_ErsterPeriodeOhneVorperiode(t *testing.T) {
 	_, err := calc.Heizung(db, p1)
 	if err == nil {
 		t.Fatal("expected error for first period without a previous one")
+	}
+}
+
+// TestHeizung_GewichtungAusDenStammdaten verifies Issue #162: the split
+// reads the Heizungs-Gewichtung from the Stammdaten (one value for every
+// month), so changing it changes the result of an existing reading.
+func TestHeizung_GewichtungAusDenStammdaten(t *testing.T) {
+	db := openTestDB(t)
+	mustCreatePeriod(t, db, "2026-10-01", 0.22, baseReadings(nil))
+	id, err := store.CreatePeriod(db, store.PeriodInput{
+		ReadingDate:       "2026-11-01",
+		Strompreis:        store.Float64(0.22),
+		FrischwasserPreis: store.Float64(1.46),
+		AbwasserPreis:     store.Float64(4.87),
+		Readings: baseReadings(map[string]float64{
+			"strom_gesamt":      18420,
+			"strom_wohnung2":    6120,
+			"strom_waermepumpe": 9840,
+			"waerme_wohnung1":   6,
+			"waerme_wohnung2":   4,
+		}),
+		Personen: map[int64]int64{1: 2, 2: 1},
+	})
+	if err != nil {
+		t.Fatalf("create period: %v", err)
+	}
+	if err := store.UpdateStammdaten(db, map[int64]store.StammdatenInput{
+		1: {QM: 100, FlurstueckGroesse: 100},
+		2: {QM: 100, FlurstueckGroesse: 100},
+	}); err != nil {
+		t.Fatalf("UpdateStammdaten: %v", err)
+	}
+
+	at := func(gewichtung float64) *calc.HeizungErgebnis {
+		t.Helper()
+		if err := store.SaveStammdaten(db, store.StammdatenSave{HeizungWaermeGewichtung: gewichtung}); err != nil {
+			t.Fatalf("SaveStammdaten(%v): %v", gewichtung, err)
+		}
+		got, err := calc.Heizung(db, id)
+		if err != nil {
+			t.Fatalf("calc.Heizung: %v", err)
+		}
+		return got
+	}
+
+	// Heat 6:4, size 100:100 -> W1 share = g*0.6 + (1-g)*0.5.
+	g70, g50 := at(0.7), at(0.5)
+	if g70.KostenHeizungW1 != 1233.94 { // 2164.80 * 0.57
+		t.Errorf("KostenHeizungW1 at 70/30 = %v, want 1233.94", g70.KostenHeizungW1)
+	}
+	if g50.KostenHeizungW1 != 1190.64 { // 2164.80 * 0.55
+		t.Errorf("KostenHeizungW1 at 50/50 = %v, want 1190.64", g50.KostenHeizungW1)
 	}
 }

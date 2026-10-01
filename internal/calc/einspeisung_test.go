@@ -11,14 +11,13 @@ import (
 func mustCreatePeriodMitEinspeisung(t *testing.T, db *sql.DB, date string, einspeisungPreis float64, readings map[string]float64) int64 {
 	t.Helper()
 	id, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             date,
-		Strompreis:              store.Float64(0.22),
-		FrischwasserPreis:       store.Float64(1.46),
-		AbwasserPreis:           store.Float64(4.87),
-		HeizungWaermeGewichtung: 0.7,
-		EinspeisungPreis:        store.Float64(einspeisungPreis),
-		Readings:                readings,
-		Personen:                map[int64]int64{1: 2, 2: 1},
+		ReadingDate:       date,
+		Strompreis:        store.Float64(0.22),
+		FrischwasserPreis: store.Float64(1.46),
+		AbwasserPreis:     store.Float64(4.87),
+		EinspeisungPreis:  store.Float64(einspeisungPreis),
+		Readings:          readings,
+		Personen:          map[int64]int64{1: 2, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("create period %s: %v", date, err)
