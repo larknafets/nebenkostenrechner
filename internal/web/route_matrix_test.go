@@ -43,6 +43,7 @@ var routeMatrix = []struct {
 	{"POST", "/ablesungen/1/loeschen", true},
 	{"GET", "/dashboard", false},
 	{"GET", "/berechnungslogik", false},
+	{"GET", "/abrechnung", true},
 	{"GET", "/stammdaten", false},
 	{"POST", "/stammdaten", true},
 	{"GET", "/fixkosten", false},
