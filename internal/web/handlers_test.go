@@ -2031,3 +2031,40 @@ func TestHandleEditWizardForm_TeilstandBlankNotZero(t *testing.T) {
 		t.Error("ein bereits erfasster Preis wird nicht korrekt vorbelegt")
 	}
 }
+
+func TestKostenAnteil(t *testing.T) {
+	k := kosten{
+		Strom: &calc.StromErgebnis{KostenW2: 7.5, W2VerbrauchKWh: 30},
+		Wasser: &calc.WasserErgebnis{
+			KostenFrischwasserW1: 1.10, KostenAbwasserW1: 2.20, FrischwasserW1: 5,
+			KostenFrischwasserW2: 3.30, KostenAbwasserW2: 4.40, FrischwasserW2: 7,
+		},
+		Heizung: &calc.HeizungErgebnis{
+			KostenHeizungW1: 10, WPVerbrauchW1KWh: 100, WaermeW1MWh: 1,
+			KostenHeizungW2: 20, WPVerbrauchW2KWh: 200, WaermeW2MWh: 2,
+		},
+	}
+
+	w1 := k.Anteil(1)
+	if w1.HatStrom || w1.StromKosten != 0 || w1.StromKWh != 0 {
+		t.Errorf("Wohnung 1 has a Strom share: %+v", w1)
+	}
+	if w1.HeizungKosten != 10 || w1.HeizungWPKWh != 100 || w1.HeizungMWh != 1 || w1.WasserKosten != 3.30 || w1.WasserM3 != 5 {
+		t.Errorf("Wohnung 1 Anteil = %+v, want its own Heizung/Wasser values", w1)
+	}
+
+	w2 := k.Anteil(2)
+	if !w2.HatStrom || w2.StromKosten != 7.5 || w2.StromKWh != 30 {
+		t.Errorf("Wohnung 2 Strom = %+v, want 7.5 EUR / 30 kWh", w2)
+	}
+	if w2.HeizungKosten != 20 || w2.HeizungWPKWh != 200 || w2.HeizungMWh != 2 || w2.WasserKosten != 7.70 || w2.WasserM3 != 7 {
+		t.Errorf("Wohnung 2 Anteil = %+v, want its own Heizung/Wasser values", w2)
+	}
+
+	for _, id := range []int64{1, 2} {
+		a := k.Anteil(id)
+		if a.HeizungGesamt != 30 || a.WasserGesamt != 11 {
+			t.Errorf("Wohnung %d: Gesamt = Heizung %v / Wasser %v, want the house totals 30 / 11", id, a.HeizungGesamt, a.WasserGesamt)
+		}
+	}
+}

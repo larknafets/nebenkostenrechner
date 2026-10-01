@@ -95,27 +95,57 @@ type kategorie struct {
 	Einheit2   string
 }
 
-// kategorien builds the given apartment's cost breakdown for the period.
-// Apartment 1's Strom (electricity) has no own cost position - its grid
-// draw stays implicit (see calc.Strom) - so only apartment 2 gets a Strom
-// category. Frischwasser (fresh water) and Abwasser (wastewater) are
-// combined into a single Wasser category since they share one raw m³
+// monatsAnteil is one apartment's share of a month's costs together with the
+// house totals - the one place that decides which of the calc results belongs
+// to which apartment. Dashboard (kategorien) and Jahresabrechnung both read
+// it.
+//
+// Apartment 1's Strom has no own cost position - its grid draw stays implicit
+// (see calc.Strom) - so only apartment 2 has one (HatStrom). Frischwasser and
+// Abwasser are combined into one Wasser amount since they share one raw m³
 // consumption (no separate wastewater meter, see calc.Wasser).
-func kategorien(apartmentID int64, k kosten) []kategorie {
-	var list []kategorie
-	if apartmentID == 2 {
-		list = append(list, kategorie{Kind: kategorieKindStrom, Label: "Strom", Kosten: k.Strom.KostenW2, Verbrauch: k.Strom.W2VerbrauchKWh, Einheit: "kWh", Farbe: "strom"})
-	}
+type monatsAnteil struct {
+	HatStrom      bool
+	StromKosten   float64
+	StromKWh      float64
+	HeizungKosten float64
+	HeizungGesamt float64 // both apartments
+	HeizungWPKWh  float64 // this apartment's heat pump electricity
+	HeizungMWh    float64 // this apartment's heat meter consumption
+	WasserKosten  float64
+	WasserGesamt  float64 // both apartments
+	WasserM3      float64
+}
 
-	heizungKosten, wpVerbrauchKWh, waermeMWh := k.Heizung.KostenHeizungW1, k.Heizung.WPVerbrauchW1KWh, k.Heizung.WaermeW1MWh
-	frischwasserKosten, abwasserKosten, wasserM3 := k.Wasser.KostenFrischwasserW1, k.Wasser.KostenAbwasserW1, k.Wasser.FrischwasserW1
+// Anteil returns apartmentID's share of this month's kosten. k must be a
+// calculated month (KostenNote empty).
+func (k kosten) Anteil(apartmentID int64) monatsAnteil {
+	a := monatsAnteil{
+		HeizungGesamt: calc.Round2(k.Heizung.KostenHeizungW1 + k.Heizung.KostenHeizungW2),
+		WasserGesamt:  calc.Round2(k.Wasser.KostenFrischwasserW1 + k.Wasser.KostenAbwasserW1 + k.Wasser.KostenFrischwasserW2 + k.Wasser.KostenAbwasserW2),
+	}
 	if apartmentID == 2 {
-		heizungKosten, wpVerbrauchKWh, waermeMWh = k.Heizung.KostenHeizungW2, k.Heizung.WPVerbrauchW2KWh, k.Heizung.WaermeW2MWh
-		frischwasserKosten, abwasserKosten, wasserM3 = k.Wasser.KostenFrischwasserW2, k.Wasser.KostenAbwasserW2, k.Wasser.FrischwasserW2
+		a.HatStrom, a.StromKosten, a.StromKWh = true, k.Strom.KostenW2, k.Strom.W2VerbrauchKWh
+		a.HeizungKosten, a.HeizungWPKWh, a.HeizungMWh = k.Heizung.KostenHeizungW2, k.Heizung.WPVerbrauchW2KWh, k.Heizung.WaermeW2MWh
+		a.WasserKosten, a.WasserM3 = calc.Round2(k.Wasser.KostenFrischwasserW2+k.Wasser.KostenAbwasserW2), k.Wasser.FrischwasserW2
+		return a
+	}
+	a.HeizungKosten, a.HeizungWPKWh, a.HeizungMWh = k.Heizung.KostenHeizungW1, k.Heizung.WPVerbrauchW1KWh, k.Heizung.WaermeW1MWh
+	a.WasserKosten, a.WasserM3 = calc.Round2(k.Wasser.KostenFrischwasserW1+k.Wasser.KostenAbwasserW1), k.Wasser.FrischwasserW1
+	return a
+}
+
+// kategorien builds the given apartment's cost breakdown for the period from
+// its monatsAnteil.
+func kategorien(apartmentID int64, k kosten) []kategorie {
+	a := k.Anteil(apartmentID)
+	var list []kategorie
+	if a.HatStrom {
+		list = append(list, kategorie{Kind: kategorieKindStrom, Label: "Strom", Kosten: a.StromKosten, Verbrauch: a.StromKWh, Einheit: "kWh", Farbe: "strom"})
 	}
 	list = append(list,
-		kategorie{Kind: kategorieKindHeizung, Label: "Heizung/Warmwasser", Kosten: heizungKosten, Verbrauch: wpVerbrauchKWh, Einheit: "kWh", Farbe: "heizung", Verbrauch2: waermeMWh, Einheit2: "MWh"},
-		kategorie{Kind: kategorieKindWasser, Label: "Wasser", Kosten: calc.Round2(frischwasserKosten + abwasserKosten), Verbrauch: wasserM3, Einheit: "m³", Farbe: "wasser"},
+		kategorie{Kind: kategorieKindHeizung, Label: "Heizung/Warmwasser", Kosten: a.HeizungKosten, Verbrauch: a.HeizungWPKWh, Einheit: "kWh", Farbe: "heizung", Verbrauch2: a.HeizungMWh, Einheit2: "MWh"},
+		kategorie{Kind: kategorieKindWasser, Label: "Wasser", Kosten: a.WasserKosten, Verbrauch: a.WasserM3, Einheit: "m³", Farbe: "wasser"},
 	)
 
 	var total float64

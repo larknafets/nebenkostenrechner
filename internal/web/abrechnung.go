@@ -200,16 +200,11 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, apartmentID int
 			continue
 		}
 
-		heizungGesamt := k.Heizung.KostenHeizungW1 + k.Heizung.KostenHeizungW2
-		heizungAnteil := k.Heizung.KostenHeizungW1
-		wasserGesamt := k.Wasser.KostenFrischwasserW1 + k.Wasser.KostenAbwasserW1 + k.Wasser.KostenFrischwasserW2 + k.Wasser.KostenAbwasserW2
-		wasserAnteil := k.Wasser.KostenFrischwasserW1 + k.Wasser.KostenAbwasserW1
-		if apartmentID == 2 {
-			heizungAnteil = k.Heizung.KostenHeizungW2
-			wasserAnteil = k.Wasser.KostenFrischwasserW2 + k.Wasser.KostenAbwasserW2
-			strom.VerbrauchKWh += k.Strom.W2VerbrauchKWh
-			strom.Kosten += k.Strom.KostenW2
-		}
+		anteil := k.Anteil(apartmentID)
+		heizungGesamt, heizungAnteil := anteil.HeizungGesamt, anteil.HeizungKosten
+		wasserGesamt, wasserAnteil := anteil.WasserGesamt, anteil.WasserKosten
+		strom.VerbrauchKWh += anteil.StromKWh
+		strom.Kosten += anteil.StromKosten
 		ab.Heizung.Gesamt += heizungGesamt
 		ab.Heizung.Betrag += heizungAnteil
 		ab.Wasser.Gesamt += wasserGesamt
