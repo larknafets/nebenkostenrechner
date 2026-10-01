@@ -58,6 +58,8 @@
   .c-body table td, .c-body table th { padding: .8mm 1mm; font-size: 9pt; }
   /* Appendix: full width, tables stacked one below the other (two columns did not fit A4 width) */
   .anhang table { font-size: 9.5pt; table-layout: auto; }
+  .anhang th.sel { color: var(--text); font-weight: 800; }
+  .anhang tr.b td { font-weight: 700; }
   .anhang th, .anhang td { padding: 1.6mm 2mm; }
 
   /* Floating prototype bar, never printed */
@@ -182,12 +184,12 @@ function rechtshinweise(z) {
 function anhang(z, c) {
   var monate = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"].slice(12 - z.fixM);
   var wpRows = monate.map(function (m, i) {
-    return "<tr><td data-l='Monat'>" + m + "</td><td class='r' data-l='WP-Strom kWh'>" + (480 + i * 25).toLocaleString("de-DE") + "</td><td class='r' data-l='Wärme W1 MWh'>" + (0.8 + i * 0.1).toFixed(1).replace(".", ",") + "</td><td class='r' data-l='Wärme W2 MWh'>" + (0.4 + i * 0.05).toFixed(2).replace(".", ",") + "</td><td class='r' data-l='Anteil'>" + eur(r2(c.rows[9].betrag / z.fixM)) + "</td></tr>";
+    return "<tr><td data-l='Monat'>" + m + "</td><td class='r' data-l='WP-Strom kWh'>" + (480 + i * 25).toLocaleString("de-DE") + "</td><td class='r" + (z.w === 1 ? " b" : "") + "' data-l='Wärme W1 MWh'>" + (0.8 + i * 0.1).toFixed(1).replace(".", ",") + "</td><td class='r" + (z.w === 2 ? " b" : "") + "' data-l='Wärme W2 MWh'>" + (0.4 + i * 0.05).toFixed(2).replace(".", ",") + "</td><td class='r b' data-l='Anteil'>" + eur(r2(c.rows[9].betrag / z.fixM)) + "</td></tr>";
   }).join("");
   return '<div class="anhang"><h2>Anhang</h2>' +
     "<h3>Verbrauchsübersicht</h3><table><thead><tr><th>Zähler</th><th class='r'>Stand Beginn</th><th class='r'>Stand Ende</th><th class='r'>Verbrauch</th></tr></thead><tbody>" +
-    ZAEHLER.map(function (x) { return "<tr><td data-l='Zähler'>" + x[0] + "</td><td class='r' data-l='Beginn'>" + x[1].toLocaleString("de-DE") + "</td><td class='r' data-l='Ende'>" + x[2].toLocaleString("de-DE") + "</td><td class='r' data-l='Verbrauch'>" + r2((x[2] - x[1]) * z.vf).toLocaleString("de-DE") + "</td></tr>"; }).join("") + "</tbody></table>" +
-    "<h3>Heizung und Warmwasser je Monat</h3><table><thead><tr><th>Monat</th><th class='r'>WP-Strom (kWh)</th><th class='r'>Wärme W1 (MWh)</th><th class='r'>Wärme W2 (MWh)</th><th class='r'>Anteil Wohnung " + z.w + "</th></tr></thead><tbody>" + wpRows + "</tbody></table>" +
+    ZAEHLER.map(function (x) { var own = x[0].indexOf("Wohnung " + z.w) >= 0 ? " class='b'" : ""; return "<tr" + own + "><td data-l='Zähler'>" + x[0] + "</td><td class='r' data-l='Beginn'>" + x[1].toLocaleString("de-DE") + "</td><td class='r' data-l='Ende'>" + x[2].toLocaleString("de-DE") + "</td><td class='r' data-l='Verbrauch'>" + r2((x[2] - x[1]) * z.vf).toLocaleString("de-DE") + "</td></tr>"; }).join("") + "</tbody></table>" +
+    "<h3>Heizung und Warmwasser je Monat</h3><table><thead><tr><th>Monat</th><th class='r'>WP-Strom (kWh)</th><th class='r" + (z.w === 1 ? " sel" : "") + "'>Wärme W1 (MWh)</th><th class='r" + (z.w === 2 ? " sel" : "") + "'>Wärme W2 (MWh)</th><th class='r sel'>Anteil Wohnung " + z.w + "</th></tr></thead><tbody>" + wpRows + "</tbody></table>" +
     "<h3>Verteilerschlüssel</h3><p class='small'><b>Je Wohneinheit:</b> beide Wohnungen zu gleichen Teilen. <b>Wohnfläche:</b> Wohnung 1 = " + HAUS.qm1 + " m², Wohnung 2 = " + HAUS.qm2 + " m², Gesamtfläche " + (HAUS.qm1 + HAUS.qm2) + " m². <b>Flurstück:</b> Anteil am Grundstück laut Stammdaten. <b>Personen:</b> Personenzahl je Monat laut Fixkosten-Eingabe, hier als Durchschnitt. <b>Heizung und Warmwasser:</b> Die Kosten des Wärmepumpenstroms werden zu 70 % nach gemessenem Wärmeverbrauch und zu 30 % nach Wohnfläche verteilt.</p></div>";
 }
 function stromBlock(z, c) {
