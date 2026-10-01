@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE Jahresabrechnung</title>
+<!--
+  PROTOTYPE - throwaway, sample data only, nothing is persisted.
+  Question: what should the Jahresabrechnung look like (A4 print/PDF, mobile differs)?
+  Variants A, B, C structurally different, D is the mix chosen by the user (head from A, rest from C). ?variant=A|B|C|D
+  Scenarios via ?szenario=voll|teiljahr|eigen|maengel
+  Open the file directly in a browser. Print preview (Cmd+P) shows the A4 output.
+-->
+<style>
+  :root {
+    --bg: #e9ebef; --paper: #fff; --text: #1c1e21; --muted: #5f6672; --line: #cfd3da;
+    --accent: #1d4ed8; --soft: #eef2ff; --danger: #b91c1c; --ok: #15803d;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 10.5pt/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .sheet { background: var(--paper); width: 210mm; min-height: 297mm; margin: 12px auto 90px;
+    padding: 16mm 16mm 14mm; box-shadow: 0 2px 12px rgba(0,0,0,.18); position: relative; }
+  h1 { font-size: 17pt; margin: 0 0 2mm; }
+  h2 { font-size: 11.5pt; margin: 6mm 0 2mm; padding-bottom: 1mm; border-bottom: 1.5px solid var(--text); }
+  h3 { font-size: 10.5pt; margin: 4mm 0 1.5mm; }
+  p { margin: 0 0 2mm; }
+  .muted { color: var(--muted); }
+  .small { font-size: 8.5pt; }
+  .r { text-align: right; font-variant-numeric: tabular-nums; }
+  .b { font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; margin: 1mm 0 3mm; }
+  th, td { padding: 1.3mm 1.5mm; border-bottom: 1px solid var(--line); vertical-align: top; text-align: left; }
+  th { font-size: 8.5pt; text-transform: uppercase; letter-spacing: .02em; color: var(--muted); border-bottom: 1.5px solid var(--text); }
+  th.r, td.r { text-align: right; }
+  tr.sum td { font-weight: 700; border-top: 1.5px solid var(--text); border-bottom: 0; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
+  .banner { border: 1.5px dashed var(--muted); padding: 2mm 3mm; margin: 0 0 4mm; font-weight: 600; background: #f6f6f7; }
+  .result { border: 2px solid var(--text); padding: 3mm 4mm; margin: 4mm 0; display: flex; justify-content: space-between; align-items: baseline; gap: 6mm; }
+  .result .amt { font-size: 18pt; font-weight: 800; }
+  .nach { color: var(--danger); } .gut { color: var(--ok); }
+  .maengel { border: 2px solid var(--danger); padding: 4mm 5mm; }
+  .maengel li { margin: 1.5mm 0; }
+  .anhang { page-break-before: always; break-before: page; }
+  .tag { display: inline-block; font-size: 8pt; border: 1px solid var(--muted); padding: 0 1.5mm; margin-left: 2mm; border-radius: 2mm; color: var(--muted); }
+
+  /* Variant B: letter style, one continuous calculation */
+  .letter-addr { margin: 6mm 0 8mm; }
+  .calc td:first-child { width: 8mm; color: var(--muted); }
+  .calc tr.step td { border-bottom: 0; padding-top: 3mm; font-weight: 700; }
+  .fn { font-size: 8.5pt; color: var(--muted); margin: 0 0 1mm; }
+
+  /* Variant C: compact one-sheet with result sidebar */
+  .c-head { display: flex; justify-content: space-between; gap: 6mm; border-bottom: 2px solid var(--text); padding-bottom: 2mm; margin-bottom: 3mm; }
+  .c-body { display: grid; grid-template-columns: 1fr 52mm; gap: 6mm; align-items: start; }
+  .c-side { border-left: 1.5px solid var(--text); padding-left: 4mm; }
+  .c-side .amt { font-size: 16pt; font-weight: 800; margin: 1mm 0 3mm; }
+  .c-body table td, .c-body table th { padding: .8mm 1mm; font-size: 9pt; }
+  .cols2 { column-count: 2; column-gap: 8mm; }
+
+  /* Floating prototype bar, never printed */
+  #bar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); background: #111; color: #fff;
+    border-radius: 999px; padding: 6px 10px; display: flex; gap: 8px; align-items: center; z-index: 10;
+    box-shadow: 0 4px 16px rgba(0,0,0,.4); font: 13px system-ui, sans-serif; }
+  #bar button, #bar select { background: #2b2b2b; color: #fff; border: 1px solid #444; border-radius: 999px; padding: 4px 10px; font: inherit; cursor: pointer; }
+  #bar .lbl { min-width: 150px; text-align: center; }
+
+  /* Print: always A4 */
+  @page { size: A4; margin: 14mm 15mm; }
+  @media print {
+    body { background: #fff; }
+    .sheet { box-shadow: none; margin: 0; padding: 0; width: auto; min-height: 0; }
+    #bar { display: none; }
+  }
+
+  /* Mobile: different layout, tables turn into stacked cards */
+  @media (max-width: 760px) {
+    .sheet { width: auto; min-height: 0; margin: 0 0 90px; padding: 14px 16px; box-shadow: none; font-size: 11pt; }
+    .two, .c-body { grid-template-columns: 1fr; }
+    .c-side { border-left: 0; padding-left: 0; border-top: 1.5px solid var(--text); padding-top: 3mm; order: -1; }
+    .c-side.d { order: 0; }
+    .cols2 { column-count: 1; }
+    .c-head { flex-direction: column; }
+    .result { flex-direction: column; }
+    table thead { display: none; }
+    table, tbody, tr, td { display: block; width: 100%; }
+    tr { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; margin-bottom: 6px; }
+    td { border: 0; padding: 1px 0; text-align: left !important; }
+    td[data-l]::before { content: attr(data-l) ": "; color: var(--muted); font-size: 9pt; }
+    tr.sum { border-color: var(--text); }
+    .calc td:first-child { display: none; }
+    #bar { width: calc(100% - 16px); flex-wrap: wrap; justify-content: center; border-radius: 16px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="bar">
+  <button id="prev" title="Variante zurück">&larr;</button>
+  <span class="lbl" id="lbl"></span>
+  <button id="next" title="Variante weiter">&rarr;</button>
+  <select id="szen">
+    <option value="voll">2027, Wohnung 2, vermietet</option>
+    <option value="teiljahr">2026, Teiljahr ab Einzug</option>
+    <option value="eigen">2027, Wohnung 1, Eigennutzung</option>
+    <option value="maengel">2027, Mängel (blockiert)</option>
+  </select>
+  <button id="print">Drucken</button>
+</div>
+
+<script>
+// ---- Sample data (fake) ---------------------------------------------------
+var HAUS = { objekt: "Beispielweg 1, 12345 Musterstadt", vermieter: "Max Mustermann", vAnschrift: "Beispielweg 1, 12345 Musterstadt", iban: "DE00 0000 0000 0000 0000 00",
+  qm1: 88, qm2: 42 };
+var MIETER = { name: "Erika Beispiel", anschrift: "Beispielweg 1, Wohnung 2, 12345 Musterstadt" };
+// share2 = Wohnung 2's share of the whole-house amount
+var POS = [
+  { n: "Grundsteuer", g: 612.00, s: "Je Wohneinheit", w2: 0.5, fix: true },
+  { n: "Wohngebäudeversicherung", g: 840.00, s: "Wohnfläche (Wohnung 2: 42 von 130 m²)", w2: 42/130, fix: true },
+  { n: "Deichbeitrag Grund und Boden", g: 96.00, s: "Flurstück", w2: 0.4, fix: true },
+  { n: "Abfallwirtschaft Grundgebühr Haushalt", g: 84.00, s: "Je Wohneinheit", w2: 0.5, fix: true },
+  { n: "Abfallwirtschaft Restmüll", g: 148.80, s: "Personen (Ø laut Monatswerten)", w2: 1/3, fix: true },
+  { n: "Grundgebühr Trinkwasser", g: 120.00, s: "Je Wohneinheit", w2: 0.5, fix: true },
+  { n: "Grundgebühr Abwasser", g: 96.00, s: "Je Wohneinheit", w2: 0.5, fix: true },
+  { n: "Grundgebühr Strom", g: 168.00, s: "Je Wohneinheit", w2: 0.5, fix: true },
+  { n: "Wartungskosten Wärmepumpe", g: 240.00, s: "Je Wohneinheit", w2: 0.5, fix: true },
+  { n: "Heizung und Warmwasser (Wärmepumpe)", g: 1480.00, s: "70 % Wärmeverbrauch, 30 % Wohnfläche", w2: 0.41, fix: false },
+  { n: "Wasser und Abwasser (Verbrauch)", g: 520.00, s: "Gemessener Verbrauch", w2: 0.40, fix: false }
+];
+var STROM_W2 = { kwh: 3100, preis: 0.285 };
+var ZAEHLER = [
+  ["Strom Hauptzähler (kWh)", 41200, 47880], ["Strom Wohnung 2 (kWh)", 8120, 11220],
+  ["Wärme Wohnung 1 (MWh)", 12.4, 17.9], ["Wärme Wohnung 2 (MWh)", 5.1, 7.8],
+  ["Wasser gesamt (m³)", 612, 698], ["Wasser Wohnung 2 (m³)", 144, 168], ["Warmwasseraufbereitung (m³)", 88, 101]
+];
+
+var SZEN = {
+  voll:     { w: 2, status: "vermietet", jahr: 2027, fixM: 12, vf: 1,       zeitraum: "01.01.2027 bis 31.12.2027", zusatz: "", abschlag: 200, maengel: null },
+  teiljahr: { w: 2, status: "vermietet", jahr: 2026, fixM: 3,  vf: 3.5/12, zeitraum: "15.09.2026 bis 31.12.2026", zusatz: "Fixkosten und Vorauszahlungen ab Oktober 2026 (Ausgangsstand: erste Ablesung am 15.09.2026).", abschlag: 200, maengel: null },
+  eigen:    { w: 1, status: "eigen",     jahr: 2027, fixM: 12, vf: 1,       zeitraum: "01.01.2027 bis 31.12.2027", zusatz: "", abschlag: 150, maengel: null },
+  maengel:  { w: 2, status: "vermietet", jahr: 2027, fixM: 12, vf: 1,       zeitraum: "01.01.2027 bis 31.12.2027", zusatz: "", abschlag: 200,
+    maengel: [ "Fixkosten-Eingabe fehlt: November 2027 (Fixkosten erfassen)",
+               "Mehr als eine Fixkosten-Eingabe: Februar 2027 (Fixkosten korrigieren)",
+               "Ablesung ist ein Teilstand: Dezember 2027 (Ablesung vervollständigen)",
+               "Mieter-Zustellanschrift fehlt (Stammdaten)" ] }
+};
+
+// ---- Calculation (prototype only) -----------------------------------------
+function r2(x) { return Math.round(x * 100) / 100; }
+function eur(x) { return x.toLocaleString("de-DE", { style: "currency", currency: "EUR" }); }
+function pct(x) { return (x * 100).toLocaleString("de-DE", { maximumFractionDigits: 1 }) + " %"; }
+function calc(z) {
+  var rows = POS.map(function (p) {
+    var scale = p.fix ? z.fixM / 12 : z.vf;
+    var gesamt = r2(p.g * scale);
+    var share = z.w === 2 ? p.w2 : 1 - p.w2;
+    return { n: p.n, s: p.s, gesamt: gesamt, share: share, betrag: r2(gesamt * share), fix: p.fix };
+  });
+  var bk = r2(rows.reduce(function (a, r) { return a + r.betrag; }, 0));
+  var strom = z.w === 2 && z.status === "vermietet" ? r2(STROM_W2.kwh * z.vf * STROM_W2.preis) : 0;
+  var vor = r2(z.abschlag * z.fixM);
+  var saldo = r2(vor - bk - strom); // positive = Guthaben
+  return { rows: rows, bk: bk, strom: strom, vor: vor, saldo: saldo };
+}
+function result(c) {
+  var g = c.saldo > 0, n = c.saldo < 0;
+  return { label: g ? "Guthaben" : n ? "Nachzahlung" : "Ausgeglichen", cls: g ? "gut" : n ? "nach" : "", amt: eur(Math.abs(c.saldo)) };
+}
+
+// ---- Shared pieces ---------------------------------------------------------
+function maengelHtml(z) {
+  return '<div class="maengel"><h1>Abrechnung ' + z.jahr + ' nicht möglich</h1><p>Folgende Angaben fehlen oder sind widersprüchlich:</p><ul>' +
+    z.maengel.map(function (m) { return "<li>" + m + ' <a href="#">Beheben</a></li>'; }).join("") + "</ul></div>";
+}
+function banner(z) { return z.status === "eigen" ? '<div class="banner">Interne Übersicht, keine Betriebskostenabrechnung</div>' : ""; }
+function rechtshinweise(z) {
+  if (z.status === "eigen") return "";
+  return '<h2>Hinweise</h2><p class="small">Belege können auf Verlangen eingesehen werden (§ 556 Abs. 4 BGB). Einwendungen gegen diese Abrechnung sind spätestens zwölf Monate nach Zugang zu erheben (§ 556 Abs. 3 BGB). Rundungsdifferenzen von wenigen Cent sind möglich.</p>' +
+    (z.saldo_neg ? '<p class="small">Bankverbindung: ' + HAUS.vermieter + ", IBAN " + HAUS.iban + "</p>" : "");
+}
+function anhang(z, c) {
+  var monate = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"].slice(12 - z.fixM);
+  var wpRows = monate.map(function (m, i) {
+    return "<tr><td data-l='Monat'>" + m + "</td><td class='r' data-l='WP-Strom kWh'>" + (480 + i * 25).toLocaleString("de-DE") + "</td><td class='r' data-l='Wärme W1 MWh'>" + (0.8 + i * 0.1).toFixed(1).replace(".", ",") + "</td><td class='r' data-l='Wärme W2 MWh'>" + (0.4 + i * 0.05).toFixed(2).replace(".", ",") + "</td><td class='r' data-l='Anteil'>" + eur(r2(c.rows[9].betrag / z.fixM)) + "</td></tr>";
+  }).join("");
+  return '<div class="anhang"><h2>Anhang</h2>' +
+    "<h3>Verbrauchsübersicht</h3><table><thead><tr><th>Zähler</th><th class='r'>Stand Beginn</th><th class='r'>Stand Ende</th><th class='r'>Verbrauch</th></tr></thead><tbody>" +
+    ZAEHLER.map(function (x) { return "<tr><td data-l='Zähler'>" + x[0] + "</td><td class='r' data-l='Beginn'>" + x[1].toLocaleString("de-DE") + "</td><td class='r' data-l='Ende'>" + x[2].toLocaleString("de-DE") + "</td><td class='r' data-l='Verbrauch'>" + r2((x[2] - x[1]) * z.vf).toLocaleString("de-DE") + "</td></tr>"; }).join("") + "</tbody></table>" +
+    "<h3>Heizung und Warmwasser je Monat</h3><table><thead><tr><th>Monat</th><th class='r'>WP-Strom (kWh)</th><th class='r'>Wärme W1 (MWh)</th><th class='r'>Wärme W2 (MWh)</th><th class='r'>Anteil Wohnung " + z.w + "</th></tr></thead><tbody>" + wpRows + "</tbody></table>" +
+    "<h3>Verteilerschlüssel</h3><p class='small'><b>Je Wohneinheit:</b> beide Wohnungen zu gleichen Teilen. <b>Wohnfläche:</b> Wohnung 1 = " + HAUS.qm1 + " m², Wohnung 2 = " + HAUS.qm2 + " m², Gesamtfläche " + (HAUS.qm1 + HAUS.qm2) + " m². <b>Flurstück:</b> Anteil am Grundstück laut Stammdaten. <b>Personen:</b> Personenzahl je Monat laut Fixkosten-Eingabe, hier als Durchschnitt. <b>Heizung und Warmwasser:</b> Die Kosten des Wärmepumpenstroms werden zu 70 % nach gemessenem Wärmeverbrauch und zu 30 % nach Wohnfläche verteilt.</p></div>";
+}
+function stromBlock(z, c) {
+  if (!c.strom) return "";
+  return "<h3>Stromverbrauch Wohnung 2 <span class='tag'>laut Vereinbarung weiterberechnet</span></h3><table><tbody><tr><td data-l='Verbrauch'>" + Math.round(STROM_W2.kwh * z.vf).toLocaleString("de-DE") + " kWh × " + STROM_W2.preis.toLocaleString("de-DE") + " €/kWh</td><td class='r b' data-l='Betrag'>" + eur(c.strom) + "</td></tr></tbody></table>";
+}
+function posTable(c, z, withShare) {
+  return "<table><thead><tr><th>Position</th><th class='r'>Gesamtkosten Haus</th><th>Verteilerschlüssel</th>" + (withShare ? "<th class='r'>Anteil</th>" : "") + "<th class='r'>Ihr Betrag</th></tr></thead><tbody>" +
+    c.rows.map(function (r) {
+      return "<tr><td data-l='Position'>" + r.n + "</td><td class='r' data-l='Gesamt'>" + eur(r.gesamt) + "</td><td data-l='Schlüssel'>" + r.s + "</td>" +
+        (withShare ? "<td class='r' data-l='Anteil'>" + pct(r.share) + "</td>" : "") + "<td class='r b' data-l='Betrag'>" + eur(r.betrag) + "</td></tr>";
+    }).join("") +
+    "<tr class='sum'><td colspan='" + (withShare ? 4 : 3) + "'>Summe Betriebskosten</td><td class='r'>" + eur(c.bk) + "</td></tr></tbody></table>";
+}
+function partyBlock(z) {
+  var mieter = z.status === "vermietet" ? "<b>" + MIETER.name + "</b><br>" + MIETER.anschrift : "<b>Wohnung 1</b> (Eigennutzung)<br>" + HAUS.objekt;
+  return { v: "<b>" + HAUS.vermieter + "</b> (Vermieter)<br>" + HAUS.vAnschrift, m: mieter };
+}
+
+// ---- Variant A: classic (result box first, then tables) -------------------
+function variantA(z, c) {
+  if (z.maengel) return maengelHtml(z);
+  var p = partyBlock(z), res = result(c); z.saldo_neg = c.saldo < 0;
+  return banner(z) + "<h1>Nebenkostenabrechnung " + z.jahr + "</h1><p class='muted'>Objekt: " + HAUS.objekt + " | Zeitraum: " + z.zeitraum + "</p>" +
+    (z.zusatz ? "<p class='small'>" + z.zusatz + "</p>" : "") +
+    "<div class='two'><div><h3>Vermieter</h3><p>" + p.v + "</p></div><div><h3>" + (z.status === "vermietet" ? "Mieter" : "Wohnung") + "</h3><p>" + p.m + "</p></div></div>" +
+    "<div class='result'><span>" + res.label + "</span><span class='amt " + res.cls + "'>" + res.amt + "</span></div>" +
+    "<h2>Kosten</h2>" + posTable(c, z, true) + stromBlock(z, c) +
+    "<h2>Vorauszahlungen und Saldo</h2><table><tbody><tr><td>Summe Betriebskosten</td><td class='r'>" + eur(c.bk) + "</td></tr>" +
+    (c.strom ? "<tr><td>Stromverbrauch Wohnung 2</td><td class='r'>" + eur(c.strom) + "</td></tr>" : "") +
+    "<tr><td>Vorauszahlungen (" + z.fixM + " × " + eur(z.abschlag) + ")</td><td class='r'>- " + eur(c.vor) + "</td></tr><tr class='sum'><td>" + res.label + "</td><td class='r'>" + res.amt + "</td></tr></tbody></table>" +
+    rechtshinweise(z) + anhang(z, c);
+}
+
+// ---- Variant B: letter, one numbered calculation, result at the end -------
+function variantB(z, c) {
+  if (z.maengel) return maengelHtml(z);
+  var p = partyBlock(z), res = result(c); z.saldo_neg = c.saldo < 0;
+  var n = 0;
+  return banner(z) + "<p class='small muted'>" + HAUS.vermieter + ", " + HAUS.vAnschrift + "</p><div class='letter-addr'>" + p.m + "</div>" +
+    "<p class='r'>Musterstadt, den 15.01." + (z.jahr + 1) + "</p>" +
+    "<h1>Nebenkostenabrechnung für den Zeitraum " + z.zeitraum + "</h1>" + (z.zusatz ? "<p class='small'>" + z.zusatz + "</p>" : "") +
+    "<p>Die Abrechnung für " + (z.status === "vermietet" ? "Ihre Wohnung" : "Wohnung 1") + " ergibt " + (c.saldo < 0 ? "eine <b>Nachzahlung</b>" : c.saldo > 0 ? "ein <b>Guthaben</b>" : "einen <b>ausgeglichenen Saldo</b>") + " von <b>" + res.amt + "</b>. Die Berechnung im Einzelnen:</p>" +
+    "<table class='calc'><thead><tr><th></th><th>Position (Verteilerschlüssel in der Fußnote)</th><th class='r'>Gesamt Haus</th><th class='r'>Ihr Anteil</th><th class='r'>Betrag</th></tr></thead><tbody>" +
+    c.rows.map(function (r) { n++; return "<tr><td data-l='Nr'>" + n + "</td><td data-l='Position'>" + r.n + " <span class='muted small'>(" + r.s + ")</span></td><td class='r' data-l='Gesamt'>" + eur(r.gesamt) + "</td><td class='r' data-l='Anteil'>" + pct(r.share) + "</td><td class='r' data-l='Betrag'>" + eur(r.betrag) + "</td></tr>"; }).join("") +
+    "<tr class='step'><td></td><td colspan='3'>Zwischensumme Betriebskosten</td><td class='r'>" + eur(c.bk) + "</td></tr>" +
+    (c.strom ? "<tr><td></td><td colspan='3'>+ Stromverbrauch Wohnung 2 (laut Vereinbarung)</td><td class='r'>" + eur(c.strom) + "</td></tr>" : "") +
+    "<tr><td></td><td colspan='3'>- Geleistete Vorauszahlungen (" + z.fixM + " × " + eur(z.abschlag) + ")</td><td class='r'>" + eur(c.vor) + "</td></tr>" +
+    "<tr class='sum'><td></td><td colspan='3'>= " + res.label + "</td><td class='r " + res.cls + "'>" + res.amt + "</td></tr></tbody></table>" +
+    "<p class='fn'>Rundungsdifferenzen von wenigen Cent sind möglich.</p>" + rechtshinweise(z) + anhang(z, c);
+}
+
+// ---- Variant C: compact one sheet with result sidebar ---------------------
+function variantC(z, c) {
+  if (z.maengel) return maengelHtml(z);
+  var p = partyBlock(z), res = result(c); z.saldo_neg = c.saldo < 0;
+  var fix = { rows: c.rows.filter(function (r) { return r.fix; }), bk: 0 }, ver = c.rows.filter(function (r) { return !r.fix; });
+  function mini(list) {
+    return "<table><thead><tr><th>Position</th><th class='r'>Haus</th><th class='r'>Anteil</th><th class='r'>Betrag</th></tr></thead><tbody>" +
+      list.map(function (r) { return "<tr><td data-l='Position'>" + r.n + "<br><span class='muted small'>" + r.s + "</span></td><td class='r' data-l='Haus'>" + eur(r.gesamt) + "</td><td class='r' data-l='Anteil'>" + pct(r.share) + "</td><td class='r b' data-l='Betrag'>" + eur(r.betrag) + "</td></tr>"; }).join("") + "</tbody></table>";
+  }
+  return banner(z) + "<div class='c-head'><div><h1>Nebenkostenabrechnung " + z.jahr + "</h1><span class='muted'>" + z.zeitraum + " | " + HAUS.objekt + "</span></div><div class='small'>" + p.v.replace("<br>", ", ") + "<br>" + p.m.replace("<br>", ", ") + "</div></div>" +
+    (z.zusatz ? "<p class='small'>" + z.zusatz + "</p>" : "") +
+    "<div class='c-body'><div><h3>Fixkosten</h3>" + mini(fix.rows) + "<h3>Verbrauchsabhängig</h3>" + mini(ver) + stromBlock(z, c) + "</div>" +
+    "<div class='c-side'><div class='small muted'>Ergebnis</div><div class='amt " + res.cls + "'>" + res.label + "<br>" + res.amt + "</div>" +
+    "<table><tbody><tr><td>Betriebskosten</td><td class='r'>" + eur(c.bk) + "</td></tr>" + (c.strom ? "<tr><td>Strom W2</td><td class='r'>" + eur(c.strom) + "</td></tr>" : "") +
+    "<tr><td>Vorauszahlungen</td><td class='r'>- " + eur(c.vor) + "</td></tr></tbody></table>" +
+    (z.status === "vermietet" ? "<p class='small'>Belegeinsicht auf Verlangen (§ 556 Abs. 4 BGB). Einwendungen binnen zwölf Monaten nach Zugang (§ 556 Abs. 3 BGB).</p><p class='small'>IBAN " + HAUS.iban + "</p>" : "") + "</div></div>" +
+    anhang(z, c).replace("<h3>Verbrauchsübersicht</h3>", "<div class='cols2'><h3>Verbrauchsübersicht</h3>").replace("<h3>Verteilerschlüssel</h3>", "</div><h3>Verteilerschlüssel</h3>");
+}
+
+// ---- Variant D: head from A, body from C ------------------------------------
+function variantD(z, c) {
+  if (z.maengel) return maengelHtml(z);
+  var p = partyBlock(z), res = result(c); z.saldo_neg = c.saldo < 0;
+  var fix = c.rows.filter(function (r) { return r.fix; }), ver = c.rows.filter(function (r) { return !r.fix; });
+  function mini(list) {
+    return "<table><thead><tr><th>Position</th><th class='r'>Haus</th><th class='r'>Anteil</th><th class='r'>Betrag</th></tr></thead><tbody>" +
+      list.map(function (r) { return "<tr><td data-l='Position'>" + r.n + "<br><span class='muted small'>" + r.s + "</span></td><td class='r' data-l='Haus'>" + eur(r.gesamt) + "</td><td class='r' data-l='Anteil'>" + pct(r.share) + "</td><td class='r b' data-l='Betrag'>" + eur(r.betrag) + "</td></tr>"; }).join("") + "</tbody></table>";
+  }
+  return banner(z) + "<h1>Nebenkostenabrechnung " + z.jahr + "</h1><p class='muted'>Objekt: " + HAUS.objekt + " | Zeitraum: " + z.zeitraum + "</p>" +
+    (z.zusatz ? "<p class='small'>" + z.zusatz + "</p>" : "") +
+    "<div class='two'><div><h3>Vermieter</h3><p>" + p.v + "</p></div><div><h3>" + (z.status === "vermietet" ? "Mieter" : "Wohnung") + "</h3><p>" + p.m + "</p></div></div>" +
+    "<div class='result'><span>" + res.label + "</span><span class='amt " + res.cls + "'>" + res.amt + "</span></div>" +
+    "<div class='c-body'><div><h3>Fixkosten</h3>" + mini(fix) + "<h3>Verbrauchsabhängig</h3>" + mini(ver) + stromBlock(z, c) + "</div>" +
+    "<div class='c-side d'><div class='small muted'>Saldoberechnung</div>" +
+    "<table><tbody><tr><td>Betriebskosten</td><td class='r'>" + eur(c.bk) + "</td></tr>" + (c.strom ? "<tr><td>Strom Wohnung 2</td><td class='r'>" + eur(c.strom) + "</td></tr>" : "") +
+    "<tr><td>Vorauszahlungen</td><td class='r'>- " + eur(c.vor) + "</td></tr><tr class='sum'><td>" + res.label + "</td><td class='r " + res.cls + "'>" + res.amt + "</td></tr></tbody></table>" +
+    (z.status === "vermietet" ? "<p class='small'>Belegeinsicht auf Verlangen (§ 556 Abs. 4 BGB). Einwendungen binnen zwölf Monaten nach Zugang (§ 556 Abs. 3 BGB).</p><p class='small'>Rundungsdifferenzen von wenigen Cent sind möglich.</p><p class='small'>IBAN " + HAUS.iban + "</p>" : "<p class='small'>Rundungsdifferenzen von wenigen Cent sind möglich.</p>") + "</div></div>" +
+    anhang(z, c).replace("<h3>Verbrauchsübersicht</h3>", "<div class='cols2'><h3>Verbrauchsübersicht</h3>").replace("<h3>Verteilerschlüssel</h3>", "</div><h3>Verteilerschlüssel</h3>");
+}
+
+// ---- Wiring ---------------------------------------------------------------
+var VARIANTS = { A: ["Klassisch, Ergebnis-Box oben", variantA], B: ["Brief mit einer Rechnung, Ergebnis unten", variantB], C: ["Kompakt, Ergebnis-Seitenleiste", variantC], D: ["Mix: Kopf aus A, Rest aus C", variantD] };
+var keys = Object.keys(VARIANTS);
+var params = new URLSearchParams(location.search);
+var variant = VARIANTS[params.get("variant")] ? params.get("variant") : "D";
+var szenario = SZEN[params.get("szenario")] ? params.get("szenario") : "voll";
+
+function render() {
+  var z = JSON.parse(JSON.stringify(SZEN[szenario]));
+  var c = calc(z);
+  document.getElementById("root").innerHTML = '<div class="sheet">' + VARIANTS[variant][1](z, c) + "</div>";
+  document.getElementById("lbl").textContent = variant + " - " + VARIANTS[variant][0];
+  document.getElementById("szen").value = szenario;
+  var q = new URLSearchParams({ variant: variant, szenario: szenario });
+  try { history.replaceState(null, "", "?" + q.toString()); } catch (e) {}
+}
+function step(d) { variant = keys[(keys.indexOf(variant) + d + keys.length) % keys.length]; render(); }
+document.getElementById("prev").onclick = function () { step(-1); };
+document.getElementById("next").onclick = function () { step(1); };
+document.getElementById("szen").onchange = function (e) { szenario = e.target.value; render(); };
+document.getElementById("print").onclick = function () { window.print(); };
+document.addEventListener("keydown", function (e) {
+  var t = e.target && e.target.tagName;
+  if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT") return;
+  if (e.key === "ArrowLeft") step(-1); if (e.key === "ArrowRight") step(1);
+});
+render();
+</script>
+</body>
+</html>
