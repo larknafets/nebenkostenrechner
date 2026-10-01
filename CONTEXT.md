@@ -103,5 +103,12 @@ Der Zeitraum einer Jahresabrechnung: das Kalenderjahr, im ersten Erfassungsjahr 
 Ein Grund, warum für ein Jahr und eine Wohnung noch keine Jahresabrechnung entstehen kann: fehlende oder unvollständige Ablesung (Teilstand) eines Abrechnungsmonats, fehlende oder mehrfache Fixkosten-Eingabe eines Monats, fehlende Pflicht-Stammdaten. Die Prüfung liefert alle Mängel auf einmal, jeweils mit dem Ort zum Beheben, statt einer Abrechnung. Ein fehlender Nebenkostenabschlag ist kein Mangel (zählt als 0).
 _Avoid_: Fehler, Warnung
 
+**Jahresabrechnung**:
+Die Betriebskostenabrechnung einer Wohnung für einen Abrechnungszeitraum, live aus den vorhandenen Daten berechnet und nichts festgeschrieben. Sie zeigt nur umlagefähige Kostenpositionen, Heizung/Warmwasser und Wasser/Abwasser (Verbrauch) sowie, wenn das Stammdaten-Flag es erlaubt, den Stromverbrauch von Wohnung 2 als eigenen Block. Je Position steht der Anteil als Summe der je Monat auf den Cent gerundeten Monatsanteile, wie im Dashboard (daher sind wenige Cent Abweichung zu "Gesamtkosten mal Prozentsatz" möglich). Wechselt die Berechnungslogik einer Position im Zeitraum, gibt es je zusammenhängendem Zeitraum gleicher Logik eine Zeile. Eine Position, für die die abgerechnete Wohnung nichts zahlt (z. B. voll der anderen Wohnung zugerechnet), erscheint nicht.
+
+**Jahressaldo**:
+Vorauszahlungen (Nebenkostenabschläge des Abrechnungszeitraums, ein fehlender zählt als 0) minus die Betriebskosten der Jahresabrechnung minus den weiterberechneten Strom. Positiv Guthaben, negativ Nachzahlung, null Ausgeglichen. Nicht der fortlaufend kumulierte Saldo des Dashboards, aber bei lückenlosen Daten und lauter umlagefähigen Positionen gleich dessen Änderung über das Jahr.
+_Avoid_: Jahresergebnis
+
 **Guthaben / Nachzahlung**:
 Der fortlaufend seit Erfassungsbeginn kumulierte Saldo aus Nebenkostenabschlag minus Fixkosten minus Verbräuche einer Wohnung (kein Reset zum Jahreswechsel). Positiv heißt Guthaben, negativ Nachzahlung, exakt null Ausgeglichen. Im Code der Typ `AbschlagSaldo` (`internal/web/abschlag_saldo.go`).

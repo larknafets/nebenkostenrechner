@@ -48,6 +48,33 @@ func ValidStatus(s string) bool {
 	return s == StatusVermietet || s == StatusEigennutzung
 }
 
+// Meter is one fixed meter (Zähler) with its display label and unit.
+type Meter struct {
+	Key   string
+	Label string
+	Unit  string
+}
+
+// Meters returns the 9 meters ordered by id, the Anhang's source for the
+// meter labels and units.
+func Meters(db *sql.DB) ([]Meter, error) {
+	rows, err := db.Query(`SELECT key, label, unit FROM meters ORDER BY id`)
+	if err != nil {
+		return nil, fmt.Errorf("query meters: %w", err)
+	}
+	defer rows.Close()
+
+	var out []Meter
+	for rows.Next() {
+		var m Meter
+		if err := rows.Scan(&m.Key, &m.Label, &m.Unit); err != nil {
+			return nil, fmt.Errorf("scan meter: %w", err)
+		}
+		out = append(out, m)
+	}
+	return out, rows.Err()
+}
+
 // Apartments returns the 2 apartments ordered by id.
 func Apartments(db *sql.DB) ([]Apartment, error) {
 	rows, err := db.Query(`SELECT id, name, qm, flurstueck_groesse, mieter_name, mieter_anschrift, status FROM apartments ORDER BY id`)
