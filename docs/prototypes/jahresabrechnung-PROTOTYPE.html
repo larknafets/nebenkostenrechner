@@ -56,7 +56,9 @@
   .c-side { border-left: 1.5px solid var(--text); padding-left: 4mm; }
   .c-side .amt { font-size: 16pt; font-weight: 800; margin: 1mm 0 3mm; }
   .c-body table td, .c-body table th { padding: .8mm 1mm; font-size: 9pt; }
-  .cols2 { column-count: 2; column-gap: 8mm; }
+  /* Appendix: full width, tables stacked one below the other (two columns did not fit A4 width) */
+  .anhang table { font-size: 9.5pt; table-layout: auto; }
+  .anhang th, .anhang td { padding: 1.6mm 2mm; }
 
   /* Floating prototype bar, never printed */
   #bar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); background: #111; color: #fff;
@@ -79,7 +81,6 @@
     .two, .c-body { grid-template-columns: 1fr; }
     .c-side { border-left: 0; padding-left: 0; border-top: 1.5px solid var(--text); padding-top: 3mm; order: -1; }
     .c-side.d { order: 0; }
-    .cols2 { column-count: 1; }
     .c-head { flex-direction: column; }
     .result { flex-direction: column; }
     table thead { display: none; }
@@ -255,7 +256,7 @@ function variantC(z, c) {
     "<table><tbody><tr><td>Betriebskosten</td><td class='r'>" + eur(c.bk) + "</td></tr>" + (c.strom ? "<tr><td>Strom W2</td><td class='r'>" + eur(c.strom) + "</td></tr>" : "") +
     "<tr><td>Vorauszahlungen</td><td class='r'>- " + eur(c.vor) + "</td></tr></tbody></table>" +
     (z.status === "vermietet" ? "<p class='small'>Belegeinsicht auf Verlangen (§ 556 Abs. 4 BGB). Einwendungen binnen zwölf Monaten nach Zugang (§ 556 Abs. 3 BGB).</p><p class='small'>IBAN " + HAUS.iban + "</p>" : "") + "</div></div>" +
-    anhang(z, c).replace("<h3>Verbrauchsübersicht</h3>", "<div class='cols2'><h3>Verbrauchsübersicht</h3>").replace("<h3>Verteilerschlüssel</h3>", "</div><h3>Verteilerschlüssel</h3>");
+    anhang(z, c);
 }
 
 // ---- Variant D: head from A, body from C ------------------------------------
@@ -276,7 +277,7 @@ function variantD(z, c) {
     "<table><tbody><tr><td>Betriebskosten</td><td class='r'>" + eur(c.bk) + "</td></tr>" + (c.strom ? "<tr><td>Strom Wohnung 2</td><td class='r'>" + eur(c.strom) + "</td></tr>" : "") +
     "<tr><td>Vorauszahlungen</td><td class='r'>- " + eur(c.vor) + "</td></tr><tr class='sum'><td>" + res.label + "</td><td class='r " + res.cls + "'>" + res.amt + "</td></tr></tbody></table>" +
     (z.status === "vermietet" ? "<p class='small'>Belegeinsicht auf Verlangen (§ 556 Abs. 4 BGB). Einwendungen binnen zwölf Monaten nach Zugang (§ 556 Abs. 3 BGB).</p><p class='small'>Rundungsdifferenzen von wenigen Cent sind möglich.</p><p class='small'>IBAN " + HAUS.iban + "</p>" : "<p class='small'>Rundungsdifferenzen von wenigen Cent sind möglich.</p>") + "</div></div>" +
-    anhang(z, c).replace("<h3>Verbrauchsübersicht</h3>", "<div class='cols2'><h3>Verbrauchsübersicht</h3>").replace("<h3>Verteilerschlüssel</h3>", "</div><h3>Verteilerschlüssel</h3>");
+    anhang(z, c);
 }
 
 // ---- Wiring ---------------------------------------------------------------
