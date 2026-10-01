@@ -44,6 +44,16 @@ type HeizungErgebnis struct {
 	WPVerbrauchW2KWh float64
 }
 
+// heizungEingabe is everything the heating distribution reads: the period's
+// Strom result, the Stammdaten Heizungs-Gewichtung, the meter consumptions
+// (store.Verbrauch) and both apartments' Wohnungsgröße.
+type heizungEingabe struct {
+	Strom            *StromErgebnis
+	WaermeGewichtung float64
+	Verbrauch        map[string]float64
+	QMW1, QMW2       float64
+}
+
 // Heizung computes the heating cost allocation for the given period.
 func Heizung(db *sql.DB, periodID int64) (*HeizungErgebnis, error) {
 	strom, err := Strom(db, periodID)
@@ -55,9 +65,6 @@ func Heizung(db *sql.DB, periodID int64) (*HeizungErgebnis, error) {
 	if err != nil {
 		return nil, fmt.Errorf("haus: %w", err)
 	}
-	gewichtungWaerme := haus.HeizungWaermeGewichtung
-	gewichtungFlaeche := 1 - gewichtungWaerme
-
 	verbrauch, err := store.Verbrauch(db, periodID)
 	if err != nil {
 		return nil, fmt.Errorf("verbrauch: %w", err)
@@ -68,6 +75,15 @@ func Heizung(db *sql.DB, periodID int64) (*HeizungErgebnis, error) {
 		return nil, fmt.Errorf("apartments: %w", err)
 	}
 	qmW1, qmW2 := apartmentValues(apartments, func(a store.Apartment) float64 { return a.QM })
+
+	return berechneHeizung(heizungEingabe{Strom: strom, WaermeGewichtung: haus.HeizungWaermeGewichtung, Verbrauch: verbrauch, QMW1: qmW1, QMW2: qmW2}), nil
+}
+
+// berechneHeizung is the distribution itself, a pure function of its input.
+func berechneHeizung(in heizungEingabe) *HeizungErgebnis {
+	strom, verbrauch, qmW1, qmW2 := in.Strom, in.Verbrauch, in.QMW1, in.QMW2
+	gewichtungWaerme := in.WaermeGewichtung
+	gewichtungFlaeche := 1 - gewichtungWaerme
 
 	waermeW1 := verbrauch["waerme_wohnung1"]
 	waermeW2 := verbrauch["waerme_wohnung2"]
@@ -103,5 +119,5 @@ func Heizung(db *sql.DB, periodID int64) (*HeizungErgebnis, error) {
 
 		WPVerbrauchW1KWh: (strom.WPAnteilKWh + strom.PVAnteilWPKWh) * (gewichtungWaerme*ratioWaermeW1 + gewichtungFlaeche*ratioFlaecheW1),
 		WPVerbrauchW2KWh: (strom.WPAnteilKWh + strom.PVAnteilWPKWh) * (gewichtungWaerme*ratioWaermeW2 + gewichtungFlaeche*ratioFlaecheW2),
-	}, nil
+	}
 }

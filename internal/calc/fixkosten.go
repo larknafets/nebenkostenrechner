@@ -74,6 +74,26 @@ func Fixkosten(db *sql.DB, eingabeID int64) (*FixkostenErgebnis, error) {
 	}
 	qmW1, qmW2 := apartmentValues(apartments, func(a store.Apartment) float64 { return a.QM })
 	flurstueckW1, flurstueckW2 := apartmentValues(apartments, func(a store.Apartment) float64 { return a.FlurstueckGroesse })
+
+	return berechneFixkosten(fixkostenEingabe{
+		Eingabe: eingabe, Kostenpositionen: kostenpositionen,
+		QMW1: qmW1, QMW2: qmW2, FlurstueckW1: flurstueckW1, FlurstueckW2: flurstueckW2,
+	}), nil
+}
+
+// fixkostenEingabe is everything the Fixkosten distribution reads: the entry
+// itself, the Kostenpositionen and both apartments' Wohnungs-/Flurstücksgröße.
+type fixkostenEingabe struct {
+	Eingabe                    *store.FixkostenEingabeDetails
+	Kostenpositionen           []store.Kostenposition
+	QMW1, QMW2                 float64
+	FlurstueckW1, FlurstueckW2 float64
+}
+
+// berechneFixkosten is the distribution itself, a pure function of its input.
+func berechneFixkosten(in fixkostenEingabe) *FixkostenErgebnis {
+	eingabe, kostenpositionen := in.Eingabe, in.Kostenpositionen
+	qmW1, qmW2, flurstueckW1, flurstueckW2 := in.QMW1, in.QMW2, in.FlurstueckW1, in.FlurstueckW2
 	personenW1 := float64(eingabe.Personen[1])
 	personenW2 := float64(eingabe.Personen[2])
 
@@ -114,7 +134,7 @@ func Fixkosten(db *sql.DB, eingabeID int64) (*FixkostenErgebnis, error) {
 	ergebnis.KostenW1 = Round2(ergebnis.KostenW1)
 	ergebnis.KostenW2 = Round2(ergebnis.KostenW2)
 
-	return &ergebnis, nil
+	return &ergebnis
 }
 
 // splitRatio returns apartment 1/2's shares for the given Logik.
