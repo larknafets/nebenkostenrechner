@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -17,6 +18,12 @@ func parseFormFloat(r *http.Request, name, fieldLabel, apartmentID string) (floa
 		return 0, fmt.Errorf("invalid %s for apartment %s", fieldLabel, apartmentID)
 	}
 	return v, nil
+}
+
+// formText reads a free-text form field: surrounding whitespace is trimmed
+// and line breaks are normalized to \n (a textarea submits \r\n).
+func formText(r *http.Request, name string) string {
+	return strings.TrimSpace(strings.ReplaceAll(r.FormValue(name), "\r\n", "\n"))
 }
 
 // handleStammdatenForm serves the /stammdaten page (Issue #61): each
@@ -42,6 +49,19 @@ func handleStammdatenForm(a auth) http.HandlerFunc {
 			return
 		}
 
+		nav := a.NavData(r)
+		if !nav.IsLoggedIn {
+			// Personal data never leaves the server for visitors who are not
+			// logged in (Issue #164) - blank it here instead of relying on
+			// the template alone. The Wohnungsstatus is no personal data and
+			// stays.
+			for i := range apartments {
+				apartments[i].MieterName = ""
+				apartments[i].MieterAnschrift = ""
+			}
+			haus.VermieterName, haus.VermieterAnschrift, haus.ObjektAnschrift, haus.IBAN = "", "", "", ""
+		}
+
 		data := struct {
 			navData
 			Aktuell          string
@@ -49,7 +69,7 @@ func handleStammdatenForm(a auth) http.HandlerFunc {
 			Kostenpositionen []store.Kostenposition
 			Haus             store.Haus
 		}{
-			navData:          a.NavData(r),
+			navData:          nav,
 			Aktuell:          "stammdaten",
 			Apartments:       apartments,
 			Kostenpositionen: kostenpositionen,
@@ -79,6 +99,7 @@ func handleUpdateStammdaten() http.HandlerFunc {
 		}
 
 		in := make(map[int64]store.StammdatenInput, len(apartments))
+		wohnungen := make(map[int64]store.WohnungDetails, len(apartments))
 		for _, a := range apartments {
 			idStr := strconv.FormatInt(a.ID, 10)
 			qm, err := parseFormFloat(r, "qm_"+idStr, "Wohnungsgröße", idStr)
@@ -92,6 +113,17 @@ func handleUpdateStammdaten() http.HandlerFunc {
 				return
 			}
 			in[a.ID] = store.StammdatenInput{QM: qm, FlurstueckGroesse: flurstueckGroesse}
+
+			status := r.FormValue("status_" + idStr)
+			if !store.ValidStatus(status) {
+				http.Error(w, "ungültiger Wohnungsstatus für Wohnung "+idStr, http.StatusBadRequest)
+				return
+			}
+			wohnungen[a.ID] = store.WohnungDetails{
+				MieterName:      formText(r, "mieter_name_"+idStr),
+				MieterAnschrift: formText(r, "mieter_anschrift_"+idStr),
+				Status:          status,
+			}
 		}
 
 		kostenpositionen, err := store.Kostenpositionen(db)
@@ -109,7 +141,18 @@ func handleUpdateStammdaten() http.HandlerFunc {
 			flags.Umlagefaehig[kp.ID] = r.FormValue("umlagefaehig_"+strconv.FormatInt(kp.ID, 10)) == "1"
 		}
 
-		if err := store.SaveStammdaten(db, in, flags); err != nil {
+		save := store.StammdatenSave{
+			Apartments: in,
+			Flags:      flags,
+			Wohnungen:  wohnungen,
+			Haus: store.HausDetails{
+				VermieterName:      formText(r, "vermieter_name"),
+				VermieterAnschrift: formText(r, "vermieter_anschrift"),
+				ObjektAnschrift:    formText(r, "objekt_anschrift"),
+				IBAN:               formText(r, "iban"),
+			},
+		}
+		if err := store.SaveStammdaten(db, save); err != nil {
 			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
 			return
 		}

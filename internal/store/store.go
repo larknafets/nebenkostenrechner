@@ -77,6 +77,16 @@ func Open(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("migrate kostenpositionen umlagefaehig column: %w", err)
 	}
 
+	if err := ensureApartmentsDetailsColumns(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("migrate apartments details columns: %w", err)
+	}
+
+	if err := ensureHausDetailsColumns(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("migrate haus details columns: %w", err)
+	}
+
 	if err := seed(db); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("seed master data: %w", err)
@@ -247,6 +257,88 @@ func boolToInt(b bool) int {
 		return 1
 	}
 	return 0
+}
+
+// hasColumn reports whether table has a column named column.
+func hasColumn(db *sql.DB, table, column string) (bool, error) {
+	rows, err := db.Query(`SELECT name FROM pragma_table_info(?)`, table)
+	if err != nil {
+		return false, fmt.Errorf("inspect %s columns: %w", table, err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return false, fmt.Errorf("scan %s column: %w", table, err)
+		}
+		if name == column {
+			return true, nil
+		}
+	}
+	return false, rows.Err()
+}
+
+// ensureApartmentsDetailsColumns adds mieter_name, mieter_anschrift and
+// status to an apartments table that predates them (Issue #164). The
+// starting status (Wohnung 1 Eigennutzung, Wohnung 2 vermietet) is applied
+// only in the call that adds the columns, so a status the user changed
+// later survives every restart. On a brand-new database schema.sql already
+// has the columns and seed() sets the starting status.
+func ensureApartmentsDetailsColumns(db *sql.DB) error {
+	has, err := hasColumn(db, "apartments", "status")
+	if err != nil {
+		return err
+	}
+	if has {
+		return nil
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	for _, stmt := range []string{
+		`ALTER TABLE apartments ADD COLUMN mieter_name TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE apartments ADD COLUMN mieter_anschrift TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE apartments ADD COLUMN status TEXT NOT NULL DEFAULT 'vermietet'`,
+	} {
+		if _, err := tx.Exec(stmt); err != nil {
+			return fmt.Errorf("add apartments column: %w", err)
+		}
+	}
+	if _, err := tx.Exec(`UPDATE apartments SET status = ? WHERE id = 1`, StatusEigennutzung); err != nil {
+		return fmt.Errorf("set starting status: %w", err)
+	}
+	return tx.Commit()
+}
+
+// ensureHausDetailsColumns adds the Vermieter/Objekt/IBAN columns to a haus
+// table created by Issue #163, before it had them (Issue #164). A brand-new
+// database gets them from schema.sql.
+func ensureHausDetailsColumns(db *sql.DB) error {
+	// DDL cannot take parameters, so each statement is a complete literal
+	// instead of a concatenation with the column name.
+	for _, c := range []struct{ column, stmt string }{
+		{"vermieter_name", `ALTER TABLE haus ADD COLUMN vermieter_name TEXT NOT NULL DEFAULT ''`},
+		{"vermieter_anschrift", `ALTER TABLE haus ADD COLUMN vermieter_anschrift TEXT NOT NULL DEFAULT ''`},
+		{"objekt_anschrift", `ALTER TABLE haus ADD COLUMN objekt_anschrift TEXT NOT NULL DEFAULT ''`},
+		{"iban", `ALTER TABLE haus ADD COLUMN iban TEXT NOT NULL DEFAULT ''`},
+	} {
+		has, err := hasColumn(db, "haus", c.column)
+		if err != nil {
+			return err
+		}
+		if has {
+			continue
+		}
+		if _, err := db.Exec(c.stmt); err != nil {
+			return fmt.Errorf("add haus column %s: %w", c.column, err)
+		}
+	}
+	return nil
 }
 
 // ensurePeriodsMonatColumn adds the monat column to an existing periods
@@ -634,9 +726,10 @@ func backfillFixkostenWerteLogikTyp(db *sql.DB) error {
 }
 
 type apartmentSeed struct {
-	id   int64
-	name string
-	qm   float64
+	id     int64
+	name   string
+	qm     float64
+	status string
 }
 
 type meterSeed struct {
@@ -697,14 +790,16 @@ func seed(db *sql.DB) error {
 	// Both are live columns, edited on /stammdaten (Issue #61), not seeded
 	// with a real value.
 	apartments := []apartmentSeed{
-		{id: 1, name: "Wohnung 1", qm: 0},
-		{id: 2, name: "Wohnung 2", qm: 0},
+		{id: 1, name: "Wohnung 1", qm: 0, status: StatusEigennutzung},
+		{id: 2, name: "Wohnung 2", qm: 0, status: StatusVermietet},
 	}
 	for _, a := range apartments {
+		// status is only set on the INSERT: it is a user-edited Stammdaten
+		// value (Issue #164), so a restart must never reset it.
 		if _, err := db.Exec(
-			`INSERT INTO apartments (id, name, qm) VALUES (?, ?, ?)
+			`INSERT INTO apartments (id, name, qm, status) VALUES (?, ?, ?, ?)
 			 ON CONFLICT(id) DO NOTHING`,
-			a.id, a.name, a.qm,
+			a.id, a.name, a.qm, a.status,
 		); err != nil {
 			return fmt.Errorf("seed apartment %q: %w", a.name, err)
 		}

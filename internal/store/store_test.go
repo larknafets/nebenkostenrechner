@@ -1783,10 +1783,10 @@ func TestStammdatenFlags_RoundtripUndNeustart(t *testing.T) {
 func TestSaveStammdaten_AtomarBeiFehler(t *testing.T) {
 	db := openTestDB(t)
 
-	if err := SaveStammdaten(db,
-		map[int64]StammdatenInput{1: {QM: 100, FlurstueckGroesse: 600}},
-		StammdatenFlags{Umlagefaehig: map[int64]bool{15: true}, StromWeiterberechnen: true},
-	); err != nil {
+	if err := SaveStammdaten(db, StammdatenSave{
+		Apartments: map[int64]StammdatenInput{1: {QM: 100, FlurstueckGroesse: 600}},
+		Flags:      StammdatenFlags{Umlagefaehig: map[int64]bool{15: true}, StromWeiterberechnen: true},
+	}); err != nil {
 		t.Fatalf("SaveStammdaten: %v", err)
 	}
 
@@ -1794,10 +1794,10 @@ func TestSaveStammdaten_AtomarBeiFehler(t *testing.T) {
 	if _, err := db.Exec(`DROP TABLE haus`); err != nil {
 		t.Fatalf("drop haus: %v", err)
 	}
-	err := SaveStammdaten(db,
-		map[int64]StammdatenInput{1: {QM: 999, FlurstueckGroesse: 999}},
-		StammdatenFlags{Umlagefaehig: map[int64]bool{15: false}, StromWeiterberechnen: false},
-	)
+	err := SaveStammdaten(db, StammdatenSave{
+		Apartments: map[int64]StammdatenInput{1: {QM: 999, FlurstueckGroesse: 999}},
+		Flags:      StammdatenFlags{Umlagefaehig: map[int64]bool{15: false}, StromWeiterberechnen: false},
+	})
 	if err == nil {
 		t.Fatal("SaveStammdaten succeeded without the haus table, want an error")
 	}
@@ -1819,5 +1819,173 @@ func TestSaveStammdaten_AtomarBeiFehler(t *testing.T) {
 		if kp.ID == 15 && !kp.Umlagefaehig {
 			t.Error("Streaming flag changed by a failed save, want the previous true (rolled back)")
 		}
+	}
+}
+
+// TestStammdatenDetails_StartwerteUndNeustart verifies the Issue #164
+// fields: a fresh database starts Wohnung 1 as Eigennutzung and Wohnung 2
+// as vermietet with empty tenant/house data, SaveStammdaten persists them,
+// and a restart keeps the user's values.
+func TestStammdatenDetails_StartwerteUndNeustart(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "details.db")
+	db, err := Open(path)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+
+	apartments, err := Apartments(db)
+	if err != nil {
+		t.Fatalf("Apartments: %v", err)
+	}
+	want := map[int64]string{1: StatusEigennutzung, 2: StatusVermietet}
+	for _, a := range apartments {
+		if a.Status != want[a.ID] {
+			t.Errorf("Wohnung %d: Status = %q, want %q (Startwert)", a.ID, a.Status, want[a.ID])
+		}
+		if a.MieterName != "" || a.MieterAnschrift != "" {
+			t.Errorf("Wohnung %d: Mieter = %q/%q, want empty", a.ID, a.MieterName, a.MieterAnschrift)
+		}
+	}
+
+	if err := SaveStammdaten(db, StammdatenSave{
+		Flags: StammdatenFlags{StromWeiterberechnen: true},
+		Wohnungen: map[int64]WohnungDetails{
+			2: {MieterName: "Erika Beispiel", MieterAnschrift: "Beispielweg 1\nWohnung 2\n12345 Musterstadt", Status: StatusVermietet},
+			1: {Status: StatusVermietet},
+		},
+		Haus: HausDetails{VermieterName: "Max Mustermann", VermieterAnschrift: "Beispielweg 1", ObjektAnschrift: "Beispielweg 1, 12345 Musterstadt", IBAN: "DE00 0000"},
+	}); err != nil {
+		t.Fatalf("SaveStammdaten: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+
+	db, err = Open(path)
+	if err != nil {
+		t.Fatalf("reopen store: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	apartments, err = Apartments(db)
+	if err != nil {
+		t.Fatalf("Apartments after restart: %v", err)
+	}
+	for _, a := range apartments {
+		switch a.ID {
+		case 1:
+			if a.Status != StatusVermietet {
+				t.Errorf("Wohnung 1: Status = %q after restart, want %q (user's change)", a.Status, StatusVermietet)
+			}
+		case 2:
+			if a.MieterName != "Erika Beispiel" || a.MieterAnschrift != "Beispielweg 1\nWohnung 2\n12345 Musterstadt" {
+				t.Errorf("Wohnung 2: Mieter = %q/%q after restart, want the saved values", a.MieterName, a.MieterAnschrift)
+			}
+		}
+	}
+	haus, err := GetHaus(db)
+	if err != nil {
+		t.Fatalf("GetHaus: %v", err)
+	}
+	if haus.VermieterName != "Max Mustermann" || haus.IBAN != "DE00 0000" || haus.ObjektAnschrift != "Beispielweg 1, 12345 Musterstadt" {
+		t.Errorf("Haus = %+v after restart, want the saved values", haus)
+	}
+	if !haus.StromWeiterberechnen {
+		t.Error("StromWeiterberechnen = false after restart, want true (saved with the details)")
+	}
+}
+
+// TestSaveStammdaten_UngueltigerStatus verifies an unknown Wohnungsstatus
+// is rejected and nothing of the submission is saved.
+func TestSaveStammdaten_UngueltigerStatus(t *testing.T) {
+	db := openTestDB(t)
+
+	err := SaveStammdaten(db, StammdatenSave{
+		Apartments: map[int64]StammdatenInput{1: {QM: 77, FlurstueckGroesse: 77}},
+		Wohnungen:  map[int64]WohnungDetails{1: {Status: "leerstand"}},
+	})
+	if err == nil {
+		t.Fatal("SaveStammdaten with status \"leerstand\" succeeded, want an error")
+	}
+	apartments, err := Apartments(db)
+	if err != nil {
+		t.Fatalf("Apartments: %v", err)
+	}
+	for _, a := range apartments {
+		if a.ID == 1 && a.QM == 77 {
+			t.Error("Wohnung 1 QM saved although the status was invalid, want the whole submission rolled back")
+		}
+	}
+}
+
+func TestEnsureApartmentsAndHausDetailsColumns(t *testing.T) {
+	db, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "old.db"))
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	// Pre-#164 shape: apartments without the details, haus from #163.
+	for _, stmt := range []string{
+		`CREATE TABLE apartments (id INTEGER PRIMARY KEY, name TEXT NOT NULL, qm REAL NOT NULL, flurstueck_groesse REAL NOT NULL DEFAULT 0)`,
+		`INSERT INTO apartments (id, name, qm) VALUES (1, 'Wohnung 1', 100), (2, 'Wohnung 2', 50)`,
+		`CREATE TABLE haus (id INTEGER PRIMARY KEY CHECK (id = 1), strom_weiterberechnen INTEGER NOT NULL DEFAULT 1)`,
+		`INSERT INTO haus (id, strom_weiterberechnen) VALUES (1, 0)`,
+	} {
+		if _, err := db.Exec(stmt); err != nil {
+			t.Fatalf("setup %q: %v", stmt, err)
+		}
+	}
+
+	if err := ensureApartmentsDetailsColumns(db); err != nil {
+		t.Fatalf("ensureApartmentsDetailsColumns: %v", err)
+	}
+	if err := ensureHausDetailsColumns(db); err != nil {
+		t.Fatalf("ensureHausDetailsColumns: %v", err)
+	}
+
+	status := map[int64]string{}
+	rows, err := db.Query(`SELECT id, status, mieter_name FROM apartments`)
+	if err != nil {
+		t.Fatalf("query apartments: %v", err)
+	}
+	for rows.Next() {
+		var id int64
+		var st, name string
+		if err := rows.Scan(&id, &st, &name); err != nil {
+			t.Fatalf("scan: %v", err)
+		}
+		status[id] = st
+	}
+	rows.Close()
+	if status[1] != StatusEigennutzung || status[2] != StatusVermietet {
+		t.Errorf("status after migration = %v, want Wohnung 1 eigennutzung, Wohnung 2 vermietet", status)
+	}
+
+	var strom bool
+	var iban string
+	if err := db.QueryRow(`SELECT strom_weiterberechnen, iban FROM haus WHERE id = 1`).Scan(&strom, &iban); err != nil {
+		t.Fatalf("query haus: %v", err)
+	}
+	if strom || iban != "" {
+		t.Errorf("haus after migration = strom:%v iban:%q, want the existing flag 0 kept and iban empty", strom, iban)
+	}
+
+	// A status the user changed afterwards survives a second call.
+	if _, err := db.Exec(`UPDATE apartments SET status = 'vermietet' WHERE id = 1`); err != nil {
+		t.Fatalf("user change: %v", err)
+	}
+	if err := ensureApartmentsDetailsColumns(db); err != nil {
+		t.Fatalf("second ensureApartmentsDetailsColumns: %v", err)
+	}
+	if err := ensureHausDetailsColumns(db); err != nil {
+		t.Fatalf("second ensureHausDetailsColumns: %v", err)
+	}
+	var st string
+	if err := db.QueryRow(`SELECT status FROM apartments WHERE id = 1`).Scan(&st); err != nil {
+		t.Fatalf("query status: %v", err)
+	}
+	if st != StatusVermietet {
+		t.Errorf("status = %q after the second migration call, want the user's %q", st, StatusVermietet)
 	}
 }

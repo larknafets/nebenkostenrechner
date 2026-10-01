@@ -56,7 +56,11 @@ Die ins Netz eingespeiste PV-Überschussmenge (Zähler `strom_einspeisung`) und 
 ## Fixkosten
 
 **Stammdaten** (`/stammdaten`):
-Die Seite für Werte, die sich selten ändern und nicht Teil einer monatlichen Erfassung sind: Wohnungsgröße/Flurstücksgröße je Wohnung, das Umlagefähig-Flag je Kostenposition und das Flag "Stromverbrauch weiterberechnen" (aktuelle Einzelwerte). Änderungen wirken sofort auf alle Monate, nicht eingefroren wie ein Ablesungs- oder Fixkosten-Eingabe-Wert.
+Die Seite für Werte, die sich selten ändern und nicht Teil einer monatlichen Erfassung sind: Wohnungsgröße/Flurstücksgröße je Wohnung, Wohnungsstatus, Mieter- und Vermieter-Angaben, das Umlagefähig-Flag je Kostenposition und das Flag "Stromverbrauch weiterberechnen" (aktuelle Einzelwerte). Mieter-/Bewohnername, Zustellanschrift, Vermieter, Objektanschrift und IBAN sind personenbezogen: sie sind nur für angemeldete Nutzer sichtbar und änderbar (ohne gesetztes `LOGIN_PASSWORD` ist jeder angemeldet). Änderungen wirken sofort auf alle Monate, nicht eingefroren wie ein Ablesungs- oder Fixkosten-Eingabe-Wert.
+
+**Wohnungsstatus**:
+Je Wohnung "vermietet" oder "Eigennutzung" (Stammdaten, Startwert Wohnung 1 Eigennutzung, Wohnung 2 vermietet). Steuert nur, wie die Jahresabrechnung dargestellt wird (Mieter-Block, Rechtshinweise, Pflichtfelder) und nie die Berechnung oder die Heizungs-Gewichtung. Kein Personenbezug, deshalb auch ohne Anmeldung sichtbar (nicht änderbar).
+_Avoid_: Vermietungsstatus, Nutzungsart
 
 **Umlagefähig**:
 Ein Ja/Nein-Flag je Kostenposition in den Stammdaten: Nur umlagefähige Positionen erscheinen in der Jahresabrechnung. Ein einzelner aktueller Wert ohne Jahresbezug, wirkt rückwirkend auf alle Jahre. Dashboard, Monatsverlauf und Jahreskarten ignorieren das Flag und zeigen weiterhin alle Positionen. Es ersetzt nicht die Berechnungslogik: Eine teilweise umlagefähige Position teilt der Nutzer über die Logik der Fixkosten-Eingabe auf. Keine Abweichung von ADR 0001, der nur einen jahresweisen Stammdaten-Block für Logik/Typ/Wert verworfen hat.
