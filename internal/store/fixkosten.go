@@ -37,18 +37,22 @@ const (
 	TypMonatlich = "monatlich"
 )
 
-// Kostenposition is one of the 14 fixed cost positions (Issue #60) - id/key/
+// Kostenposition is one of the 16 fixed cost positions (Issue #60) - id/key/
 // label only, app-fixed structure like meters. Logik/Typ/Wert are per-
 // Fixkosten-Eingabe data, see FixkostenPositionWert.
 type Kostenposition struct {
 	ID    int64
 	Key   string
 	Label string
+	// Umlagefaehig is the Stammdaten flag (Issue #163): only umlagefähige
+	// Positionen appear in the Jahresabrechnung. Dashboard and Verlauf
+	// ignore it and keep showing every position.
+	Umlagefaehig bool
 }
 
-// Kostenpositionen returns the 14 Kostenpositionen ordered by id.
+// Kostenpositionen returns the 16 Kostenpositionen ordered by id.
 func Kostenpositionen(db *sql.DB) ([]Kostenposition, error) {
-	rows, err := db.Query(`SELECT id, key, label FROM kostenpositionen ORDER BY id`)
+	rows, err := db.Query(`SELECT id, key, label, umlagefaehig FROM kostenpositionen ORDER BY id`)
 	if err != nil {
 		return nil, fmt.Errorf("query kostenpositionen: %w", err)
 	}
@@ -57,7 +61,7 @@ func Kostenpositionen(db *sql.DB) ([]Kostenposition, error) {
 	var out []Kostenposition
 	for rows.Next() {
 		var kp Kostenposition
-		if err := rows.Scan(&kp.ID, &kp.Key, &kp.Label); err != nil {
+		if err := rows.Scan(&kp.ID, &kp.Key, &kp.Label, &kp.Umlagefaehig); err != nil {
 			return nil, fmt.Errorf("scan kostenposition: %w", err)
 		}
 		out = append(out, kp)

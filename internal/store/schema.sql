@@ -42,9 +42,17 @@ CREATE TABLE IF NOT EXISTS period_occupancy (
 );
 
 CREATE TABLE IF NOT EXISTS kostenpositionen (
-    id    INTEGER PRIMARY KEY,
-    key   TEXT NOT NULL UNIQUE,
-    label TEXT NOT NULL
+    id           INTEGER PRIMARY KEY,
+    key          TEXT NOT NULL UNIQUE,
+    label        TEXT NOT NULL,
+    umlagefaehig INTEGER NOT NULL DEFAULT 1
+);
+
+-- haus is a single-row table (id is always 1) for house-wide Stammdaten
+-- that belong to neither apartment nor Kostenposition.
+CREATE TABLE IF NOT EXISTS haus (
+    id                     INTEGER PRIMARY KEY CHECK (id = 1),
+    strom_weiterberechnen  INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS fixkosten_eingaben (

@@ -56,7 +56,14 @@ Die ins Netz eingespeiste PV-Überschussmenge (Zähler `strom_einspeisung`) und 
 ## Fixkosten
 
 **Stammdaten** (`/stammdaten`):
-Die Seite für Werte, die sich selten ändern und nicht Teil einer monatlichen Erfassung sind: Wohnungsgröße/Flurstücksgröße je Wohnung (aktuelle Einzelwerte). Änderungen wirken sofort auf alle Monate, nicht eingefroren wie ein Ablesungs- oder Fixkosten-Eingabe-Wert.
+Die Seite für Werte, die sich selten ändern und nicht Teil einer monatlichen Erfassung sind: Wohnungsgröße/Flurstücksgröße je Wohnung, das Umlagefähig-Flag je Kostenposition und das Flag "Stromverbrauch weiterberechnen" (aktuelle Einzelwerte). Änderungen wirken sofort auf alle Monate, nicht eingefroren wie ein Ablesungs- oder Fixkosten-Eingabe-Wert.
+
+**Umlagefähig**:
+Ein Ja/Nein-Flag je Kostenposition in den Stammdaten: Nur umlagefähige Positionen erscheinen in der Jahresabrechnung. Ein einzelner aktueller Wert ohne Jahresbezug, wirkt rückwirkend auf alle Jahre. Dashboard, Monatsverlauf und Jahreskarten ignorieren das Flag und zeigen weiterhin alle Positionen. Es ersetzt nicht die Berechnungslogik: Eine teilweise umlagefähige Position teilt der Nutzer über die Logik der Fixkosten-Eingabe auf. Keine Abweichung von ADR 0001, der nur einen jahresweisen Stammdaten-Block für Logik/Typ/Wert verworfen hat.
+_Avoid_: umlegbar, abrechenbar (das ist die Vollständigkeit eines Abrechnungsjahres)
+
+**Stromverbrauch weiterberechnen**:
+Ein haus-weites Ja/Nein-Flag in den Stammdaten, ob der Stromverbrauch von Wohnung 2 (Haushaltsstrom, Zwischenzähler) in der Jahresabrechnung weiterberechnet wird. Der Haushaltsstrom ist keine Betriebskostenart, deshalb ein eigenes Flag statt des Umlagefähig-Flags einer Kostenposition.
 
 **Fixkosten-Eingabe**:
 Eine monatliche Erfassung, analog zur Ablesung: Personenzahl je Wohnung (eigenständig, nicht die der Ablesung) und für jede der 16 Kostenpositionen ihre Berechnungslogik, ihr Typ und ihr Wert. Anders als die Ablesung hängt sie nicht von einer Vorperiode ab (kein Verbrauch, keine Zählerstand-Differenz); Logik/Typ/Wert sind, wie Personen und der Nebenkostenabschlag, je Eingabe unabhängig gespeichert und von der letzten Eingabe vorbelegt, nicht jahresweise zentral gepflegt.
