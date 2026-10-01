@@ -20,12 +20,12 @@ func openTestDB(t *testing.T) *sql.DB {
 	// Wohnungsgröße lives on apartments now (Issue #61), not the period - set it
 	// once so every calc test that used to pass it per-period (e.g. Heizung's
 	// Wohnungsgrößen-Verhältnis fallback) still has a value to read.
-	if err := store.UpdateStammdaten(db, map[int64]store.StammdatenInput{
-		1: {QM: 116.23},
-		2: {QM: 86},
-	}); err != nil {
-		t.Fatalf("seed stammdaten: %v", err)
-	}
+	saveStammdaten(t, db, func(s *store.StammdatenSave) {
+		s.Apartments = map[int64]store.StammdatenInput{
+			1: {QM: 116.23},
+			2: {QM: 86},
+		}
+	})
 
 	return db
 }
@@ -225,5 +225,29 @@ func TestStrom_ErsterPeriodeOhneVorperiode(t *testing.T) {
 	_, err := calc.Strom(db, p1)
 	if err == nil {
 		t.Fatal("expected error for first period without a previous one")
+	}
+}
+
+// saveStammdaten applies mutate to a SaveStammdaten prefilled with the
+// database's current house values, so a test changes only what it names
+// (SaveStammdaten always writes the Heizungs-Gewichtung, the Strom flag and
+// the house details).
+func saveStammdaten(t *testing.T, db *sql.DB, mutate func(s *store.StammdatenSave)) {
+	t.Helper()
+	haus, err := store.GetHaus(db)
+	if err != nil {
+		t.Fatalf("GetHaus: %v", err)
+	}
+	s := store.StammdatenSave{
+		Flags:                   store.StammdatenFlags{StromWeiterberechnen: haus.StromWeiterberechnen},
+		HeizungWaermeGewichtung: haus.HeizungWaermeGewichtung,
+		Haus: store.HausDetails{
+			VermieterName: haus.VermieterName, VermieterAnschrift: haus.VermieterAnschrift,
+			ObjektAnschrift: haus.ObjektAnschrift, IBAN: haus.IBAN, Kontoinhaber: haus.Kontoinhaber,
+		},
+	}
+	mutate(&s)
+	if err := store.SaveStammdaten(db, s); err != nil {
+		t.Fatalf("SaveStammdaten: %v", err)
 	}
 }

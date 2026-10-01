@@ -176,9 +176,9 @@ func TestBerechneAbrechnung_Fixkosten(t *testing.T) {
 	})
 
 	t.Run("nur umlagefaehige Fixkosten, einschliesslich eines umgeschalteten Flags", func(t *testing.T) {
-		if err := store.UpdateStammdatenFlags(db, store.StammdatenFlags{Umlagefaehig: map[int64]bool{15: true, 1: false}, StromWeiterberechnen: true}); err != nil {
-			t.Fatalf("UpdateStammdatenFlags: %v", err)
-		}
+		saveStammdaten(t, db, func(s *store.StammdatenSave) {
+			s.Flags = store.StammdatenFlags{Umlagefaehig: map[int64]bool{15: true, 1: false}, StromWeiterberechnen: true}
+		})
 		erg2, err := berechneAbrechnung(db, 2026, 2)
 		if err != nil || erg2.Abrechnung == nil {
 			t.Fatalf("berechneAbrechnung: err %v", err)
@@ -369,9 +369,9 @@ func TestBerechneAbrechnung_StimmtMitDemDashboardUeberein(t *testing.T) {
 	for _, kp := range kps {
 		all[kp.ID] = true
 	}
-	if err := store.UpdateStammdatenFlags(db, store.StammdatenFlags{Umlagefaehig: all, StromWeiterberechnen: true}); err != nil {
-		t.Fatalf("UpdateStammdatenFlags: %v", err)
-	}
+	saveStammdaten(t, db, func(s *store.StammdatenSave) {
+		s.Flags = store.StammdatenFlags{Umlagefaehig: all, StromWeiterberechnen: true}
+	})
 
 	dd, err := loadDashboardData(db)
 	if err != nil {
@@ -396,5 +396,29 @@ func TestBerechneAbrechnung_StimmtMitDemDashboardUeberein(t *testing.T) {
 				t.Errorf("%s %d: Jahressaldo = %v, want the Dashboard's change over the year %v", apt.Name, jahr, got, want)
 			}
 		}
+	}
+}
+
+// saveStammdaten applies mutate to a SaveStammdaten prefilled with the
+// database's current house values, so a test changes only what it names
+// (SaveStammdaten always writes the Heizungs-Gewichtung, the Strom flag and
+// the house details).
+func saveStammdaten(t *testing.T, db *sql.DB, mutate func(s *store.StammdatenSave)) {
+	t.Helper()
+	haus, err := store.GetHaus(db)
+	if err != nil {
+		t.Fatalf("GetHaus: %v", err)
+	}
+	s := store.StammdatenSave{
+		Flags:                   store.StammdatenFlags{StromWeiterberechnen: haus.StromWeiterberechnen},
+		HeizungWaermeGewichtung: haus.HeizungWaermeGewichtung,
+		Haus: store.HausDetails{
+			VermieterName: haus.VermieterName, VermieterAnschrift: haus.VermieterAnschrift,
+			ObjektAnschrift: haus.ObjektAnschrift, IBAN: haus.IBAN, Kontoinhaber: haus.Kontoinhaber,
+		},
+	}
+	mutate(&s)
+	if err := store.SaveStammdaten(db, s); err != nil {
+		t.Fatalf("SaveStammdaten: %v", err)
 	}
 }
