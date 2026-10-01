@@ -92,6 +92,12 @@ func Open(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("seed master data: %w", err)
 	}
 
+	// After seed(): it needs the haus row to write the weighting into.
+	if err := migrateHeizungGewichtungToHaus(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("migrate heizung_waerme_gewichtung to haus: %w", err)
+	}
+
 	if err := ensureFixkostenWerteLogikTypColumns(db); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("migrate fixkosten_werte logik/typ columns: %w", err)
@@ -120,6 +126,14 @@ func dropKostenpositionenJahreTable(db *sql.DB) error {
 // column to an existing periods table that predates it (Issue #27),
 // defaulting existing rows to 0.7 (the previously hardcoded 70/30 split).
 func ensurePeriodsHeizungGewichtungColumn(db *sql.DB) error {
+	// Once the weighting lives on haus (Issue #162) periods must not get the
+	// column back, or every restart would re-add it.
+	if migrated, err := hasColumn(db, "haus", "heizung_waerme_gewichtung"); err != nil {
+		return err
+	} else if migrated {
+		return nil
+	}
+
 	rows, err := db.Query(`PRAGMA table_info(periods)`)
 	if err != nil {
 		return fmt.Errorf("inspect periods columns: %w", err)
@@ -339,6 +353,54 @@ func ensureHausDetailsColumns(db *sql.DB) error {
 		}
 	}
 	return nil
+}
+
+// migrateHeizungGewichtungToHaus moves the Heizungs-Gewichtung from every
+// Ablesung (periods.heizung_waerme_gewichtung) to a single Stammdaten value
+// (haus.heizung_waerme_gewichtung, Issue #162): the contract fixes the
+// heating split for the whole year, so it is no longer chosen per reading.
+// The value of the newest Ablesung becomes the Stammdaten value (default
+// 0.7 for an empty or invalid one), then the periods column is dropped.
+// Runs once: the haus column is the marker that the migration happened,
+// a brand-new database already has it from schema.sql.
+func migrateHeizungGewichtungToHaus(db *sql.DB) error {
+	migrated, err := hasColumn(db, "haus", "heizung_waerme_gewichtung")
+	if err != nil {
+		return err
+	}
+	if migrated {
+		return nil
+	}
+	periodsHas, err := hasColumn(db, "periods", "heizung_waerme_gewichtung")
+	if err != nil {
+		return err
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(`ALTER TABLE haus ADD COLUMN heizung_waerme_gewichtung REAL NOT NULL DEFAULT 0.7`); err != nil {
+		return fmt.Errorf("add haus column: %w", err)
+	}
+	if periodsHas {
+		var newest float64
+		err := tx.QueryRow(`SELECT heizung_waerme_gewichtung FROM periods ORDER BY reading_date DESC, id DESC LIMIT 1`).Scan(&newest)
+		if err != nil && err != sql.ErrNoRows {
+			return fmt.Errorf("read newest weighting: %w", err)
+		}
+		if err == nil && ValidHeizungGewichtung(newest) {
+			if _, err := tx.Exec(`UPDATE haus SET heizung_waerme_gewichtung = ? WHERE id = 1`, newest); err != nil {
+				return fmt.Errorf("write haus weighting: %w", err)
+			}
+		}
+		if _, err := tx.Exec(`ALTER TABLE periods DROP COLUMN heizung_waerme_gewichtung`); err != nil {
+			return fmt.Errorf("drop periods column: %w", err)
+		}
+	}
+	return tx.Commit()
 }
 
 // ensurePeriodsMonatColumn adds the monat column to an existing periods

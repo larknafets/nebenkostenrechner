@@ -31,13 +31,12 @@ func baseReadings(overrides map[string]float64) map[string]float64 {
 func mustCreatePeriod(t *testing.T, db *sql.DB, date string, readings map[string]float64) int64 {
 	t.Helper()
 	id, err := CreatePeriod(db, PeriodInput{
-		ReadingDate:             date,
-		Strompreis:              Float64(0.22),
-		FrischwasserPreis:       Float64(1.46),
-		AbwasserPreis:           Float64(4.87),
-		HeizungWaermeGewichtung: 0.7,
-		Readings:                readings,
-		Personen:                map[int64]int64{1: 2, 2: 1},
+		ReadingDate:       date,
+		Strompreis:        Float64(0.22),
+		FrischwasserPreis: Float64(1.46),
+		AbwasserPreis:     Float64(4.87),
+		Readings:          readings,
+		Personen:          map[int64]int64{1: 2, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("create period %s: %v", date, err)
@@ -67,9 +66,6 @@ func TestCreatePeriod_GetLatestPeriod_AllPeriods_Roundtrip(t *testing.T) {
 	if OrZero(latest.Strompreis) != 0.22 || OrZero(latest.FrischwasserPreis) != 1.46 || OrZero(latest.AbwasserPreis) != 4.87 {
 		t.Errorf("GetLatestPeriod prices = %v/%v/%v, want 0.22/1.46/4.87", OrZero(latest.Strompreis), OrZero(latest.FrischwasserPreis), OrZero(latest.AbwasserPreis))
 	}
-	if latest.HeizungWaermeGewichtung != 0.7 {
-		t.Errorf("GetLatestPeriod.HeizungWaermeGewichtung = %v, want 0.7", latest.HeizungWaermeGewichtung)
-	}
 	if latest.Readings["strom_gesamt"] != 200 {
 		t.Errorf("GetLatestPeriod.Readings[strom_gesamt] = %v, want 200", latest.Readings["strom_gesamt"])
 	}
@@ -95,14 +91,13 @@ func TestCreatePeriod_GetLatestPeriod_AllPeriods_Roundtrip(t *testing.T) {
 func TestPeriod_Monat_Roundtrip(t *testing.T) {
 	db := openTestDB(t)
 	p1, err := CreatePeriod(db, PeriodInput{
-		ReadingDate:             "2026-08-31",
-		Monat:                   "2026-08-01",
-		Strompreis:              Float64(0.22),
-		FrischwasserPreis:       Float64(1.46),
-		AbwasserPreis:           Float64(4.87),
-		HeizungWaermeGewichtung: 0.7,
-		Readings:                baseReadings(nil),
-		Personen:                map[int64]int64{1: 2, 2: 1},
+		ReadingDate:       "2026-08-31",
+		Monat:             "2026-08-01",
+		Strompreis:        Float64(0.22),
+		FrischwasserPreis: Float64(1.46),
+		AbwasserPreis:     Float64(4.87),
+		Readings:          baseReadings(nil),
+		Personen:          map[int64]int64{1: 2, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
@@ -146,20 +141,18 @@ func TestPeriod_Monat_Roundtrip(t *testing.T) {
 func TestUpdatePeriod_Monat_Roundtrip(t *testing.T) {
 	db := openTestDB(t)
 	p1, err := CreatePeriod(db, PeriodInput{
-		ReadingDate:             "2026-08-31",
-		Monat:                   "2026-08-01",
-		HeizungWaermeGewichtung: 0.7,
-		Readings:                baseReadings(nil),
+		ReadingDate: "2026-08-31",
+		Monat:       "2026-08-01",
+		Readings:    baseReadings(nil),
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 
 	if err := UpdatePeriod(db, p1, PeriodInput{
-		ReadingDate:             "2026-08-31",
-		Monat:                   "2026-09-01",
-		HeizungWaermeGewichtung: 0.7,
-		Readings:                baseReadings(nil),
+		ReadingDate: "2026-08-31",
+		Monat:       "2026-09-01",
+		Readings:    baseReadings(nil),
 	}); err != nil {
 		t.Fatalf("UpdatePeriod: %v", err)
 	}
@@ -251,13 +244,12 @@ func TestUpdatePeriod_Roundtrip(t *testing.T) {
 	p2 := mustCreatePeriod(t, db, "2026-10-01", baseReadings(map[string]float64{"strom_gesamt": 200}))
 
 	err := UpdatePeriod(db, p2, PeriodInput{
-		ReadingDate:             "2026-10-02",
-		Strompreis:              Float64(0.25),
-		FrischwasserPreis:       Float64(1.50),
-		AbwasserPreis:           Float64(5.00),
-		HeizungWaermeGewichtung: 0.6,
-		Readings:                baseReadings(map[string]float64{"strom_gesamt": 210}),
-		Personen:                map[int64]int64{1: 3, 2: 1},
+		ReadingDate:       "2026-10-02",
+		Strompreis:        Float64(0.25),
+		FrischwasserPreis: Float64(1.50),
+		AbwasserPreis:     Float64(5.00),
+		Readings:          baseReadings(map[string]float64{"strom_gesamt": 210}),
+		Personen:          map[int64]int64{1: 3, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("UpdatePeriod: %v", err)
@@ -275,9 +267,6 @@ func TestUpdatePeriod_Roundtrip(t *testing.T) {
 	}
 	if OrZero(latest.Strompreis) != 0.25 || OrZero(latest.FrischwasserPreis) != 1.50 || OrZero(latest.AbwasserPreis) != 5.00 {
 		t.Errorf("prices = %v/%v/%v, want 0.25/1.50/5.00", OrZero(latest.Strompreis), OrZero(latest.FrischwasserPreis), OrZero(latest.AbwasserPreis))
-	}
-	if latest.HeizungWaermeGewichtung != 0.6 {
-		t.Errorf("HeizungWaermeGewichtung = %v, want 0.6", latest.HeizungWaermeGewichtung)
 	}
 	if latest.Readings["strom_gesamt"] != 210 {
 		t.Errorf("Readings[strom_gesamt] = %v, want 210", latest.Readings["strom_gesamt"])
@@ -303,14 +292,12 @@ func TestImportPeriods_AllOrNothing(t *testing.T) {
 
 	_, err := ImportPeriods(db, []PeriodInput{
 		{
-			ReadingDate:             "2026-06-01",
-			HeizungWaermeGewichtung: 0.7,
-			Readings:                baseReadings(nil),
+			ReadingDate: "2026-06-01",
+			Readings:    baseReadings(nil),
 		},
 		{
-			ReadingDate:             "2026-07-01",
-			HeizungWaermeGewichtung: 0.7,
-			Readings:                baseReadings(nil),
+			ReadingDate: "2026-07-01",
+			Readings:    baseReadings(nil),
 			// Teilstand (Ticket #128) means missing Readings/prices are no
 			// longer an error - but a nonexistent apartment_id still
 			// violates the FK constraint on period_occupancy, so it stays
@@ -338,16 +325,14 @@ func TestImportPeriods_Success(t *testing.T) {
 
 	ids, err := ImportPeriods(db, []PeriodInput{
 		{
-			ReadingDate:             "2026-06-01",
-			HeizungWaermeGewichtung: 0.7,
-			Readings:                baseReadings(map[string]float64{"strom_gesamt": 100}),
-			Personen:                map[int64]int64{1: 2, 2: 1},
+			ReadingDate: "2026-06-01",
+			Readings:    baseReadings(map[string]float64{"strom_gesamt": 100}),
+			Personen:    map[int64]int64{1: 2, 2: 1},
 		},
 		{
-			ReadingDate:             "2026-07-01",
-			HeizungWaermeGewichtung: 0.7,
-			Readings:                baseReadings(map[string]float64{"strom_gesamt": 200}),
-			Personen:                map[int64]int64{1: 2, 2: 1},
+			ReadingDate: "2026-07-01",
+			Readings:    baseReadings(map[string]float64{"strom_gesamt": 200}),
+			Personen:    map[int64]int64{1: 2, 2: 1},
 		},
 	})
 	if err != nil {
@@ -406,9 +391,8 @@ func TestUpdatePeriod_AddsMissingMeterReading(t *testing.T) {
 	}
 
 	if err := UpdatePeriod(db, p1, PeriodInput{
-		ReadingDate:             "2026-06-01",
-		HeizungWaermeGewichtung: 0.7,
-		Readings:                baseReadings(map[string]float64{"strom_einspeisung": 1234}),
+		ReadingDate: "2026-06-01",
+		Readings:    baseReadings(map[string]float64{"strom_einspeisung": 1234}),
 	}); err != nil {
 		t.Fatalf("UpdatePeriod: %v", err)
 	}
@@ -434,10 +418,9 @@ func TestUpdatePeriod_AddsMissingOccupancy(t *testing.T) {
 	}
 
 	if err := UpdatePeriod(db, p1, PeriodInput{
-		ReadingDate:             "2026-06-01",
-		HeizungWaermeGewichtung: 0.7,
-		Readings:                baseReadings(nil),
-		Personen:                map[int64]int64{1: 2, 2: 3},
+		ReadingDate: "2026-06-01",
+		Readings:    baseReadings(nil),
+		Personen:    map[int64]int64{1: 2, 2: 3},
 	}); err != nil {
 		t.Fatalf("UpdatePeriod: %v", err)
 	}
@@ -494,9 +477,8 @@ func TestUpdatePeriod_DateConflict(t *testing.T) {
 
 	t.Run("date at or before the previous neighbor", func(t *testing.T) {
 		err := UpdatePeriod(db, p2, PeriodInput{
-			ReadingDate:             "2026-06-01",
-			HeizungWaermeGewichtung: 0.7,
-			Readings:                baseReadings(nil),
+			ReadingDate: "2026-06-01",
+			Readings:    baseReadings(nil),
 		})
 		var tooEarly *PeriodDateTooEarlyError
 		if !errors.As(err, &tooEarly) {
@@ -509,9 +491,8 @@ func TestUpdatePeriod_DateConflict(t *testing.T) {
 
 	t.Run("date at or after the next neighbor", func(t *testing.T) {
 		err := UpdatePeriod(db, p2, PeriodInput{
-			ReadingDate:             "2026-08-01",
-			HeizungWaermeGewichtung: 0.7,
-			Readings:                baseReadings(nil),
+			ReadingDate: "2026-08-01",
+			Readings:    baseReadings(nil),
 		})
 		var tooLate *PeriodDateTooLateError
 		if !errors.As(err, &tooLate) {
@@ -524,9 +505,8 @@ func TestUpdatePeriod_DateConflict(t *testing.T) {
 
 	t.Run("date within the gap stays allowed", func(t *testing.T) {
 		if err := UpdatePeriod(db, p2, PeriodInput{
-			ReadingDate:             "2026-07-15",
-			HeizungWaermeGewichtung: 0.7,
-			Readings:                baseReadings(nil),
+			ReadingDate: "2026-07-15",
+			Readings:    baseReadings(nil),
 		}); err != nil {
 			t.Fatalf("UpdatePeriod: %v", err)
 		}
@@ -540,7 +520,7 @@ func TestUpdatePeriod_DateConflict(t *testing.T) {
 func TestUpdatePeriod_MonatConflict(t *testing.T) {
 	db := openTestDB(t)
 	create := func(date string) int64 {
-		id, err := CreatePeriod(db, PeriodInput{ReadingDate: date, Monat: date, HeizungWaermeGewichtung: 0.7, Readings: baseReadings(nil)})
+		id, err := CreatePeriod(db, PeriodInput{ReadingDate: date, Monat: date, Readings: baseReadings(nil)})
 		if err != nil {
 			t.Fatalf("CreatePeriod %s: %v", date, err)
 		}
@@ -552,10 +532,9 @@ func TestUpdatePeriod_MonatConflict(t *testing.T) {
 
 	t.Run("monat vor dem der vorherigen Ablesung", func(t *testing.T) {
 		err := UpdatePeriod(db, p2, PeriodInput{
-			ReadingDate:             "2026-07-01",
-			Monat:                   "2026-05-01",
-			HeizungWaermeGewichtung: 0.7,
-			Readings:                baseReadings(nil),
+			ReadingDate: "2026-07-01",
+			Monat:       "2026-05-01",
+			Readings:    baseReadings(nil),
 		})
 		var tooEarly *PeriodMonatTooEarlyError
 		if !errors.As(err, &tooEarly) {
@@ -568,10 +547,9 @@ func TestUpdatePeriod_MonatConflict(t *testing.T) {
 
 	t.Run("monat nach dem der naechsten Ablesung", func(t *testing.T) {
 		err := UpdatePeriod(db, p2, PeriodInput{
-			ReadingDate:             "2026-07-01",
-			Monat:                   "2026-09-01",
-			HeizungWaermeGewichtung: 0.7,
-			Readings:                baseReadings(nil),
+			ReadingDate: "2026-07-01",
+			Monat:       "2026-09-01",
+			Readings:    baseReadings(nil),
 		})
 		var tooLate *PeriodMonatTooLateError
 		if !errors.As(err, &tooLate) {
@@ -584,18 +562,16 @@ func TestUpdatePeriod_MonatConflict(t *testing.T) {
 
 	t.Run("monat gleich dem eines Nachbarn ist erlaubt", func(t *testing.T) {
 		if err := UpdatePeriod(db, p2, PeriodInput{
-			ReadingDate:             "2026-07-01",
-			Monat:                   "2026-06-01",
-			HeizungWaermeGewichtung: 0.7,
-			Readings:                baseReadings(nil),
+			ReadingDate: "2026-07-01",
+			Monat:       "2026-06-01",
+			Readings:    baseReadings(nil),
 		}); err != nil {
 			t.Errorf("UpdatePeriod mit monat gleich dem Vorgaenger: %v", err)
 		}
 		if err := UpdatePeriod(db, p2, PeriodInput{
-			ReadingDate:             "2026-07-01",
-			Monat:                   "2026-08-01",
-			HeizungWaermeGewichtung: 0.7,
-			Readings:                baseReadings(nil),
+			ReadingDate: "2026-07-01",
+			Monat:       "2026-08-01",
+			Readings:    baseReadings(nil),
 		}); err != nil {
 			t.Errorf("UpdatePeriod mit monat gleich dem Nachfolger: %v", err)
 		}
@@ -609,10 +585,9 @@ func TestUpdatePeriod_MonatConflict(t *testing.T) {
 func TestCreatePeriod_MonatUnvalidated(t *testing.T) {
 	db := openTestDB(t)
 	if _, err := CreatePeriod(db, PeriodInput{
-		ReadingDate:             "2026-08-01",
-		Monat:                   "2026-08-01",
-		HeizungWaermeGewichtung: 0.7,
-		Readings:                baseReadings(nil),
+		ReadingDate: "2026-08-01",
+		Monat:       "2026-08-01",
+		Readings:    baseReadings(nil),
 	}); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
@@ -620,10 +595,9 @@ func TestCreatePeriod_MonatUnvalidated(t *testing.T) {
 	// A chronologically later period with an earlier monat - would be
 	// rejected by UpdatePeriod, but CreatePeriod lets it through.
 	if _, err := CreatePeriod(db, PeriodInput{
-		ReadingDate:             "2026-09-01",
-		Monat:                   "2026-07-01",
-		HeizungWaermeGewichtung: 0.7,
-		Readings:                baseReadings(nil),
+		ReadingDate: "2026-09-01",
+		Monat:       "2026-07-01",
+		Readings:    baseReadings(nil),
 	}); err != nil {
 		t.Errorf("CreatePeriod with out-of-order monat: %v, want no error", err)
 	}
@@ -632,9 +606,8 @@ func TestCreatePeriod_MonatUnvalidated(t *testing.T) {
 func TestUpdatePeriod_UnknownID(t *testing.T) {
 	db := openTestDB(t)
 	err := UpdatePeriod(db, 999, PeriodInput{
-		ReadingDate:             "2026-10-01",
-		HeizungWaermeGewichtung: 0.7,
-		Readings:                baseReadings(nil),
+		ReadingDate: "2026-10-01",
+		Readings:    baseReadings(nil),
 	})
 	if err == nil {
 		t.Fatal("UpdatePeriod on unknown id: want error, got nil")
@@ -776,10 +749,17 @@ func TestEnsurePeriodsHeizungGewichtungColumn(t *testing.T) {
 		}
 	})
 
-	t.Run("neue Tabelle hat die Spalte bereits - no-op", func(t *testing.T) {
+	t.Run("nach der Verlagerung nach haus (Issue #162) bekommt periods die Spalte nicht zurueck", func(t *testing.T) {
 		db := openTestDB(t)
 		if err := ensurePeriodsHeizungGewichtungColumn(db); err != nil {
 			t.Fatalf("ensurePeriodsHeizungGewichtungColumn on an already-current schema: %v", err)
+		}
+		has, err := hasColumn(db, "periods", "heizung_waerme_gewichtung")
+		if err != nil {
+			t.Fatalf("hasColumn: %v", err)
+		}
+		if has {
+			t.Error("periods got heizung_waerme_gewichtung back, want it to stay gone once haus carries it")
 		}
 	})
 }
@@ -967,14 +947,13 @@ func TestEinspeisungPreis_Roundtrip(t *testing.T) {
 	p1 := mustCreatePeriod(t, db, "2026-09-01", baseReadings(nil))
 
 	if err := UpdatePeriod(db, p1, PeriodInput{
-		ReadingDate:             "2026-09-01",
-		Strompreis:              Float64(0.22),
-		FrischwasserPreis:       Float64(1.46),
-		AbwasserPreis:           Float64(4.87),
-		HeizungWaermeGewichtung: 0.7,
-		EinspeisungPreis:        Float64(0.082),
-		Readings:                baseReadings(nil),
-		Personen:                map[int64]int64{1: 2, 2: 1},
+		ReadingDate:       "2026-09-01",
+		Strompreis:        Float64(0.22),
+		FrischwasserPreis: Float64(1.46),
+		AbwasserPreis:     Float64(4.87),
+		EinspeisungPreis:  Float64(0.082),
+		Readings:          baseReadings(nil),
+		Personen:          map[int64]int64{1: 2, 2: 1},
 	}); err != nil {
 		t.Fatalf("UpdatePeriod: %v", err)
 	}
@@ -1303,15 +1282,14 @@ func TestEnsurePeriodsNullablePriceColumns(t *testing.T) {
 		db := openTestDB(t)
 
 		p1, err := CreatePeriod(db, PeriodInput{
-			ReadingDate:             "2026-01-01",
-			Monat:                   "2026-01-01",
-			Strompreis:              Float64(0.22),
-			FrischwasserPreis:       Float64(1.46),
-			AbwasserPreis:           Float64(4.87),
-			HeizungWaermeGewichtung: 0.7,
-			EinspeisungPreis:        Float64(0.08),
-			Readings:                baseReadings(map[string]float64{"strom_gesamt": 123}),
-			Personen:                map[int64]int64{1: 2, 2: 1},
+			ReadingDate:       "2026-01-01",
+			Monat:             "2026-01-01",
+			Strompreis:        Float64(0.22),
+			FrischwasserPreis: Float64(1.46),
+			AbwasserPreis:     Float64(4.87),
+			EinspeisungPreis:  Float64(0.08),
+			Readings:          baseReadings(map[string]float64{"strom_gesamt": 123}),
+			Personen:          map[int64]int64{1: 2, 2: 1},
 		})
 		if err != nil {
 			t.Fatalf("CreatePeriod: %v", err)
@@ -1331,7 +1309,8 @@ func TestEnsurePeriodsNullablePriceColumns(t *testing.T) {
 			    einspeisung_preis          REAL NOT NULL DEFAULT 0,
 			    monat                      TEXT NOT NULL DEFAULT ''
 			)`,
-			`INSERT INTO periods_old_shape SELECT * FROM periods`,
+			`INSERT INTO periods_old_shape (id, reading_date, strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis, monat)
+			 SELECT id, reading_date, strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis, monat FROM periods`,
 			`PRAGMA foreign_keys = OFF`,
 			`DROP TABLE periods`,
 			`ALTER TABLE periods_old_shape RENAME TO periods`,
@@ -1389,15 +1368,14 @@ func TestCreatePeriod_Teilstand(t *testing.T) {
 	db := openTestDB(t)
 
 	id, err := CreatePeriod(db, PeriodInput{
-		ReadingDate:             "2026-05-01",
-		Monat:                   "", // Teilstand: Abrechnungsmonat fehlt
-		Strompreis:              Float64(0.22),
-		FrischwasserPreis:       nil, // Teilstand: Preis fehlt
-		AbwasserPreis:           nil,
-		HeizungWaermeGewichtung: 0.7,
-		EinspeisungPreis:        nil,
-		Readings:                map[string]float64{"strom_gesamt": 100}, // nur 1 von 10 Metern
-		Personen:                map[int64]int64{1: 2},                   // nur 1 von 2 Wohnungen
+		ReadingDate:       "2026-05-01",
+		Monat:             "", // Teilstand: Abrechnungsmonat fehlt
+		Strompreis:        Float64(0.22),
+		FrischwasserPreis: nil, // Teilstand: Preis fehlt
+		AbwasserPreis:     nil,
+		EinspeisungPreis:  nil,
+		Readings:          map[string]float64{"strom_gesamt": 100}, // nur 1 von 10 Metern
+		Personen:          map[int64]int64{1: 2},                   // nur 1 von 2 Wohnungen
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod mit Teilstand-Daten: %v", err)
@@ -1448,15 +1426,14 @@ func TestUpdatePeriod_Teilstand_PreservesUnspecifiedFields(t *testing.T) {
 	db := openTestDB(t)
 
 	id, err := CreatePeriod(db, PeriodInput{
-		ReadingDate:             "2026-05-01",
-		Monat:                   "2026-05-01",
-		Strompreis:              Float64(0.22),
-		FrischwasserPreis:       Float64(1.46),
-		AbwasserPreis:           Float64(4.87),
-		HeizungWaermeGewichtung: 0.7,
-		EinspeisungPreis:        Float64(0.08),
-		Readings:                baseReadings(map[string]float64{"strom_gesamt": 100}),
-		Personen:                map[int64]int64{1: 2, 2: 1},
+		ReadingDate:       "2026-05-01",
+		Monat:             "2026-05-01",
+		Strompreis:        Float64(0.22),
+		FrischwasserPreis: Float64(1.46),
+		AbwasserPreis:     Float64(4.87),
+		EinspeisungPreis:  Float64(0.08),
+		Readings:          baseReadings(map[string]float64{"strom_gesamt": 100}),
+		Personen:          map[int64]int64{1: 2, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
@@ -1466,15 +1443,14 @@ func TestUpdatePeriod_Teilstand_PreservesUnspecifiedFields(t *testing.T) {
 	// time, everything else stays empty/absent in this call - must not
 	// delete the values already stored.
 	if err := UpdatePeriod(db, id, PeriodInput{
-		ReadingDate:             "2026-05-01",
-		Monat:                   "",
-		Strompreis:              Float64(0.25),
-		FrischwasserPreis:       nil,
-		AbwasserPreis:           nil,
-		HeizungWaermeGewichtung: 0.7,
-		EinspeisungPreis:        nil,
-		Readings:                map[string]float64{},
-		Personen:                map[int64]int64{},
+		ReadingDate:       "2026-05-01",
+		Monat:             "",
+		Strompreis:        Float64(0.25),
+		FrischwasserPreis: nil,
+		AbwasserPreis:     nil,
+		EinspeisungPreis:  nil,
+		Readings:          map[string]float64{},
+		Personen:          map[int64]int64{},
 	}); err != nil {
 		t.Fatalf("UpdatePeriod: %v", err)
 	}
@@ -1518,14 +1494,13 @@ func TestUpdatePeriod_EmptyMonat_NoNeighborConflict(t *testing.T) {
 	mustCreatePeriod(t, db, "2026-03-01", baseReadings(nil))
 
 	if err := UpdatePeriod(db, p2, PeriodInput{
-		ReadingDate:             "2026-02-01",
-		Monat:                   "", // partial reading: would collide with a neighbor as "2026-01-01" or "2026-04-01", but gets skipped
-		Strompreis:              Float64(0.22),
-		FrischwasserPreis:       Float64(1.46),
-		AbwasserPreis:           Float64(4.87),
-		HeizungWaermeGewichtung: 0.7,
-		Readings:                baseReadings(nil),
-		Personen:                map[int64]int64{1: 2, 2: 1},
+		ReadingDate:       "2026-02-01",
+		Monat:             "", // partial reading: would collide with a neighbor as "2026-01-01" or "2026-04-01", but gets skipped
+		Strompreis:        Float64(0.22),
+		FrischwasserPreis: Float64(1.46),
+		AbwasserPreis:     Float64(4.87),
+		Readings:          baseReadings(nil),
+		Personen:          map[int64]int64{1: 2, 2: 1},
 	}); err != nil {
 		t.Fatalf("UpdatePeriod mit leerem Monat: %v, want kein Fehler (Nachbar-Prüfung übersprungen)", err)
 	}
@@ -1552,15 +1527,14 @@ func TestPeriodComplete(t *testing.T) {
 
 	full := func() PeriodInput {
 		return PeriodInput{
-			ReadingDate:             "2026-05-01",
-			Monat:                   "2026-05-01",
-			Strompreis:              Float64(0.22),
-			FrischwasserPreis:       Float64(1.46),
-			AbwasserPreis:           Float64(4.87),
-			HeizungWaermeGewichtung: 0.7,
-			EinspeisungPreis:        Float64(0.08),
-			Readings:                baseReadings(nil),
-			Personen:                map[int64]int64{1: 2, 2: 1},
+			ReadingDate:       "2026-05-01",
+			Monat:             "2026-05-01",
+			Strompreis:        Float64(0.22),
+			FrischwasserPreis: Float64(1.46),
+			AbwasserPreis:     Float64(4.87),
+			EinspeisungPreis:  Float64(0.08),
+			Readings:          baseReadings(nil),
+			Personen:          map[int64]int64{1: 2, 2: 1},
 		}
 	}
 
@@ -1614,9 +1588,8 @@ func TestGetPeriodByID_TeilstandPricesReadAsZero(t *testing.T) {
 	db := openTestDB(t)
 
 	id, err := CreatePeriod(db, PeriodInput{
-		ReadingDate:             "2026-05-01",
-		HeizungWaermeGewichtung: 0.7,
-		Readings:                baseReadings(nil),
+		ReadingDate: "2026-05-01",
+		Readings:    baseReadings(nil),
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
@@ -1784,8 +1757,9 @@ func TestSaveStammdaten_AtomarBeiFehler(t *testing.T) {
 	db := openTestDB(t)
 
 	if err := SaveStammdaten(db, StammdatenSave{
-		Apartments: map[int64]StammdatenInput{1: {QM: 100, FlurstueckGroesse: 600}},
-		Flags:      StammdatenFlags{Umlagefaehig: map[int64]bool{15: true}, StromWeiterberechnen: true},
+		Apartments:              map[int64]StammdatenInput{1: {QM: 100, FlurstueckGroesse: 600}},
+		Flags:                   StammdatenFlags{Umlagefaehig: map[int64]bool{15: true}, StromWeiterberechnen: true},
+		HeizungWaermeGewichtung: 0.7,
 	}); err != nil {
 		t.Fatalf("SaveStammdaten: %v", err)
 	}
@@ -1795,8 +1769,9 @@ func TestSaveStammdaten_AtomarBeiFehler(t *testing.T) {
 		t.Fatalf("drop haus: %v", err)
 	}
 	err := SaveStammdaten(db, StammdatenSave{
-		Apartments: map[int64]StammdatenInput{1: {QM: 999, FlurstueckGroesse: 999}},
-		Flags:      StammdatenFlags{Umlagefaehig: map[int64]bool{15: false}, StromWeiterberechnen: false},
+		Apartments:              map[int64]StammdatenInput{1: {QM: 999, FlurstueckGroesse: 999}},
+		Flags:                   StammdatenFlags{Umlagefaehig: map[int64]bool{15: false}, StromWeiterberechnen: false},
+		HeizungWaermeGewichtung: 0.5,
 	})
 	if err == nil {
 		t.Fatal("SaveStammdaten succeeded without the haus table, want an error")
@@ -1848,7 +1823,8 @@ func TestStammdatenDetails_StartwerteUndNeustart(t *testing.T) {
 	}
 
 	if err := SaveStammdaten(db, StammdatenSave{
-		Flags: StammdatenFlags{StromWeiterberechnen: true},
+		Flags:                   StammdatenFlags{StromWeiterberechnen: true},
+		HeizungWaermeGewichtung: 0.7,
 		Wohnungen: map[int64]WohnungDetails{
 			2: {MieterName: "Erika Beispiel", MieterAnschrift: "Beispielweg 1\nWohnung 2\n12345 Musterstadt", Status: StatusVermietet},
 			1: {Status: StatusVermietet},
@@ -1901,8 +1877,9 @@ func TestSaveStammdaten_UngueltigerStatus(t *testing.T) {
 	db := openTestDB(t)
 
 	err := SaveStammdaten(db, StammdatenSave{
-		Apartments: map[int64]StammdatenInput{1: {QM: 77, FlurstueckGroesse: 77}},
-		Wohnungen:  map[int64]WohnungDetails{1: {Status: "leerstand"}},
+		Apartments:              map[int64]StammdatenInput{1: {QM: 77, FlurstueckGroesse: 77}},
+		HeizungWaermeGewichtung: 0.7,
+		Wohnungen:               map[int64]WohnungDetails{1: {Status: "leerstand"}},
 	})
 	if err == nil {
 		t.Fatal("SaveStammdaten with status \"leerstand\" succeeded, want an error")
@@ -1987,5 +1964,133 @@ func TestEnsureApartmentsAndHausDetailsColumns(t *testing.T) {
 	}
 	if st != StatusVermietet {
 		t.Errorf("status = %q after the second migration call, want the user's %q", st, StatusVermietet)
+	}
+}
+
+func TestMigrateHeizungGewichtungToHaus(t *testing.T) {
+	setup := func(t *testing.T, periodRows string) *sql.DB {
+		t.Helper()
+		db, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "old.db"))
+		if err != nil {
+			t.Fatalf("open sqlite: %v", err)
+		}
+		t.Cleanup(func() { db.Close() })
+		for _, stmt := range []string{
+			`CREATE TABLE periods (
+				id INTEGER PRIMARY KEY,
+				reading_date TEXT NOT NULL,
+				heizung_waerme_gewichtung REAL NOT NULL DEFAULT 0.7
+			)`,
+			`CREATE TABLE haus (id INTEGER PRIMARY KEY CHECK (id = 1), strom_weiterberechnen INTEGER NOT NULL DEFAULT 1)`,
+			`INSERT INTO haus (id) VALUES (1)`,
+		} {
+			if _, err := db.Exec(stmt); err != nil {
+				t.Fatalf("setup %q: %v", stmt, err)
+			}
+		}
+		if periodRows != "" {
+			if _, err := db.Exec(`INSERT INTO periods (reading_date, heizung_waerme_gewichtung) VALUES ` + periodRows); err != nil {
+				t.Fatalf("insert periods: %v", err)
+			}
+		}
+		return db
+	}
+	haus := func(t *testing.T, db *sql.DB) float64 {
+		t.Helper()
+		var g float64
+		if err := db.QueryRow(`SELECT heizung_waerme_gewichtung FROM haus WHERE id = 1`).Scan(&g); err != nil {
+			t.Fatalf("query haus weighting: %v", err)
+		}
+		return g
+	}
+
+	t.Run("uebernimmt den Wert der neuesten Ablesung und entfernt die Spalte", func(t *testing.T) {
+		db := setup(t, `('2026-01-01', 0.5), ('2026-03-01', 0.6), ('2026-02-01', 0.7)`)
+		if err := migrateHeizungGewichtungToHaus(db); err != nil {
+			t.Fatalf("migrateHeizungGewichtungToHaus: %v", err)
+		}
+		if got := haus(t, db); got != 0.6 {
+			t.Errorf("haus weighting = %v, want 0.6 (newest Ablesung by reading_date)", got)
+		}
+		if has, _ := hasColumn(db, "periods", "heizung_waerme_gewichtung"); has {
+			t.Error("periods still has heizung_waerme_gewichtung after the migration")
+		}
+
+		// Idempotent, and a later user change survives another call.
+		if _, err := db.Exec(`UPDATE haus SET heizung_waerme_gewichtung = 0.5 WHERE id = 1`); err != nil {
+			t.Fatalf("user change: %v", err)
+		}
+		if err := migrateHeizungGewichtungToHaus(db); err != nil {
+			t.Fatalf("second migrateHeizungGewichtungToHaus: %v", err)
+		}
+		if got := haus(t, db); got != 0.5 {
+			t.Errorf("haus weighting = %v after the second call, want the user's 0.5", got)
+		}
+	})
+
+	t.Run("ohne Ablesung gilt der Standard 0.7", func(t *testing.T) {
+		db := setup(t, "")
+		if err := migrateHeizungGewichtungToHaus(db); err != nil {
+			t.Fatalf("migrateHeizungGewichtungToHaus: %v", err)
+		}
+		if got := haus(t, db); got != 0.7 {
+			t.Errorf("haus weighting = %v, want 0.7", got)
+		}
+	})
+
+	t.Run("ungueltiger Wert faellt auf 0.7 zurueck", func(t *testing.T) {
+		db := setup(t, `('2026-01-01', 0.55)`)
+		if err := migrateHeizungGewichtungToHaus(db); err != nil {
+			t.Fatalf("migrateHeizungGewichtungToHaus: %v", err)
+		}
+		if got := haus(t, db); got != 0.7 {
+			t.Errorf("haus weighting = %v, want 0.7 for an invalid old value", got)
+		}
+	})
+}
+
+// TestHeizungGewichtung_SaveUndNeustart verifies the Stammdaten weighting
+// (Issue #162): SaveStammdaten persists it, rejects values outside
+// HeizungGewichtungOptions without saving anything, and a restart keeps
+// it - the periods column must not come back and overwrite it.
+func TestHeizungGewichtung_SaveUndNeustart(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "gewichtung.db")
+	db, err := Open(path)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+
+	haus, err := GetHaus(db)
+	if err != nil {
+		t.Fatalf("GetHaus: %v", err)
+	}
+	if haus.HeizungWaermeGewichtung != 0.7 {
+		t.Errorf("HeizungWaermeGewichtung = %v on a fresh database, want 0.7", haus.HeizungWaermeGewichtung)
+	}
+
+	if err := SaveStammdaten(db, StammdatenSave{HeizungWaermeGewichtung: 0.55}); err == nil {
+		t.Error("SaveStammdaten with 0.55 succeeded, want an error")
+	}
+	if err := SaveStammdaten(db, StammdatenSave{HeizungWaermeGewichtung: 0.6}); err != nil {
+		t.Fatalf("SaveStammdaten: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+
+	db, err = Open(path)
+	if err != nil {
+		t.Fatalf("reopen store: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	haus, err = GetHaus(db)
+	if err != nil {
+		t.Fatalf("GetHaus after restart: %v", err)
+	}
+	if haus.HeizungWaermeGewichtung != 0.6 {
+		t.Errorf("HeizungWaermeGewichtung = %v after restart, want 0.6 (user's value)", haus.HeizungWaermeGewichtung)
+	}
+	if has, _ := hasColumn(db, "periods", "heizung_waerme_gewichtung"); has {
+		t.Error("periods has heizung_waerme_gewichtung again after a restart")
 	}
 }

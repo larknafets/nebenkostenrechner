@@ -45,7 +45,8 @@ func seedDemoStammdaten(db *sql.DB) error {
 			1: {QM: 116.23, FlurstueckGroesse: 460},
 			2: {QM: 86, FlurstueckGroesse: 340},
 		},
-		Flags: StammdatenFlags{StromWeiterberechnen: true},
+		Flags:                   StammdatenFlags{StromWeiterberechnen: true},
+		HeizungWaermeGewichtung: 0.7,
 		Wohnungen: map[int64]WohnungDetails{
 			1: {MieterName: "Max Mustermann", MieterAnschrift: "Beispielweg 1\n12345 Musterstadt", Status: StatusEigennutzung},
 			2: {MieterName: "Erika Beispiel", MieterAnschrift: "Beispielweg 1, Wohnung 2\n12345 Musterstadt", Status: StatusVermietet},
@@ -171,15 +172,14 @@ func seedDemoPeriods(db *sql.DB, now time.Time) error {
 
 		monat := date.Format("2006-01") + "-01"
 		in := PeriodInput{
-			ReadingDate:             date.Format("2006-01-02"),
-			Monat:                   monat,
-			Strompreis:              Float64(strompreis),
-			FrischwasserPreis:       Float64(frischwasserPreis),
-			AbwasserPreis:           Float64(abwasserPreis),
-			HeizungWaermeGewichtung: 0.7,
-			EinspeisungPreis:        Float64(0.08),
-			Readings:                readingsCopy,
-			Personen:                map[int64]int64{1: 2, 2: personenWohnung2(i)},
+			ReadingDate:       date.Format("2006-01-02"),
+			Monat:             monat,
+			Strompreis:        Float64(strompreis),
+			FrischwasserPreis: Float64(frischwasserPreis),
+			AbwasserPreis:     Float64(abwasserPreis),
+			EinspeisungPreis:  Float64(0.08),
+			Readings:          readingsCopy,
+			Personen:          map[int64]int64{1: 2, 2: personenWohnung2(i)},
 		}
 		if _, err := CreatePeriod(db, in); err != nil {
 			return fmt.Errorf("monat %s: %w", monat, err)

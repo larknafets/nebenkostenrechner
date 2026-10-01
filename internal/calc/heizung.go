@@ -11,8 +11,9 @@ import (
 // period. See https://github.com/larknafets/nebenkostenrechner/issues/16:
 // the heat pump's electricity cost (from the electricity cost calculation,
 // #14) is distributed to both apartments by heat consumption and apartment
-// size, weighted by the period's own HeizungWaermeGewichtung (0.7/0.6/0.5,
-// default 0.7 - Issue #27; previously fixed at 70/30).
+// size, weighted by the Stammdaten value Haus.HeizungWaermeGewichtung
+// (0.7/0.6/0.5, default 0.7 - Issue #27; one value for all months since
+// Issue #162, before that chosen per Ablesung).
 type HeizungErgebnis struct {
 	TotalHeizungskostenUnrounded float64
 
@@ -50,11 +51,11 @@ func Heizung(db *sql.DB, periodID int64) (*HeizungErgebnis, error) {
 		return nil, fmt.Errorf("strom: %w", err)
 	}
 
-	period, err := store.GetPeriodByID(db, periodID)
+	haus, err := store.GetHaus(db)
 	if err != nil {
-		return nil, fmt.Errorf("period: %w", err)
+		return nil, fmt.Errorf("haus: %w", err)
 	}
-	gewichtungWaerme := period.HeizungWaermeGewichtung
+	gewichtungWaerme := haus.HeizungWaermeGewichtung
 	gewichtungFlaeche := 1 - gewichtungWaerme
 
 	verbrauch, err := store.Verbrauch(db, periodID)

@@ -20,6 +20,40 @@ func parseFormFloat(r *http.Request, name, fieldLabel, apartmentID string) (floa
 	return v, nil
 }
 
+// heizungGewichtungLabels are the radio labels of the allowed Heizungs-
+// Gewichtungen, keyed by the stored share of the heat consumption.
+var heizungGewichtungLabels = map[float64]string{0.7: "70 % / 30 %", 0.6: "60 % / 40 %", 0.5: "50 % / 50 %"}
+
+type heizungGewichtungOption struct {
+	Value    string
+	Label    string
+	Selected bool
+}
+
+// heizungGewichtungOptionsFor builds the radio options with the current
+// value selected.
+func heizungGewichtungOptionsFor(current float64) []heizungGewichtungOption {
+	opts := make([]heizungGewichtungOption, 0, len(store.HeizungGewichtungOptions))
+	for _, v := range store.HeizungGewichtungOptions {
+		opts = append(opts, heizungGewichtungOption{
+			Value:    strconv.FormatFloat(v, 'f', -1, 64),
+			Label:    heizungGewichtungLabels[v],
+			Selected: v == current,
+		})
+	}
+	return opts
+}
+
+// parseHeizungGewichtung validates the form value against the allowed
+// Heizungs-Gewichtungen.
+func parseHeizungGewichtung(raw string) (float64, error) {
+	v, err := strconv.ParseFloat(raw, 64)
+	if err != nil || !store.ValidHeizungGewichtung(v) {
+		return 0, fmt.Errorf("ungültige Heizungs-Gewichtung %q (muss 0.7, 0.6 oder 0.5 sein)", raw)
+	}
+	return v, nil
+}
+
 // formText reads a free-text form field: surrounding whitespace is trimmed
 // and line breaks are normalized to \n (a textarea submits \r\n).
 func formText(r *http.Request, name string) string {
@@ -68,12 +102,14 @@ func handleStammdatenForm(a auth) http.HandlerFunc {
 			Apartments       []store.Apartment
 			Kostenpositionen []store.Kostenposition
 			Haus             store.Haus
+			GewichtungOpts   []heizungGewichtungOption
 		}{
 			navData:          nav,
 			Aktuell:          "stammdaten",
 			Apartments:       apartments,
 			Kostenpositionen: kostenpositionen,
 			Haus:             haus,
+			GewichtungOpts:   heizungGewichtungOptionsFor(haus.HeizungWaermeGewichtung),
 		}
 
 		if err := stammdatenTemplate.ExecuteTemplate(w, "layout", data); err != nil {
@@ -141,10 +177,16 @@ func handleUpdateStammdaten() http.HandlerFunc {
 			flags.Umlagefaehig[kp.ID] = r.FormValue("umlagefaehig_"+strconv.FormatInt(kp.ID, 10)) == "1"
 		}
 
+		gewichtung, err := parseHeizungGewichtung(r.FormValue("heizung_gewichtung"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		save := store.StammdatenSave{
-			Apartments: in,
-			Flags:      flags,
-			Wohnungen:  wohnungen,
+			Apartments:              in,
+			Flags:                   flags,
+			HeizungWaermeGewichtung: gewichtung,
+			Wohnungen:               wohnungen,
 			Haus: store.HausDetails{
 				VermieterName:      formText(r, "vermieter_name"),
 				VermieterAnschrift: formText(r, "vermieter_anschrift"),

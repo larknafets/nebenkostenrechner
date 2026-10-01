@@ -118,6 +118,12 @@ type Haus struct {
 	// Betriebskostenart, only passed on by agreement.
 	StromWeiterberechnen bool
 
+	// HeizungWaermeGewichtung is the share of the heat pump electricity cost
+	// split by heat consumption, the rest by Wohnungsgröße (Issue #162):
+	// one of HeizungGewichtungOptions. The contract fixes it for the whole
+	// year, so it is a single Stammdaten value, not chosen per Ablesung.
+	HeizungWaermeGewichtung float64
+
 	// VermieterName/VermieterAnschrift/ObjektAnschrift/IBAN fill the head
 	// and the payment note of the Jahresabrechnung (Issue #164). Personal
 	// data: shown and edited only for logged-in users. IBAN is optional.
@@ -131,11 +137,26 @@ type Haus struct {
 func GetHaus(db *sql.DB) (Haus, error) {
 	var h Haus
 	if err := db.QueryRow(
-		`SELECT strom_weiterberechnen, vermieter_name, vermieter_anschrift, objekt_anschrift, iban FROM haus WHERE id = 1`,
-	).Scan(&h.StromWeiterberechnen, &h.VermieterName, &h.VermieterAnschrift, &h.ObjektAnschrift, &h.IBAN); err != nil {
+		`SELECT strom_weiterberechnen, heizung_waerme_gewichtung, vermieter_name, vermieter_anschrift, objekt_anschrift, iban FROM haus WHERE id = 1`,
+	).Scan(&h.StromWeiterberechnen, &h.HeizungWaermeGewichtung, &h.VermieterName, &h.VermieterAnschrift, &h.ObjektAnschrift, &h.IBAN); err != nil {
 		return Haus{}, fmt.Errorf("query haus: %w", err)
 	}
 	return h, nil
+}
+
+// HeizungGewichtungOptions are the only allowed heating-split weightings
+// (70/30, 60/40, 50/50 by heat consumption / Wohnungsgröße), the lowest
+// being the 50 % floor the HeizkostenV names for the consumption share.
+var HeizungGewichtungOptions = []float64{0.7, 0.6, 0.5}
+
+// ValidHeizungGewichtung reports whether v is one of HeizungGewichtungOptions.
+func ValidHeizungGewichtung(v float64) bool {
+	for _, o := range HeizungGewichtungOptions {
+		if v == o {
+			return true
+		}
+	}
+	return false
 }
 
 // StammdatenFlags are the Stammdaten switches the Jahresabrechnung reads
@@ -190,6 +211,8 @@ type HausDetails struct {
 type StammdatenSave struct {
 	Apartments map[int64]StammdatenInput
 	Flags      StammdatenFlags
+	// HeizungWaermeGewichtung must be one of HeizungGewichtungOptions.
+	HeizungWaermeGewichtung float64
 	// Wohnungen maps an apartment id to its details. Only the given
 	// apartments are touched.
 	Wohnungen map[int64]WohnungDetails
@@ -205,6 +228,12 @@ func SaveStammdaten(db *sql.DB, in StammdatenSave) error {
 		}
 		if err := updateFlagsTx(tx, in.Flags); err != nil {
 			return err
+		}
+		if !ValidHeizungGewichtung(in.HeizungWaermeGewichtung) {
+			return fmt.Errorf("invalid Heizungs-Gewichtung %v", in.HeizungWaermeGewichtung)
+		}
+		if _, err := tx.Exec(`UPDATE haus SET heizung_waerme_gewichtung = ? WHERE id = 1`, in.HeizungWaermeGewichtung); err != nil {
+			return fmt.Errorf("update heizung_waerme_gewichtung: %w", err)
 		}
 		for apartmentID, w := range in.Wohnungen {
 			if !ValidStatus(w.Status) {
@@ -239,11 +268,10 @@ type PeriodInput struct {
 	// persists nil as SQL NULL; UpdatePeriod leaves the existing stored
 	// value untouched for a nil field, same "don't touch what wasn't
 	// given" rule Readings/Personen below already followed.
-	Strompreis              *float64
-	FrischwasserPreis       *float64
-	AbwasserPreis           *float64
-	HeizungWaermeGewichtung float64 // Heizungs-Split-Gewichtung (0.7/0.6/0.5), Ticket #27 - always has a value, its radio group defaults to 0.7
-	EinspeisungPreis        *float64
+	Strompreis        *float64
+	FrischwasserPreis *float64
+	AbwasserPreis     *float64
+	EinspeisungPreis  *float64
 	// Readings/Personen: a missing key means "nicht erfasst" (Teilstand,
 	// Ticket #128) - CreatePeriod/UpdatePeriod simply don't write a row for
 	// it, rather than requiring every MeterKeys/apartment id to be present.
@@ -273,9 +301,9 @@ func OrZero(p *float64) float64 {
 // transaction - Ticket #54).
 func insertPeriodTx(tx *sql.Tx, in PeriodInput) (periodID int64, err error) {
 	res, err := tx.Exec(
-		`INSERT INTO periods (reading_date, monat, strompreis, frischwasser_preis, abwasser_preis, heizung_waerme_gewichtung, einspeisung_preis)
-		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		in.ReadingDate, in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.HeizungWaermeGewichtung, in.EinspeisungPreis,
+		`INSERT INTO periods (reading_date, monat, strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis)
+		 VALUES (?, ?, ?, ?, ?, ?)`,
+		in.ReadingDate, in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.EinspeisungPreis,
 	)
 	if err != nil {
 		return 0, fmt.Errorf("insert period: %w", err)
@@ -541,10 +569,9 @@ func UpdatePeriod(db *sql.DB, periodID int64, in PeriodInput) error {
 		   strompreis = COALESCE(?, strompreis),
 		   frischwasser_preis = COALESCE(?, frischwasser_preis),
 		   abwasser_preis = COALESCE(?, abwasser_preis),
-		   heizung_waerme_gewichtung = ?,
 		   einspeisung_preis = COALESCE(?, einspeisung_preis)
 		 WHERE id = ?`,
-		in.ReadingDate, in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.HeizungWaermeGewichtung, in.EinspeisungPreis, periodID,
+		in.ReadingDate, in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.EinspeisungPreis, periodID,
 	)
 	if err != nil {
 		return fmt.Errorf("update period: %w", err)
@@ -596,13 +623,12 @@ type LatestPeriod struct {
 	Monat       string
 	// Strompreis/FrischwasserPreis/AbwasserPreis/EinspeisungPreis are nil
 	// when not (yet) entered - a Teilstand (Ticket #128).
-	Strompreis              *float64
-	FrischwasserPreis       *float64
-	AbwasserPreis           *float64
-	HeizungWaermeGewichtung float64
-	EinspeisungPreis        *float64
-	Readings                map[string]float64
-	PersonenByApartment     map[int64]int64
+	Strompreis          *float64
+	FrischwasserPreis   *float64
+	AbwasserPreis       *float64
+	EinspeisungPreis    *float64
+	Readings            map[string]float64
+	PersonenByApartment map[int64]int64
 }
 
 // PeriodReadings is one period's per-meter Zählerstand, as used for the
@@ -694,7 +720,7 @@ func AllPeriods(db *sql.DB) ([]PeriodSummary, error) {
 // batched queries total (periods, readings, occupancy), not one per period.
 func AllPeriodDetails(db *sql.DB) ([]*LatestPeriod, error) {
 	rows, err := db.Query(
-		`SELECT id, reading_date, monat, strompreis, frischwasser_preis, abwasser_preis, heizung_waerme_gewichtung, einspeisung_preis
+		`SELECT id, reading_date, monat, strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis
 		 FROM periods ORDER BY reading_date ASC, id ASC`,
 	)
 	if err != nil {
@@ -709,7 +735,7 @@ func AllPeriodDetails(db *sql.DB) ([]*LatestPeriod, error) {
 			Readings:            map[string]float64{},
 			PersonenByApartment: map[int64]int64{},
 		}
-		if err := rows.Scan(&p.ID, &p.ReadingDate, &p.Monat, &p.Strompreis, &p.FrischwasserPreis, &p.AbwasserPreis, &p.HeizungWaermeGewichtung, &p.EinspeisungPreis); err != nil {
+		if err := rows.Scan(&p.ID, &p.ReadingDate, &p.Monat, &p.Strompreis, &p.FrischwasserPreis, &p.AbwasserPreis, &p.EinspeisungPreis); err != nil {
 			return nil, fmt.Errorf("scan period: %w", err)
 		}
 		byID[p.ID] = p

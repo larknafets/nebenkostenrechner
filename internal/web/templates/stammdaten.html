@@ -35,6 +35,19 @@
   {{end}}
 
   <div class="panel">
+    <h3>Heizung und Warmwasser</h3>
+    <p class="muted">Der Mietvertrag legt die Verteilung für das ganze Jahr fest. Der Wert gilt für alle Monate, auch rückwirkend, und wirkt auf Dashboard, Verlauf und Abrechnung.</p>
+    <div class="field">
+      <label>Heizung/Warmwasser-Gewichtung (Wärmeverbrauch / Wohnungsgröße)</label>
+      <div class="radio-options">
+        {{range .GewichtungOpts}}
+        <label class="radio-option"><input type="radio" name="heizung_gewichtung" value="{{.Value}}" {{if .Selected}}checked{{end}} {{if not $.IsLoggedIn}}disabled{{end}}> {{.Label}}</label>
+        {{end}}
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
     <h3>Jahresabrechnung</h3>
     <p class="muted">Gilt für alle Monate und Jahre. Dashboard und Verlauf zeigen weiterhin alle Positionen.</p>
     <div class="field">

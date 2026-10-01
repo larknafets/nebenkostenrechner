@@ -66,7 +66,7 @@ Kosten_Wallbox   = Wallbox_Anteil_kWh * Strompreis</pre>
 
 <div class="panel" style="margin-top:1rem">
   <h2>Heizung/Warmwasser (konfigurierbarer Split, Default 70/30)</h2>
-  <p>Die Wärmepumpen-Stromkosten (siehe oben) werden nach Wärmemengenzähler-Verhältnis und Wohnungsgrößen-Verhältnis auf beide Wohnungen verteilt. Die Gewichtung wird pro Ablesung gewählt - 70/30, 60/40 oder 50/50 - und bleibt für diese Periode eingefroren.</p>
+  <p>Die Wärmepumpen-Stromkosten (siehe oben) werden nach Wärmemengenzähler-Verhältnis und Wohnungsgrößen-Verhältnis auf beide Wohnungen verteilt. Die Gewichtung - 70/30, 60/40 oder 50/50 - ist ein einzelner Wert auf der Stammdaten-Seite und gilt für alle Monate, auch rückwirkend.</p>
   <pre class="formula">Ratio_Waerme_W1  = Verbrauch(waerme_wohnung1) / (Verbrauch(waerme_wohnung1) + Verbrauch(waerme_wohnung2))
 Ratio_Waerme_W2  = Verbrauch(waerme_wohnung2) / (Verbrauch(waerme_wohnung1) + Verbrauch(waerme_wohnung2))
 Ratio_Flaeche_W1 = qm_W1 / (qm_W1 + qm_W2)
@@ -123,7 +123,7 @@ Wohnung 2               : 0 / 100</pre>
 
 <div class="panel" style="margin-top:1rem">
   <h2>Preise &amp; Personenzahl</h2>
-  <p>Es gibt kein zentrales Preishistorie-Konzept: Strompreis, Frischwasser-, Abwasser- und Einspeisung-Preis, Personenzahl je Wohnung und die Heizungs-Gewichtung werden direkt bei jeder monatlichen Ablesung erfasst (nicht separat versioniert). Ein einmal berechneter Monat bleibt dadurch automatisch eingefroren, auch wenn sich diese Werte später ändern.</p>
+  <p>Es gibt kein zentrales Preishistorie-Konzept: Strompreis, Frischwasser-, Abwasser- und Einspeisung-Preis und Personenzahl je Wohnung werden direkt bei jeder monatlichen Ablesung erfasst (nicht separat versioniert). Ein einmal berechneter Monat bleibt dadurch automatisch eingefroren, auch wenn sich diese Werte später ändern.</p>
   <p>Die Fixkosten-Eingabe hat ihre eigene, unabhängige Personenzahl je Wohnung (ebenfalls pro Monat eingefroren) - sie muss nicht mit der Personenzahl der Ablesung übereinstimmen, falls sich die Belegung zwischen zwei Ablesungen ändert.</p>
   <p>Wohnungsgröße und Flurstücksgröße sind keine monatlichen Werte mehr: sie werden auf der <a href="{{.Base}}/stammdaten">Stammdaten-Seite</a> gepflegt und wirken als aktuelle Einzelwerte sofort auf alle Monate - nicht eingefroren.</p>
 </div>

@@ -23,7 +23,6 @@ CREATE TABLE IF NOT EXISTS periods (
     strompreis                 REAL,
     frischwasser_preis         REAL,
     abwasser_preis             REAL,
-    heizung_waerme_gewichtung  REAL NOT NULL DEFAULT 0.7,
     einspeisung_preis          REAL,
     monat                      TEXT NOT NULL DEFAULT ''
 );
@@ -56,6 +55,7 @@ CREATE TABLE IF NOT EXISTS kostenpositionen (
 CREATE TABLE IF NOT EXISTS haus (
     id                     INTEGER PRIMARY KEY CHECK (id = 1),
     strom_weiterberechnen  INTEGER NOT NULL DEFAULT 1,
+    heizung_waerme_gewichtung REAL NOT NULL DEFAULT 0.7,
     vermieter_name         TEXT NOT NULL DEFAULT '',
     vermieter_anschrift    TEXT NOT NULL DEFAULT '',
     objekt_anschrift       TEXT NOT NULL DEFAULT '',

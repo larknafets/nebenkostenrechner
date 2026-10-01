@@ -131,7 +131,7 @@ func TestStammdaten_FlagsAnzeigenUndSpeichern(t *testing.T) {
 	form := url.Values{
 		"qm_1": {"100"}, "flurstueck_groesse_1": {"600"},
 		"qm_2": {"50"}, "flurstueck_groesse_2": {"400"},
-		"status_1": {"eigennutzung"}, "status_2": {"vermietet"},
+		"status_1": {"eigennutzung"}, "status_2": {"vermietet"}, "heizung_gewichtung": {"0.7"},
 		"umlagefaehig_15": {"1"},
 	}
 	post := httptest.NewRequest(http.MethodPost, "/stammdaten", strings.NewReader(form.Encode()))
@@ -172,7 +172,7 @@ func TestStammdaten_MieterUndVermieterNurAngemeldet(t *testing.T) {
 	form := url.Values{
 		"qm_1": {"100"}, "flurstueck_groesse_1": {"600"},
 		"qm_2": {"50"}, "flurstueck_groesse_2": {"400"},
-		"status_1": {"eigennutzung"}, "status_2": {"vermietet"},
+		"status_1": {"eigennutzung"}, "status_2": {"vermietet"}, "heizung_gewichtung": {"0.7"},
 		"mieter_name_2":         {"  Erika Beispiel \n"},
 		"mieter_anschrift_2":    {"Beispielweg 1\r\nWohnung 2\r\n12345 Musterstadt"},
 		"vermieter_name":        {"Max Mustermann"},
@@ -245,7 +245,7 @@ func TestStammdaten_UngueltigerStatusWird400(t *testing.T) {
 	form := url.Values{
 		"qm_1": {"100"}, "flurstueck_groesse_1": {"600"},
 		"qm_2": {"50"}, "flurstueck_groesse_2": {"400"},
-		"status_1": {"leerstand"}, "status_2": {"vermietet"},
+		"status_1": {"leerstand"}, "status_2": {"vermietet"}, "heizung_gewichtung": {"0.7"},
 	}
 	post := httptest.NewRequest(http.MethodPost, "/stammdaten", strings.NewReader(form.Encode()))
 	post.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -253,5 +253,55 @@ func TestStammdaten_UngueltigerStatusWird400(t *testing.T) {
 	handleUpdateStammdaten()(pw, requestWithDB(post, db))
 	if pw.Code != http.StatusBadRequest {
 		t.Fatalf("POST status = %d, want %d", pw.Code, http.StatusBadRequest)
+	}
+}
+
+// TestStammdaten_HeizungGewichtung verifies Issue #162: the page offers the
+// three allowed weightings with the saved one selected, the POST handler
+// saves a valid choice and rejects an invalid one with HTTP 400.
+func TestStammdaten_HeizungGewichtung(t *testing.T) {
+	db := openTestDB(t)
+
+	form := func(gewichtung string) url.Values {
+		return url.Values{
+			"qm_1": {"100"}, "flurstueck_groesse_1": {"600"},
+			"qm_2": {"50"}, "flurstueck_groesse_2": {"400"},
+			"status_1": {"eigennutzung"}, "status_2": {"vermietet"},
+			"heizung_gewichtung": {gewichtung},
+		}
+	}
+	post := func(v url.Values) int {
+		req := httptest.NewRequest(http.MethodPost, "/stammdaten", strings.NewReader(v.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
+		handleUpdateStammdaten()(w, requestWithDB(req, db))
+		return w.Code
+	}
+
+	if code := post(form("0.55")); code != http.StatusBadRequest {
+		t.Fatalf("POST with 0.55: status = %d, want %d", code, http.StatusBadRequest)
+	}
+	if code := post(form("0.6")); code != http.StatusFound {
+		t.Fatalf("POST with 0.6: status = %d, want %d", code, http.StatusFound)
+	}
+	haus, err := store.GetHaus(db)
+	if err != nil {
+		t.Fatalf("GetHaus: %v", err)
+	}
+	if haus.HeizungWaermeGewichtung != 0.6 {
+		t.Errorf("HeizungWaermeGewichtung = %v, want 0.6", haus.HeizungWaermeGewichtung)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/stammdaten", nil)
+	w := httptest.NewRecorder()
+	handleStammdatenForm(newAuth("", nil))(w, requestWithDB(req, db))
+	body := w.Body.String()
+	for _, want := range []string{`name="heizung_gewichtung" value="0.7" `, `name="heizung_gewichtung" value="0.6" checked`, `name="heizung_gewichtung" value="0.5" `, "60 % / 40 %"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("GET /stammdaten does not contain %q", want)
+		}
+	}
+	if strings.Contains(body, `value="0.7" checked`) {
+		t.Error("70/30 is checked although 60/40 was saved")
 	}
 }

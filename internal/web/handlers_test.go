@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -893,7 +894,6 @@ func TestParsePeriodInput_NoQMFields(t *testing.T) {
 		"frischwasser_preis": {"1.46"},
 		"abwasser_preis":     {"4.87"},
 		"einspeisung_preis":  {"0.08"},
-		"heizung_gewichtung": {"0.7"},
 		"personen_1":         {"2"},
 		"personen_2":         {"1"},
 	}
@@ -929,7 +929,6 @@ func TestParsePeriodInput_Monat(t *testing.T) {
 		"frischwasser_preis": {"1.46"},
 		"abwasser_preis":     {"4.87"},
 		"einspeisung_preis":  {"0.08"},
-		"heizung_gewichtung": {"0.7"},
 		"personen_1":         {"2"},
 		"personen_2":         {"1"},
 	}
@@ -1009,9 +1008,29 @@ func TestParseDecimalDE(t *testing.T) {
 func csvRow(readingDate string, stromGesamt string) string {
 	return strings.Join([]string{
 		readingDate, readingDate[:7] + "-01", stromGesamt, "0", "0", "0", "0", "0", "0", "0", "0", "0",
-		"0,22", "1,46", "4,87", "0,7", "0,08",
+		"0,22", "1,46", "4,87", "0,08",
 		"2", "1",
 	}, ";")
+}
+
+// TestParseImportCSV_AlteDateiMitHeizungGewichtungSpalte verifies Issue
+// #162: the Heizungs-Gewichtung is a Stammdaten value now and no longer in
+// the CSV format, but an older export that still has the
+// heizung_gewichtung column loads normally - the extra column is ignored.
+func TestParseImportCSV_AlteDateiMitHeizungGewichtungSpalte(t *testing.T) {
+	if slices.Contains(csvHeader, "heizung_gewichtung") {
+		t.Fatal("csvHeader still contains heizung_gewichtung, want it removed (Issue #162)")
+	}
+
+	oldHeader := strings.Join(csvHeader, ";") + ";heizung_gewichtung"
+	oldRow := csvRow("2026-06-01", "100") + ";0,6"
+	rows, err := parseImportCSV(strings.NewReader(oldHeader + "\n" + oldRow + "\n"))
+	if err != nil {
+		t.Fatalf("parseImportCSV of an old file with the extra column: %v", err)
+	}
+	if len(rows) != 1 || rows[0].input.ReadingDate != "2026-06-01" {
+		t.Errorf("rows = %+v, want the one reading from 2026-06-01", rows)
+	}
 }
 
 // TestCSVHeader_HasMonatColumn verifies Issue #86: monat is exported/
@@ -1042,9 +1061,6 @@ func TestParseImportCSV_RoundTrip(t *testing.T) {
 	}
 	if store.OrZero(rows[1].input.Strompreis) != 0.22 {
 		t.Errorf("Strompreis = %v, want 0.22", store.OrZero(rows[1].input.Strompreis))
-	}
-	if rows[1].input.HeizungWaermeGewichtung != 0.7 {
-		t.Errorf("HeizungWaermeGewichtung = %v, want 0.7", rows[1].input.HeizungWaermeGewichtung)
 	}
 	if rows[1].input.Personen[1] != 2 || rows[1].input.Personen[2] != 1 {
 		t.Errorf("Personen = %v, want {1:2, 2:1}", rows[1].input.Personen)
@@ -1382,15 +1398,14 @@ func seedPeriodInputAt(date string) store.PeriodInput {
 		readings[key] = 0
 	}
 	return store.PeriodInput{
-		ReadingDate:             date,
-		Monat:                   date,
-		Strompreis:              store.Float64(0.22),
-		FrischwasserPreis:       store.Float64(1.46),
-		AbwasserPreis:           store.Float64(4.87),
-		HeizungWaermeGewichtung: 0.7,
-		EinspeisungPreis:        store.Float64(0.08),
-		Readings:                readings,
-		Personen:                map[int64]int64{1: 2, 2: 1},
+		ReadingDate:       date,
+		Monat:             date,
+		Strompreis:        store.Float64(0.22),
+		FrischwasserPreis: store.Float64(1.46),
+		AbwasserPreis:     store.Float64(4.87),
+		EinspeisungPreis:  store.Float64(0.08),
+		Readings:          readings,
+		Personen:          map[int64]int64{1: 2, 2: 1},
 	}
 }
 
@@ -1409,7 +1424,6 @@ func periodFormValues(readingDate, monat string) url.Values {
 	v.Set("frischwasser_preis", "1.46")
 	v.Set("abwasser_preis", "4.87")
 	v.Set("einspeisung_preis", "0.08")
-	v.Set("heizung_gewichtung", "0.7")
 	v.Set("personen_1", "2")
 	v.Set("personen_2", "1")
 	return v
@@ -1490,7 +1504,6 @@ func TestHandleUpdateAblesung_ErrorMapping(t *testing.T) {
 func teilstandFormValues(readingDate string) url.Values {
 	v := url.Values{}
 	v.Set("reading_date", readingDate)
-	v.Set("heizung_gewichtung", "0.7") // always mandatory
 	return v
 }
 
@@ -1501,10 +1514,9 @@ func TestParsePeriodInput_TeilstandLeereFelderErlaubt(t *testing.T) {
 	apartments := []store.Apartment{{ID: 1, Name: "Wohnung 1"}, {ID: 2, Name: "Wohnung 2"}}
 
 	form := url.Values{
-		"reading_date":       {"2026-11-01"},
-		"strom_gesamt":       {"12345"}, // 1 of 10 meters filled in
-		"personen_1":         {"2"},     // 1 of 2 apartments filled in
-		"heizung_gewichtung": {"0.7"},
+		"reading_date": {"2026-11-01"},
+		"strom_gesamt": {"12345"}, // 1 of 10 meters filled in
+		"personen_1":   {"2"},     // 1 of 2 apartments filled in
 		// monat, strompreis/frischwasser_preis/abwasser_preis/
 		// einspeisung_preis, all other meters, personen_2: deliberately empty
 	}
@@ -1544,9 +1556,9 @@ func TestParsePeriodInput_UngueltigerWertBleibtFehler(t *testing.T) {
 		name string
 		form url.Values
 	}{
-		{"ungueltiger Zaehlerstand", url.Values{"reading_date": {"2026-11-01"}, "heizung_gewichtung": {"0.7"}, "strom_gesamt": {"abc"}}},
-		{"ungueltiger Preis", url.Values{"reading_date": {"2026-11-01"}, "heizung_gewichtung": {"0.7"}, "strompreis": {"abc"}}},
-		{"ungueltige Personenzahl", url.Values{"reading_date": {"2026-11-01"}, "heizung_gewichtung": {"0.7"}, "personen_1": {"abc"}}},
+		{"ungueltiger Zaehlerstand", url.Values{"reading_date": {"2026-11-01"}, "strom_gesamt": {"abc"}}},
+		{"ungueltiger Preis", url.Values{"reading_date": {"2026-11-01"}, "strompreis": {"abc"}}},
+		{"ungueltige Personenzahl", url.Values{"reading_date": {"2026-11-01"}, "personen_1": {"abc"}}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -1605,10 +1617,9 @@ func TestHandleUpdateAblesung_Teilstand_Vervollstaendigen(t *testing.T) {
 	db := openTestDB(t)
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		Strompreis:              store.Float64(0.22),
-		HeizungWaermeGewichtung: 0.7,
-		Readings:                map[string]float64{"strom_gesamt": 100},
+		ReadingDate: "2026-11-01",
+		Strompreis:  store.Float64(0.22),
+		Readings:    map[string]float64{"strom_gesamt": 100},
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod (Teilstand seed): %v", err)
@@ -1619,7 +1630,6 @@ func TestHandleUpdateAblesung_Teilstand_Vervollstaendigen(t *testing.T) {
 	form := url.Values{}
 	form.Set("reading_date", "2026-11-01")
 	form.Set("monat", "2026-11")
-	form.Set("heizung_gewichtung", "0.7")
 	form.Set("frischwasser_preis", "1.46")
 	form.Set("abwasser_preis", "4.87")
 	form.Set("einspeisung_preis", "0.08")
@@ -1671,8 +1681,7 @@ func TestHandleCreateAblesung_BlocksWhileTeilstandOpen(t *testing.T) {
 	db := openTestDB(t)
 
 	teilstandID, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		HeizungWaermeGewichtung: 0.7,
+		ReadingDate: "2026-11-01",
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod (Teilstand seed): %v", err)
@@ -1710,8 +1719,7 @@ func TestHandleWizardForm_RedirectsToOpenTeilstand(t *testing.T) {
 	a := newAuth("", nil)
 
 	teilstandID, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		HeizungWaermeGewichtung: 0.7,
+		ReadingDate: "2026-11-01",
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod (Teilstand seed): %v", err)
@@ -1758,8 +1766,7 @@ func TestBerechneKosten_TeilstandReturnsKostenNote(t *testing.T) {
 	db := openTestDB(t)
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		HeizungWaermeGewichtung: 0.7,
+		ReadingDate: "2026-11-01",
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
@@ -1793,8 +1800,7 @@ func TestLoadDashboardData_ExcludesTeilstand(t *testing.T) {
 		t.Fatalf("CreatePeriod (2. vollstaendige Ablesung): %v", err)
 	}
 	if _, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		HeizungWaermeGewichtung: 0.7,
+		ReadingDate: "2026-11-01",
 	}); err != nil {
 		t.Fatalf("CreatePeriod (Teilstand): %v", err)
 	}
@@ -1823,8 +1829,7 @@ func TestLoadDashboardData_NurTeilstand_HasAnyDataFalse(t *testing.T) {
 	db := openTestDB(t)
 
 	if _, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		HeizungWaermeGewichtung: 0.7,
+		ReadingDate: "2026-11-01",
 	}); err != nil {
 		t.Fatalf("CreatePeriod (Teilstand): %v", err)
 	}
@@ -1871,8 +1876,7 @@ func TestHandleAblesungenListe_TeilstandBadge(t *testing.T) {
 	a := newAuth("", nil)
 
 	if _, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		HeizungWaermeGewichtung: 0.7,
+		ReadingDate: "2026-11-01",
 	}); err != nil {
 		t.Fatalf("CreatePeriod (Teilstand): %v", err)
 	}
@@ -1898,9 +1902,8 @@ func TestHandleAblesungDetail_TeilstandZeigtOffeneFelder(t *testing.T) {
 	a := newAuth("", nil)
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		HeizungWaermeGewichtung: 0.7,
-		Readings:                map[string]float64{"strom_gesamt": 12345},
+		ReadingDate: "2026-11-01",
+		Readings:    map[string]float64{"strom_gesamt": 12345},
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod (Teilstand): %v", err)
@@ -1965,8 +1968,7 @@ func TestHandleAblesungDetail_TeilstandButtonOhneLogin(t *testing.T) {
 	a := newAuth("geheim", nil)
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		HeizungWaermeGewichtung: 0.7,
+		ReadingDate: "2026-11-01",
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod (Teilstand): %v", err)
@@ -1995,11 +1997,10 @@ func TestHandleEditWizardForm_TeilstandBlankNotZero(t *testing.T) {
 	a := newAuth("", nil)
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		HeizungWaermeGewichtung: 0.7,
-		Strompreis:              store.Float64(0.22),
-		Readings:                map[string]float64{"strom_gesamt": 100},
-		Personen:                map[int64]int64{1: 2},
+		ReadingDate: "2026-11-01",
+		Strompreis:  store.Float64(0.22),
+		Readings:    map[string]float64{"strom_gesamt": 100},
+		Personen:    map[int64]int64{1: 2},
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod (Teilstand): %v", err)

@@ -12,11 +12,10 @@ func TestWasser_PersonenanteilUndKosten(t *testing.T) {
 	mustCreatePeriod(t, db, "2026-10-01", 0.22, baseReadings(nil))
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		Strompreis:              store.Float64(0.22),
-		FrischwasserPreis:       store.Float64(1.46),
-		AbwasserPreis:           store.Float64(4.87),
-		HeizungWaermeGewichtung: 0.7,
+		ReadingDate:       "2026-11-01",
+		Strompreis:        store.Float64(0.22),
+		FrischwasserPreis: store.Float64(1.46),
+		AbwasserPreis:     store.Float64(4.87),
 		Readings: baseReadings(map[string]float64{
 			"wasser_gesamt":                 100,
 			"wasser_wohnung2":               30,
@@ -67,11 +66,10 @@ func TestWasser_KeinePersonen_FaelltAufHaelftigeVerteilungZurueck(t *testing.T) 
 	mustCreatePeriod(t, db, "2026-10-01", 0.22, baseReadings(nil))
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             "2026-11-01",
-		Strompreis:              store.Float64(0.22),
-		FrischwasserPreis:       store.Float64(1.46),
-		AbwasserPreis:           store.Float64(4.87),
-		HeizungWaermeGewichtung: 0.7,
+		ReadingDate:       "2026-11-01",
+		Strompreis:        store.Float64(0.22),
+		FrischwasserPreis: store.Float64(1.46),
+		AbwasserPreis:     store.Float64(4.87),
 		Readings: baseReadings(map[string]float64{
 			"wasser_gesamt":                 100,
 			"wasser_wohnung2":               30,

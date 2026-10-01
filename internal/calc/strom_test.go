@@ -46,13 +46,12 @@ func baseReadings(overrides map[string]float64) map[string]float64 {
 func mustCreatePeriod(t *testing.T, db *sql.DB, date string, strompreis float64, readings map[string]float64) int64 {
 	t.Helper()
 	id, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:             date,
-		Strompreis:              store.Float64(strompreis),
-		FrischwasserPreis:       store.Float64(1.46),
-		AbwasserPreis:           store.Float64(4.87),
-		HeizungWaermeGewichtung: 0.7,
-		Readings:                readings,
-		Personen:                map[int64]int64{1: 2, 2: 1},
+		ReadingDate:       date,
+		Strompreis:        store.Float64(strompreis),
+		FrischwasserPreis: store.Float64(1.46),
+		AbwasserPreis:     store.Float64(4.87),
+		Readings:          readings,
+		Personen:          map[int64]int64{1: 2, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("create period %s: %v", date, err)

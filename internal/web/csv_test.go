@@ -20,15 +20,14 @@ func seedPeriodInput() store.PeriodInput {
 		readings[key] = 0
 	}
 	return store.PeriodInput{
-		ReadingDate:             "2026-06-01",
-		Monat:                   "2026-06-01",
-		Strompreis:              store.Float64(0.22),
-		FrischwasserPreis:       store.Float64(1.46),
-		AbwasserPreis:           store.Float64(4.87),
-		HeizungWaermeGewichtung: 0.7,
-		EinspeisungPreis:        store.Float64(0.08),
-		Readings:                readings,
-		Personen:                map[int64]int64{1: 2, 2: 1},
+		ReadingDate:       "2026-06-01",
+		Monat:             "2026-06-01",
+		Strompreis:        store.Float64(0.22),
+		FrischwasserPreis: store.Float64(1.46),
+		AbwasserPreis:     store.Float64(4.87),
+		EinspeisungPreis:  store.Float64(0.08),
+		Readings:          readings,
+		Personen:          map[int64]int64{1: 2, 2: 1},
 	}
 }
 
