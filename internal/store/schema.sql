@@ -2,7 +2,10 @@ CREATE TABLE IF NOT EXISTS apartments (
     id                 INTEGER PRIMARY KEY,
     name               TEXT NOT NULL,
     qm                 REAL NOT NULL,
-    flurstueck_groesse REAL NOT NULL DEFAULT 0
+    flurstueck_groesse REAL NOT NULL DEFAULT 0,
+    mieter_name        TEXT NOT NULL DEFAULT '',
+    mieter_anschrift   TEXT NOT NULL DEFAULT '',
+    status             TEXT NOT NULL DEFAULT 'vermietet'
 );
 
 CREATE TABLE IF NOT EXISTS meters (
@@ -52,7 +55,11 @@ CREATE TABLE IF NOT EXISTS kostenpositionen (
 -- that belong to neither apartment nor Kostenposition.
 CREATE TABLE IF NOT EXISTS haus (
     id                     INTEGER PRIMARY KEY CHECK (id = 1),
-    strom_weiterberechnen  INTEGER NOT NULL DEFAULT 1
+    strom_weiterberechnen  INTEGER NOT NULL DEFAULT 1,
+    vermieter_name         TEXT NOT NULL DEFAULT '',
+    vermieter_anschrift    TEXT NOT NULL DEFAULT '',
+    objekt_anschrift       TEXT NOT NULL DEFAULT '',
+    iban                   TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS fixkosten_eingaben (

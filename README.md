@@ -11,6 +11,8 @@ Auf der `/stammdaten`-Seite gepflegt werden folgende Daten gepflegt. und gelten 
 | Wohnung 1 | 116,23 m² | - |
 | Wohnung 2 | 86 m² | - |
 
+Je Wohnung gibt es außerdem einen **Wohnungsstatus** ("vermietet" oder "Eigennutzung", vorbelegt Wohnung 1 Eigennutzung, Wohnung 2 vermietet), den Namen des Mieters bzw. Bewohners und die Zustellanschrift. Für das Haus gibt es Vermieter-Name, Vermieter-Anschrift, Objektanschrift und eine optionale IBAN. Diese Angaben füllen die künftige Jahresabrechnung. Die personenbezogenen Felder (Namen, Anschriften, IBAN) sind nur für angemeldete Nutzer sichtbar und änderbar, der Wohnungsstatus ist für alle sichtbar. Ohne gesetztes `LOGIN_PASSWORD` ist jeder angemeldet.
+
 Außerdem stehen hier zwei Schalter für die künftige Jahresabrechnung. Sie wirken auf alle Monate und Jahre, Dashboard und Monatsverlauf zeigen weiterhin alle Positionen und ändern sich nicht:
 
 - **Umlagefähig** je Kostenposition (Ja/Nein): Nur umlagefähige Positionen erscheinen in der Jahresabrechnung. Vorbelegt mit Ja für Grundsteuer, Wohngebäudeversicherung, Deichbeitrag Grund und Boden, Deichbeitrag Bauliche Anlagen, Kreisverband Wesermarsch, die vier Abfallwirtschafts-Positionen, Grundgebühr Strom, Trinkwasser und Abwasser sowie Wärmepumpenwartung. Vorbelegt mit Nein für Grundgebühr Internet, Streaming-Dienste und Sonstige Kosten. Teilweise umlagefähige Positionen teilst du über die Berechnungslogik der Fixkosteneingabe auf (z. B. "Wohnung 1" für den nicht umlagefähigen Teil).

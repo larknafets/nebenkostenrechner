@@ -131,6 +131,7 @@ func TestStammdaten_FlagsAnzeigenUndSpeichern(t *testing.T) {
 	form := url.Values{
 		"qm_1": {"100"}, "flurstueck_groesse_1": {"600"},
 		"qm_2": {"50"}, "flurstueck_groesse_2": {"400"},
+		"status_1": {"eigennutzung"}, "status_2": {"vermietet"},
 		"umlagefaehig_15": {"1"},
 	}
 	post := httptest.NewRequest(http.MethodPost, "/stammdaten", strings.NewReader(form.Encode()))
@@ -157,5 +158,100 @@ func TestStammdaten_FlagsAnzeigenUndSpeichern(t *testing.T) {
 	}
 	if haus.StromWeiterberechnen {
 		t.Error("StromWeiterberechnen = true, want false (checkbox absent from the form)")
+	}
+}
+
+// TestStammdaten_MieterUndVermieterNurAngemeldet verifies Issue #164: the
+// tenant, landlord, address and IBAN fields are shown to logged-in users
+// only (the server does not even send the values otherwise), the
+// Wohnungsstatus is visible to everyone but only editable when logged in,
+// and the POST handler saves everything.
+func TestStammdaten_MieterUndVermieterNurAngemeldet(t *testing.T) {
+	db := openTestDB(t)
+
+	form := url.Values{
+		"qm_1": {"100"}, "flurstueck_groesse_1": {"600"},
+		"qm_2": {"50"}, "flurstueck_groesse_2": {"400"},
+		"status_1": {"eigennutzung"}, "status_2": {"vermietet"},
+		"mieter_name_2":         {"  Erika Beispiel \n"},
+		"mieter_anschrift_2":    {"Beispielweg 1\r\nWohnung 2\r\n12345 Musterstadt"},
+		"vermieter_name":        {"Max Mustermann"},
+		"vermieter_anschrift":   {"Hauptstraße 5"},
+		"objekt_anschrift":      {"Beispielweg 1, 12345 Musterstadt"},
+		"iban":                  {"DE00 1234 5678"},
+		"strom_weiterberechnen": {"1"},
+	}
+	post := httptest.NewRequest(http.MethodPost, "/stammdaten", strings.NewReader(form.Encode()))
+	post.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	pw := httptest.NewRecorder()
+	handleUpdateStammdaten()(pw, requestWithDB(post, db))
+	if pw.Code != http.StatusFound {
+		t.Fatalf("POST status = %d, want %d (body: %s)", pw.Code, http.StatusFound, pw.Body.String())
+	}
+
+	apartments, err := store.Apartments(db)
+	if err != nil {
+		t.Fatalf("Apartments: %v", err)
+	}
+	if got := apartments[1].MieterName; got != "Erika Beispiel" {
+		t.Errorf("MieterName = %q, want trimmed %q", got, "Erika Beispiel")
+	}
+	if got := apartments[1].MieterAnschrift; got != "Beispielweg 1\nWohnung 2\n12345 Musterstadt" {
+		t.Errorf("MieterAnschrift = %q, want line breaks normalized to \\n", got)
+	}
+
+	secrets := []string{"Erika Beispiel", "Max Mustermann", "Hauptstraße 5", "DE00 1234 5678", "12345 Musterstadt"}
+
+	// Logged in (no LOGIN_PASSWORD configured): everything is visible.
+	req := httptest.NewRequest(http.MethodGet, "/stammdaten", nil)
+	w := httptest.NewRecorder()
+	handleStammdatenForm(newAuth("", nil))(w, requestWithDB(req, db))
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET (logged in) status = %d", w.Code)
+	}
+	for _, want := range secrets {
+		if !strings.Contains(w.Body.String(), want) {
+			t.Errorf("GET /stammdaten (logged in) does not contain %q", want)
+		}
+	}
+
+	// Not logged in (LOGIN_PASSWORD set, no cookie): personal data is gone,
+	// the status is visible but disabled.
+	req = httptest.NewRequest(http.MethodGet, "/stammdaten", nil)
+	w = httptest.NewRecorder()
+	handleStammdatenForm(newAuth("geheim", nil))(w, requestWithDB(req, db))
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET (not logged in) status = %d", w.Code)
+	}
+	body := w.Body.String()
+	for _, secret := range secrets {
+		if strings.Contains(body, secret) {
+			t.Errorf("GET /stammdaten (not logged in) leaks %q", secret)
+		}
+	}
+	for _, field := range []string{`name="mieter_name_`, `name="vermieter_name"`, `name="iban"`} {
+		if strings.Contains(body, field) {
+			t.Errorf("GET /stammdaten (not logged in) renders the field %s", field)
+		}
+	}
+	if !strings.Contains(body, `<select name="status_2" disabled>`) || !strings.Contains(body, `value="vermietet" selected`) {
+		t.Error("GET /stammdaten (not logged in) does not show the Wohnungsstatus as a disabled select")
+	}
+}
+
+func TestStammdaten_UngueltigerStatusWird400(t *testing.T) {
+	db := openTestDB(t)
+
+	form := url.Values{
+		"qm_1": {"100"}, "flurstueck_groesse_1": {"600"},
+		"qm_2": {"50"}, "flurstueck_groesse_2": {"400"},
+		"status_1": {"leerstand"}, "status_2": {"vermietet"},
+	}
+	post := httptest.NewRequest(http.MethodPost, "/stammdaten", strings.NewReader(form.Encode()))
+	post.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	pw := httptest.NewRecorder()
+	handleUpdateStammdaten()(pw, requestWithDB(post, db))
+	if pw.Code != http.StatusBadRequest {
+		t.Fatalf("POST status = %d, want %d", pw.Code, http.StatusBadRequest)
 	}
 }

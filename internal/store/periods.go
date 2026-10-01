@@ -26,11 +26,31 @@ type Apartment struct {
 	Name              string
 	QM                float64
 	FlurstueckGroesse float64
+	// MieterName/MieterAnschrift name the tenant (or resident) and their
+	// delivery address (Issue #164). Personal data: shown and edited only
+	// for logged-in users.
+	MieterName      string
+	MieterAnschrift string
+	// Status is StatusVermietet or StatusEigennutzung. It only steers how
+	// the Jahresabrechnung is presented and which Stammdaten it requires,
+	// never the calculation.
+	Status string
+}
+
+// Wohnungsstatus values for apartments.status (Issue #164).
+const (
+	StatusVermietet    = "vermietet"
+	StatusEigennutzung = "eigennutzung"
+)
+
+// ValidStatus reports whether s is a known Wohnungsstatus.
+func ValidStatus(s string) bool {
+	return s == StatusVermietet || s == StatusEigennutzung
 }
 
 // Apartments returns the 2 apartments ordered by id.
 func Apartments(db *sql.DB) ([]Apartment, error) {
-	rows, err := db.Query(`SELECT id, name, qm, flurstueck_groesse FROM apartments ORDER BY id`)
+	rows, err := db.Query(`SELECT id, name, qm, flurstueck_groesse, mieter_name, mieter_anschrift, status FROM apartments ORDER BY id`)
 	if err != nil {
 		return nil, fmt.Errorf("query apartments: %w", err)
 	}
@@ -39,7 +59,7 @@ func Apartments(db *sql.DB) ([]Apartment, error) {
 	var out []Apartment
 	for rows.Next() {
 		var a Apartment
-		if err := rows.Scan(&a.ID, &a.Name, &a.QM, &a.FlurstueckGroesse); err != nil {
+		if err := rows.Scan(&a.ID, &a.Name, &a.QM, &a.FlurstueckGroesse, &a.MieterName, &a.MieterAnschrift, &a.Status); err != nil {
 			return nil, fmt.Errorf("scan apartment: %w", err)
 		}
 		out = append(out, a)
@@ -97,12 +117,22 @@ type Haus struct {
 	// Wohnung 2 is passed on in the Jahresabrechnung (Issue #163). Not a
 	// Betriebskostenart, only passed on by agreement.
 	StromWeiterberechnen bool
+
+	// VermieterName/VermieterAnschrift/ObjektAnschrift/IBAN fill the head
+	// and the payment note of the Jahresabrechnung (Issue #164). Personal
+	// data: shown and edited only for logged-in users. IBAN is optional.
+	VermieterName      string
+	VermieterAnschrift string
+	ObjektAnschrift    string
+	IBAN               string
 }
 
 // GetHaus returns the house-wide Stammdaten.
 func GetHaus(db *sql.DB) (Haus, error) {
 	var h Haus
-	if err := db.QueryRow(`SELECT strom_weiterberechnen FROM haus WHERE id = 1`).Scan(&h.StromWeiterberechnen); err != nil {
+	if err := db.QueryRow(
+		`SELECT strom_weiterberechnen, vermieter_name, vermieter_anschrift, objekt_anschrift, iban FROM haus WHERE id = 1`,
+	).Scan(&h.StromWeiterberechnen, &h.VermieterName, &h.VermieterAnschrift, &h.ObjektAnschrift, &h.IBAN); err != nil {
 		return Haus{}, fmt.Errorf("query haus: %w", err)
 	}
 	return h, nil
@@ -139,15 +169,61 @@ func updateFlagsTx(tx *sql.Tx, in StammdatenFlags) error {
 	return nil
 }
 
-// SaveStammdaten writes the apartments' Wohnungsgröße/Flurstücksgröße and
-// the flags of one /stammdaten form submission in a single transaction, so
-// a failing write never leaves the form half saved.
-func SaveStammdaten(db *sql.DB, apartments map[int64]StammdatenInput, flags StammdatenFlags) error {
+// WohnungDetails is one apartment's tenant data and Wohnungsstatus as
+// edited on /stammdaten (Issue #164).
+type WohnungDetails struct {
+	MieterName      string
+	MieterAnschrift string
+	Status          string
+}
+
+// HausDetails is the house's Vermieter/Objekt/IBAN data as edited on
+// /stammdaten (Issue #164).
+type HausDetails struct {
+	VermieterName      string
+	VermieterAnschrift string
+	ObjektAnschrift    string
+	IBAN               string
+}
+
+// StammdatenSave is everything one /stammdaten form submission writes.
+type StammdatenSave struct {
+	Apartments map[int64]StammdatenInput
+	Flags      StammdatenFlags
+	// Wohnungen maps an apartment id to its details. Only the given
+	// apartments are touched.
+	Wohnungen map[int64]WohnungDetails
+	Haus      HausDetails
+}
+
+// SaveStammdaten writes one /stammdaten form submission in a single
+// transaction, so a failing write never leaves the form half saved.
+func SaveStammdaten(db *sql.DB, in StammdatenSave) error {
 	return inTx(db, func(tx *sql.Tx) error {
-		if err := updateApartmentsTx(tx, apartments); err != nil {
+		if err := updateApartmentsTx(tx, in.Apartments); err != nil {
 			return err
 		}
-		return updateFlagsTx(tx, flags)
+		if err := updateFlagsTx(tx, in.Flags); err != nil {
+			return err
+		}
+		for apartmentID, w := range in.Wohnungen {
+			if !ValidStatus(w.Status) {
+				return fmt.Errorf("invalid status %q for apartment %d", w.Status, apartmentID)
+			}
+			if _, err := tx.Exec(
+				`UPDATE apartments SET mieter_name = ?, mieter_anschrift = ?, status = ? WHERE id = ?`,
+				w.MieterName, w.MieterAnschrift, w.Status, apartmentID,
+			); err != nil {
+				return fmt.Errorf("update details for apartment %d: %w", apartmentID, err)
+			}
+		}
+		if _, err := tx.Exec(
+			`UPDATE haus SET vermieter_name = ?, vermieter_anschrift = ?, objekt_anschrift = ?, iban = ? WHERE id = 1`,
+			in.Haus.VermieterName, in.Haus.VermieterAnschrift, in.Haus.ObjektAnschrift, in.Haus.IBAN,
+		); err != nil {
+			return fmt.Errorf("update haus details: %w", err)
+		}
+		return nil
 	})
 }
 
