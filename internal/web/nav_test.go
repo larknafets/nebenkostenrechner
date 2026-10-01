@@ -153,3 +153,18 @@ func TestDashboardVerlauf_KeineAblesungZentriert(t *testing.T) {
 		t.Error("der Hinweis ist im Stylesheet nicht vertikal und horizontal zentriert")
 	}
 }
+
+// TestNav_StammdatenVorAbrechnung: the navigation lists Stammdaten before
+// Abrechnung (the Abrechnung entry exists for logged-in users only).
+func TestNav_StammdatenVorAbrechnung(t *testing.T) {
+	body := getDashboard(t, NewMux(openTestDB(t), openTestDB(t), "", ""), nil)
+
+	stammdaten := strings.Index(body, `/stammdaten">Stammdaten</a>`)
+	abrechnung := strings.Index(body, `/abrechnung">Abrechnung</a>`)
+	if stammdaten < 0 || abrechnung < 0 {
+		t.Fatalf("Navigation ohne Stammdaten (%d) oder Abrechnung (%d)", stammdaten, abrechnung)
+	}
+	if stammdaten > abrechnung {
+		t.Error("Abrechnung steht vor Stammdaten, erwartet: Stammdaten zuerst")
+	}
+}
