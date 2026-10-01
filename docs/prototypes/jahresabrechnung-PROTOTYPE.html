@@ -114,7 +114,7 @@
 <script>
 // ---- Sample data (fake) ---------------------------------------------------
 var HAUS = { objekt: "Beispielweg 1, 12345 Musterstadt", vermieter: "Max Mustermann", vAnschrift: "Beispielweg 1, 12345 Musterstadt", iban: "DE00 0000 0000 0000 0000 00",
-  qm1: 88, qm2: 42 };
+  qm1: 88, qm2: 42, flur1: 600, flur2: 400 };
 var MIETER = { name: "Erika Beispiel", anschrift: "Beispielweg 1, Wohnung 2, 12345 Musterstadt" };
 // share2 = Wohnung 2's share of the whole-house amount
 var POS = [
@@ -191,7 +191,13 @@ function anhang(z, c) {
     "<h3>Verbrauchsübersicht</h3><table><thead><tr><th>Zähler</th><th class='r'>Stand Beginn</th><th class='r'>Stand Ende</th><th class='r'>Verbrauch</th></tr></thead><tbody>" +
     ZAEHLER.map(function (x) { var own = x[0].indexOf("Wohnung " + z.w) >= 0 ? " class='b'" : ""; return "<tr" + own + "><td data-l='Zähler'>" + x[0] + "</td><td class='r' data-l='Beginn'>" + x[1].toLocaleString("de-DE") + "</td><td class='r' data-l='Ende'>" + x[2].toLocaleString("de-DE") + "</td><td class='r' data-l='Verbrauch'>" + r2((x[2] - x[1]) * z.vf).toLocaleString("de-DE") + "</td></tr>"; }).join("") + "</tbody></table>" +
     "<h3>Heizung und Warmwasser je Monat</h3><table><thead><tr><th>Monat</th><th class='r'>WP-Strom (kWh)</th><th class='r" + (z.w === 1 ? " sel" : "") + "'>Wärme W1 (MWh)</th><th class='r" + (z.w === 2 ? " sel" : "") + "'>Wärme W2 (MWh)</th><th class='r sel'>Anteil Wohnung " + z.w + "</th></tr></thead><tbody>" + wpRows + "</tbody></table>" +
-    "<h3>Verteilerschlüssel</h3><p class='small'><b>Je Wohneinheit:</b> beide Wohnungen zu gleichen Teilen. <b>Wohnfläche:</b> Wohnung 1 = " + HAUS.qm1 + " m², Wohnung 2 = " + HAUS.qm2 + " m², Gesamtfläche " + (HAUS.qm1 + HAUS.qm2) + " m². <b>Flurstück:</b> Anteil am Grundstück laut Stammdaten. <b>Personen:</b> Personenzahl je Monat laut Fixkosten-Eingabe, hier als Durchschnitt. <b>Heizung und Warmwasser:</b> Die Kosten des Wärmepumpenstroms werden zu 70 % nach gemessenem Wärmeverbrauch und zu 30 % nach Wohnfläche verteilt.</p></div>";
+    "<h3>Bezugsgrößen der Verteilerschlüssel</h3><table><thead><tr><th>Schlüssel</th><th class='r" + (z.w === 1 ? " sel" : "") + "'>Wohnung 1</th><th class='r" + (z.w === 2 ? " sel" : "") + "'>Wohnung 2</th><th class='r'>Gesamt</th></tr></thead><tbody>" +
+    "<tr><td data-l='Schlüssel'>Wohnfläche (m²)</td><td class='r" + (z.w === 1 ? " b" : "") + "' data-l='Wohnung 1'>" + HAUS.qm1 + "</td><td class='r" + (z.w === 2 ? " b" : "") + "' data-l='Wohnung 2'>" + HAUS.qm2 + "</td><td class='r' data-l='Gesamt'>" + (HAUS.qm1 + HAUS.qm2) + "</td></tr>" +
+    "<tr><td data-l='Schlüssel'>Flurstück (m²)</td><td class='r" + (z.w === 1 ? " b" : "") + "' data-l='Wohnung 1'>" + HAUS.flur1 + "</td><td class='r" + (z.w === 2 ? " b" : "") + "' data-l='Wohnung 2'>" + HAUS.flur2 + "</td><td class='r' data-l='Gesamt'>" + (HAUS.flur1 + HAUS.flur2) + "</td></tr></tbody></table>" +
+    "<h3>Personenzahl je Monat</h3><table><thead><tr><th rowspan='2'>Monat</th><th colspan='2' class='r'>Fixkosten-Eingabe (Schlüssel Personen)</th><th colspan='2' class='r'>Ablesung (Warmwasser)</th></tr><tr><th class='r" + (z.w === 1 ? " sel" : "") + "'>Wohnung 1</th><th class='r" + (z.w === 2 ? " sel" : "") + "'>Wohnung 2</th><th class='r" + (z.w === 1 ? " sel" : "") + "'>Wohnung 1</th><th class='r" + (z.w === 2 ? " sel" : "") + "'>Wohnung 2</th></tr></thead><tbody>" +
+    monate.map(function (m, i) { var abl2 = (i === 3 || i === 4) ? 2 : 1; return "<tr><td data-l='Monat'>" + m + "</td><td class='r" + (z.w === 1 ? " b" : "") + "' data-l='Fixkosten W1'>2</td><td class='r" + (z.w === 2 ? " b" : "") + "' data-l='Fixkosten W2'>1</td><td class='r" + (z.w === 1 ? " b" : "") + "' data-l='Ablesung W1'>2</td><td class='r" + (z.w === 2 ? " b" : "") + "' data-l='Ablesung W2'>" + abl2 + "</td></tr>"; }).join("") + "</tbody></table>" +
+    "<p class='small muted'>Die Personenzahl der Fixkosten-Eingabe bestimmt den Schlüssel \"Personen\", die der Ablesung verteilt den Verbrauch der Warmwasseraufbereitung auf beide Wohnungen.</p>" +
+    "<h3>Verteilerschlüssel</h3><p class='small'><b>Je Wohneinheit:</b> beide Wohnungen zu gleichen Teilen. <b>Wohnfläche:</b> Wohnung 1 = " + HAUS.qm1 + " m², Wohnung 2 = " + HAUS.qm2 + " m², Gesamtfläche " + (HAUS.qm1 + HAUS.qm2) + " m². <b>Flurstück:</b> Wohnung 1 = " + HAUS.flur1 + " m², Wohnung 2 = " + HAUS.flur2 + " m², Gesamt " + (HAUS.flur1 + HAUS.flur2) + " m². <b>Personen:</b> Personenzahl je Monat laut Fixkosten-Eingabe (Tabelle oben), im Jahresdurchschnitt angewendet. <b>Heizung und Warmwasser:</b> Die Kosten des Wärmepumpenstroms werden zu 70 % nach gemessenem Wärmeverbrauch und zu 30 % nach Wohnfläche verteilt.</p></div>";
 }
 function stromBlock(z, c) {
   if (!c.strom) return "";
@@ -271,7 +277,7 @@ function variantD(z, c) {
     return "<table><thead><tr><th>Position</th><th class='r'>Haus</th><th class='r'>Anteil</th><th class='r'>Betrag</th></tr></thead><tbody>" +
       list.map(function (r) { return "<tr><td data-l='Position'>" + r.n + "<br><span class='muted small'>" + r.s + "</span></td><td class='r' data-l='Haus'>" + eur(r.gesamt) + "</td><td class='r' data-l='Anteil'>" + pct(r.share) + "</td><td class='r b' data-l='Betrag'>" + eur(r.betrag) + "</td></tr>"; }).join("") + "</tbody></table>";
   }
-  return banner(z) + "<h1>Nebenkostenabrechnung " + z.jahr + "</h1><p class='muted'>Objekt: " + HAUS.objekt + " | Zeitraum: " + z.zeitraum + "</p>" +
+  return banner(z) + "<h1>Nebenkostenabrechnung " + z.jahr + "</h1><p class='muted'>Objekt: " + HAUS.objekt + " | Zeitraum: " + z.zeitraum + " | Erstellt am: 15.01." + (z.jahr + 1) + "</p>" +
     (z.zusatz ? "<p class='small'>" + z.zusatz + "</p>" : "") +
     "<div class='two'><div><h3>Vermieter</h3><p>" + p.v + "</p></div><div><h3>" + (z.status === "vermietet" ? "Mieter" : "Wohnung") + "</h3><p>" + p.m + "</p></div></div>" +
     "<div class='result'><span>" + res.label + "</span><span class='amt " + res.cls + "'>" + res.amt + "</span></div>" +
