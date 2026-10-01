@@ -167,7 +167,8 @@ function calc(z) {
 }
 function result(c) {
   var g = c.saldo > 0, n = c.saldo < 0;
-  return { label: g ? "Guthaben" : n ? "Nachzahlung" : "Ausgeglichen", cls: g ? "gut" : n ? "nach" : "", amt: eur(Math.abs(c.saldo)) };
+  // amt carries an explicit minus for a Nachzahlung so it stays readable in black and white print; abs is for running text
+  return { label: g ? "Guthaben" : n ? "Nachzahlung" : "Ausgeglichen", cls: g ? "gut" : n ? "nach" : "", amt: (n ? "- " : "") + eur(Math.abs(c.saldo)), abs: eur(Math.abs(c.saldo)) };
 }
 
 // ---- Shared pieces ---------------------------------------------------------
@@ -232,7 +233,7 @@ function variantB(z, c) {
   return banner(z) + "<p class='small muted'>" + HAUS.vermieter + ", " + HAUS.vAnschrift + "</p><div class='letter-addr'>" + p.m + "</div>" +
     "<p class='r'>Musterstadt, den 15.01." + (z.jahr + 1) + "</p>" +
     "<h1>Nebenkostenabrechnung für den Zeitraum " + z.zeitraum + "</h1>" + (z.zusatz ? "<p class='small'>" + z.zusatz + "</p>" : "") +
-    "<p>Die Abrechnung für " + (z.status === "vermietet" ? "Ihre Wohnung" : "Wohnung 1") + " ergibt " + (c.saldo < 0 ? "eine <b>Nachzahlung</b>" : c.saldo > 0 ? "ein <b>Guthaben</b>" : "einen <b>ausgeglichenen Saldo</b>") + " von <b>" + res.amt + "</b>. Die Berechnung im Einzelnen:</p>" +
+    "<p>Die Abrechnung für " + (z.status === "vermietet" ? "Ihre Wohnung" : "Wohnung 1") + " ergibt " + (c.saldo < 0 ? "eine <b>Nachzahlung</b>" : c.saldo > 0 ? "ein <b>Guthaben</b>" : "einen <b>ausgeglichenen Saldo</b>") + " von <b>" + res.abs + "</b>. Die Berechnung im Einzelnen:</p>" +
     "<table class='calc'><thead><tr><th></th><th>Position (Verteilerschlüssel in der Fußnote)</th><th class='r'>Gesamt Haus</th><th class='r'>Ihr Anteil</th><th class='r'>Betrag</th></tr></thead><tbody>" +
     c.rows.map(function (r) { n++; return "<tr><td data-l='Nr'>" + n + "</td><td data-l='Position'>" + r.n + " <span class='muted small'>(" + r.s + ")</span></td><td class='r' data-l='Gesamt'>" + eur(r.gesamt) + "</td><td class='r' data-l='Anteil'>" + pct(r.share) + "</td><td class='r' data-l='Betrag'>" + eur(r.betrag) + "</td></tr>"; }).join("") +
     "<tr class='step'><td></td><td colspan='3'>Zwischensumme Betriebskosten</td><td class='r'>" + eur(c.bk) + "</td></tr>" +
