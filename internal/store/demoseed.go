@@ -185,13 +185,19 @@ func ResetDemoData(db *sql.DB, now time.Time) error {
 
 	// Child tables first - PRAGMA foreign_keys=ON (store.Open) otherwise
 	// forbids deleting a still-referenced periods/fixkosten_eingaben row.
-	for _, table := range []string{
-		"meter_readings", "period_occupancy",
-		"fixkosten_werte", "fixkosten_personen", "nebenkosten_abschlaege",
-		"periods", "fixkosten_eingaben",
+	// Each statement is a complete literal (no concatenation with the table
+	// name), so static SQL-injection checks have nothing to flag.
+	for _, stmt := range []string{
+		`DELETE FROM meter_readings`,
+		`DELETE FROM period_occupancy`,
+		`DELETE FROM fixkosten_werte`,
+		`DELETE FROM fixkosten_personen`,
+		`DELETE FROM nebenkosten_abschlaege`,
+		`DELETE FROM periods`,
+		`DELETE FROM fixkosten_eingaben`,
 	} {
-		if _, err := tx.Exec("DELETE FROM " + table); err != nil {
-			return fmt.Errorf("delete %s: %w", table, err)
+		if _, err := tx.Exec(stmt); err != nil {
+			return fmt.Errorf("reset demo data (%s): %w", stmt, err)
 		}
 	}
 
