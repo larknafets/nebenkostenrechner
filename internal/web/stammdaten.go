@@ -109,12 +109,8 @@ func handleUpdateStammdaten() http.HandlerFunc {
 			flags.Umlagefaehig[kp.ID] = r.FormValue("umlagefaehig_"+strconv.FormatInt(kp.ID, 10)) == "1"
 		}
 
-		if err := store.UpdateStammdaten(db, in); err != nil {
+		if err := store.SaveStammdaten(db, in, flags); err != nil {
 			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if err := store.UpdateStammdatenFlags(db, flags); err != nil {
-			http.Error(w, "save flags: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 

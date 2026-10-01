@@ -37,7 +37,7 @@ const (
 	TypMonatlich = "monatlich"
 )
 
-// Kostenposition is one of the 14 fixed cost positions (Issue #60) - id/key/
+// Kostenposition is one of the 16 fixed cost positions (Issue #60) - id/key/
 // label only, app-fixed structure like meters. Logik/Typ/Wert are per-
 // Fixkosten-Eingabe data, see FixkostenPositionWert.
 type Kostenposition struct {
@@ -50,7 +50,7 @@ type Kostenposition struct {
 	Umlagefaehig bool
 }
 
-// Kostenpositionen returns the 14 Kostenpositionen ordered by id.
+// Kostenpositionen returns the 16 Kostenpositionen ordered by id.
 func Kostenpositionen(db *sql.DB) ([]Kostenposition, error) {
 	rows, err := db.Query(`SELECT id, key, label, umlagefaehig FROM kostenpositionen ORDER BY id`)
 	if err != nil {

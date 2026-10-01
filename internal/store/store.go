@@ -650,7 +650,7 @@ type meterSeed struct {
 
 func apartmentID(id int64) *int64 { return &id }
 
-// KostenpositionDefault is one of the 14 fixed Kostenpositionen (Issue #60)
+// KostenpositionDefault is one of the 16 fixed Kostenpositionen (Issue #60)
 // - id/key/label are app-fixed structure, seeded like meters. Logik/Typ are
 // only the starting values for the very first Fixkosten-Eingabe ever
 // created (Issue #105/#108) - every Eingabe afterwards is prefilled from
@@ -667,7 +667,7 @@ type KostenpositionDefault struct {
 	Umlagefaehig bool
 }
 
-// KostenpositionDefaults is the fixed, ordered list of the 14 Kostenpositionen.
+// KostenpositionDefaults is the fixed, ordered list of the 16 Kostenpositionen.
 var KostenpositionDefaults = []KostenpositionDefault{
 	{ID: 1, Key: "grundsteuer", Label: "Grundsteuer", Logik: LogikQM, Typ: TypJaehrlich, Umlagefaehig: true},
 	{ID: 2, Key: "gebaeudevers", Label: "Wohngebäudeversicherung", Logik: LogikQM, Typ: TypJaehrlich, Umlagefaehig: true},

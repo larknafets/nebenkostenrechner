@@ -62,12 +62,10 @@ type StammdatenInput struct {
 // not historized - same behavior qm already had before Issue #61 moved its
 // editing here).
 func UpdateStammdaten(db *sql.DB, in map[int64]StammdatenInput) error {
-	tx, err := db.Begin()
-	if err != nil {
-		return fmt.Errorf("begin tx: %w", err)
-	}
-	defer tx.Rollback()
+	return inTx(db, func(tx *sql.Tx) error { return updateApartmentsTx(tx, in) })
+}
 
+func updateApartmentsTx(tx *sql.Tx, in map[int64]StammdatenInput) error {
 	for apartmentID, s := range in {
 		if _, err := tx.Exec(
 			`UPDATE apartments SET qm = ?, flurstueck_groesse = ? WHERE id = ?`,
@@ -76,7 +74,20 @@ func UpdateStammdaten(db *sql.DB, in map[int64]StammdatenInput) error {
 			return fmt.Errorf("update stammdaten for apartment %d: %w", apartmentID, err)
 		}
 	}
+	return nil
+}
 
+// inTx runs fn in one transaction, committing only if fn succeeds.
+func inTx(db *sql.DB, fn func(tx *sql.Tx) error) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	if err := fn(tx); err != nil {
+		return err
+	}
 	return tx.Commit()
 }
 
@@ -110,12 +121,10 @@ type StammdatenFlags struct {
 
 // UpdateStammdatenFlags writes the given flags in one transaction.
 func UpdateStammdatenFlags(db *sql.DB, in StammdatenFlags) error {
-	tx, err := db.Begin()
-	if err != nil {
-		return fmt.Errorf("begin tx: %w", err)
-	}
-	defer tx.Rollback()
+	return inTx(db, func(tx *sql.Tx) error { return updateFlagsTx(tx, in) })
+}
 
+func updateFlagsTx(tx *sql.Tx, in StammdatenFlags) error {
 	for kostenpositionID, umlagefaehig := range in.Umlagefaehig {
 		if _, err := tx.Exec(
 			`UPDATE kostenpositionen SET umlagefaehig = ? WHERE id = ?`,
@@ -127,8 +136,19 @@ func UpdateStammdatenFlags(db *sql.DB, in StammdatenFlags) error {
 	if _, err := tx.Exec(`UPDATE haus SET strom_weiterberechnen = ? WHERE id = 1`, boolToInt(in.StromWeiterberechnen)); err != nil {
 		return fmt.Errorf("update strom_weiterberechnen: %w", err)
 	}
+	return nil
+}
 
-	return tx.Commit()
+// SaveStammdaten writes the apartments' Wohnungsgröße/Flurstücksgröße and
+// the flags of one /stammdaten form submission in a single transaction, so
+// a failing write never leaves the form half saved.
+func SaveStammdaten(db *sql.DB, apartments map[int64]StammdatenInput, flags StammdatenFlags) error {
+	return inTx(db, func(tx *sql.Tx) error {
+		if err := updateApartmentsTx(tx, apartments); err != nil {
+			return err
+		}
+		return updateFlagsTx(tx, flags)
+	})
 }
 
 // PeriodInput is one monthly reading, ready to be persisted.

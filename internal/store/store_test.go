@@ -1776,3 +1776,48 @@ func TestStammdatenFlags_RoundtripUndNeustart(t *testing.T) {
 		t.Error("StromWeiterberechnen = true after restart, want false (user's change)")
 	}
 }
+
+// TestSaveStammdaten_AtomarBeiFehler verifies that a failing flags write
+// rolls back the apartment values of the same form submission (PR #169
+// review): nothing is half saved.
+func TestSaveStammdaten_AtomarBeiFehler(t *testing.T) {
+	db := openTestDB(t)
+
+	if err := SaveStammdaten(db,
+		map[int64]StammdatenInput{1: {QM: 100, FlurstueckGroesse: 600}},
+		StammdatenFlags{Umlagefaehig: map[int64]bool{15: true}, StromWeiterberechnen: true},
+	); err != nil {
+		t.Fatalf("SaveStammdaten: %v", err)
+	}
+
+	// Make the flags part fail: without the haus table its UPDATE errors.
+	if _, err := db.Exec(`DROP TABLE haus`); err != nil {
+		t.Fatalf("drop haus: %v", err)
+	}
+	err := SaveStammdaten(db,
+		map[int64]StammdatenInput{1: {QM: 999, FlurstueckGroesse: 999}},
+		StammdatenFlags{Umlagefaehig: map[int64]bool{15: false}, StromWeiterberechnen: false},
+	)
+	if err == nil {
+		t.Fatal("SaveStammdaten succeeded without the haus table, want an error")
+	}
+
+	apartments, err := Apartments(db)
+	if err != nil {
+		t.Fatalf("Apartments: %v", err)
+	}
+	for _, a := range apartments {
+		if a.ID == 1 && (a.QM != 100 || a.FlurstueckGroesse != 600) {
+			t.Errorf("Wohnung 1 = QM:%v FlurstueckGroesse:%v after a failed save, want the previous 100/600 (rolled back)", a.QM, a.FlurstueckGroesse)
+		}
+	}
+	kps, err := Kostenpositionen(db)
+	if err != nil {
+		t.Fatalf("Kostenpositionen: %v", err)
+	}
+	for _, kp := range kps {
+		if kp.ID == 15 && !kp.Umlagefaehig {
+			t.Error("Streaming flag changed by a failed save, want the previous true (rolled back)")
+		}
+	}
+}
