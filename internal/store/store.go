@@ -319,16 +319,23 @@ func ensureApartmentsDetailsColumns(db *sql.DB) error {
 // table created by Issue #163, before it had them (Issue #164). A brand-new
 // database gets them from schema.sql.
 func ensureHausDetailsColumns(db *sql.DB) error {
-	for _, column := range []string{"vermieter_name", "vermieter_anschrift", "objekt_anschrift", "iban"} {
-		has, err := hasColumn(db, "haus", column)
+	// DDL cannot take parameters, so each statement is a complete literal
+	// instead of a concatenation with the column name.
+	for _, c := range []struct{ column, stmt string }{
+		{"vermieter_name", `ALTER TABLE haus ADD COLUMN vermieter_name TEXT NOT NULL DEFAULT ''`},
+		{"vermieter_anschrift", `ALTER TABLE haus ADD COLUMN vermieter_anschrift TEXT NOT NULL DEFAULT ''`},
+		{"objekt_anschrift", `ALTER TABLE haus ADD COLUMN objekt_anschrift TEXT NOT NULL DEFAULT ''`},
+		{"iban", `ALTER TABLE haus ADD COLUMN iban TEXT NOT NULL DEFAULT ''`},
+	} {
+		has, err := hasColumn(db, "haus", c.column)
 		if err != nil {
 			return err
 		}
 		if has {
 			continue
 		}
-		if _, err := db.Exec(`ALTER TABLE haus ADD COLUMN ` + column + ` TEXT NOT NULL DEFAULT ''`); err != nil {
-			return fmt.Errorf("add haus column %s: %w", column, err)
+		if _, err := db.Exec(c.stmt); err != nil {
+			return fmt.Errorf("add haus column %s: %w", c.column, err)
 		}
 	}
 	return nil
