@@ -292,12 +292,22 @@ func handleCreateFixkosten() http.HandlerFunc {
 
 		eingabeID, err := store.CreateFixkostenEingabe(db, in)
 		if err != nil {
+			if errors.Is(err, store.ErrFixkostenMonatBelegt) {
+				http.Error(w, monatBelegtMessage(in.Monat), http.StatusBadRequest)
+				return
+			}
 			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		http.Redirect(w, r, fmt.Sprintf("%s/fixkosten/%d", requestBase(r), eingabeID), http.StatusFound)
 	}
+}
+
+// monatBelegtMessage is the user-facing text when a month already has its
+// one Fixkosten-Eingabe (Issue #161).
+func monatBelegtMessage(monat string) string {
+	return "Für " + germanPeriodLabel(monat) + " gibt es bereits eine Fixkosten-Eingabe. Je Monat ist nur eine erlaubt, bitte die bestehende Eingabe korrigieren."
 }
 
 func handleUpdateFixkosten() http.HandlerFunc {
@@ -337,6 +347,10 @@ func handleUpdateFixkosten() http.HandlerFunc {
 		}
 
 		if err := store.UpdateFixkostenEingabe(db, eingabeID, in); err != nil {
+			if errors.Is(err, store.ErrFixkostenMonatBelegt) {
+				http.Error(w, monatBelegtMessage(in.Monat), http.StatusBadRequest)
+				return
+			}
 			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
 			return
 		}

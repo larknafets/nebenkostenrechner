@@ -37,6 +37,11 @@ type ImportConfig[T any] struct {
 	// SortKey orders parsed rows chronologically before insert.
 	SortKey func(T) string
 
+	// ValidateRows is optional and checks rules that span several rows
+	// (e.g. one entry per month). An error rejects the whole import with
+	// HTTP 400 before anything is inserted.
+	ValidateRows func(items []T) error
+
 	Insert func(db *sql.DB, items []T) ([]int64, error)
 }
 
@@ -74,6 +79,13 @@ func RunCSVImport[T any](w http.ResponseWriter, r *http.Request, db *sql.DB, cfg
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, nil, false
+	}
+
+	if cfg.ValidateRows != nil {
+		if err := cfg.ValidateRows(rows); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return nil, nil, false
+		}
 	}
 
 	sort.Slice(rows, func(i, j int) bool { return cfg.SortKey(rows[i]) < cfg.SortKey(rows[j]) })

@@ -9,8 +9,10 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	_ "modernc.org/sqlite"
 )
@@ -106,6 +108,11 @@ func Open(path string) (*sql.DB, error) {
 	if err := dropKostenpositionenJahreTable(db); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("drop kostenpositionen_jahre: %w", err)
+	}
+
+	if err := ensureFixkostenEingabenMonatUnique(db); err != nil {
+		db.Close()
+		return nil, err
 	}
 
 	return db, nil
@@ -401,6 +408,48 @@ func migrateHeizungGewichtungToHaus(db *sql.DB) error {
 		}
 	}
 	return tx.Commit()
+}
+
+// ensureFixkostenEingabenMonatUnique makes sure every month has at most one
+// Fixkosten-Eingabe (Issue #161) by adding a UNIQUE index on
+// fixkosten_eingaben.monat. Duplicates from before this rule are never
+// resolved on their own - which of two entries is right is the user's call.
+// The app still starts, so they can be fixed on /fixkosten (delete one or
+// move it to a free month): the start logs a warning naming the affected
+// months and skips the index, which is created by a later start once the
+// duplicates are gone. New duplicates are refused by the writes themselves
+// (ErrFixkostenMonatBelegt) either way. The index is created here, not in
+// schema.sql, so a database with duplicates does not fail while the schema
+// is applied.
+func ensureFixkostenEingabenMonatUnique(db *sql.DB) error {
+	rows, err := db.Query(`SELECT monat FROM fixkosten_eingaben GROUP BY monat HAVING COUNT(*) > 1 ORDER BY monat`)
+	if err != nil {
+		return fmt.Errorf("check duplicate fixkosten months: %w", err)
+	}
+	defer rows.Close()
+
+	var doppelt []string
+	for rows.Next() {
+		var monat string
+		if err := rows.Scan(&monat); err != nil {
+			return fmt.Errorf("scan duplicate fixkosten month: %w", err)
+		}
+		doppelt = append(doppelt, monat)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	rows.Close()
+
+	if len(doppelt) > 0 {
+		log.Printf("WARNUNG: mehrere Fixkosten-Eingaben im selben Monat (%s). Je Monat darf es nur eine geben, bitte die doppelten Eingaben unter /fixkosten loeschen oder in einen freien Monat verschieben. Die Jahresabrechnung ist fuer diese Monate gesperrt.", strings.Join(doppelt, ", "))
+		return nil
+	}
+
+	if _, err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_fixkosten_eingaben_monat ON fixkosten_eingaben(monat)`); err != nil {
+		return fmt.Errorf("create unique index on fixkosten_eingaben.monat: %w", err)
+	}
+	return nil
 }
 
 // ensurePeriodsMonatColumn adds the monat column to an existing periods

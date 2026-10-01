@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -93,12 +94,51 @@ type FixkostenInput struct {
 // DeleteFixkostenEingabe when the given id doesn't exist.
 var ErrFixkostenEingabeNotFound = errors.New("fixkosten eingabe not found")
 
+// ErrFixkostenMonatBelegt is returned when a write would give one month a
+// second Fixkosten-Eingabe (Issue #161): there is exactly one per month, the
+// Jahresabrechnung and the Dashboard both rely on it.
+var ErrFixkostenMonatBelegt = errors.New("fixkosten eingabe fuer diesen monat existiert bereits")
+
+// monatUniqueErr maps a violation of the UNIQUE index on
+// fixkosten_eingaben.monat to ErrFixkostenMonatBelegt, so a write that got
+// past the preflight check (e.g. a concurrent request for the same month)
+// still ends in the same readable conflict instead of a raw SQLite error.
+// Any other error is returned unchanged.
+func monatUniqueErr(err error, monat string) error {
+	if err != nil && strings.Contains(err.Error(), "UNIQUE constraint failed: fixkosten_eingaben.monat") {
+		return fmt.Errorf("%w: %s", ErrFixkostenMonatBelegt, monat)
+	}
+	return err
+}
+
+// monatBelegtTx reports whether another Fixkosten-Eingabe than exceptID
+// already owns monat. exceptID 0 means "any" (a new Eingabe). The UNIQUE
+// index on monat is the backstop, this check gives the readable error.
+func monatBelegtTx(tx *sql.Tx, monat string, exceptID int64) (bool, error) {
+	var n int
+	if err := tx.QueryRow(
+		`SELECT COUNT(*) FROM fixkosten_eingaben WHERE monat = ? AND id <> ?`, monat, exceptID,
+	).Scan(&n); err != nil {
+		return false, fmt.Errorf("check monat %s: %w", monat, err)
+	}
+	return n > 0, nil
+}
+
 // insertFixkostenTx inserts one Fixkosten-Eingabe with its Werte/Personen.
 // Shared by CreateFixkostenEingabe and (a future bulk-insert, should one
 // ever be needed) so the write shape stays in one place.
 func insertFixkostenTx(tx *sql.Tx, in FixkostenInput) (eingabeID int64, err error) {
+	if belegt, err := monatBelegtTx(tx, in.Monat, 0); err != nil {
+		return 0, err
+	} else if belegt {
+		return 0, fmt.Errorf("%w: %s", ErrFixkostenMonatBelegt, in.Monat)
+	}
+
 	res, err := tx.Exec(`INSERT INTO fixkosten_eingaben (monat) VALUES (?)`, in.Monat)
 	if err != nil {
+		if mapped := monatUniqueErr(err, in.Monat); mapped != err {
+			return 0, mapped
+		}
 		return 0, fmt.Errorf("insert fixkosten eingabe: %w", err)
 	}
 	eingabeID, err = res.LastInsertId()
@@ -168,8 +208,29 @@ func UpdateFixkostenEingabe(db *sql.DB, eingabeID int64, in FixkostenInput) erro
 	}
 	defer tx.Rollback()
 
+	// Only a move to another month can clash. Saving an entry under its own
+	// month must stay possible, even for an old duplicate (Issue #161) that
+	// the user is just about to fix.
+	var aktuell string
+	switch err := tx.QueryRow(`SELECT monat FROM fixkosten_eingaben WHERE id = ?`, eingabeID).Scan(&aktuell); {
+	case errors.Is(err, sql.ErrNoRows):
+		return fmt.Errorf("%w: eingabe %d", ErrFixkostenEingabeNotFound, eingabeID)
+	case err != nil:
+		return fmt.Errorf("read fixkosten eingabe %d: %w", eingabeID, err)
+	}
+	if in.Monat != aktuell {
+		if belegt, err := monatBelegtTx(tx, in.Monat, eingabeID); err != nil {
+			return err
+		} else if belegt {
+			return fmt.Errorf("%w: %s", ErrFixkostenMonatBelegt, in.Monat)
+		}
+	}
+
 	res, err := tx.Exec(`UPDATE fixkosten_eingaben SET monat = ? WHERE id = ?`, in.Monat, eingabeID)
 	if err != nil {
+		if mapped := monatUniqueErr(err, in.Monat); mapped != err {
+			return mapped
+		}
 		return fmt.Errorf("update fixkosten eingabe: %w", err)
 	}
 	if n, err := res.RowsAffected(); err != nil {

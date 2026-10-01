@@ -74,6 +74,7 @@ func handleImportFixkostenCSV() http.HandlerFunc {
 			ParseRow:       parseImportFixkostenRow,
 			EmptyErrMsg:    "CSV enthält keine Fixkosten-Eingaben",
 			SortKey:        func(in store.FixkostenInput) string { return in.Monat },
+			ValidateRows:   validateFixkostenMonateEindeutig,
 			Insert:         store.ImportFixkostenEingaben,
 		}
 
@@ -85,6 +86,24 @@ func handleImportFixkostenCSV() http.HandlerFunc {
 		redirectURL := fmt.Sprintf("%s/fixkosten?imported=%d", requestBase(r), len(ids))
 		http.Redirect(w, r, redirectURL, http.StatusFound)
 	}
+}
+
+// validateFixkostenMonateEindeutig rejects a CSV that has more than one row
+// for the same month (Issue #161: one Fixkosten-Eingabe per month).
+func validateFixkostenMonateEindeutig(rows []store.FixkostenInput) error {
+	seen := make(map[string]bool, len(rows))
+	var doppelt []string
+	for _, in := range rows {
+		if seen[in.Monat] {
+			doppelt = append(doppelt, germanPeriodLabel(in.Monat))
+			continue
+		}
+		seen[in.Monat] = true
+	}
+	if len(doppelt) > 0 {
+		return fmt.Errorf("CSV: je Monat darf es nur eine Fixkosten-Eingabe geben, mehrfach vorhanden: %s", strings.Join(doppelt, ", "))
+	}
+	return nil
 }
 
 // parseImportFixkostenRow validates one CSV record (semicolon-separated,
