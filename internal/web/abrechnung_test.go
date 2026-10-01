@@ -108,7 +108,7 @@ func zeile(t *testing.T, zeilen []abrechnungZeile, position string) []abrechnung
 
 func TestBerechneAbrechnung_Fixkosten(t *testing.T) {
 	db := teiljahrDB(t, true)
-	erg, err := berechneAbrechnung(db, 2026, 2)
+	erg, err := berechneAbrechnungDB(db, 2026, 2)
 	if err != nil {
 		t.Fatalf("berechneAbrechnung: %v", err)
 	}
@@ -165,7 +165,7 @@ func TestBerechneAbrechnung_Fixkosten(t *testing.T) {
 	})
 
 	t.Run("Wohnung 1 sieht den Deichbeitrag voll", func(t *testing.T) {
-		erg1, err := berechneAbrechnung(db, 2026, 1)
+		erg1, err := berechneAbrechnungDB(db, 2026, 1)
 		if err != nil || erg1.Abrechnung == nil {
 			t.Fatalf("berechneAbrechnung(Wohnung 1): err %v, Maengel %v", err, maengelTexte(erg1.Pruefung))
 		}
@@ -179,7 +179,7 @@ func TestBerechneAbrechnung_Fixkosten(t *testing.T) {
 		saveStammdaten(t, db, func(s *store.StammdatenSave) {
 			s.Flags = store.StammdatenFlags{Umlagefaehig: map[int64]bool{15: true, 1: false}, StromWeiterberechnen: true}
 		})
-		erg2, err := berechneAbrechnung(db, 2026, 2)
+		erg2, err := berechneAbrechnungDB(db, 2026, 2)
 		if err != nil || erg2.Abrechnung == nil {
 			t.Fatalf("berechneAbrechnung: err %v", err)
 		}
@@ -194,7 +194,7 @@ func TestBerechneAbrechnung_Fixkosten(t *testing.T) {
 
 func TestBerechneAbrechnung_VerbrauchVorauszahlungenUndSaldo(t *testing.T) {
 	db := teiljahrDB(t, true)
-	erg, err := berechneAbrechnung(db, 2026, 2)
+	erg, err := berechneAbrechnungDB(db, 2026, 2)
 	if err != nil || erg.Abrechnung == nil {
 		t.Fatalf("berechneAbrechnung: err %v, Maengel %v", err, maengelTexte(erg.Pruefung))
 	}
@@ -257,7 +257,7 @@ func TestBerechneAbrechnung_VerbrauchVorauszahlungenUndSaldo(t *testing.T) {
 
 	t.Run("Strom nicht weiterberechnet: Block und Saldo ohne ihn", func(t *testing.T) {
 		db := teiljahrDB(t, false)
-		erg, err := berechneAbrechnung(db, 2026, 2)
+		erg, err := berechneAbrechnungDB(db, 2026, 2)
 		if err != nil || erg.Abrechnung == nil {
 			t.Fatalf("berechneAbrechnung: err %v", err)
 		}
@@ -269,7 +269,7 @@ func TestBerechneAbrechnung_VerbrauchVorauszahlungenUndSaldo(t *testing.T) {
 		}
 	})
 	t.Run("Wohnung 1 hat keinen Strom-Block", func(t *testing.T) {
-		erg1, err := berechneAbrechnung(db, 2026, 1)
+		erg1, err := berechneAbrechnungDB(db, 2026, 1)
 		if err != nil || erg1.Abrechnung == nil {
 			t.Fatalf("berechneAbrechnung(Wohnung 1): err %v", err)
 		}
@@ -284,7 +284,7 @@ func TestBerechneAbrechnung_VerbrauchVorauszahlungenUndSaldo(t *testing.T) {
 
 func TestBerechneAbrechnung_Anhang(t *testing.T) {
 	db := teiljahrDB(t, true)
-	erg, err := berechneAbrechnung(db, 2026, 2)
+	erg, err := berechneAbrechnungDB(db, 2026, 2)
 	if err != nil || erg.Abrechnung == nil {
 		t.Fatalf("berechneAbrechnung: err %v", err)
 	}
@@ -342,7 +342,7 @@ func TestBerechneAbrechnung_NichtAbrechenbar(t *testing.T) {
 			}
 		}
 	}
-	erg, err := berechneAbrechnung(db, 2026, 2)
+	erg, err := berechneAbrechnungDB(db, 2026, 2)
 	if err != nil {
 		t.Fatalf("berechneAbrechnung: %v", err)
 	}
@@ -387,7 +387,7 @@ func TestBerechneAbrechnung_StimmtMitDemDashboardUeberein(t *testing.T) {
 		}
 
 		for _, jahr := range []int{2023, 2024, 2025} {
-			erg, err := berechneAbrechnung(db, jahr, apt.ID)
+			erg, err := berechneAbrechnungDB(db, jahr, apt.ID)
 			if err != nil || erg.Abrechnung == nil {
 				t.Fatalf("%s %d: err %v, Maengel %v", apt.Name, jahr, err, maengelTexte(erg.Pruefung))
 			}
