@@ -43,7 +43,7 @@ func TestNav_LoginEntry_NoLoginPassword(t *testing.T) {
 	if strings.Contains(body, `id="logout-link"`) {
 		t.Error("Abmelden-Link sichtbar ohne aktive Session (secret == \"\", keine Demo-Session)")
 	}
-	if strings.Contains(body, `class="demo-banner"`) {
+	if strings.Contains(body, `class="demo-banner no-print"`) {
 		t.Error("Demo-Banner sichtbar ohne aktive Demo-Session")
 	}
 }
@@ -66,7 +66,7 @@ func TestNav_LoginEntry_NotLoggedIn(t *testing.T) {
 	if strings.Contains(body, `id="logout-link"`) {
 		t.Error("Abmelden-Link sichtbar, obwohl nicht eingeloggt")
 	}
-	if strings.Contains(body, `class="demo-banner"`) {
+	if strings.Contains(body, `class="demo-banner no-print"`) {
 		t.Error("Demo-Banner sichtbar ohne aktive Demo-Session")
 	}
 }
@@ -87,7 +87,7 @@ func TestNav_RealLogin_NoDemoEntryNoBanner(t *testing.T) {
 	if strings.Contains(body, `id="login-open"`) {
 		t.Error("zusätzlicher Login-Einstiegspunkt sichtbar für regulär eingeloggten Nutzer")
 	}
-	if strings.Contains(body, `class="demo-banner"`) {
+	if strings.Contains(body, `class="demo-banner no-print"`) {
 		t.Error("Demo-Banner sichtbar für regulär eingeloggten Nutzer (kein Demo)")
 	}
 }
@@ -100,7 +100,7 @@ func TestNav_DemoSession_ShowsBannerNotEntry(t *testing.T) {
 	cookies := demoLoginCookies(t, mux, demoPassword)
 	body := getDashboard(t, mux, cookies)
 
-	if !strings.Contains(body, `class="demo-banner"`) {
+	if !strings.Contains(body, `class="demo-banner no-print"`) {
 		t.Error("Demo-Banner fehlt während einer laufenden Demo-Session")
 	}
 	if !strings.Contains(body, "geteilte Vorführumgebung") {

@@ -21,7 +21,7 @@
 <style>{{template "styles"}}</style>
 </head>
 <body>
-<div class="theme-toggle">
+<div class="theme-toggle no-print">
   <button type="button" id="theme-toggle-btn" class="theme-btn"></button>
 </div>
 <div class="app">
@@ -80,8 +80,8 @@
      crumbBack, where every page showed the same 4 links regardless of
      where you were). .Aktuell is one of "dashboard"/"ablesungen"/
      "fixkosten"/"stammdaten"/"berechnungslogik", set by each handler. */}}
-{{define "nav"}}{{if .IsDemoSession}}<div class="demo-banner">Demo-Modus: geteilte Vorführumgebung mit Testdaten - Änderungen wirken sich nie auf echte Daten aus.</div>{{end}}
-<p class="muted">{{if eq .Aktuell "dashboard"}}<strong>Dashboard</strong>{{else}}<a href="{{.Base}}/dashboard">Dashboard</a>{{end}} · {{if eq .Aktuell "ablesungen"}}<strong>Ablesungen</strong>{{else if eq .Aktuell "ablesungen-detail"}}<a href="{{.Base}}/ablesungen"><strong>Ablesungen</strong></a>{{else}}<a href="{{.Base}}/ablesungen">Ablesungen</a>{{end}} · {{if eq .Aktuell "fixkosten"}}<strong>Fixkosten</strong>{{else if eq .Aktuell "fixkosten-detail"}}<a href="{{.Base}}/fixkosten"><strong>Fixkosten</strong></a>{{else}}<a href="{{.Base}}/fixkosten">Fixkosten</a>{{end}} · {{if .IsLoggedIn}}{{if eq .Aktuell "abrechnung"}}<strong>Abrechnung</strong>{{else}}<a href="{{.Base}}/abrechnung">Abrechnung</a>{{end}} · {{end}}{{if eq .Aktuell "stammdaten"}}<strong>Stammdaten</strong>{{else}}<a href="{{.Base}}/stammdaten">Stammdaten</a>{{end}} · {{if eq .Aktuell "berechnungslogik"}}<strong>Wie wird gerechnet?</strong>{{else}}<a href="{{.Base}}/berechnungslogik">Wie wird gerechnet?</a>{{end}} · {{if .ShowLogoutEntry}}<a href="#" id="logout-link">Abmelden</a>{{end}}{{if .ShowLoginEntry}}{{if .ShowLogoutEntry}} · {{end}}<a href="#" id="login-open">Anmelden</a>{{end}}</p>
+{{define "nav"}}{{if .IsDemoSession}}<div class="demo-banner no-print">Demo-Modus: geteilte Vorführumgebung mit Testdaten - Änderungen wirken sich nie auf echte Daten aus.</div>{{end}}
+<p class="muted no-print">{{if eq .Aktuell "dashboard"}}<strong>Dashboard</strong>{{else}}<a href="{{.Base}}/dashboard">Dashboard</a>{{end}} · {{if eq .Aktuell "ablesungen"}}<strong>Ablesungen</strong>{{else if eq .Aktuell "ablesungen-detail"}}<a href="{{.Base}}/ablesungen"><strong>Ablesungen</strong></a>{{else}}<a href="{{.Base}}/ablesungen">Ablesungen</a>{{end}} · {{if eq .Aktuell "fixkosten"}}<strong>Fixkosten</strong>{{else if eq .Aktuell "fixkosten-detail"}}<a href="{{.Base}}/fixkosten"><strong>Fixkosten</strong></a>{{else}}<a href="{{.Base}}/fixkosten">Fixkosten</a>{{end}} · {{if .IsLoggedIn}}{{if eq .Aktuell "abrechnung"}}<strong>Abrechnung</strong>{{else}}<a href="{{.Base}}/abrechnung">Abrechnung</a>{{end}} · {{end}}{{if eq .Aktuell "stammdaten"}}<strong>Stammdaten</strong>{{else}}<a href="{{.Base}}/stammdaten">Stammdaten</a>{{end}} · {{if eq .Aktuell "berechnungslogik"}}<strong>Wie wird gerechnet?</strong>{{else}}<a href="{{.Base}}/berechnungslogik">Wie wird gerechnet?</a>{{end}} · {{if .ShowLogoutEntry}}<a href="#" id="logout-link">Abmelden</a>{{end}}{{if .ShowLoginEntry}}{{if .ShowLogoutEntry}} · {{end}}<a href="#" id="login-open">Anmelden</a>{{end}}</p>
 {{if .ShowLogoutEntry}}
 <form method="post" action="{{.Base}}/logout" id="logout-form" hidden></form>
 <script>
