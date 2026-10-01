@@ -5,6 +5,9 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
 // getDashboard renders /dashboard, optionally carrying cookies, and returns
@@ -131,5 +134,22 @@ func TestFooterVersion_UpdateDotHidden(t *testing.T) {
 	}
 	if !strings.Contains(body, ".footer-version a.update-dot[hidden] { display: none; }") {
 		t.Error("das Stylesheet überschreibt hidden nicht ab, der Update-Punkt wäre immer sichtbar")
+	}
+}
+
+// TestDashboardVerlauf_KeineAblesungZentriert: a month without Ablesung
+// shows the note framed by dashes, and the stylesheet centers it in the bar.
+func TestDashboardVerlauf_KeineAblesungZentriert(t *testing.T) {
+	db := openTestDB(t)
+	if err := store.SeedDemoData(db, time.Date(2026, time.October, 15, 0, 0, 0, 0, time.UTC)); err != nil {
+		t.Fatalf("SeedDemoData: %v", err)
+	}
+	body := getDashboard(t, NewMux(db, openTestDB(t), "", ""), nil)
+
+	if !strings.Contains(body, `data-modus="verbrauch">– keine Ablesung –</span>`) {
+		t.Error(`Monat ohne Ablesung zeigt nicht "– keine Ablesung –"`)
+	}
+	if !strings.Contains(body, ".verlauf-none { display: flex; align-items: center; justify-content: center;") {
+		t.Error("der Hinweis ist im Stylesheet nicht vertikal und horizontal zentriert")
 	}
 }
