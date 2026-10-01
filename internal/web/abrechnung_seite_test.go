@@ -54,13 +54,13 @@ func demoMux(t *testing.T) *http.ServeMux {
 }
 
 func TestAbrechnungJahreUndStandard(t *testing.T) {
-	periods := []store.PeriodSummary{
+	periods := []*store.LatestPeriod{
 		{ID: 3, ReadingDate: "2026-01-05", Monat: "2025-12-01"}, // Abrechnungsmonat wins over the reading date
 		{ID: 2, ReadingDate: "2025-06-10", Monat: "2025-06-01"},
 		{ID: 1, ReadingDate: "2024-12-30", Monat: ""}, // a Teilstand: the reading date counts
 	}
 	eingaben := []store.FixkostenEingabeSummary{{ID: 1, Monat: "2027-02-01"}}
-	got := abrechnungJahre(periods, eingaben)
+	got := abrechnungJahre(abrechnungPruefDaten{Periods: periods, Eingaben: eingaben})
 	if len(got) != 3 || got[0] != 2027 || got[1] != 2025 || got[2] != 2024 {
 		t.Errorf("abrechnungJahre = %v, want [2027 2025 2024] newest first, each once", got)
 	}
@@ -278,7 +278,7 @@ func TestBerechneAbrechnung_VerbrauchEigenUndBezugsgroessen(t *testing.T) {
 		{2, []string{"Zwischenstromzähler Wohnung 2", "Zwischenwasserzähler Wohnung 2", "Wärmemengenzähler Wohnung 2"}},
 		{1, []string{"Wärmemengenzähler Wohnung 1"}},
 	} {
-		erg, err := berechneAbrechnung(db, 2026, tc.apartmentID)
+		erg, err := berechneAbrechnungDB(db, 2026, tc.apartmentID)
 		if err != nil || erg.Abrechnung == nil {
 			t.Fatalf("Wohnung %d: err %v, Maengel %v", tc.apartmentID, err, maengelTexte(erg.Pruefung))
 		}
@@ -293,7 +293,7 @@ func TestBerechneAbrechnung_VerbrauchEigenUndBezugsgroessen(t *testing.T) {
 		}
 	}
 
-	erg, _ := berechneAbrechnung(db, 2026, 2)
+	erg, _ := berechneAbrechnungDB(db, 2026, 2)
 	b := erg.Abrechnung.Bezugsgroessen
 	if len(b) != 2 || b[0].Schluessel != "Wohnfläche (m²)" || b[0].W1 != 100 || b[0].W2 != 50 || b[0].Gesamt != 150 {
 		t.Errorf("Wohnfläche = %+v, want 100 / 50 / 150", b)

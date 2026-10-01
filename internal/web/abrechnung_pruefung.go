@@ -73,8 +73,8 @@ type abrechnungPruefung struct {
 // Abrechenbar reports whether the Abrechnung can be produced.
 func (p abrechnungPruefung) Abrechenbar() bool { return len(p.Maengel) == 0 }
 
-// abrechnungPruefDaten is everything pruefeAbrechnungDaten reads, loaded
-// once, so the rules themselves are a pure function of this data.
+// abrechnungPruefDaten is everything pruefeAbrechnungDaten reads, so the
+// rules themselves are a pure function of this data.
 type abrechnungPruefDaten struct {
 	// Periods are all Ablesungen, oldest first (store.AllPeriodDetails).
 	Periods    []*store.LatestPeriod
@@ -83,27 +83,57 @@ type abrechnungPruefDaten struct {
 	Haus       store.Haus
 }
 
-// pruefeAbrechnung loads the data and checks whether jahr can be settled
-// for apartmentID (Issue #165, decisions in the Wayfinder ticket
-// "Vollständigkeitsprüfung").
-func pruefeAbrechnung(db *sql.DB, jahr int, apartmentID int64) (abrechnungPruefung, error) {
+// abrechnungDaten is everything the Jahresabrechnung reads, loaded once per
+// request by ladeAbrechnungDaten. Jahresvorauswahl, Prüfung and Berechnung
+// work on it instead of loading again (the Berechnung still hands its db to
+// calc for the per-month costs).
+type abrechnungDaten struct {
+	// Pruef is the subset the Prüfung and the Jahresvorauswahl need.
+	Pruef abrechnungPruefDaten
+	// Eingaben are the Fixkosten-Eingaben with Werte/Personen/Abschlag,
+	// oldest first. Pruef.Eingaben is derived from them.
+	Eingaben         []*store.FixkostenEingabeDetails
+	Kostenpositionen []store.Kostenposition
+	Meters           []store.Meter
+}
+
+// ladeAbrechnungDaten loads all data of the Jahresabrechnung (Issue #165).
+func ladeAbrechnungDaten(db *sql.DB) (abrechnungDaten, error) {
 	periods, err := store.AllPeriodDetails(db)
 	if err != nil {
-		return abrechnungPruefung{}, fmt.Errorf("periods: %w", err)
+		return abrechnungDaten{}, fmt.Errorf("periods: %w", err)
 	}
-	eingaben, err := store.AllFixkostenEingaben(db)
+	eingaben, err := store.AllFixkostenEingabenDetails(db)
 	if err != nil {
-		return abrechnungPruefung{}, fmt.Errorf("fixkosten eingaben: %w", err)
+		return abrechnungDaten{}, fmt.Errorf("fixkosten eingaben: %w", err)
 	}
 	apartments, err := store.Apartments(db)
 	if err != nil {
-		return abrechnungPruefung{}, fmt.Errorf("apartments: %w", err)
+		return abrechnungDaten{}, fmt.Errorf("apartments: %w", err)
 	}
 	haus, err := store.GetHaus(db)
 	if err != nil {
-		return abrechnungPruefung{}, fmt.Errorf("haus: %w", err)
+		return abrechnungDaten{}, fmt.Errorf("haus: %w", err)
 	}
-	return pruefeAbrechnungDaten(abrechnungPruefDaten{Periods: periods, Eingaben: eingaben, Apartments: apartments, Haus: haus}, jahr, apartmentID)
+	kostenpositionen, err := store.Kostenpositionen(db)
+	if err != nil {
+		return abrechnungDaten{}, fmt.Errorf("kostenpositionen: %w", err)
+	}
+	meters, err := store.Meters(db)
+	if err != nil {
+		return abrechnungDaten{}, err
+	}
+
+	summaries := make([]store.FixkostenEingabeSummary, len(eingaben))
+	for i, e := range eingaben {
+		summaries[i] = store.FixkostenEingabeSummary{ID: e.ID, Monat: e.Monat}
+	}
+	return abrechnungDaten{
+		Pruef:            abrechnungPruefDaten{Periods: periods, Eingaben: summaries, Apartments: apartments, Haus: haus},
+		Eingaben:         eingaben,
+		Kostenpositionen: kostenpositionen,
+		Meters:           meters,
+	}, nil
 }
 
 // pruefeAbrechnungDaten applies the rules to already loaded data. It

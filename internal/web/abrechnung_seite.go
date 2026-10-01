@@ -1,7 +1,6 @@
 package web
 
 import (
-	"database/sql"
 	"fmt"
 	"math"
 	"net/http"
@@ -25,16 +24,16 @@ func personenZelle(m map[int64]int64, apartmentID int64) string {
 // abrechnungJahre lists the years there is data for - from the Ablesungen
 // (by Abrechnungsmonat, else reading date) and the Fixkosten-Eingaben - newest
 // first.
-func abrechnungJahre(periods []store.PeriodSummary, eingaben []store.FixkostenEingabeSummary) []int {
+func abrechnungJahre(d abrechnungPruefDaten) []int {
 	seen := map[int]bool{}
-	for _, p := range periods {
+	for _, p := range d.Periods {
 		if y, ok := store.Abrechnungsmonat(p.Monat).Jahr(); ok {
 			seen[y] = true
 		} else if t, err := time.Parse("2006-01-02", p.ReadingDate); err == nil {
 			seen[t.Year()] = true
 		}
 	}
-	for _, e := range eingaben {
+	for _, e := range d.Eingaben {
 		if y, ok := store.Abrechnungsmonat(e.Monat).Jahr(); ok {
 			seen[y] = true
 		}
@@ -60,9 +59,9 @@ func standardWohnung(apartments []store.Apartment) int64 {
 
 // standardJahr is the preselected year: the newest one the check passes for
 // the apartment, else the newest year (the page then shows its Mängelliste).
-func standardJahr(db *sql.DB, jahre []int, apartmentID int64) (int, error) {
+func standardJahr(d abrechnungPruefDaten, jahre []int, apartmentID int64) (int, error) {
 	for _, y := range jahre {
-		p, err := pruefeAbrechnung(db, y, apartmentID)
+		p, err := pruefeAbrechnungDaten(d, y, apartmentID)
 		if err != nil {
 			return 0, err
 		}
@@ -111,29 +110,15 @@ func handleAbrechnung(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 
-		apartments, err := store.Apartments(db)
+		daten, err := ladeAbrechnungDaten(db)
 		if err != nil {
-			http.Error(w, "apartments: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "abrechnung: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		periods, err := store.AllPeriods(db)
-		if err != nil {
-			http.Error(w, "periods: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		eingaben, err := store.AllFixkostenEingaben(db)
-		if err != nil {
-			http.Error(w, "fixkosten eingaben: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		haus, err := store.GetHaus(db)
-		if err != nil {
-			http.Error(w, "haus: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
+		apartments, haus := daten.Pruef.Apartments, daten.Pruef.Haus
 
 		data := abrechnungSeite{navData: a.NavData(r), Aktuell: "abrechnung", Apartments: apartments, Haus: haus}
-		data.Jahre = abrechnungJahre(periods, eingaben)
+		data.Jahre = abrechnungJahre(daten.Pruef)
 		if len(data.Jahre) == 0 {
 			data.KeineDaten = true
 			renderAbrechnung(w, data)
@@ -155,7 +140,7 @@ func handleAbrechnung(a auth) http.HandlerFunc {
 		}
 		data.Eigennutzung = data.Apartment.Status != store.StatusVermietet
 
-		data.Jahr, err = standardJahr(db, data.Jahre, data.ApartmentID)
+		data.Jahr, err = standardJahr(daten.Pruef, data.Jahre, data.ApartmentID)
 		if err != nil {
 			http.Error(w, "abrechnung: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -168,7 +153,7 @@ func handleAbrechnung(a auth) http.HandlerFunc {
 			}
 		}
 
-		data.Ergebnis, err = berechneAbrechnung(db, data.Jahr, data.ApartmentID)
+		data.Ergebnis, err = berechneAbrechnung(db, daten, data.Jahr, data.ApartmentID)
 		if err != nil {
 			http.Error(w, "abrechnung: "+err.Error(), http.StatusInternalServerError)
 			return

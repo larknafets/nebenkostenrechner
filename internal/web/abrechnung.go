@@ -118,8 +118,8 @@ type abrechnungErgebnis struct {
 // if so, computes the Jahresabrechnung (Issue #166). It reuses
 // calc.Fixkosten per Fixkosten-Eingabe and berechneKosten per Ablesung and
 // only sums them, there is no second cost formula.
-func berechneAbrechnung(db *sql.DB, jahr int, apartmentID int64) (abrechnungErgebnis, error) {
-	pruefung, err := pruefeAbrechnung(db, jahr, apartmentID)
+func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, apartmentID int64) (abrechnungErgebnis, error) {
+	pruefung, err := pruefeAbrechnungDaten(d.Pruef, jahr, apartmentID)
 	if err != nil {
 		return abrechnungErgebnis{}, err
 	}
@@ -127,30 +127,8 @@ func berechneAbrechnung(db *sql.DB, jahr int, apartmentID int64) (abrechnungErge
 		return abrechnungErgebnis{Pruefung: pruefung}, nil
 	}
 
-	periods, err := store.AllPeriodDetails(db)
-	if err != nil {
-		return abrechnungErgebnis{}, fmt.Errorf("periods: %w", err)
-	}
-	apartments, err := store.Apartments(db)
-	if err != nil {
-		return abrechnungErgebnis{}, fmt.Errorf("apartments: %w", err)
-	}
-	haus, err := store.GetHaus(db)
-	if err != nil {
-		return abrechnungErgebnis{}, fmt.Errorf("haus: %w", err)
-	}
-	kostenpositionen, err := store.Kostenpositionen(db)
-	if err != nil {
-		return abrechnungErgebnis{}, fmt.Errorf("kostenpositionen: %w", err)
-	}
-	eingaben, err := store.AllFixkostenEingabenDetails(db)
-	if err != nil {
-		return abrechnungErgebnis{}, fmt.Errorf("fixkosten eingaben: %w", err)
-	}
-	meters, err := store.Meters(db)
-	if err != nil {
-		return abrechnungErgebnis{}, err
-	}
+	periods, apartments, haus := d.Pruef.Periods, d.Pruef.Apartments, d.Pruef.Haus
+	kostenpositionen, eingaben, meters := d.Kostenpositionen, d.Eingaben, d.Meters
 
 	var apartment store.Apartment
 	for _, a := range apartments {
