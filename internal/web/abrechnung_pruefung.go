@@ -46,6 +46,10 @@ func (m abrechnungMangel) HatZiel() bool { return m.Pfad != "" }
 // abrechnungZeitraum is the billing period of one Jahresabrechnung.
 type abrechnungZeitraum struct {
 	Jahr int
+	// ErsterMonat is the first Abrechnungsmonat of the period (first of
+	// month): the month of the first Ablesung in the first Erfassungsjahr,
+	// else January.
+	ErsterMonat time.Time
 	// Von/Bis are the first and last day. Von is the day of the first
 	// Ablesung in the first Erfassungsjahr, else 1 January.
 	Von, Bis time.Time
@@ -252,12 +256,13 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, res *abrechnungPr
 		return z, ablesungVon, fixkostenVon, false
 	}
 
-	z = abrechnungZeitraum{Jahr: jahr, Von: time.Date(jahr, time.January, 1, 0, 0, 0, 0, time.UTC), Bis: time.Date(jahr, time.December, 31, 0, 0, 0, 0, time.UTC)}
+	z = abrechnungZeitraum{Jahr: jahr, ErsterMonat: time.Date(jahr, time.January, 1, 0, 0, 0, 0, time.UTC), Von: time.Date(jahr, time.January, 1, 0, 0, 0, 0, time.UTC), Bis: time.Date(jahr, time.December, 31, 0, 0, 0, 0, time.UTC)}
 	ablesungVon = time.Date(jahr, time.January, 1, 0, 0, 0, 0, time.UTC)
 	fixkostenVon = ablesungVon
 
 	if jahr == firstMonat.Year() {
 		z.TeilJahr = true
+		z.ErsterMonat = firstMonat
 		ablesungVon = firstMonat
 		fixkostenVon = firstMonat.AddDate(0, 1, 0)
 		if firstDate.Year() == jahr {
