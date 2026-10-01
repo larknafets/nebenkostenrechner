@@ -307,7 +307,7 @@ type monatInput string
 // monatInputFromStored converts periods.monat ("YYYY-MM-01") to its
 // <input type="month"> value ("YYYY-MM"). Returns "" if stored is too
 // short to safely take the first 7 characters from - CreatePeriod never
-// validates Monat (only UpdatePeriod does, see checkMonatNeighbors), so a
+// validates Monat (only UpdatePeriod does, see checkReadingOrder), so a
 // malformed value can in principle reach the edit form; a blank field beats
 // a panic.
 func monatInputFromStored(stored string) monatInput {
