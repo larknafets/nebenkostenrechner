@@ -50,12 +50,12 @@ func TestFixkosten_LogikWohneinheit_5050(t *testing.T) {
 
 func TestFixkosten_LogikFlurstueck_Ratio(t *testing.T) {
 	db := openTestDB(t)
-	if err := store.UpdateStammdaten(db, map[int64]store.StammdatenInput{
-		1: {QM: 100, FlurstueckGroesse: 600},
-		2: {QM: 100, FlurstueckGroesse: 400},
-	}); err != nil {
-		t.Fatalf("UpdateStammdaten: %v", err)
-	}
+	saveStammdaten(t, db, func(s *store.StammdatenSave) {
+		s.Apartments = map[int64]store.StammdatenInput{
+			1: {QM: 100, FlurstueckGroesse: 600},
+			2: {QM: 100, FlurstueckGroesse: 400},
+		}
+	})
 	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]int64{1: 1, 2: 1}, map[int64]store.FixkostenPositionWert{
 		3: {Logik: store.LogikFlurstueck, Typ: store.TypJaehrlich, Wert: 1200}, // deich_grund
 	})
@@ -75,12 +75,12 @@ func TestFixkosten_LogikFlurstueck_Ratio(t *testing.T) {
 
 func TestFixkosten_LogikQM_Ratio(t *testing.T) {
 	db := openTestDB(t)
-	if err := store.UpdateStammdaten(db, map[int64]store.StammdatenInput{
-		1: {QM: 150, FlurstueckGroesse: 0},
-		2: {QM: 50, FlurstueckGroesse: 0},
-	}); err != nil {
-		t.Fatalf("UpdateStammdaten: %v", err)
-	}
+	saveStammdaten(t, db, func(s *store.StammdatenSave) {
+		s.Apartments = map[int64]store.StammdatenInput{
+			1: {QM: 150, FlurstueckGroesse: 0},
+			2: {QM: 50, FlurstueckGroesse: 0},
+		}
+	})
 	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]int64{1: 1, 2: 1}, map[int64]store.FixkostenPositionWert{
 		1: {Logik: store.LogikQM, Typ: store.TypJaehrlich, Wert: 480}, // grundsteuer
 	})
@@ -178,12 +178,12 @@ func TestFixkosten_PositionOhneWert_Uebersprungen(t *testing.T) {
 
 func TestFixkosten_SummenKonsistenz(t *testing.T) {
 	db := openTestDB(t)
-	if err := store.UpdateStammdaten(db, map[int64]store.StammdatenInput{
-		1: {QM: 120, FlurstueckGroesse: 700},
-		2: {QM: 80, FlurstueckGroesse: 300},
-	}); err != nil {
-		t.Fatalf("UpdateStammdaten: %v", err)
-	}
+	saveStammdaten(t, db, func(s *store.StammdatenSave) {
+		s.Apartments = map[int64]store.StammdatenInput{
+			1: {QM: 120, FlurstueckGroesse: 700},
+			2: {QM: 80, FlurstueckGroesse: 300},
+		}
+	})
 	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]int64{1: 3, 2: 1}, map[int64]store.FixkostenPositionWert{
 		1:  {Logik: store.LogikQM, Typ: store.TypJaehrlich, Wert: 480},
 		3:  {Logik: store.LogikFlurstueck, Typ: store.TypJaehrlich, Wert: 1200},
@@ -222,12 +222,9 @@ func TestFixkosten_UnabhaengigVomUmlagefaehigFlag(t *testing.T) {
 	if err != nil {
 		t.Fatalf("calc.Fixkosten: %v", err)
 	}
-	if err := store.UpdateStammdatenFlags(db, store.StammdatenFlags{
-		Umlagefaehig:         map[int64]bool{15: false, 1: false},
-		StromWeiterberechnen: false,
-	}); err != nil {
-		t.Fatalf("UpdateStammdatenFlags: %v", err)
-	}
+	saveStammdaten(t, db, func(s *store.StammdatenSave) {
+		s.Flags = store.StammdatenFlags{Umlagefaehig: map[int64]bool{15: false, 1: false}}
+	})
 	after, err := calc.Fixkosten(db, id)
 	if err != nil {
 		t.Fatalf("calc.Fixkosten after flag change: %v", err)

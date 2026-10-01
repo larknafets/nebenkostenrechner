@@ -1033,15 +1033,22 @@ func TestEnsureApartmentsFlurstueckGroesseColumn(t *testing.T) {
 // (Issue #61): both apartments' Wohnungsgröße/Flurstücksgröße persist and
 // read back via Apartments(), and a partial input only touches the
 // apartments it names.
-func TestUpdateStammdaten_Roundtrip(t *testing.T) {
+// saveGroessen saves only the apartments' sizes through SaveStammdaten, with
+// the otherwise required Heizungs-Gewichtung.
+func saveGroessen(t *testing.T, db *sql.DB, in map[int64]StammdatenInput) {
+	t.Helper()
+	if err := SaveStammdaten(db, StammdatenSave{Apartments: in, HeizungWaermeGewichtung: 0.7}); err != nil {
+		t.Fatalf("SaveStammdaten: %v", err)
+	}
+}
+
+func TestSaveStammdaten_GroessenRoundtrip(t *testing.T) {
 	db := openTestDB(t)
 
-	if err := UpdateStammdaten(db, map[int64]StammdatenInput{
+	saveGroessen(t, db, map[int64]StammdatenInput{
 		1: {QM: 116.23, FlurstueckGroesse: 450.5},
 		2: {QM: 86, FlurstueckGroesse: 300},
-	}); err != nil {
-		t.Fatalf("UpdateStammdaten: %v", err)
-	}
+	})
 
 	apartments, err := Apartments(db)
 	if err != nil {
@@ -1064,11 +1071,9 @@ func TestUpdateStammdaten_Roundtrip(t *testing.T) {
 	}
 
 	// Partial update: only Wohnung 1 given, Wohnung 2 must stay untouched.
-	if err := UpdateStammdaten(db, map[int64]StammdatenInput{
+	saveGroessen(t, db, map[int64]StammdatenInput{
 		1: {QM: 120, FlurstueckGroesse: 500},
-	}); err != nil {
-		t.Fatalf("UpdateStammdaten (partial): %v", err)
-	}
+	})
 	apartments, err = Apartments(db)
 	if err != nil {
 		t.Fatalf("Apartments: %v", err)
@@ -1689,7 +1694,7 @@ func TestEnsureKostenpositionenUmlagefaehigColumn(t *testing.T) {
 // (Issue #163): the flags persist, a partial input only touches the
 // positions it names, and a restart (Open again) neither resets them nor
 // re-applies the starting values.
-func TestStammdatenFlags_RoundtripUndNeustart(t *testing.T) {
+func TestSaveStammdaten_FlagsRoundtripUndNeustart(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "flags.db")
 	db, err := Open(path)
 	if err != nil {
@@ -1705,11 +1710,14 @@ func TestStammdatenFlags_RoundtripUndNeustart(t *testing.T) {
 	}
 
 	// Streaming (id 15) on, Grundsteuer (id 1) off, Strom off.
-	if err := UpdateStammdatenFlags(db, StammdatenFlags{
-		Umlagefaehig:         map[int64]bool{15: true, 1: false},
-		StromWeiterberechnen: false,
+	if err := SaveStammdaten(db, StammdatenSave{
+		Flags: StammdatenFlags{
+			Umlagefaehig:         map[int64]bool{15: true, 1: false},
+			StromWeiterberechnen: false,
+		},
+		HeizungWaermeGewichtung: 0.7,
 	}); err != nil {
-		t.Fatalf("UpdateStammdatenFlags: %v", err)
+		t.Fatalf("SaveStammdaten: %v", err)
 	}
 	if err := db.Close(); err != nil {
 		t.Fatalf("close: %v", err)

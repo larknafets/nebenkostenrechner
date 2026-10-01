@@ -106,15 +106,6 @@ type StammdatenInput struct {
 	FlurstueckGroesse float64
 }
 
-// UpdateStammdaten writes every given apartment's Wohnungsgröße/
-// Flurstücksgröße in one transaction. Takes effect immediately for every
-// month's calculation (apartments.qm/flurstueck_groesse are live columns,
-// not historized - same behavior qm already had before Issue #61 moved its
-// editing here).
-func UpdateStammdaten(db *sql.DB, in map[int64]StammdatenInput) error {
-	return inTx(db, func(tx *sql.Tx) error { return updateApartmentsTx(tx, in) })
-}
-
 func updateApartmentsTx(tx *sql.Tx, in map[int64]StammdatenInput) error {
 	for apartmentID, s := range in {
 		if _, err := tx.Exec(
@@ -200,11 +191,6 @@ type StammdatenFlags struct {
 	// positions are touched.
 	Umlagefaehig         map[int64]bool
 	StromWeiterberechnen bool
-}
-
-// UpdateStammdatenFlags writes the given flags in one transaction.
-func UpdateStammdatenFlags(db *sql.DB, in StammdatenFlags) error {
-	return inTx(db, func(tx *sql.Tx) error { return updateFlagsTx(tx, in) })
 }
 
 func updateFlagsTx(tx *sql.Tx, in StammdatenFlags) error {
