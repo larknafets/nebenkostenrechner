@@ -121,7 +121,7 @@ func TestNav_DemoSession_ShowsBannerNotEntry(t *testing.T) {
 // known update, and the stylesheet must not override the hidden attribute
 // (".footer-version a { display: flex }" did, so the dot always showed).
 func TestFooterVersion_UpdateDotHidden(t *testing.T) {
-	mux := NewMux(openTestDB(t), openTestDB(t), "v0.13.0", "2026-10-01T18:01:25Z")
+	mux := NewMux(openTestDB(t), openTestDB(t), "v99.0.0", "2026-10-01T18:01:25Z")
 	body := getDashboard(t, mux, nil)
 
 	i := strings.Index(body, `id="update-dot"`)
