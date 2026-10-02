@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Runs the same checks as the CI job `test` (.github/workflows/ci.yml), so a
+# red build shows up before the push. `scripts/check --vuln` adds govulncheck,
+# which CI only runs nightly.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+step() { printf '\n==> %s\n' "$1"; }
+
+step "gofmt"
+unformatted=$(gofmt -l .)
+if [ -n "$unformatted" ]; then
+  echo "Not gofmt-formatted:"
+  echo "$unformatted"
+  exit 1
+fi
+
+step "go vet"
+go vet ./...
+
+step "golangci-lint"
+if command -v golangci-lint >/dev/null; then
+  golangci-lint run
+else
+  echo "golangci-lint not installed (brew install golangci-lint): CI runs it, so this check is incomplete" >&2
+  exit 1
+fi
+
+step "go test"
+go test ./...
+
+step "go build"
+go build ./...
+
+if [ "${1:-}" = "--vuln" ]; then
+  step "govulncheck"
+  if command -v govulncheck >/dev/null; then
+    govulncheck ./...
+  else
+    go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+  fi
+fi
+
+printf '\nAll checks passed.\n'

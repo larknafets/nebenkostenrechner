@@ -15,6 +15,12 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 - A rule in an agent's prompt ("read only") is not a block. If an agent must not write, deny the commands in the permission settings.
 - The agent reports, the main agent checks the report before acting on it.
 
+## Checks before a push
+
+- `scripts/check` runs the same steps as the CI job `test` (gofmt, vet, golangci-lint v2.13.2, test, build), `scripts/check --vuln` adds govulncheck. Run it before every commit that goes to a PR. It needs `golangci-lint` on the PATH.
+- `git config core.hooksPath .githooks` (once per clone) turns on a pre-push hook that runs it, so a red state never reaches GitHub.
+- Before opening a PR, review the diff locally with `/review` instead of waiting for a review bot on the PR. Sourcery on GitHub is optional and not a required check.
+
 ## Plan mode
 
 - Make the plan extremely concise. Sacrifice grammar for the sake of concision.
