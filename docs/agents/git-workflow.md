@@ -11,7 +11,7 @@
 
 ## Branches
 
-- Branch from `main`, keep branches short-lived (merge within 1-3 days), delete after merge (except `prototype/*`).
+- Branch from `main`, keep branches short-lived (merge within 1-3 days). GitHub deletes the head branch of a merged PR by itself (`delete_branch_on_merge`), only the local branch is left, the user removes it. `prototype/*` and `research/*` stay.
 - Prefer feature flags over long-lived branches for incomplete features.
 - Name: `<type>/<description>`, the type is the commit type of the change.
 
