@@ -63,6 +63,11 @@ func handleUpdateCheck(version string) http.HandlerFunc {
 	}
 }
 
+// PrimeUpdateCheck fills the release cache once in the background, called at
+// app start so the first Dashboard already knows about a new release instead
+// of only the one after it. Silent on errors like every update check.
+func PrimeUpdateCheck() { go refreshReleaseCache() }
+
 func refreshReleaseCache() {
 	latest, err := fetchLatestReleaseFrom(releaseAPIURL, &http.Client{Timeout: releaseHTTPTimeout})
 	if err != nil {
