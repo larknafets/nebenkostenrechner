@@ -17,9 +17,16 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 
 ## Checks before a push
 
-- `scripts/check` runs the same steps as the CI job `test` (gofmt, vet, golangci-lint v2.13.2, test, build), `scripts/check --vuln` adds govulncheck. Run it before every commit that goes to a PR. It needs `golangci-lint` on the PATH.
+- `scripts/check` runs the same steps as the CI job `test` (gofmt, vet, golangci-lint v2.13.2, test, build) plus `actionlint` for the workflows, `scripts/check --vuln` adds govulncheck. Run it before every commit that goes to `main`. It needs `golangci-lint` and `actionlint` on the PATH (`brew install golangci-lint actionlint govulncheck`).
 - `git config core.hooksPath .githooks` (once per clone) turns on a pre-push hook that runs it, so a red state never reaches GitHub.
 - Before opening a PR, review the diff locally with `/review` instead of waiting for a review bot on the PR. Sourcery on GitHub is optional and not a required check.
+
+## PR or straight to main
+
+- **Product changes** (`feat`, `fix`, `refactor`, `perf`) go through a PR. Never open one without asking first. A release is made only when the user asks for it.
+- **Developer changes** (`docs`, `chore`, `ci`, `test`, `style`, `build`) need no PR and no release: commit on `main` after `scripts/check` is green, the user pushes (`! git push`, the guard blocks it for the agent). Branch protection lets the admin push to `main`, and `.goreleaser.yaml` keeps these types out of the release notes.
+- A change under `.github/workflows/` is the one risky case: `actionlint` in `scripts/check` catches syntax, not behavior. If a workflow change cannot be judged from the diff, use a PR so CI runs before it lands.
+- Check that `main` is green after a direct push before tagging a release.
 
 ## Plan mode
 
