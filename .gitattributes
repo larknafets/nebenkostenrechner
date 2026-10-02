@@ -1,0 +1,3 @@
+
+# Append-only list. Keep both sides instead of raising a conflict on rebase.
+.changelog/unreleased.md merge=union
