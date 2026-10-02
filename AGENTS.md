@@ -25,6 +25,7 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 
 - **Product changes** (`feat`, `fix`, `refactor`, `perf`) go through a PR. Never open one without asking first. A release is made only when the user asks for it.
 - **Developer changes** (`docs`, `chore`, `ci`, `test`, `style`, `build`) need no PR and no release: commit on `main` after `scripts/check` is green, the user pushes (`! git push`, the guard blocks it for the agent). Branch protection lets the admin push to `main`, and `.goreleaser.yaml` keeps these types out of the release notes.
+- `style` means formatting only (whitespace, indentation, `gofmt`), behavior stays identical. A CSS or layout change users can see is a `fix` or `feat`, a rename without behavior change is a `refactor`. If unsure, do not use `style`.
 - A change under `.github/workflows/` is the one risky case: `actionlint` in `scripts/check` catches syntax, not behavior. If a workflow change cannot be judged from the diff, use a PR so CI runs before it lands.
 - Check that `main` is green after a direct push before tagging a release.
 
