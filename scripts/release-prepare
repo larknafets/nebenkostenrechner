@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# Prepares a release locally (docs/agents/releases.md): moves the entries of
+# .changelog/unreleased.md into CHANGELOG.md, empties unreleased.md, commits
+# that and sets the tag. It never pushes: the user pushes the commit first,
+# then the tag.
+#
+#   scripts/release-prepare vX.Y.Z               prepare for real
+#   scripts/release-prepare vX.Y.Z --dry-run     only show what would happen
+#   scripts/release-prepare vX.Y.Z --ohne-pruefung   skip scripts/check and the CI lookup (tests only)
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+REPO=larknafets/nebenkostenrechner
+UNRELEASED=.changelog/unreleased.md
+CHANGELOG=CHANGELOG.md
+LINE_REFACTOR="- Interne Aufräumarbeiten am Code ohne sichtbare Änderung"
+LINE_DEPS="- Aktualisierung der Abhängigkeiten"
+
+die() { echo "Fehler: $*" >&2; exit 1; }
+
+tag=""
+dry=0
+skip_checks=0
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) dry=1 ;;
+    --ohne-pruefung) skip_checks=1 ;;
+    v*) tag="$arg" ;;
+    *) die "unbekanntes Argument: $arg" ;;
+  esac
+done
+[[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "Aufruf: scripts/release-prepare vX.Y.Z [--dry-run]"
+
+# --- Preconditions: a release starts from a clean, current, green main ---
+[ "$(git branch --show-current)" = main ] || die "nicht auf main"
+[ -z "$(git status --porcelain)" ] || die "Arbeitsbaum nicht sauber"
+git fetch -q origin main --tags
+[ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || die "main ist nicht auf dem Stand von origin/main (zuerst pushen oder ziehen)"
+git rev-parse -q --verify "refs/tags/$tag" >/dev/null && die "Tag $tag existiert schon"
+[ -f "$UNRELEASED" ] || die "$UNRELEASED fehlt"
+for h in "Neue Funktionen" "Verbesserungen" "Fehlerkorrekturen" "Wartung"; do
+  grep -qx "## $h" "$UNRELEASED" || die "Überschrift '## $h' fehlt in $UNRELEASED"
+done
+
+if [ "$skip_checks" -eq 0 ]; then
+  sha=$(git rev-parse HEAD)
+  ci=$(gh run list -R "$REPO" --workflow=ci.yml --branch main --limit 10 --json headSha,status,conclusion \
+    --jq "[.[] | select(.headSha == \"$sha\")] | if length == 0 then \"kein Lauf gefunden\" else \"\(.[0].status) \(.[0].conclusion)\" end")
+  [ "$ci" = "completed success" ] || die "CI auf main ist für ${sha:0:7} nicht grün (Stand: ${ci:-unbekannt})"
+  scripts/check
+fi
+
+# --- What changed since the last tag ---
+last=$(git describe --tags --abbrev=0)
+range="$last..HEAD"
+count() { git log --format=%s "$range" | grep -cE "$1" || true; }
+n_feat=$(count '^feat')
+n_fix=$(count '^fix')
+n_refactor=$(count '^refactor')
+n_breaking=$(count '^[a-z]+(\(.*\))?!:')
+n_deps=$(git log --author=dependabot --format=%h "$range" | wc -l | tr -d ' ')
+
+extra=""
+if [ "$n_refactor" -gt 0 ] && ! grep -qF -- "$LINE_REFACTOR" "$UNRELEASED"; then extra="$LINE_REFACTOR"; fi
+if [ "$n_deps" -gt 0 ] && ! grep -qF -- "$LINE_DEPS" "$UNRELEASED"; then
+  extra="${extra:+$extra
+}$LINE_DEPS"
+fi
+
+# --- Build the section: non-empty sections only, "## " becomes "### " ---
+section=$(mktemp)
+extrafile=$(mktemp)
+trap 'rm -f "$section" "$extrafile" "${new_changelog:-}" "${new_unreleased:-}"' EXIT
+[ -n "$extra" ] && printf '%s\n' "$extra" > "$extrafile"
+awk -v extrafile="$extrafile" '
+  function flush(   line) {
+    if (head == "") return
+    if (head == "## Wartung" && (getline line < extrafile) > 0) {
+      if (body ~ /[^[:space:]]/) sub(/\n+$/, "\n", body); else body = "\n"
+      body = body line "\n"
+      while ((getline line < extrafile) > 0) body = body line "\n"
+    }
+    if (body ~ /[^[:space:]]/) printf "%s\n%s\n", head, body
+  }
+  /<!--/ { incomment = 1 }
+  incomment { if ($0 ~ /-->/) incomment = 0; next }
+  /^## / { flush(); head = $0; body = ""; next }
+  { body = body $0 "\n" }
+  END { flush() }
+' "$UNRELEASED" | cat -s | sed 's/^## /### /' |
+  awk '{ l[NR] = $0 } END { n = NR; while (n > 0 && l[n] == "") n--; for (i = 1; i <= n; i++) print l[i] }' > "$section"
+[ -s "$section" ] || die "keine Einträge in $UNRELEASED und keine Sammelzeilen: es gibt nichts zu veröffentlichen"
+
+# --- Report ---
+if [ "$n_breaking" -gt 0 ]; then hint=MAJOR
+elif [ "$n_feat" -gt 0 ] || grep -q '^### Neue Funktionen' "$section"; then hint=MINOR
+else hint=PATCH; fi
+echo "Seit $last: $n_feat feat, $n_fix fix, $n_refactor refactor, $n_deps Dependabot, $n_breaking mit Breaking Change"
+echo "Versionsvorschlag nach den Commits: $hint (gewählt: $tag, Vorgänger $last)"
+[ -n "$extra" ] && printf 'Sammelzeilen ergänzt:\n%s\n' "$extra"
+printf '\n## %s - %s\n\n' "$tag" "$(date +%F)"
+cat "$section"
+
+if [ "$dry" -eq 1 ]; then
+  echo
+  echo "(--dry-run: nichts geändert)"
+  exit 0
+fi
+
+# --- Apply: CHANGELOG.md gets the section above the newest release ---
+new_changelog=$(mktemp)
+awk -v head="## $tag - $(date +%F)" -v sectionfile="$section" '
+  !done && /^## v/ {
+    print head; print ""
+    while ((getline line < sectionfile) > 0) print line
+    print ""
+    done = 1
+  }
+  { print }
+  END { if (!done) { print ""; print head; print ""; while ((getline line < sectionfile) > 0) print line } }
+' "$CHANGELOG" > "$new_changelog"
+cp "$new_changelog" "$CHANGELOG"
+
+# unreleased.md keeps the comment and the four headings, nothing else
+new_unreleased=$(mktemp)
+awk '{ print } /-->/ { exit }' "$UNRELEASED" > "$new_unreleased"
+printf '\n## Neue Funktionen\n\n## Verbesserungen\n\n## Fehlerkorrekturen\n\n## Wartung\n' >> "$new_unreleased"
+cp "$new_unreleased" "$UNRELEASED"
+
+git add "$CHANGELOG" "$UNRELEASED"
+git commit -q -m "docs: Changelog für $tag"
+git tag -a "$tag" -m "$tag"
+
+echo
+echo "Fertig: Commit und Tag $tag liegen lokal, nichts ist gepusht. Nächste Schritte:"
+echo "  1. ! git push              (der Hook prüft vorher)"
+echo "  2. CI auf main abwarten"
+echo "  3. ! git push origin $tag"
