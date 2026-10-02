@@ -25,7 +25,8 @@
   .abr-seite { border-left: 1.5px solid var(--text); padding-left: 1rem; }
   .abr-seite h3:first-child { margin-top: 0; }
   .abr-seite td.r { white-space: nowrap; }
-  .zeitraum-felder { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+  .zeitraum-felder { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .zeitraum-felder .field { min-width: 160px; flex: 0 1 200px; }
   .zeitraum-felder[hidden] { display: none; }
   .anhang { margin-top: 1.5rem; }
   .anhang table { font-size: .85rem; }
@@ -92,11 +93,11 @@
     <div class="field">
       <label><input type="checkbox" name="teil" value="1" {{if .Teilzeitraum}}checked{{end}} onchange="document.getElementById('zeitraum-felder').hidden=!this.checked"> Abweichender Zeitraum (z. B. Mieterwechsel)</label>
     </div>
-    <div class="field zeitraum-felder" id="zeitraum-felder" {{if not .Teilzeitraum}}hidden{{end}} style="max-width:420px">
-      <label>Von Monat</label>
-      <select name="von">{{range .Monate}}<option value="{{.Nr}}" {{if eq .Nr $.Bereich.Von}}selected{{end}}>{{.Name}}</option>{{end}}</select>
-      <label>Bis Monat</label>
-      <select name="bis">{{range .Monate}}<option value="{{.Nr}}" {{if eq .Nr $.Bereich.Bis}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+    <div class="zeitraum-felder" id="zeitraum-felder" {{if not .Teilzeitraum}}hidden{{end}}>
+      <div class="field"><label>Von Monat</label>
+        <select name="von">{{range .Monate}}<option value="{{.Nr}}" {{if eq .Nr $.Bereich.Von}}selected{{end}}>{{.Name}}</option>{{end}}</select></div>
+      <div class="field"><label>Bis Monat</label>
+        <select name="bis">{{range .Monate}}<option value="{{.Nr}}" {{if eq .Nr $.Bereich.Bis}}selected{{end}}>{{.Name}}</option>{{end}}</select></div>
     </div>
     <div class="btn-row">
       {{range .Apartments}}
