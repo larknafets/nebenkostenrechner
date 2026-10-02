@@ -25,6 +25,8 @@
   .abr-seite { border-left: 1.5px solid var(--text); padding-left: 1rem; }
   .abr-seite h3:first-child { margin-top: 0; }
   .abr-seite td.r { white-space: nowrap; }
+  .zeitraum-felder { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+  .zeitraum-felder[hidden] { display: none; }
   .anhang { margin-top: 1.5rem; }
   .anhang table { font-size: .85rem; }
 
@@ -87,6 +89,15 @@
         {{range .Jahre}}<option value="{{.}}" {{if eq . $.Jahr}}selected{{end}}>{{.}}</option>{{end}}
       </select>
     </div>
+    <div class="field">
+      <label><input type="checkbox" name="teil" value="1" {{if .Teilzeitraum}}checked{{end}} onchange="document.getElementById('zeitraum-felder').hidden=!this.checked"> Abweichender Zeitraum (z. B. Mieterwechsel)</label>
+    </div>
+    <div class="field zeitraum-felder" id="zeitraum-felder" {{if not .Teilzeitraum}}hidden{{end}} style="max-width:420px">
+      <label>Von Monat</label>
+      <select name="von">{{range .Monate}}<option value="{{.Nr}}" {{if eq .Nr $.Bereich.Von}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+      <label>Bis Monat</label>
+      <select name="bis">{{range .Monate}}<option value="{{.Nr}}" {{if eq .Nr $.Bereich.Bis}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+    </div>
     <div class="btn-row">
       {{range .Apartments}}
       <button type="submit" name="wohnung" value="{{.ID}}" class="{{if eq .ID $.ApartmentID}}primary{{else}}secondary{{end}}">{{.Name}} ({{if eq .Status "vermietet"}}Vermietung{{else}}Eigennutzung{{end}})</button>
@@ -112,7 +123,7 @@
 <div class="panel abrechnung" style="margin-top:1rem">
   {{if .Eigennutzung}}<div class="abr-banner">Interne Übersicht, keine Betriebskostenabrechnung</div>{{end}}
 
-  <h2>Nebenkostenabrechnung {{$ab.Jahr}}</h2>
+  <h2>{{$ab.Zeitraum.Titel}}</h2>
   <p class="muted">Objekt: <span style="white-space:pre-line">{{.Haus.ObjektAnschrift}}</span><br>
   Zeitraum: {{deDatum .Von}} bis {{deDatum .Bis}} | Erstellt am: {{deDatum .Erstellt}}</p>
   {{if $ab.Zeitraum.Zusatz}}<p class="muted klein">{{$ab.Zeitraum.Zusatz}}</p>{{end}}

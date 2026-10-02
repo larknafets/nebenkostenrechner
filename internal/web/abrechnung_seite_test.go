@@ -307,3 +307,31 @@ func TestBerechneAbrechnung_VerbrauchEigenUndBezugsgroessen(t *testing.T) {
 		}
 	}
 }
+
+func TestAbrechnungSeite_Teilzeitraum(t *testing.T) {
+	db := teiljahrDB(t, true)
+	mux := NewMux(db, openTestDB(t), "", "")
+
+	t.Run("Standard: Jahr, Felder verborgen", func(t *testing.T) {
+		_, body := getAbrechnung(t, mux, "?jahr=2026&wohnung=2", nil)
+		mustContain(t, body, "Nebenkostenabrechnung 2026", `id="zeitraum-felder" hidden`, ".zeitraum-felder[hidden] { display: none; }")
+		mustNotContain(t, body, "Mieterwechsel: Ein Monat gehört")
+	})
+	t.Run("Haken: Zeitraum, Titel, Frist, Hinweis", func(t *testing.T) {
+		_, body := getAbrechnung(t, mux, "?jahr=2026&wohnung=2&teil=1&von=10&bis=11", nil)
+		mustContain(t, body,
+			"Nebenkostenabrechnung Oktober 2026 bis November 2026",
+			"Zeitraum: 01.10.2026 bis 30.11.2026",
+			"Frist: Die Abrechnung muss dem Mieter bis zum 30.11.2027 zugehen",
+			"Mieterwechsel: Ein Monat gehört ganz zu dem Zeitraum",
+			`name="teil" value="1" checked`,
+			`<option value="10" selected>Oktober`, `<option value="11" selected>November`)
+		mustNotContain(t, body, `id="zeitraum-felder" hidden`)
+	})
+	t.Run("ungueltiger Bereich oder ohne Haken: ganzes Jahr", func(t *testing.T) {
+		for _, q := range []string{"&teil=1&von=11&bis=10", "&teil=1&von=0&bis=13", "&teil=1&von=x", "&von=10&bis=11"} {
+			_, body := getAbrechnung(t, mux, "?jahr=2026&wohnung=2"+q, nil)
+			mustContain(t, body, "Nebenkostenabrechnung 2026")
+		}
+	})
+}
