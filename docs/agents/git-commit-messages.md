@@ -1,6 +1,6 @@
 # Commit messages
 
-Conventional Commits, in German, terse and exact. Why over what. The release notes are generated from the subjects, so a subject must read well to a user.
+Conventional Commits, in German, terse and exact. Why over what. The release notes are not generated from the subjects (the user-facing text is `.changelog/unreleased.md`, see `releases.md`), the subject is for the developer.
 
 ## Language
 
@@ -27,7 +27,7 @@ Conventional Commits, in German, terse and exact. Why over what. The release not
   - `style`: formatting only (whitespace, `gofmt`), behavior identical
   - `chore`: tooling and housekeeping that touches neither the app nor its tests (e.g. `scripts/`, hooks)
   - `ci`: files under `.github/workflows/` (when and how the pipeline runs)
-  - `build`: the packaging tool's own config (`.goreleaser.yaml`, `Dockerfile`) or external dependencies
+  - `build`: the packaging tool's own config (`Dockerfile`) or external dependencies
   - `revert`: reverts a commit
 - A bug in a `ci` or `build` file keeps that type, it is not a `fix`.
 - Which types need a PR and which go straight to `main`: `git-workflow.md`.

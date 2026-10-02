@@ -20,6 +20,7 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 - **Git identity**: use the name and email already configured (`git config user.name` / `user.email`), never guess another one.
 - **PR or main**: product changes (`feat`, `fix`, `refactor`, `perf`) go through a PR, never open one without asking. Developer changes (`docs`, `chore`, `ci`, `test`, `style`, `build`) go straight to `main`, no PR, no release. A release only when the user asks.
 - **Push**: a global hook blocks `git push` for the agent. Commit locally, tell the user, the user pushes with `! git push`.
+- **Changelog**: a `feat` or `fix`, or anything an operator must know when updating, adds one German line to `.changelog/unreleased.md` in the same commit (never as a separate `docs` commit, so a revert takes the line with it). Only the release itself touches `CHANGELOG.md`. Details: `docs/agents/releases.md`.
 - **Checks**: run `scripts/check` before every commit. The pre-push hook (`git config core.hooksPath .githooks`) runs it too.
 
 ## Read when needed
@@ -28,7 +29,7 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 |---|---|
 | Branches, PR vs `main`, bundling, auto-merge | `docs/agents/git-workflow.md` |
 | Commit message format | `docs/agents/git-commit-messages.md` |
-| Tag, release, nightly, release checklist | `docs/agents/releases.md` |
+| Changelog, tag, release, nightly, release checklist | `docs/agents/releases.md` |
 | `scripts/check`, hooks, review before a PR, `actionlint` | `docs/agents/checks.md` |
 | Subagents, Haiku, git inside a worktree | `docs/agents/agents.md` |
 | Language per text type | `docs/agents/language-convention.md` |
