@@ -115,6 +115,9 @@ func main() {
 	}
 
 	mux := web.NewMux(db, demoDB, version, buildDate)
+	if version != "" {
+		web.PrimeUpdateCheck()
+	}
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		if err := db.PingContext(r.Context()); err != nil {
 			http.Error(w, "db unreachable", http.StatusServiceUnavailable)
