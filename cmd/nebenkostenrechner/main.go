@@ -61,7 +61,7 @@ func migrateDBPathFrom(dbPath, oldPath string) error {
 }
 
 // version and buildDate are set via -ldflags at build time (Docker build
-// args and GoReleaser, Ticket #48) - both stay empty for a local `go run`,
+// args, Ticket #48) - both stay empty for a local `go run`,
 // which hides the Dashboard's version badge entirely.
 var (
 	version   = ""
