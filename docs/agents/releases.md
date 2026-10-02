@@ -15,8 +15,8 @@ A release is made only when the user asks. The tag is the source of truth, nothi
 
 1. `main` is green: `gh run list --branch main --limit 3`. Check after any direct push too.
 2. Look at the commits since the last tag (`git log --oneline <last tag>..main`), propose the version.
-3. Prepare the changelog (see "Changelog" below): move `.changelog/unreleased.md` into `CHANGELOG.md` as `## vX.Y.Z - YYYY-MM-DD`, empty `unreleased.md`, commit as `docs` on `main`. The user pushes it, `main` must be green again.
-4. Tag that commit locally: `git tag -a vX.Y.Z -m "vX.Y.Z"`.
+3. Prepare the changelog with `scripts/release-prepare vX.Y.Z --dry-run`, check the shown section and the version hint with the user, then run it without `--dry-run`. It checks that `main` is clean, current and green, runs `scripts/check`, moves `.changelog/unreleased.md` into `CHANGELOG.md` as `## vX.Y.Z - YYYY-MM-DD` (empty sections left out, the collective lines for refactorings and Dependabot added), empties `unreleased.md`, commits as `docs` and sets the tag locally. It never pushes. The user pushes the commit, `main` must be green again before the tag goes out.
+4. The script has set the tag `vX.Y.Z` (by hand: `git tag -a vX.Y.Z -m "vX.Y.Z"`).
 5. The user pushes the tag: `! git push origin vX.Y.Z` (the global guard blocks it for the agent). A plain push sends no tags.
 6. Wait for `release.yml` and `ha-addon.yml` (background `until` loop, no sleep chains). `release.yml` fails at the start if `CHANGELOG.md` has no `## vX.Y.Z` entry.
 7. Verify and report:
