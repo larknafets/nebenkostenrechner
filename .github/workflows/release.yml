@@ -18,6 +18,29 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Fail before anything is published if the release has no entry in
+      # CHANGELOG.md (docs/agents/releases.md): the notes come from there.
+      - name: Prepare release notes
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          awk -v tag="$RELEASE_TAG" '
+            index($0, "## " tag " ") == 1 { found = 1; next }
+            found && /^## v/ { exit }
+            found { print }
+          ' CHANGELOG.md | sed 's/^### /## /' > /tmp/notes.md
+          if [ -z "$(tr -d '[:space:]' < /tmp/notes.md)" ]; then
+            echo "CHANGELOG.md has no entry for ${RELEASE_TAG}" >&2
+            exit 1
+          fi
+          prev=$(git describe --tags --abbrev=0 "${RELEASE_TAG}^" 2>/dev/null || true)
+          if [ -n "$prev" ]; then
+            printf '\nAlle Änderungen im Vergleich: [%s...%s](https://github.com/%s/compare/%s...%s)\n' \
+              "$prev" "$RELEASE_TAG" "$REPOSITORY" "$prev" "$RELEASE_TAG" >> /tmp/notes.md
+          fi
+
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
@@ -69,11 +92,8 @@ jobs:
             BUILD_DATE=${{ steps.build_date.outputs.date }}
             GO_VERSION=${{ steps.goversion.outputs.version }}
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
-        with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean
+      - name: Create GitHub release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_TAG" --verify-tag --title "$RELEASE_TAG" --notes-file /tmp/notes.md
