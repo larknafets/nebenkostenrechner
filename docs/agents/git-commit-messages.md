@@ -1,85 +1,75 @@
 # Commit messages
 
-Write commit messages terse and exact. Conventional Commits format. No fluff. Why over what.
+Conventional Commits, in German, terse and exact. Why over what. The release notes are generated from the subjects, so a subject must read well to a user.
 
-## Rules
+## Language
 
-### Splitting commits
+- German, with proper Umlaute (ä, ö, ü, ß). No ASCII substitutes (ae, oe, ue, ss).
+- The type, the scope and technical names stay as they are (`feat`, `fix`, `scripts/check`, `GITHUB_REF_NAME`).
+- Verbs in the infinitive or as a noun phrase, not in the past tense: "Zeitraum auf volle Monate eingrenzen", not "Zeitraum eingegrenzt".
 
-- One commit = one logical change. Split when a diff mixes unrelated concerns (e.g. tooling setup vs. a doc/convention change), even if done in the same session.
-- Each commit must build/pass on its own where feasible - don't split a change so a part is broken mid-history.
-- Don't split further than one logical unit (e.g. don't split one feature's src + its own tests into two commits).
+## Splitting commits
 
-### Subject line
+- One commit = one logical change. Split when a diff mixes unrelated concerns (e.g. a feature and a tooling change), even if done in the same session.
+- Each commit passes on its own where feasible.
+- Do not split one feature's code and its own tests into two commits.
 
-- `<type>(<scope>): <imperative summary>`
+## Subject line
+
+- `<type>(<scope>): <summary>`, first word of the summary capitalized, no trailing period, aim for at most 50 characters, hard cap 72.
 - Types, always lower case:
-  - `feat`: a new feature
-  - `fix`: a bug fix
-  - `chore`: changes unrelated to a fix or feature, not touching src or test files (e.g. updating dependencies)
-  - `refactor`: refactored code that neither fixes a bug nor adds a feature
-  - `docs`: updates to documentation such as the README or other markdown files
-  - `style`: changes that don't affect code meaning (whitespace, missing semicolons, etc.)
+  - `feat`: new feature
+  - `fix`: bug fix
+  - `refactor`: restructuring without a change of behavior
+  - `perf`: performance improvement
+  - `docs`: documentation (README, `AGENTS.md`, `CONTEXT.md`, ADRs)
   - `test`: new or corrected tests
-  - `perf`: performance improvements
-  - `ci`: continuous integration, files under `.github/workflows/` (when/how the pipeline runs)
-  - `build`: the release/packaging tool's own config, e.g. `.goreleaser.yaml`, `Dockerfile` (how the artifact is produced), or external dependencies
-  - `revert`: reverts a previous commit
-- A bug in a `ci` or `build` file goes under that type, not `fix`.
-- The `<scope>` is always lower case and can be empty (e.g. if the change is a global or difficult to assign to a single component), in which case the parentheses are omitted.
-- Component name is the default scope. Only when no component fits (global/cross-cutting change) and an issue or discussion number exists, use `#<nr>` as scope instead of leaving it empty. Never combine component and issue number in one scope.
-- Issue/discussion number in scope never replaces the body reference (`Closes #42`, `Refs #17`) - both stay.
-- Imperative mood: "add", "fix", "remove" - not "added", "adds", "adding"
-- ≤50 chars when possible, hard cap 72
-- No trailing period
+  - `style`: formatting only (whitespace, `gofmt`), behavior identical
+  - `chore`: tooling and housekeeping that touches neither the app nor its tests (e.g. `scripts/`, hooks)
+  - `ci`: files under `.github/workflows/` (when and how the pipeline runs)
+  - `build`: the packaging tool's own config (`.goreleaser.yaml`, `Dockerfile`) or external dependencies
+  - `revert`: reverts a commit
+- A bug in a `ci` or `build` file keeps that type, it is not a `fix`.
+- Which types need a PR and which go straight to `main`: `git-workflow.md`.
+- The scope is lower case and may be empty. The component name is the default scope (`abrechnung`, `nav`, `ha-addon`). Only for a cross-cutting change with an issue number use `#<nr>` instead, never both.
+- The issue reference in the scope does not replace the reference at the end of the body (`Closes #42`, `Refs #17`).
 
-### Body (only if needed)
+## Body (only if needed)
 
-- Skip entirely when subject is self-explanatory
-- Add body only for: non-obvious *why*, breaking changes, migration notes, linked issues
-- Wrap at 72 chars
-- Bullets `-` not `*`
-- Reference issues/PRs/discussions at end: `Closes #42`, `Refs #17`
+- Skip it when the subject is clear.
+- Write it for: the non-obvious why, breaking changes, migration notes, linked issues. Always for breaking changes, security fixes, data migrations and reverts.
+- Wrap at 72 characters, bullets with `-`, references to issues at the end.
 
-### What NEVER goes in
+## Never
 
-- "This commit does X", "I", "we", "now", "currently" - the diff says what
-- "As requested by..."
-- "Generated with Claude Code" or any AI attribution
-- Emoji
-- Restating the file name when scope already says it
+- "Dieser Commit ...", "wir", "jetzt", "aktuell": the diff says what.
+- "Auf Wunsch von ...".
+- "Generated with Claude Code" or any AI attribution, no emoji.
+- The file name again when the scope already says it.
+- The literal text "git push" (and the other blocked commands, `agents.md`) in the command line that creates the commit.
 
 ## Examples
 
-Diff: new endpoint for user profile with body explaining the why
-- ❌ "feat: Add a new endpoint to get user profile information from the database"
-- ✅
-  ```
-  feat(api): Add GET /users/:id/profile
+- ✅ `feat(abrechnung): Zeitraum auf volle Monate eingrenzen für Mieterwechsel`
+- ✅ `fix(dashboard): Update-Punkt nur bei bekanntem Update zeigen`
+- ✅ `docs: Regel PR oder direkt auf main je nach Commit-Typ`
+- ❌ `feat: Eine neue Funktion hinzugefügt, mit der man den Zeitraum ändern kann`
 
-  Mobile client needs profile data without the full user payload
-  to reduce LTE bandwidth on cold-launch screens.
+With a body:
 
-  Closes #128
-  ```
+```
+feat(abrechnung): Zeitraum auf volle Monate eingrenzen für Mieterwechsel
 
-Diff: global change with no fitting component, tracked in issue #42
-- ✅
-  ```
-  refactor(#42): switch logging to structured JSON
+Häkchen blendet Von-/Bis-Monat ein, Standard bleibt das Kalenderjahr.
+Die Frist nach § 556 Abs. 3 BGB hängt am Zeitraumende.
 
-  Refs #42
-  ```
+Closes #189
+```
 
-Diff: breaking API change
-- ✅
-  ```
-  feat(api)!: Rename /v1/orders to /v1/checkout
+Breaking change:
 
-  BREAKING CHANGE: clients on /v1/orders must migrate to /v1/checkout
-  before 2026-06-01. Old route returns 410 after that date.
-  ```
+```
+feat(web)!: Pfad /abrechnung nach /jahresabrechnung umbenennen
 
-## Auto-Clarity
-
-Always include body for: breaking changes, security fixes, data migrations, anything reverting a prior commit. Never compress these into subject-only - future debuggers need the context.
+BREAKING CHANGE: Lesezeichen auf /abrechnung funktionieren nicht mehr.
+```
