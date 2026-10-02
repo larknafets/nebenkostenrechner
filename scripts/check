@@ -26,6 +26,14 @@ else
   exit 1
 fi
 
+step "actionlint"
+if command -v actionlint >/dev/null; then
+  actionlint
+else
+  echo "actionlint not installed (brew install actionlint): a broken workflow would only show up on main" >&2
+  exit 1
+fi
+
 step "go test"
 go test ./...
 
