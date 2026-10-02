@@ -4,7 +4,7 @@ change. At a release the line moves into CHANGELOG.md and this file is emptied
 again (docs/agents/releases.md).
 
 What goes in: a change a user or the operator of the Home Assistant app can see
-or feel. Not tests, CI, scripts, docs, lint fixes, refactorings without effect.
+or feel. Not tests, CI, scripts, docs, lint fixes.
 Reverted before the release? Delete the line. A bug that arose after the last
 release gets no line, because no user has seen it. To tell the two apart, run
 `git tag --contains <sha>` on the commit that caused the bug: an empty result
@@ -22,7 +22,9 @@ Sections:
 - Wartung: what the operator must know when updating: Go version, base image,
   environment variables, ports, data paths, migrations, security updates. The
   dependency updates of Dependabot are ONE line, added at the release, not one
-  per update.
+  per update. The same for refactorings: if the release has any, ONE line
+  "Interne Aufräumarbeiten am Code ohne sichtbare Änderung", added at the
+  release, never one line per refactoring.
 
 Keep every section, an empty one included. Do not change the headings.
 -->
