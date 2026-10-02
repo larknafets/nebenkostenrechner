@@ -61,7 +61,7 @@ func standardWohnung(apartments []store.Apartment) int64 {
 // the apartment, else the newest year (the page then shows its Mängelliste).
 func standardJahr(d abrechnungPruefDaten, jahre []int, apartmentID int64) (int, error) {
 	for _, y := range jahre {
-		p, err := pruefeAbrechnungDaten(d, y, apartmentID)
+		p, err := pruefeAbrechnungDaten(d, y, ganzesJahr, apartmentID)
 		if err != nil {
 			return 0, err
 		}
@@ -72,6 +72,12 @@ func standardJahr(d abrechnungPruefDaten, jahre []int, apartmentID int64) (int, 
 	return jahre[0], nil
 }
 
+// monatOption is one entry of the Von-/Bis-Monat selection.
+type monatOption struct {
+	Nr   int
+	Name string
+}
+
 // abrechnungSeite is the data of the /abrechnung page.
 type abrechnungSeite struct {
 	navData
@@ -79,13 +85,19 @@ type abrechnungSeite struct {
 
 	// KeineDaten is true if there is no Ablesung or Fixkosten-Eingabe at
 	// all - the page then shows only a note, no selection.
-	KeineDaten  bool
-	Jahre       []int
-	Jahr        int
-	Apartments  []store.Apartment
-	ApartmentID int64
-	Apartment   store.Apartment
-	Haus        store.Haus
+	KeineDaten bool
+	Jahre      []int
+	Jahr       int
+	// Teilzeitraum is the checkbox "abweichender Zeitraum", Bereich its
+	// Von-/Bis-Monat (1-12, the whole year unless the checkbox is set and
+	// the range is valid).
+	Teilzeitraum bool
+	Bereich      monatsbereich
+	Monate       []monatOption
+	Apartments   []store.Apartment
+	ApartmentID  int64
+	Apartment    store.Apartment
+	Haus         store.Haus
 
 	Ergebnis abrechnungErgebnis
 	// Von/Bis are the period's days ("YYYY-MM-DD") and Erstellt the day of
@@ -153,7 +165,19 @@ func handleAbrechnung(a auth) http.HandlerFunc {
 			}
 		}
 
-		data.Ergebnis, err = berechneAbrechnung(db, daten, data.Jahr, data.ApartmentID)
+		data.Bereich = ganzesJahr
+		for i, name := range germanMonths {
+			data.Monate = append(data.Monate, monatOption{Nr: i + 1, Name: name})
+		}
+		if r.URL.Query().Get("teil") == "1" {
+			von, _ := strconv.Atoi(r.URL.Query().Get("von"))
+			bis, _ := strconv.Atoi(r.URL.Query().Get("bis"))
+			if b := (monatsbereich{Von: von, Bis: bis}); b.gueltig() {
+				data.Teilzeitraum, data.Bereich = true, b
+			}
+		}
+
+		data.Ergebnis, err = berechneAbrechnung(db, daten, data.Jahr, data.Bereich, data.ApartmentID)
 		if err != nil {
 			http.Error(w, "abrechnung: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -196,7 +220,11 @@ func abrechnungHinweise(ab *abrechnung, eigennutzung bool) []string {
 	}
 	var out []string
 	if ab.Saldo.Nachzahlung() {
-		out = append(out, fmt.Sprintf("Frist: Die Abrechnung muss dem Mieter bis zum 31.12.%d zugehen, sonst ist eine Nachforderung ausgeschlossen (§ 556 Abs. 3 BGB).", ab.Jahr+1))
+		frist := time.Date(ab.Zeitraum.Bis.Year()+1, ab.Zeitraum.Bis.Month()+1, 0, 0, 0, 0, 0, time.UTC)
+		out = append(out, fmt.Sprintf("Frist: Die Abrechnung muss dem Mieter bis zum %s zugehen, sonst ist eine Nachforderung ausgeschlossen (§ 556 Abs. 3 BGB).", frist.Format("02.01.2006")))
+	}
+	if ab.Zeitraum.Teilzeitraum {
+		out = append(out, "Mieterwechsel: Ein Monat gehört ganz zu dem Zeitraum, in den die Ablesung seines Abrechnungsmonats fällt, auch bei einem Wechsel mitten im Monat. Mieter und Anschrift kommen aus den Stammdaten: den Stand vor dem Umschreiben als PDF sichern.")
 	}
 	out = append(out, "Aufbewahrung: Den verschickten Stand als PDF aufbewahren, die App speichert nichts.")
 

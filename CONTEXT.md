@@ -99,6 +99,8 @@ _Avoid_: Abschlag ohne "Nebenkosten"-Präfix (zu unspezifisch), Vorauszahlung
 **Abrechnungszeitraum**:
 Der Zeitraum einer Jahresabrechnung: das Kalenderjahr, im ersten Erfassungsjahr ab dem Datum der ersten Ablesung (dem Ausgangsstand, der selbst keinen Verbrauch liefert) bis 31.12. Fixkosten-Eingaben und Nebenkostenabschläge sind dort erst ab dem Folgemonat des Ausgangsstands nötig. Der Verbrauch jeder späteren Ablesung ist die Differenz zur vorherigen, deshalb ist er im Zeitraum immer berechenbar.
 
+Auf der Abrechnungsseite lässt sich der Zeitraum per Häkchen auf volle Monate eines Jahres eingrenzen (Mieterwechsel unterjährig, Von-/Bis-Monat); der Standard bleibt das Kalenderjahr. Ein Monat gehört ganz in den Zeitraum, in den die Ablesung seines Abrechnungsmonats fällt, auch bei einem Wechsel mitten im Monat. Mieter und Anschrift kommen immer aus den aktuellen Stammdaten, die App speichert keine Abrechnung: den Stand vor dem Umschreiben als PDF sichern. Die Frist nach § 556 Abs. 3 BGB endet am Ende des zwölften Monats nach dem Zeitraumende. Ein Zeitraum liegt immer innerhalb eines Kalenderjahres.
+
 **Mangel** (Abrechnungsprüfung):
 Ein Grund, warum für ein Jahr und eine Wohnung noch keine Jahresabrechnung entstehen kann: fehlende oder unvollständige Ablesung (Teilstand) eines Abrechnungsmonats, fehlende oder mehrfache Fixkosten-Eingabe eines Monats, fehlende Pflicht-Stammdaten. Die Prüfung liefert alle Mängel auf einmal, jeweils mit dem Ort zum Beheben, statt einer Abrechnung. Ein fehlender Nebenkostenabschlag ist kein Mangel (zählt als 0).
 _Avoid_: Fehler, Warnung

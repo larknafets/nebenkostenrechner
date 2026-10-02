@@ -17,7 +17,7 @@ func pruefeAbrechnungDB(db *sql.DB, jahr int, apartmentID int64) (abrechnungPrue
 	if err != nil {
 		return abrechnungPruefung{}, err
 	}
-	return pruefeAbrechnungDaten(d.Pruef, jahr, apartmentID)
+	return pruefeAbrechnungDaten(d.Pruef, jahr, ganzesJahr, apartmentID)
 }
 
 // berechneAbrechnungDB loads the data and computes the Abrechnung, the way
@@ -27,7 +27,7 @@ func berechneAbrechnungDB(db *sql.DB, jahr int, apartmentID int64) (abrechnungEr
 	if err != nil {
 		return abrechnungErgebnis{}, err
 	}
-	return berechneAbrechnung(db, d, jahr, apartmentID)
+	return berechneAbrechnung(db, d, jahr, ganzesJahr, apartmentID)
 }
 
 // pruefeAbrechnungAlteLadung is the loading of the Prüfung from before
@@ -50,7 +50,7 @@ func pruefeAbrechnungAlteLadung(db *sql.DB, jahr int, apartmentID int64) (abrech
 	if err != nil {
 		return abrechnungPruefung{}, err
 	}
-	return pruefeAbrechnungDaten(abrechnungPruefDaten{Periods: periods, Eingaben: eingaben, Apartments: apartments, Haus: haus}, jahr, apartmentID)
+	return pruefeAbrechnungDaten(abrechnungPruefDaten{Periods: periods, Eingaben: eingaben, Apartments: apartments, Haus: haus}, jahr, ganzesJahr, apartmentID)
 }
 
 // vollePeriode is a complete Ablesung (every meter, prices, Personen).
@@ -131,7 +131,7 @@ func vollesJahrDaten() abrechnungPruefDaten {
 }
 
 func TestPruefeAbrechnung_VollesJahrAbrechenbar(t *testing.T) {
-	got, err := pruefeAbrechnungDaten(vollesJahrDaten(), 2027, 2)
+	got, err := pruefeAbrechnungDaten(vollesJahrDaten(), 2027, ganzesJahr, 2)
 	if err != nil {
 		t.Fatalf("pruefeAbrechnungDaten: %v", err)
 	}
@@ -151,7 +151,7 @@ func TestPruefeAbrechnung_VollesJahrAbrechenbar(t *testing.T) {
 // all (it counts as 0), so a year without any Abschlag is still abrechenbar:
 // vollesJahrDaten carries no Abschläge.
 func TestPruefeAbrechnung_FehlenderAbschlagIstKeinMangel(t *testing.T) {
-	got, _ := pruefeAbrechnungDaten(vollesJahrDaten(), 2027, 2)
+	got, _ := pruefeAbrechnungDaten(vollesJahrDaten(), 2027, ganzesJahr, 2)
 	for _, m := range got.Maengel {
 		if strings.Contains(strings.ToLower(m.Text), "abschlag") {
 			t.Errorf("unexpected finding about the Abschlag: %q", m.Text)
@@ -184,7 +184,7 @@ func TestPruefeAbrechnung_AblesungUndFixkosten(t *testing.T) {
 	eingaben = append(eingaben, store.FixkostenEingabeSummary{ID: 999, Monat: "2027-02-01"})
 	d.Eingaben = eingaben
 
-	got, err := pruefeAbrechnungDaten(d, 2027, 2)
+	got, err := pruefeAbrechnungDaten(d, 2027, ganzesJahr, 2)
 	if err != nil {
 		t.Fatalf("pruefeAbrechnungDaten: %v", err)
 	}
@@ -216,7 +216,7 @@ func TestPruefeAbrechnung_AblesungUndFixkosten(t *testing.T) {
 func TestPruefeAbrechnung_TeilstandNebenVollstaendigerAblesungIstKeinMangel(t *testing.T) {
 	d := vollesJahrDaten()
 	d.Periods = append(d.Periods, teilstandPeriode(500, "2027-12-30", "2027-12-01"))
-	got, _ := pruefeAbrechnungDaten(d, 2027, 2)
+	got, _ := pruefeAbrechnungDaten(d, 2027, ganzesJahr, 2)
 	if !got.Abrechenbar() {
 		t.Errorf("Maengel = %v, want none", maengelTexte(got))
 	}
@@ -231,7 +231,7 @@ func ersteJahrDaten() abrechnungPruefDaten {
 }
 
 func TestPruefeAbrechnung_ErstesErfassungsjahr(t *testing.T) {
-	got, err := pruefeAbrechnungDaten(ersteJahrDaten(), 2026, 2)
+	got, err := pruefeAbrechnungDaten(ersteJahrDaten(), 2026, ganzesJahr, 2)
 	if err != nil {
 		t.Fatalf("pruefeAbrechnungDaten: %v", err)
 	}
@@ -249,14 +249,14 @@ func TestPruefeAbrechnung_ErstesErfassungsjahr(t *testing.T) {
 	t.Run("Fixkosten-Eingabe im ersten Monat ist erlaubt", func(t *testing.T) {
 		d := ersteJahrDaten()
 		d.Eingaben = append(d.Eingaben, store.FixkostenEingabeSummary{ID: 1, Monat: "2026-09-01"})
-		if got, _ := pruefeAbrechnungDaten(d, 2026, 2); !got.Abrechenbar() {
+		if got, _ := pruefeAbrechnungDaten(d, 2026, ganzesJahr, 2); !got.Abrechenbar() {
 			t.Errorf("Maengel = %v, want none", maengelTexte(got))
 		}
 	})
 	t.Run("zwei Eingaben im ersten Monat sind mehrdeutig", func(t *testing.T) {
 		d := ersteJahrDaten()
 		d.Eingaben = append(d.Eingaben, store.FixkostenEingabeSummary{ID: 1, Monat: "2026-09-01"}, store.FixkostenEingabeSummary{ID: 2, Monat: "2026-09-01"})
-		got, _ := pruefeAbrechnungDaten(d, 2026, 2)
+		got, _ := pruefeAbrechnungDaten(d, 2026, ganzesJahr, 2)
 		if fmt.Sprint(maengelTexte(got)) != "[Mehr als eine Fixkosten-Eingabe: September 2026]" {
 			t.Errorf("Maengel = %v, want the duplicate September entry", maengelTexte(got))
 		}
@@ -264,7 +264,7 @@ func TestPruefeAbrechnung_ErstesErfassungsjahr(t *testing.T) {
 	t.Run("ab dem Folgemonat ist die Eingabe Pflicht", func(t *testing.T) {
 		d := ersteJahrDaten()
 		d.Eingaben = d.Eingaben[1:] // drop October
-		got, _ := pruefeAbrechnungDaten(d, 2026, 2)
+		got, _ := pruefeAbrechnungDaten(d, 2026, ganzesJahr, 2)
 		if fmt.Sprint(maengelTexte(got)) != "[Fixkosten-Eingabe fehlt: Oktober 2026]" {
 			t.Errorf("Maengel = %v, want Fixkosten-Eingabe fehlt: Oktober 2026", maengelTexte(got))
 		}
@@ -272,7 +272,7 @@ func TestPruefeAbrechnung_ErstesErfassungsjahr(t *testing.T) {
 	t.Run("die erste Ablesung muss vollstaendig sein", func(t *testing.T) {
 		d := ersteJahrDaten()
 		d.Periods[0] = teilstandPeriode(1, "2026-09-15", "2026-09-01")
-		got, _ := pruefeAbrechnungDaten(d, 2026, 2)
+		got, _ := pruefeAbrechnungDaten(d, 2026, ganzesJahr, 2)
 		if fmt.Sprint(maengelTexte(got)) != "[Ablesung ist ein Teilstand: September 2026]" {
 			t.Errorf("Maengel = %v, want the Teilstand in September", maengelTexte(got))
 		}
@@ -281,7 +281,7 @@ func TestPruefeAbrechnung_ErstesErfassungsjahr(t *testing.T) {
 		d := ersteJahrDaten()
 		d.Periods = append(d.Periods, monatlichePerioden(10, 2027, time.January, 2027, time.December)...)
 		d.Eingaben = append(d.Eingaben, eingabenFuer(2027, time.January, time.December)...)
-		got, _ := pruefeAbrechnungDaten(d, 2027, 2)
+		got, _ := pruefeAbrechnungDaten(d, 2027, ganzesJahr, 2)
 		if !got.Abrechenbar() || got.Zeitraum.TeilJahr || got.Zeitraum.Von.Format("2006-01-02") != "2027-01-01" {
 			t.Errorf("2027: Maengel %v, Zeitraum %+v, want abrechenbar and a full year", maengelTexte(got), got.Zeitraum)
 		}
@@ -292,7 +292,7 @@ func TestPruefeAbrechnung_KeinZeitraum(t *testing.T) {
 	apartments, haus := stammdatenOK()
 
 	t.Run("noch keine Ablesung", func(t *testing.T) {
-		got, _ := pruefeAbrechnungDaten(abrechnungPruefDaten{Apartments: apartments, Haus: haus}, 2027, 2)
+		got, _ := pruefeAbrechnungDaten(abrechnungPruefDaten{Apartments: apartments, Haus: haus}, 2027, ganzesJahr, 2)
 		if got.Zeitraum != nil || fmt.Sprint(arten(got)) != fmt.Sprint([]mangelArt{mangelKeinZeitraum}) {
 			t.Fatalf("got Zeitraum %+v, Arten %v, want no Zeitraum and one kein_zeitraum", got.Zeitraum, arten(got))
 		}
@@ -302,7 +302,7 @@ func TestPruefeAbrechnung_KeinZeitraum(t *testing.T) {
 	})
 	t.Run("Jahr vor der ersten Ablesung", func(t *testing.T) {
 		d := ersteJahrDaten()
-		got, _ := pruefeAbrechnungDaten(d, 2025, 2)
+		got, _ := pruefeAbrechnungDaten(d, 2025, ganzesJahr, 2)
 		if got.Zeitraum != nil || len(got.Maengel) != 1 || !strings.Contains(got.Maengel[0].Text, "Für 2025 gibt es keine Daten") {
 			t.Fatalf("got Zeitraum %+v, Maengel %v, want no Zeitraum and the 2025 message", got.Zeitraum, maengelTexte(got))
 		}
@@ -315,7 +315,7 @@ func TestPruefeAbrechnung_KeinZeitraum(t *testing.T) {
 	t.Run("ungueltiges Datum der ersten Ablesung verlinkt die Ablesung", func(t *testing.T) {
 		d := ersteJahrDaten()
 		d.Periods[0].ReadingDate = "kaputt"
-		got, _ := pruefeAbrechnungDaten(d, 2026, 2)
+		got, _ := pruefeAbrechnungDaten(d, 2026, ganzesJahr, 2)
 		if got.Zeitraum != nil || len(got.Maengel) != 1 || !strings.Contains(got.Maengel[0].Text, "kaputt") {
 			t.Fatalf("got Zeitraum %+v, Maengel %v, want no Zeitraum and the invalid-date message", got.Zeitraum, maengelTexte(got))
 		}
@@ -326,7 +326,7 @@ func TestPruefeAbrechnung_KeinZeitraum(t *testing.T) {
 	})
 	t.Run("laufendes Jahr nennt die fehlenden Monate", func(t *testing.T) {
 		d := ersteJahrDaten()
-		got, _ := pruefeAbrechnungDaten(d, 2027, 2)
+		got, _ := pruefeAbrechnungDaten(d, 2027, ganzesJahr, 2)
 		if got.Abrechenbar() {
 			t.Fatal("2027 without any data is abrechenbar, want findings")
 		}
@@ -340,7 +340,7 @@ func TestPruefeAbrechnung_Stammdaten(t *testing.T) {
 	run := func(mut func(a []store.Apartment, h *store.Haus), apartmentID int64) []string {
 		d := vollesJahrDaten()
 		mut(d.Apartments, &d.Haus)
-		got, err := pruefeAbrechnungDaten(d, 2027, apartmentID)
+		got, err := pruefeAbrechnungDaten(d, 2027, ganzesJahr, apartmentID)
 		if err != nil {
 			t.Fatalf("pruefeAbrechnungDaten: %v", err)
 		}
@@ -393,7 +393,7 @@ func TestPruefeAbrechnung_Stammdaten(t *testing.T) {
 }
 
 func TestPruefeAbrechnung_UnbekannteWohnung(t *testing.T) {
-	if _, err := pruefeAbrechnungDaten(vollesJahrDaten(), 2027, 3); err == nil {
+	if _, err := pruefeAbrechnungDaten(vollesJahrDaten(), 2027, ganzesJahr, 3); err == nil {
 		t.Error("unknown apartment: err = nil, want an error")
 	}
 }
@@ -462,7 +462,7 @@ func TestStandardJahrUndPruefungAufGeladenenDaten(t *testing.T) {
 			if err != nil {
 				t.Fatalf("pruefeAbrechnungAlteLadung(%d): %v", y, err)
 			}
-			onData, err := pruefeAbrechnungDaten(d.Pruef, y, apartmentID)
+			onData, err := pruefeAbrechnungDaten(d.Pruef, y, ganzesJahr, apartmentID)
 			if err != nil {
 				t.Fatalf("pruefeAbrechnungDaten(%d): %v", y, err)
 			}

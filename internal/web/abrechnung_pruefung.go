@@ -43,9 +43,26 @@ type abrechnungMangel struct {
 // its text without a link.
 func (m abrechnungMangel) HatZiel() bool { return m.Pfad != "" }
 
+// monatsbereich is the range of months of a year a Jahresabrechnung covers,
+// as month numbers 1-12 (volle Monate, for a Mieterwechsel inside the year).
+type monatsbereich struct{ Von, Bis int }
+
+// ganzesJahr is the default: the whole calendar year.
+var ganzesJahr = monatsbereich{Von: 1, Bis: 12}
+
+// gueltig reports whether the range is 1 <= Von <= Bis <= 12.
+func (b monatsbereich) gueltig() bool { return 1 <= b.Von && b.Von <= b.Bis && b.Bis <= 12 }
+
 // abrechnungZeitraum is the billing period of one Jahresabrechnung.
 type abrechnungZeitraum struct {
 	Jahr int
+	// Teilzeitraum is true if the period was narrowed to some months of the
+	// year (a Mieterwechsel). The first Erfassungsjahr alone is a TeilJahr,
+	// not a Teilzeitraum.
+	Teilzeitraum bool
+	// LetzterMonat is the last Abrechnungsmonat of the period (first of
+	// month): December unless narrowed.
+	LetzterMonat time.Time
 	// ErsterMonat is the first Abrechnungsmonat of the period (first of
 	// month): the month of the first Ablesung in the first Erfassungsjahr,
 	// else January.
@@ -68,6 +85,14 @@ type abrechnungPruefung struct {
 	// Ablesung, or no Ablesung yet) - then Maengel says why.
 	Zeitraum *abrechnungZeitraum
 	Maengel  []abrechnungMangel
+}
+
+// Titel is the heading of the Abrechnung.
+func (z abrechnungZeitraum) Titel() string {
+	if !z.Teilzeitraum {
+		return fmt.Sprintf("Nebenkostenabrechnung %d", z.Jahr)
+	}
+	return "Nebenkostenabrechnung " + germanPeriodLabel(z.Von.Format("2006-01-02")) + " bis " + germanPeriodLabel(z.Bis.Format("2006-01-02"))
 }
 
 // Abrechenbar reports whether the Abrechnung can be produced.
@@ -157,7 +182,12 @@ func ladeAbrechnungDaten(db *sql.DB) (abrechnungDaten, error) {
 //  4. Stammdaten: Vermieter name/address, Objektanschrift and both
 //     Wohnflächen are always required, plus Mieter name and Zustellanschrift
 //     if the apartment is vermietet. The IBAN is optional.
-func pruefeAbrechnungDaten(d abrechnungPruefDaten, jahr int, apartmentID int64) (abrechnungPruefung, error) {
+//
+// A bereich narrows the period to some months of the year (a Mieterwechsel
+// inside the year, always volle Monate): the rules then apply to those months
+// only. A period starting after the first month needs nothing special, its
+// first consumption is the difference to the Ablesung before it.
+func pruefeAbrechnungDaten(d abrechnungPruefDaten, jahr int, bereich monatsbereich, apartmentID int64) (abrechnungPruefung, error) {
 	var apartment *store.Apartment
 	for i := range d.Apartments {
 		if d.Apartments[i].ID == apartmentID {
@@ -169,7 +199,7 @@ func pruefeAbrechnungDaten(d abrechnungPruefDaten, jahr int, apartmentID int64) 
 	}
 
 	var res abrechnungPruefung
-	zeitraum, ablesungVon, fixkostenVon, ok := bestimmeZeitraum(d.Periods, jahr, &res)
+	zeitraum, ablesungVon, fixkostenVon, ok := bestimmeZeitraum(d.Periods, jahr, bereich, &res)
 	if !ok {
 		return res, nil
 	}
@@ -191,7 +221,7 @@ func pruefeAbrechnungDaten(d abrechnungPruefDaten, jahr int, apartmentID int64) 
 		}
 		vollstaendig[p.Monat] = true
 	}
-	for m := ablesungVon; !m.After(dezember(jahr)); m = m.AddDate(0, 1, 0) {
+	for m := ablesungVon; !m.After(zeitraum.LetzterMonat); m = m.AddDate(0, 1, 0) {
 		key := m.Format("2006-01-02")
 		if vollstaendig[key] {
 			continue
@@ -217,7 +247,7 @@ func pruefeAbrechnungDaten(d abrechnungPruefDaten, jahr int, apartmentID int64) 
 	for _, e := range d.Eingaben {
 		eingabenJeMonat[e.Monat]++
 	}
-	for m := ablesungVon; !m.After(dezember(jahr)); m = m.AddDate(0, 1, 0) {
+	for m := ablesungVon; !m.After(zeitraum.LetzterMonat); m = m.AddDate(0, 1, 0) {
 		key := m.Format("2006-01-02")
 		n := eingabenJeMonat[key]
 		switch {
@@ -242,14 +272,11 @@ func pruefeAbrechnungDaten(d abrechnungPruefDaten, jahr int, apartmentID int64) 
 	return res, nil
 }
 
-// dezember returns the first day of December of jahr.
-func dezember(jahr int) time.Time { return time.Date(jahr, time.December, 1, 0, 0, 0, 0, time.UTC) }
-
 // bestimmeZeitraum derives the billing period of jahr from the Ablesungen.
 // It also returns the first month needing an Ablesung and the first month
 // needing a Fixkosten-Eingabe. ok is false if the year has no period; the
 // reason is then already appended to res.
-func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, res *abrechnungPruefung) (z abrechnungZeitraum, ablesungVon, fixkostenVon time.Time, ok bool) {
+func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich monatsbereich, res *abrechnungPruefung) (z abrechnungZeitraum, ablesungVon, fixkostenVon time.Time, ok bool) {
 	if len(periods) == 0 {
 		res.Maengel = append(res.Maengel, abrechnungMangel{
 			Art:    mangelKeinZeitraum,
@@ -286,11 +313,23 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, res *abrechnungPr
 		return z, ablesungVon, fixkostenVon, false
 	}
 
-	z = abrechnungZeitraum{Jahr: jahr, ErsterMonat: time.Date(jahr, time.January, 1, 0, 0, 0, 0, time.UTC), Von: time.Date(jahr, time.January, 1, 0, 0, 0, 0, time.UTC), Bis: time.Date(jahr, time.December, 31, 0, 0, 0, 0, time.UTC)}
-	ablesungVon = time.Date(jahr, time.January, 1, 0, 0, 0, 0, time.UTC)
+	if jahr == firstMonat.Year() && int(firstMonat.Month()) > bereich.Bis {
+		res.Maengel = append(res.Maengel, abrechnungMangel{
+			Art:  mangelKeinZeitraum,
+			Text: "Für den gewählten Zeitraum gibt es keine Daten: die erste Ablesung liegt im " + germanPeriodLabel(firstMonat.Format("2006-01-02")),
+		})
+		return z, ablesungVon, fixkostenVon, false
+	}
+
+	ablesungVon = time.Date(jahr, time.Month(bereich.Von), 1, 0, 0, 0, 0, time.UTC)
+	letzter := time.Date(jahr, time.Month(bereich.Bis), 1, 0, 0, 0, 0, time.UTC)
+	z = abrechnungZeitraum{
+		Jahr: jahr, Teilzeitraum: bereich != ganzesJahr, ErsterMonat: ablesungVon, LetzterMonat: letzter,
+		Von: ablesungVon, Bis: letzter.AddDate(0, 1, -1),
+	}
 	fixkostenVon = ablesungVon
 
-	if jahr == firstMonat.Year() {
+	if jahr == firstMonat.Year() && !firstMonat.Before(ablesungVon) {
 		z.TeilJahr = true
 		z.ErsterMonat = firstMonat
 		ablesungVon = firstMonat

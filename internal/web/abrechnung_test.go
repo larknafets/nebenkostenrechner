@@ -422,3 +422,85 @@ func saveStammdaten(t *testing.T, db *sql.DB, mutate func(s *store.StammdatenSav
 		t.Fatalf("SaveStammdaten: %v", err)
 	}
 }
+
+// TestBerechneAbrechnung_Teilzeitraum: a Mieterwechsel splits the year into
+// two periods that together equal the whole period (per-month rounding makes
+// the sums exact up to the cent of each line).
+func TestBerechneAbrechnung_Teilzeitraum(t *testing.T) {
+	db := teiljahrDB(t, true)
+	d, err := ladeAbrechnungDaten(db)
+	if err != nil {
+		t.Fatalf("ladeAbrechnungDaten: %v", err)
+	}
+	rechne := func(b monatsbereich) *abrechnung {
+		t.Helper()
+		erg, err := berechneAbrechnung(db, d, 2026, b, 2)
+		if err != nil || erg.Abrechnung == nil {
+			t.Fatalf("berechneAbrechnung(%+v): err %v, Maengel %v", b, err, maengelTexte(erg.Pruefung))
+		}
+		return erg.Abrechnung
+	}
+	ganz := rechne(ganzesJahr)
+	a := rechne(monatsbereich{Von: 10, Bis: 10})
+	b := rechne(monatsbereich{Von: 11, Bis: 12})
+
+	if a.Zeitraum.Titel() != "Nebenkostenabrechnung Oktober 2026 bis Oktober 2026" || !a.Zeitraum.Teilzeitraum {
+		t.Errorf("Titel = %q, Teilzeitraum %v", a.Zeitraum.Titel(), a.Zeitraum.Teilzeitraum)
+	}
+	if got := b.Zeitraum.Von.Format("2006-01-02") + " " + b.Zeitraum.Bis.Format("2006-01-02"); got != "2026-11-01 2026-12-31" {
+		t.Errorf("Zeitraum B = %s, want 2026-11-01 2026-12-31", got)
+	}
+	if b.Zeitraum.TeilJahr || b.Zeitraum.Zusatz != "" {
+		t.Errorf("a period after the first month is no Teiljahr: %+v", b.Zeitraum)
+	}
+	if ganz.Zeitraum.Teilzeitraum || ganz.Zeitraum.Titel() != "Nebenkostenabrechnung 2026" {
+		t.Errorf("ganzes Jahr: Titel %q Teilzeitraum %v", ganz.Zeitraum.Titel(), ganz.Zeitraum.Teilzeitraum)
+	}
+
+	nah := func(x, y float64) bool { return math.Abs(x-y) < 0.0151 }
+	if a.Vorauszahlungen != 100 || b.Vorauszahlungen != 100 {
+		t.Errorf("Vorauszahlungen = %v + %v, want 100 + 100 (Dec missing)", a.Vorauszahlungen, b.Vorauszahlungen)
+	}
+	if !nah(a.Betriebskosten+b.Betriebskosten, ganz.Betriebskosten) {
+		t.Errorf("Betriebskosten %v + %v, want %v", a.Betriebskosten, b.Betriebskosten, ganz.Betriebskosten)
+	}
+	if !nah(a.Heizung.Betrag+b.Heizung.Betrag, ganz.Heizung.Betrag) || !nah(a.Wasser.Betrag+b.Wasser.Betrag, ganz.Wasser.Betrag) {
+		t.Errorf("Heizung/Wasser of the parts do not add up to the whole")
+	}
+	if !nah(a.Saldo.wert+b.Saldo.wert, ganz.Saldo.wert) {
+		t.Errorf("Saldo %v + %v, want %v", a.Saldo.wert, b.Saldo.wert, ganz.Saldo.wert)
+	}
+}
+
+func TestPruefeAbrechnung_Teilzeitraum(t *testing.T) {
+	d := ladeTeiljahrPruefDaten(t)
+	t.Run("nur Monate des Zeitraums pruefen", func(t *testing.T) {
+		d := d
+		d.Eingaben = d.Eingaben[:0] // no Fixkosten at all
+		got, err := pruefeAbrechnungDaten(d, 2026, monatsbereich{Von: 11, Bis: 11}, 2)
+		if err != nil || len(got.Maengel) != 1 || got.Maengel[0].Art != mangelFixkostenFehlt {
+			t.Errorf("Maengel = %+v, err %v, want only the missing Fixkosten of November", got.Maengel, err)
+		}
+	})
+	t.Run("Zeitraum vor der ersten Ablesung", func(t *testing.T) {
+		got, _ := pruefeAbrechnungDaten(d, 2026, monatsbereich{Von: 1, Bis: 8}, 2)
+		if got.Zeitraum != nil || len(got.Maengel) != 1 || got.Maengel[0].Art != mangelKeinZeitraum {
+			t.Errorf("got %+v, want kein_zeitraum", got)
+		}
+	})
+	t.Run("Zeitraum mit dem ersten Monat bleibt Teiljahr", func(t *testing.T) {
+		got, _ := pruefeAbrechnungDaten(d, 2026, monatsbereich{Von: 1, Bis: 10}, 2)
+		if got.Zeitraum == nil || !got.Zeitraum.TeilJahr || got.Zeitraum.Von.Format("2006-01-02") != "2026-09-15" || got.Zeitraum.Bis.Format("2006-01-02") != "2026-10-31" {
+			t.Errorf("Zeitraum = %+v", got.Zeitraum)
+		}
+	})
+}
+
+func ladeTeiljahrPruefDaten(t *testing.T) abrechnungPruefDaten {
+	t.Helper()
+	d, err := ladeAbrechnungDaten(teiljahrDB(t, true))
+	if err != nil {
+		t.Fatalf("ladeAbrechnungDaten: %v", err)
+	}
+	return d.Pruef
+}

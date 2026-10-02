@@ -118,8 +118,8 @@ type abrechnungErgebnis struct {
 // if so, computes the Jahresabrechnung (Issue #166). It reuses
 // calc.Fixkosten per Fixkosten-Eingabe and berechneKosten per Ablesung and
 // only sums them, there is no second cost formula.
-func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, apartmentID int64) (abrechnungErgebnis, error) {
-	pruefung, err := pruefeAbrechnungDaten(d.Pruef, jahr, apartmentID)
+func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich monatsbereich, apartmentID int64) (abrechnungErgebnis, error) {
+	pruefung, err := pruefeAbrechnungDaten(d.Pruef, jahr, bereich, apartmentID)
 	if err != nil {
 		return abrechnungErgebnis{}, err
 	}
@@ -139,7 +139,7 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, apartmentID int
 
 	z := *pruefung.Zeitraum
 	var monate []string // the Abrechnungsmonate of the period, oldest first
-	for m := z.ErsterMonat; !m.After(dezember(jahr)); m = m.AddDate(0, 1, 0) {
+	for m := z.ErsterMonat; !m.After(z.LetzterMonat); m = m.AddDate(0, 1, 0) {
 		monate = append(monate, m.Format("2006-01-02"))
 	}
 	imZeitraum := make(map[string]bool, len(monate))
