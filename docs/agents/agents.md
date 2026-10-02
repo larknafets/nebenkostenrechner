@@ -14,4 +14,9 @@ Subagents isolated in a git worktree must call `/usr/bin/git` instead of plain `
 
 ## Guard hook
 
-A global `PreToolUse` hook (`~/.claude/hooks/block-dangerous-git.sh`) blocks `git push`, `reset --hard`, `clean -f`, `branch -D`, `checkout .` and `restore .` for every agent. It matches the whole command line, so even the text "git push" inside a heredoc or a commit message is blocked: write such files with the Write tool and phrase the message differently. The user runs these commands with `! <command>`.
+A global `PreToolUse` hook (`~/.claude/hooks/block-dangerous-git.sh`) matches every Bash command line against regex patterns, first an allowlist, then a blocklist.
+
+- **Allowed**: `git push -u origin <branch>` for a feature branch (always with explicit remote and branch), `git branch -D <branch>`, and on `main` exactly `git push [-u] origin HEAD:main` (the whole command, nothing else in the same call).
+- **Blocked**: every other push to `main`/`master`, bare `git push` and `git push origin HEAD` (the current branch may be `main`), force, delete, `--mirror`, `--all` and `+refspec` pushes, tag pushes (`vX.Y.Z`, `--tags`), `reset --hard`, `clean -f`, `checkout .`, `restore .`, deleting `main`. The user runs these with `! <command>`; a release tag is always pushed by the user.
+- The match covers the whole command line. Text of a blocked command inside a commit message or heredoc blocks the call, and so does a compound command like `git push origin x && git switch main` (a trailing `main` matches). Write such text to a file with the Write tool, run the commands in separate calls.
+- A separate permission classifier ("auto mode") may still refuse `gh pr create`, `gh pr merge --auto` or a push. The allow rules for them live in `.claude/settings.local.json` (local, not versioned).

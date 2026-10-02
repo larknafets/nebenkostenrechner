@@ -18,7 +18,7 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 - **Plan mode**: make the plan extremely concise, sacrifice grammar for concision. End each plan with a list of unresolved questions, if any.
 - **Git identity**: use the name and email already configured (`git config user.name` / `user.email`), never guess another one.
 - **PR or main**: product changes (`feat`, `fix`, `refactor`, `perf`) go through a PR, ask before opening one. Developer changes (`docs`, `chore`, `ci`, `test`, `style`, `build`) go straight to `main`, no PR, no release. A release only when the user asks.
-- **Push**: a global hook blocks `git push` for the agent. Commit locally, tell the user, the user pushes with `! git push`.
+- **Push**: push a feature branch with `git push -u origin <branch>`, `main` only with exactly `git push origin HEAD:main`. A global hook blocks everything else (tags, force, bare `git push`, other forms on `main`), the user runs those with `! <command>`. Details: `docs/agents/agents.md`.
 - **Changelog**: a `feat` or `fix`, or anything an operator must know when updating, adds one German line to `.changelog/unreleased.md` in the same commit (never as a separate `docs` commit, so a revert takes the line with it). Only the release itself touches `CHANGELOG.md`. Details: `docs/agents/changelog.md`.
 - **Checks**: run `scripts/check` before every commit (`go test ./...` runs only the tests). The pre-push hook (`git config core.hooksPath .githooks`) runs it too.
 
