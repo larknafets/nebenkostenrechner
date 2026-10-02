@@ -35,6 +35,4 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Fehlerkorrekturen
 
-- Ablesungen und Fixkosten-Details passen jetzt aufs Handy: der Zeitraum entfällt, die Logik steht unter der Position, das Badge "unvollständig" bricht um.
-
 ## Wartung

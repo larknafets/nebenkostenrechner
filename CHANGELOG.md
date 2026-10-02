@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.14.2 - 2026-10-02
+
+### Fehlerkorrekturen
+
+- Ablesungen und Fixkosten-Details passen jetzt aufs Handy: der Zeitraum entfällt, die Logik steht unter der Position, das Badge "unvollständig" bricht um.
+
 ## v0.14.1 - 2026-10-02
 
 ### Verbesserungen
