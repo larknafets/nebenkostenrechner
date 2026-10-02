@@ -1,6 +1,6 @@
 # Commit messages
 
-Conventional Commits, in German, terse and exact. Why over what. The release notes are not generated from the subjects (the user-facing text is `.changelog/unreleased.md`, see `releases.md`), the subject is for the developer.
+Conventional Commits, in German, terse and exact. Why over what. The release notes are not generated from the subjects (the user-facing text is `.changelog/unreleased.md`, see `changelog.md`), the subject is for the developer.
 
 ## Language
 
@@ -40,13 +40,12 @@ Conventional Commits, in German, terse and exact. Why over what. The release not
 - Write it for: the non-obvious why, breaking changes, migration notes, linked issues. Always for breaking changes, security fixes, data migrations and reverts.
 - Wrap at 72 characters, bullets with `-`, references to issues at the end.
 
-## Never
+## Style
 
-- "Dieser Commit ...", "wir", "jetzt", "aktuell": the diff says what.
-- "Auf Wunsch von ...".
-- "Generated with Claude Code" or any AI attribution, no emoji.
-- The file name again when the scope already says it.
-- The literal text "git push" (and the other blocked commands, `agents.md`) in the command line that creates the commit.
+- Let the diff say what: no "Dieser Commit ...", "wir", "jetzt", "aktuell", "Auf Wunsch von ...".
+- No AI attribution ("Generated with Claude Code"), no emoji.
+- Leave the file name out when the scope already names it.
+- The guard hook blocks the literal text of a blocked git command (`agents.md`) anywhere in the command line. Write the message to a file with the Write tool and phrase it differently.
 
 ## Examples
 

@@ -2,8 +2,8 @@
 
 ## Product changes: PR. Developer changes: straight to `main`
 
-- **Product changes** (`feat`, `fix`, `refactor`, `perf`) go through a PR so CI runs before the merge. Never open a PR without asking first.
-- **Developer changes** (`docs`, `chore`, `ci`, `test`, `style`, `build`) need no PR and no release. Commit on `main` after `scripts/check` is green, the user pushes (`! git push`, the global guard blocks it for the agent). Branch protection lets the admin push to `main` (`enforce_admins` is off, GitHub prints "Bypassed rule violations"). They get no line in the changelog either, except a `build` change an operator must know about (`releases.md`).
+- **Product changes** (`feat`, `fix`, `refactor`, `perf`) go through a PR so CI runs before the merge. Ask before opening a PR.
+- **Developer changes** (`docs`, `chore`, `ci`, `test`, `style`, `build`) need no PR and no release. Commit on `main` after `scripts/check` is green, the user pushes (`! git push`, the global guard blocks it for the agent). Branch protection lets the admin push to `main` (`enforce_admins` is off, GitHub prints "Bypassed rule violations"). They get no line in the changelog either, except a `build` change an operator must know about (`changelog.md`).
 - `style` means formatting only (whitespace, indentation, `gofmt`), behavior stays identical. A CSS or layout change users can see is a `fix` or `feat`, a rename without behavior change is a `refactor`. If unsure, do not use `style`.
 - Exception to "`docs` goes straight to `main`": the changelog line of a change is not a separate `docs` commit. It belongs to the commit of the change (`feat`, `fix`, or the `build` commit of a Wartung entry) and travels with its PR. `CHANGELOG.md` itself changes only at a release and when old entries are revised, both as a `docs` commit on `main`.
 - A change under `.github/workflows/` is the one risky developer change: `actionlint` catches syntax, not behavior. If the diff does not show how it behaves, use a PR so CI runs before it lands.
@@ -34,5 +34,5 @@
 - **Small unrelated product tweaks of one session** (labels, order of fields, layout) go onto one branch with one PR at the end of the session.
 - One logical change per commit (`git-commit-messages.md`). The release notes come from `CHANGELOG.md`, not from the commit messages: a PR with a user-visible change carries its line in `.changelog/unreleased.md`.
 - Merge a multi-commit PR with `gh pr merge --auto --rebase` so every commit reaches `main` with its own message. Squash-merge only a single-commit PR.
-- Switch on auto-merge when the PR is opened (`--auto`), then it merges as soon as the `test` check is green. The branch must be up to date with `main` (strict check): if it falls behind, `gh pr update-branch <nr> --rebase`.
-- Do not push to a branch whose PR is already merged, the commit would miss `main`. Check `gh pr view` first.
+- After the user agreed to the PR, switch on auto-merge with `--auto` (ask first, a classifier blocks it otherwise), then it merges as soon as the `test` check is green. The branch must be up to date with `main` (strict check): if it falls behind, `gh pr update-branch <nr> --rebase`.
+- Before pushing to an existing branch, check `gh pr view`: a commit pushed after the merge misses `main`.
