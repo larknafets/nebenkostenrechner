@@ -22,7 +22,7 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} \
 # `chown -R 65532:65532` - see README.
 RUN mkdir -p /data-prep && chown 65532:65532 /data-prep
 
-FROM gcr.io/distroless/static-debian12
+FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2
 COPY --from=builder --chown=65532:65532 /data-prep /data
 WORKDIR /data
 ENV DB_PATH=/data/nebenkosten.db
