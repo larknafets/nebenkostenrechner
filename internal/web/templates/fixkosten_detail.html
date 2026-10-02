@@ -22,12 +22,12 @@
   </table>
 
   <table class="letzte" style="margin-top:1.25rem">
-    <thead><tr><th style="width:40%">Position</th><th>Logik</th><th>Wohnung 1</th><th>Wohnung 2</th></tr></thead>
+    <thead><tr><th style="width:40%">Position</th><th class="hide-mobil">Logik</th><th>Wohnung 1</th><th>Wohnung 2</th></tr></thead>
     <tbody>
       {{range .Positionen}}
-      <tr><td>{{.Label}}</td><td>{{.LogikLabel}}</td><td>{{deEUR .KostenW1}}&nbsp;€</td><td>{{deEUR .KostenW2}}&nbsp;€</td></tr>
+      <tr><td>{{.Label}}<span class="nur-mobil">{{.LogikLabel}}</span></td><td class="hide-mobil">{{.LogikLabel}}</td><td>{{deEUR .KostenW1}}&nbsp;€</td><td>{{deEUR .KostenW2}}&nbsp;€</td></tr>
       {{end}}
-      <tr><td colspan="2"><strong>Summe</strong></td><td><strong>{{deEUR .KostenW1}}&nbsp;€</strong></td><td><strong>{{deEUR .KostenW2}}&nbsp;€</strong></td></tr>
+      <tr><td><strong>Summe</strong></td><td class="hide-mobil"></td><td><strong>{{deEUR .KostenW1}}&nbsp;€</strong></td><td><strong>{{deEUR .KostenW2}}&nbsp;€</strong></td></tr>
     </tbody>
   </table>
 </div>

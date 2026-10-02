@@ -337,5 +337,10 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
     .bar-track { order: 3; flex-basis: 100%; }
     .bar-track-center { order: 3; flex-basis: 100%; }
     .verbrauch-liste { order: 3; flex-basis: 100%; }
+    .hide-mobil { display: none; }
+    .badge-umbruch { display: block; width: fit-content; margin-top: .2rem; }
+    table.letzte th, table.letzte td { padding: .4rem .3rem; }
   }
+  .nur-mobil { display: none; }
+  @media (max-width: 480px) { .nur-mobil { display: block; font-size: .75rem; color: var(--muted); } }
 {{end}}

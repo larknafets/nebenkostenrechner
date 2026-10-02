@@ -23,13 +23,13 @@
 {{else}}
 <div class="panel" style="margin-top:1rem">
   <table class="letzte">
-    <thead><tr><th>Monat</th><th>Ablesedatum</th><th>Zeitraum</th><th></th></tr></thead>
+    <thead><tr><th>Monat</th><th>Ablesedatum</th><th class="hide-mobil">Zeitraum</th><th></th></tr></thead>
     <tbody>
       {{range $group := .MonatGruppen}}
       {{range $i, $row := $group.Rows}}
       <tr>
         {{if eq $i 0}}<td rowspan="{{len $group.Rows}}" style="vertical-align:top; font-weight:600">{{$group.MonatLabel}}</td>{{end}}
-        <td>{{$row.ReadingDate}}{{if $row.IstTeilstand}} <span class="badge badge-warning">unvollständig</span>{{end}}</td><td>{{$row.Zeitraum}}</td><td><a href="{{$.Base}}/ablesungen/{{$row.ID}}">Details</a></td>
+        <td>{{$row.ReadingDate}}{{if $row.IstTeilstand}} <span class="badge badge-warning badge-umbruch">unvollständig</span>{{end}}</td><td class="hide-mobil">{{$row.Zeitraum}}</td><td><a href="{{$.Base}}/ablesungen/{{$row.ID}}">Details</a></td>
       </tr>
       {{end}}
       {{end}}
