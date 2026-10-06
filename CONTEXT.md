@@ -62,6 +62,10 @@ Die Seite für Werte, die sich selten ändern und nicht Teil einer monatlichen E
 Je Wohnung "Vermietung" oder "Eigennutzung" (Stammdaten, Startwert Wohnung 1 Eigennutzung, Wohnung 2 Vermietung). Steuert nur, wie die Jahresabrechnung dargestellt wird (Mieter-Block, Rechtshinweise, Pflichtfelder) und nie die Berechnung oder die Heizungs-Gewichtung. Kein Personenbezug, deshalb auch ohne Anmeldung sichtbar (nicht änderbar).
 _Avoid_: Vermietungsstatus, Nutzungsart
 
+**Mieter seit**:
+Ein Monat-Feld je Wohnung in den Stammdaten: der Monat, in dem der aktuelle Mieter eingezogen ist. Nur bei Wohnungsstatus "Vermietung" sichtbar und wirksam, leer heißt "ab Erfassungsbeginn". Ein einzelner aktueller Wert wie der Mietername, nicht historisiert; als Mieter-Angabe personenbezogen und nur für angemeldete Nutzer sichtbar und änderbar. Bestimmt den Startmonat für den Übertrag der Monatstabelle in der Jahresabrechnung (siehe #202). Wer die Abrechnung des Vormieters nach dem Eintragen noch braucht, sichert sie vorher als PDF.
+_Avoid_: Mietbeginn, Einzugsdatum (das Feld hat nur den Monat)
+
 **Umlagefähig**:
 Ein Ja/Nein-Flag je Kostenposition in den Stammdaten: Nur umlagefähige Positionen erscheinen in der Jahresabrechnung. Ein einzelner aktueller Wert ohne Jahresbezug, wirkt rückwirkend auf alle Jahre. Dashboard, Monatsverlauf und Jahreskarten ignorieren das Flag und zeigen weiterhin alle Positionen. Es ersetzt nicht die Berechnungslogik: Eine teilweise umlagefähige Position teilt der Nutzer über die Logik der Fixkosten-Eingabe auf. Keine Abweichung von ADR 0001, der nur einen jahresweisen Stammdaten-Block für Logik/Typ/Wert verworfen hat.
 _Avoid_: umlegbar, abrechenbar (das ist die Vollständigkeit eines Abrechnungsjahres)

@@ -31,6 +31,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
+- Neues Feld "Mieter seit" in den Stammdaten für vermietete Wohnungen: der Einzugsmonat des aktuellen Mieters, nur für angemeldete Nutzer sichtbar (#204)
+
 ## Verbesserungen
 
 - Der Anhang der Abrechnung ist in nummerierte Anlagen gegliedert, auf Seite 1 steht eine Anlagenliste, und keine Anlage bricht im Druck mitten in der Tabelle um. Die Verbrauchsübersicht steht jetzt als Anlage 6 am Ende des Anhangs (#203)
@@ -38,3 +40,5 @@ Keep every section, an empty one included. Do not change the headings.
 ## Fehlerkorrekturen
 
 ## Wartung
+
+- Die Datenbank bekommt beim Start automatisch die neue Spalte "Mieter seit" für Wohnungen, bestehende Daten bleiben unverändert (#204)

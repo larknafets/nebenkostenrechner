@@ -22,6 +22,7 @@
       {{if $.IsLoggedIn}}
       <div class="field"><label>Name des Mieters bzw. Bewohners</label><input type="text" name="mieter_name_{{.ID}}" value="{{.MieterName}}"></div>
       <div class="field"><label>Zustellanschrift</label><textarea name="mieter_anschrift_{{.ID}}" rows="3">{{.MieterAnschrift}}</textarea></div>
+      <div class="field mieter-seit" {{if ne .Status "vermietet"}}hidden{{end}}><label>Mieter seit (Einzugsmonat)</label><input type="month" name="mieter_seit_{{.ID}}" value="{{mieterSeit .MieterSeit}}"><p class="muted klein">Leer: ab Erfassungsbeginn. Der Übertrag in der Abrechnung zählt erst ab diesem Monat.</p></div>
       {{end}}
     </div>
     {{end}}
@@ -72,6 +73,13 @@
 </form>
 
 <script>
+  // "Mieter seit" gilt nur bei Vermietung.
+  document.querySelectorAll('select[name^="status_"]').forEach(function (sel) {
+    sel.addEventListener("change", function () {
+      var field = sel.closest(".panel").querySelector(".mieter-seit");
+      if (field) { field.hidden = sel.value !== "vermietet"; }
+    });
+  });
   document.querySelectorAll(".dirty-form").forEach(function (form) {
     var save = form.querySelector(".dirty-save");
     ["input", "change"].forEach(function (ev) {

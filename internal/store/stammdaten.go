@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"time"
 )
 
 type Apartment struct {
@@ -19,6 +20,11 @@ type Apartment struct {
 	// the Jahresabrechnung is presented and which Stammdaten it requires,
 	// never the calculation.
 	Status string
+	// MieterSeit is the Abrechnungsmonat ("YYYY-MM-01") the current tenant
+	// moved in, or "" for "since the start of the recording". Only meaningful
+	// for a rented apartment. A single current value like MieterName, not
+	// historized. Personal data: shown and edited only for logged-in users.
+	MieterSeit string
 }
 
 // Wohnungsstatus values for apartments.status (Issue #164).
@@ -34,7 +40,7 @@ func ValidStatus(s string) bool {
 
 // Apartments returns the 2 apartments ordered by id.
 func Apartments(db *sql.DB) ([]Apartment, error) {
-	rows, err := db.Query(`SELECT id, name, qm, flurstueck_groesse, mieter_name, mieter_anschrift, status FROM apartments ORDER BY id`)
+	rows, err := db.Query(`SELECT id, name, qm, flurstueck_groesse, mieter_name, mieter_anschrift, status, mieter_seit FROM apartments ORDER BY id`)
 	if err != nil {
 		return nil, fmt.Errorf("query apartments: %w", err)
 	}
@@ -43,7 +49,7 @@ func Apartments(db *sql.DB) ([]Apartment, error) {
 	var out []Apartment
 	for rows.Next() {
 		var a Apartment
-		if err := rows.Scan(&a.ID, &a.Name, &a.QM, &a.FlurstueckGroesse, &a.MieterName, &a.MieterAnschrift, &a.Status); err != nil {
+		if err := rows.Scan(&a.ID, &a.Name, &a.QM, &a.FlurstueckGroesse, &a.MieterName, &a.MieterAnschrift, &a.Status, &a.MieterSeit); err != nil {
 			return nil, fmt.Errorf("scan apartment: %w", err)
 		}
 		out = append(out, a)
@@ -154,6 +160,8 @@ type WohnungDetails struct {
 	MieterName      string
 	MieterAnschrift string
 	Status          string
+	// MieterSeit is "" or an Abrechnungsmonat ("YYYY-MM-01").
+	MieterSeit string
 }
 
 // HausDetails is the house's Vermieter/Objekt/IBAN data as edited on
@@ -198,9 +206,14 @@ func SaveStammdaten(db *sql.DB, in StammdatenSave) error {
 			if !ValidStatus(w.Status) {
 				return fmt.Errorf("invalid status %q for apartment %d", w.Status, apartmentID)
 			}
+			if w.MieterSeit != "" {
+				if _, err := time.Parse("2006-01-02", w.MieterSeit); err != nil || len(w.MieterSeit) != 10 || w.MieterSeit[8:] != "01" {
+					return fmt.Errorf("invalid mieter_seit %q for apartment %d", w.MieterSeit, apartmentID)
+				}
+			}
 			if _, err := tx.Exec(
-				`UPDATE apartments SET mieter_name = ?, mieter_anschrift = ?, status = ? WHERE id = ?`,
-				w.MieterName, w.MieterAnschrift, w.Status, apartmentID,
+				`UPDATE apartments SET mieter_name = ?, mieter_anschrift = ?, status = ?, mieter_seit = ? WHERE id = ?`,
+				w.MieterName, w.MieterAnschrift, w.Status, w.MieterSeit, apartmentID,
 			); err != nil {
 				return fmt.Errorf("update details for apartment %d: %w", apartmentID, err)
 			}

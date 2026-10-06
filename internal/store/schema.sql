@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS apartments (
     flurstueck_groesse REAL NOT NULL DEFAULT 0,
     mieter_name        TEXT NOT NULL DEFAULT '',
     mieter_anschrift   TEXT NOT NULL DEFAULT '',
-    status             TEXT NOT NULL DEFAULT 'vermietet'
+    status             TEXT NOT NULL DEFAULT 'vermietet',
+    mieter_seit        TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS meters (

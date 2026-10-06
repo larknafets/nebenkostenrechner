@@ -84,6 +84,11 @@ func Open(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("migrate apartments details columns: %w", err)
 	}
 
+	if err := ensureMieterSeitColumn(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("migrate apartments mieter_seit column: %w", err)
+	}
+
 	if err := ensureHausDetailsColumns(db); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("migrate haus details columns: %w", err)
@@ -334,6 +339,24 @@ func ensureApartmentsDetailsColumns(db *sql.DB) error {
 		return fmt.Errorf("set starting status: %w", err)
 	}
 	return tx.Commit()
+}
+
+// ensureMieterSeitColumn adds apartments.mieter_seit to a database that
+// predates it. The default "" means "since the start of the recording", so
+// existing data keeps its meaning. On a brand-new database schema.sql
+// already has the column.
+func ensureMieterSeitColumn(db *sql.DB) error {
+	has, err := hasColumn(db, "apartments", "mieter_seit")
+	if err != nil {
+		return err
+	}
+	if has {
+		return nil
+	}
+	if _, err := db.Exec(`ALTER TABLE apartments ADD COLUMN mieter_seit TEXT NOT NULL DEFAULT ''`); err != nil {
+		return fmt.Errorf("add apartments mieter_seit column: %w", err)
+	}
+	return nil
 }
 
 // ensureHausDetailsColumns adds the Vermieter/Objekt/IBAN/Kontoinhaber columns to a haus
