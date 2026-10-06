@@ -62,6 +62,10 @@ Die Seite für Werte, die sich selten ändern und nicht Teil einer monatlichen E
 Je Wohnung "Vermietung" oder "Eigennutzung" (Stammdaten, Startwert Wohnung 1 Eigennutzung, Wohnung 2 Vermietung). Steuert nur, wie die Jahresabrechnung dargestellt wird (Mieter-Block, Rechtshinweise, Pflichtfelder) und nie die Berechnung oder die Heizungs-Gewichtung. Kein Personenbezug, deshalb auch ohne Anmeldung sichtbar (nicht änderbar).
 _Avoid_: Vermietungsstatus, Nutzungsart
 
+**Mieter seit**:
+Ein Monat-Feld je Wohnung in den Stammdaten: der Monat, in dem der aktuelle Mieter eingezogen ist. Nur bei Wohnungsstatus "Vermietung" sichtbar und wirksam, leer heißt "ab Erfassungsbeginn". Ein einzelner aktueller Wert wie der Mietername, nicht historisiert; als Mieter-Angabe personenbezogen und nur für angemeldete Nutzer sichtbar und änderbar. Bestimmt den Startmonat für den **Übertrag Vorjahre** der Monatstabelle in der Jahresabrechnung. Wer die Abrechnung des Vormieters nach dem Eintragen noch braucht, sichert sie vorher als PDF.
+_Avoid_: Mietbeginn, Einzugsdatum (das Feld hat nur den Monat)
+
 **Umlagefähig**:
 Ein Ja/Nein-Flag je Kostenposition in den Stammdaten: Nur umlagefähige Positionen erscheinen in der Jahresabrechnung. Ein einzelner aktueller Wert ohne Jahresbezug, wirkt rückwirkend auf alle Jahre. Dashboard, Monatsverlauf und Jahreskarten ignorieren das Flag und zeigen weiterhin alle Positionen. Es ersetzt nicht die Berechnungslogik: Eine teilweise umlagefähige Position teilt der Nutzer über die Logik der Fixkosten-Eingabe auf. Keine Abweichung von ADR 0001, der nur einen jahresweisen Stammdaten-Block für Logik/Typ/Wert verworfen hat.
 _Avoid_: umlegbar, abrechenbar (das ist die Vollständigkeit eines Abrechnungsjahres)
@@ -107,6 +111,13 @@ _Avoid_: Fehler, Warnung
 
 **Jahresabrechnung**:
 Die Betriebskostenabrechnung einer Wohnung für einen Abrechnungszeitraum, live aus den vorhandenen Daten berechnet und nichts festgeschrieben. Sie zeigt nur umlagefähige Kostenpositionen, Heizung/Warmwasser und Wasser/Abwasser (Verbrauch) sowie, wenn das Stammdaten-Flag es erlaubt, den Stromverbrauch von Wohnung 2 als eigenen Block. Je Position steht der Anteil als Summe der je Monat auf den Cent gerundeten Monatsanteile, wie im Dashboard (daher sind wenige Cent Abweichung zu "Gesamtkosten mal Prozentsatz" möglich). Wechselt die Berechnungslogik einer Position im Zeitraum, gibt es je zusammenhängendem Zeitraum gleicher Logik eine Zeile. Eine Position, für die die abgerechnete Wohnung nichts zahlt (z. B. voll der anderen Wohnung zugerechnet), erscheint nicht.
+
+**Übertrag Vorjahre**:
+Der Saldo (Nebenkostenabschlag minus Kosten nach Abrechnungs-Logik) aller Monate vom Startmonat bis zum Monat vor dem Zeitraum der Jahresabrechnung, Anfangswert des kumulierten Saldos der Monatstabelle. Startmonat ist der spätere von "Mieter seit" (nur bei Vermietung) und dem Monat der ersten Ablesung. Hat ein Monat dieses Bereichs einen Mangel, ist er nicht berechenbar und entfällt mit Hinweis. Nicht der Dashboard-Saldo: Der zählt auch nicht umlagefähige Positionen.
+_Avoid_: Vortrag, Saldovortrag
+
+**Anlage**:
+Ein nummerierter Teil des Anhangs der Jahresabrechnung (1 Monatsverlauf und Saldo bis 7 Zählerstände), aufgelistet auf Seite 1 und im Druck nicht umbrechend. Anlage 7 steht allein im Querformat auf der letzten Seite.
 
 **Jahressaldo**:
 Vorauszahlungen (Nebenkostenabschläge des Abrechnungszeitraums, ein fehlender zählt als 0) minus die Betriebskosten der Jahresabrechnung minus den weiterberechneten Strom. Positiv Guthaben, negativ Nachzahlung, null Ausgeglichen. Nicht der fortlaufend kumulierte Saldo des Dashboards, aber bei lückenlosen Daten und lauter umlagefähigen Positionen gleich dessen Änderung über das Jahr.

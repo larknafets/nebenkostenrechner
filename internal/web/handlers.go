@@ -79,6 +79,9 @@ var templateFuncs = template.FuncMap{
 	"monat":         germanPeriodLabel,
 	"monatKurz":     germanPeriodLabelShort,
 	"personen":      personenZelle,
+	"mieterSeit":    func(stored string) monatInput { return monatInputFromStored(stored) },
+	"anlage":        anlageUeberschrift,
+	"anlagen":       anlagenListe,
 	"deDatumZeit":   formatDatumZeitDE,
 	"kategorieIcon": kategorieIcon,
 	// orZero unwraps a Teilstand-capable (partial-reading-capable)

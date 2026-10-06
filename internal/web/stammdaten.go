@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -54,6 +55,12 @@ func parseHeizungGewichtung(raw string) (float64, error) {
 	return v, nil
 }
 
+// gueltigerMonat reports whether s is an Abrechnungsmonat ("YYYY-MM-01").
+func gueltigerMonat(s string) bool {
+	t, err := time.Parse("2006-01-02", s)
+	return err == nil && t.Day() == 1 && len(s) == 10
+}
+
 // formText reads a free-text form field: surrounding whitespace is trimmed
 // and line breaks are normalized to \n (a textarea submits \r\n).
 func formText(r *http.Request, name string) string {
@@ -92,6 +99,7 @@ func handleStammdatenForm(a auth) http.HandlerFunc {
 			for i := range apartments {
 				apartments[i].MieterName = ""
 				apartments[i].MieterAnschrift = ""
+				apartments[i].MieterSeit = ""
 			}
 			haus.VermieterName, haus.VermieterAnschrift, haus.ObjektAnschrift, haus.IBAN, haus.Kontoinhaber = "", "", "", "", ""
 		}
@@ -155,10 +163,16 @@ func handleUpdateStammdaten() http.HandlerFunc {
 				http.Error(w, "ungültiger Wohnungsstatus für Wohnung "+idStr, http.StatusBadRequest)
 				return
 			}
+			mieterSeit := monatInput(r.FormValue("mieter_seit_" + idStr)).toStored()
+			if mieterSeit != "" && !gueltigerMonat(mieterSeit) {
+				http.Error(w, "ungültiges Datum für \"Mieter seit\" bei Wohnung "+idStr, http.StatusBadRequest)
+				return
+			}
 			wohnungen[a.ID] = store.WohnungDetails{
 				MieterName:      formText(r, "mieter_name_"+idStr),
 				MieterAnschrift: formText(r, "mieter_anschrift_"+idStr),
 				Status:          status,
+				MieterSeit:      mieterSeit,
 			}
 		}
 

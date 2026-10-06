@@ -390,3 +390,75 @@ func TestValidateFixkostenMonateEindeutig(t *testing.T) {
 		t.Errorf("duplicate month: err = %v, want an error naming Januar 2026", err)
 	}
 }
+
+// TestStammdaten_MieterSeit verifies "Mieter seit": saved from the form as
+// an Abrechnungsmonat, shown only to logged-in users and only for a rented
+// apartment, and an invalid value is rejected.
+func TestStammdaten_MieterSeit(t *testing.T) {
+	db := openTestDB(t)
+	basis := func() url.Values {
+		return url.Values{
+			"qm_1": {"100"}, "flurstueck_groesse_1": {"600"},
+			"qm_2": {"50"}, "flurstueck_groesse_2": {"400"},
+			"status_1": {"eigennutzung"}, "status_2": {"vermietet"}, "heizung_gewichtung": {"0.7"},
+		}
+	}
+	post := func(form url.Values) int {
+		req := httptest.NewRequest(http.MethodPost, "/stammdaten", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
+		handleUpdateStammdaten()(w, requestWithDB(req, db))
+		return w.Code
+	}
+	get := func(a auth) string {
+		req := httptest.NewRequest(http.MethodGet, "/stammdaten", nil)
+		w := httptest.NewRecorder()
+		handleStammdatenForm(a)(w, requestWithDB(req, db))
+		if w.Code != http.StatusOK {
+			t.Fatalf("GET status = %d", w.Code)
+		}
+		return w.Body.String()
+	}
+
+	form := basis()
+	form.Set("mieter_seit_2", "2025-07")
+	if code := post(form); code != http.StatusFound {
+		t.Fatalf("POST status = %d, want %d", code, http.StatusFound)
+	}
+	apartments, err := store.Apartments(db)
+	if err != nil {
+		t.Fatalf("Apartments: %v", err)
+	}
+	if got := apartments[1].MieterSeit; got != "2025-07-01" {
+		t.Errorf("MieterSeit = %q, want 2025-07-01", got)
+	}
+
+	// Logged in: the field shows the month, hidden for the Eigennutzung apartment.
+	body := get(newAuth("", nil))
+	if !strings.Contains(body, `name="mieter_seit_2" value="2025-07"`) {
+		t.Error("logged in: the field of Wohnung 2 does not show 2025-07")
+	}
+	if !strings.Contains(body, `<div class="field mieter-seit" hidden>`) {
+		t.Error("logged in: the field of the Eigennutzung apartment is not hidden")
+	}
+
+	// Not logged in: no field, no value.
+	body = get(newAuth("geheim", nil))
+	if strings.Contains(body, `name="mieter_seit_`) || strings.Contains(body, "2025-07") {
+		t.Error("not logged in: Mieter seit is visible")
+	}
+
+	bad := basis()
+	bad.Set("mieter_seit_2", "kein-monat")
+	if code := post(bad); code != http.StatusBadRequest {
+		t.Errorf("invalid Mieter seit: POST status = %d, want %d", code, http.StatusBadRequest)
+	}
+	// Clearing is allowed.
+	if code := post(basis()); code != http.StatusFound {
+		t.Errorf("clearing Mieter seit: POST status = %d, want %d", code, http.StatusFound)
+	}
+	apartments, _ = store.Apartments(db)
+	if got := apartments[1].MieterSeit; got != "" {
+		t.Errorf("MieterSeit after clearing = %q, want empty", got)
+	}
+}

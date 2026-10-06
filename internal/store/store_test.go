@@ -2137,3 +2137,89 @@ func TestOrderRule_Check(t *testing.T) {
 		t.Errorf("monat > next: err = %v, want PeriodMonatTooLateError", err)
 	}
 }
+
+// TestEnsureMieterSeitColumn verifies the migration is additive: an existing
+// installation's apartments keep their data and get mieter_seit = "" (since
+// the start of the recording).
+func TestEnsureMieterSeitColumn(t *testing.T) {
+	t.Run("fuegt Spalte zu einer alten Tabelle hinzu, leer, Bestandsdaten bleiben erhalten", func(t *testing.T) {
+		db, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "old.db"))
+		if err != nil {
+			t.Fatalf("open sqlite: %v", err)
+		}
+		t.Cleanup(func() { db.Close() })
+
+		if _, err := db.Exec(`CREATE TABLE apartments (
+			id INTEGER PRIMARY KEY, name TEXT NOT NULL, qm REAL NOT NULL,
+			mieter_name TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'vermietet'
+		)`); err != nil {
+			t.Fatalf("create old-shape apartments table: %v", err)
+		}
+		if _, err := db.Exec(`INSERT INTO apartments (id, name, qm, mieter_name) VALUES (2, 'Wohnung 2', 86, 'Erika Beispiel')`); err != nil {
+			t.Fatalf("insert pre-existing row: %v", err)
+		}
+
+		if err := ensureMieterSeitColumn(db); err != nil {
+			t.Fatalf("ensureMieterSeitColumn: %v", err)
+		}
+
+		var name, seit string
+		if err := db.QueryRow(`SELECT mieter_name, mieter_seit FROM apartments WHERE id = 2`).Scan(&name, &seit); err != nil {
+			t.Fatalf("query migrated column: %v", err)
+		}
+		if name != "Erika Beispiel" || seit != "" {
+			t.Errorf("row = (%q, %q), want (%q, %q)", name, seit, "Erika Beispiel", "")
+		}
+		if err := ensureMieterSeitColumn(db); err != nil {
+			t.Fatalf("second call must be idempotent: %v", err)
+		}
+	})
+
+	t.Run("neue Tabelle hat die Spalte bereits - no-op", func(t *testing.T) {
+		db := openTestDB(t)
+		if err := ensureMieterSeitColumn(db); err != nil {
+			t.Fatalf("ensureMieterSeitColumn on an already-current schema: %v", err)
+		}
+	})
+}
+
+// TestSaveStammdaten_MieterSeit verifies "Mieter seit" is saved, can be
+// cleared again, and only an Abrechnungsmonat ("YYYY-MM-01") is accepted.
+func TestSaveStammdaten_MieterSeit(t *testing.T) {
+	db := openTestDB(t)
+	save := func(seit string) error {
+		return SaveStammdaten(db, StammdatenSave{
+			Apartments:              map[int64]StammdatenInput{1: {QM: 100, FlurstueckGroesse: 600}, 2: {QM: 50, FlurstueckGroesse: 400}},
+			HeizungWaermeGewichtung: 0.7,
+			Wohnungen: map[int64]WohnungDetails{
+				1: {Status: StatusEigennutzung},
+				2: {Status: StatusVermietet, MieterSeit: seit},
+			},
+		})
+	}
+	seitVon := func() string {
+		apartments, err := Apartments(db)
+		if err != nil {
+			t.Fatalf("Apartments: %v", err)
+		}
+		return apartments[1].MieterSeit
+	}
+
+	if err := save("2025-07-01"); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	if got := seitVon(); got != "2025-07-01" {
+		t.Errorf("MieterSeit = %q, want 2025-07-01", got)
+	}
+	if err := save(""); err != nil {
+		t.Fatalf("save (cleared): %v", err)
+	}
+	if got := seitVon(); got != "" {
+		t.Errorf("MieterSeit = %q, want cleared", got)
+	}
+	for _, bad := range []string{"2025-07", "2025-07-15", "juli 2025", "2025-13-01"} {
+		if err := save(bad); err == nil {
+			t.Errorf("save(%q) = nil, want an error", bad)
+		}
+	}
+}

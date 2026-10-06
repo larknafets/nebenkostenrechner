@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -219,7 +221,7 @@ func TestAbrechnungSeite_Layout(t *testing.T) {
 		mustContain(t, body,
 			`class="abr-ergebnis"`, `class="abr-body"`, `class="abr-haupt"`, `<aside class="abr-seite">`,
 			"<h3>Fixkosten</h3>", "<h3>Verbrauchsabhängig</h3>", "<h3>Saldoberechnung</h3>",
-			`<div class="anhang">`, "<h3>Verbrauchsübersicht</h3>", "<h3>Bezugsgrößen der Verteilerschlüssel</h3>", "<h3>Personenzahl je Monat</h3>")
+			`<div class="anhang">`, "<h3>Anlage 6: Verbrauchsübersicht</h3>", "<h3>Anlage 3: Bezugsgrößen der Verteilerschlüssel</h3>", "<h3>Anlage 4: Personenzahl je Monat</h3>")
 		// The sidebar carries the calculation and the notes, the notes name the legal basis.
 		mustContain(t, body, "Belege können auf Verlangen eingesehen werden", "Rundungsdifferenzen")
 		// The month table of the heating has no weighting and no Personen column.
@@ -230,6 +232,7 @@ func TestAbrechnungSeite_Layout(t *testing.T) {
 		mustContain(t, body,
 			"@page { size: A4; margin: 14mm 15mm; }",
 			"break-before: page",
+			".anlage { break-inside: avoid; }", "thead { display: table-header-group; }",
 			"--bg: #fff !important", "--text: #000 !important",
 			`class="muted no-print"`,          // the navigation
 			`class="theme-toggle no-print"`,   // the theme switch
@@ -333,5 +336,134 @@ func TestAbrechnungSeite_Teilzeitraum(t *testing.T) {
 			_, body := getAbrechnung(t, mux, "?jahr=2026&wohnung=2"+q, nil)
 			mustContain(t, body, "Nebenkostenabrechnung 2026")
 		}
+	})
+}
+
+// TestAbrechnungSeite_Anlagen checks the numbered Anlagen of the Anhang: the
+// list on page 1 and the headings carry the same numbers and titles in the
+// same order, and each Anlage is its own block that does not break.
+func TestAbrechnungSeite_Anlagen(t *testing.T) {
+	mux := demoMux(t)
+	_, body := getAbrechnung(t, mux, "?jahr=2025&wohnung=2", nil)
+
+	var want []string
+	for _, a := range abrechnungAnlagen {
+		want = append(want, fmt.Sprintf("Anlage %d: %s", a.Nr, a.Titel))
+	}
+
+	headings := regexp.MustCompile(`<h3>(Anlage \d+: [^<]*)</h3>`).FindAllStringSubmatch(body, -1)
+	var got []string
+	for _, m := range headings {
+		got = append(got, m[1])
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("headings = %v, want %v", got, want)
+	}
+
+	liste := regexp.MustCompile(`<li value="(\d+)">([^<]*)</li>`).FindAllStringSubmatch(body, -1)
+	var items []string
+	for _, m := range liste {
+		items = append(items, "Anlage "+m[1]+": "+m[2])
+	}
+	if !reflect.DeepEqual(items, want) {
+		t.Errorf("Anlagenliste = %v, want %v", items, want)
+	}
+
+	// The list sits in the sidebar of page 1, before the Anhang.
+	if strings.Index(body, `class="klein anlagen-liste"`) > strings.Index(body, `<div class="anhang">`) {
+		t.Error("Anlagenliste steht nicht vor dem Anhang")
+	}
+	if got := strings.Count(body, `<section class="anlage`); got != len(want) {
+		t.Errorf("Anlage blocks = %d, want %d", got, len(want))
+	}
+	// The Verbrauchsübersicht follows the Verteilerschlüssel as Anlage 6.
+	if strings.Index(body, "Anlage 5: Verteilerschlüssel</h3>") > strings.Index(body, "Anlage 6: Verbrauchsübersicht</h3>") {
+		t.Error("Anlage 6 steht vor Anlage 5")
+	}
+}
+
+// TestAbrechnungSeite_Monatsverlauf checks that the Monatsverlauf (Anlage 1)
+// is rendered with its rows, the sum row and the Jahressaldo.
+func TestAbrechnungSeite_Monatsverlauf(t *testing.T) {
+	mux := demoMux(t)
+	_, body := getAbrechnung(t, mux, "?jahr=2025&wohnung=2", nil)
+
+	mustContain(t, body,
+		"<h3>Anlage 1: Monatsverlauf und Saldo</h3>",
+		`data-l="Saldo kumuliert"`, "davon Jahressaldo", "Januar 2025", "Dezember 2025",
+		"weiterberechnete Strom Wohnung 2")
+	// Anlage 1 comes first in the Anhang.
+	if strings.Index(body, "Anlage 1: Monatsverlauf") > strings.Index(body, "Anlage 2: Heizung") {
+		t.Error("Anlage 1 steht nicht vor Anlage 2")
+	}
+	// The last cumulative balance is the Jahressaldo of the Saldoberechnung
+	// (no carry-over yet), so the page shows it twice in the table.
+	if got := strings.Count(body, "- 308,65"); got < 2 {
+		t.Errorf("Jahressaldo - 308,65 € erscheint %d Mal, want at least 2 (Saldoberechnung and Monatsverlauf)", got)
+	}
+}
+
+// TestAbrechnungSeite_Zaehlerstaende checks Anlage 7: all meters as columns,
+// the Ausgangsstand, the landscape page rule in the right order and the
+// Anlage as the last block of the Anhang.
+func TestAbrechnungSeite_Zaehlerstaende(t *testing.T) {
+	mux := demoMux(t)
+	_, body := getAbrechnung(t, mux, "?jahr=2025&wohnung=2", nil)
+
+	mustContain(t, body,
+		"<h3>Anlage 7: Zählerstände</h3>", `id="anlage-zaehlerstaende"`, "Ausgangsstand",
+		"Ablesedatum", "Abrechnungsmonat", "Einspeisung (PV)", "Wallboxen", "01.12.2024", "Dezember 2024")
+
+	// The named page must come after the default @page rule, or Chrome keeps
+	// everything in portrait.
+	standard := strings.Index(body, "@page { size: A4;")
+	quer := strings.Index(body, "@page quer { size: A4 landscape;")
+	if standard < 0 || quer < 0 || quer < standard {
+		t.Errorf("@page quer (%d) must follow the default @page (%d)", quer, standard)
+	}
+	mustContain(t, body, ".anlage-quer { page: quer; break-before: page; }")
+
+	// Anlage 7 is the last block of the Anhang: after it only closing tags.
+	rest := body[strings.Index(body, `id="anlage-zaehlerstaende"`):]
+	rest = rest[strings.Index(rest, "</section>")+len("</section>"):]
+	nach := regexp.MustCompile(`(?s)^(\s|</div>)*`).FindString(rest)
+	if after := strings.TrimPrefix(rest, nach); strings.Contains(after[:min(len(after), 400)], "<section") || strings.Contains(after[:min(len(after), 400)], "<h3") {
+		t.Errorf("there is more content after Anlage 7: %q", after[:min(len(after), 120)])
+	}
+
+	// Not in the card layout: the mobile rules keep it a table.
+	mustContain(t, body, ".anlage-quer table { display: table;")
+	mustNotContain(t, body, `data-l="Strom gesamt"`)
+}
+
+// TestAbrechnungSeite_Uebertrag checks the Übertrag Vorjahre in Anlage 1: the
+// row and the explaining footnote, and the note when it cannot be calculated.
+func TestAbrechnungSeite_Uebertrag(t *testing.T) {
+	t.Run("Übertrag und Fußnote", func(t *testing.T) {
+		_, body := getAbrechnung(t, demoMux(t), "?jahr=2025&wohnung=2", nil)
+		mustContain(t, body, "<em>Übertrag Vorjahre</em>", "Übertrag Vorjahre: Saldo aus Nebenkostenabschlag minus Kosten der Monate")
+		mustNotContain(t, body, "Übertrag nicht berechenbar")
+	})
+
+	t.Run("nicht berechenbar", func(t *testing.T) {
+		db := openTestDB(t)
+		if err := store.SeedDemoData(db, time.Date(2026, time.October, 15, 0, 0, 0, 0, time.UTC)); err != nil {
+			t.Fatalf("SeedDemoData: %v", err)
+		}
+		eingaben, err := store.AllFixkostenEingabenDetails(db)
+		if err != nil {
+			t.Fatalf("AllFixkostenEingabenDetails: %v", err)
+		}
+		for _, e := range eingaben {
+			if e.Monat == "2024-06-01" {
+				if err := store.DeleteFixkostenEingabe(db, e.ID); err != nil {
+					t.Fatalf("DeleteFixkostenEingabe: %v", err)
+				}
+			}
+		}
+		mux := NewMux(db, openTestDB(t), "", "")
+		_, body := getAbrechnung(t, mux, "?jahr=2025&wohnung=2", nil)
+		mustContain(t, body, "Übertrag nicht berechenbar: Fixkosten-Eingabe fehlt: Juni 2024")
+		mustNotContain(t, body, "<em>Übertrag Vorjahre</em>")
 	})
 }

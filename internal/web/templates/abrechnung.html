@@ -30,9 +30,17 @@
   .zeitraum-felder[hidden] { display: none; }
   .anhang { margin-top: 1.5rem; }
   .anhang table { font-size: .85rem; }
+  .anlagen-liste { margin: 0 0 .5rem 1.1rem; padding: 0; }
+  .tabwrap { overflow-x: auto; }
+  .tabwrap th { vertical-align: bottom; }
+  .tabwrap th .einheit { display: block; font-weight: 400; text-transform: none; }
 
   /* Druck und PDF: immer DIN A4, hell, ohne Bedienelemente. */
   @page { size: A4; margin: 14mm 15mm; }
+  /* Benannte Seite für Anlage 7: Querformat. Muss NACH der Regel oben stehen,
+     sonst überschreibt Chrome sie und alles bleibt Hochformat. */
+  @page quer { size: A4 landscape; margin: 14mm 12mm; }
+  .anlage-quer { page: quer; break-before: page; }
   @media print {
     :root, :root[data-theme="dark"], :root[data-theme="light"] {
       --bg: #fff !important; --panel: #fff !important; --border: #cfd3da !important; --text: #000 !important;
@@ -53,6 +61,14 @@
     .abr-ergebnis, .abr-seite { break-inside: avoid; }
     .abr-body { grid-template-columns: 1fr 58mm; gap: 6mm; }
     .anhang { break-before: page; margin-top: 0; }
+    /* Eine Anlage bricht nicht um und rückt ganz auf die nächste Seite. Ist sie
+       länger als eine Seite, wiederholt sich die Kopfzeile. */
+    .anlage { break-inside: avoid; }
+    .tabwrap { overflow: visible; }
+    .anlage-quer table { font-size: 7.5pt; }
+    .anlage-quer th, .anlage-quer td { padding: .12rem .25rem; }
+    .anlage-quer .klein { font-size: 7pt; }
+    .abrechnung thead { display: table-header-group; }
   }
 
   /* Mobil: Kopf mit Ergebnis oben, Tabellen als gestapelte Karten, die
@@ -69,6 +85,13 @@
     .abrechnung td { border: 0; padding: .1rem 0; text-align: left !important; }
     .abrechnung td[data-l]::before { content: attr(data-l) ": "; color: var(--muted); font-size: .75rem; }
     .abrechnung tr.summe { border-color: var(--text); }
+    /* Anlage 7 hat 12 Spalten: kein Karten-Layout, sondern waagerecht scrollen. */
+    .anlage-quer table { display: table; width: auto; min-width: 100%; }
+    .anlage-quer thead { display: table-header-group; }
+    .anlage-quer tbody { display: table-row-group; }
+    .anlage-quer tr { display: table-row; border: 0; padding: 0; margin: 0; }
+    .anlage-quer th, .anlage-quer td { display: table-cell; width: auto; padding: .3rem .4rem; white-space: nowrap; border-bottom: 1px solid var(--border); }
+    .abrechnung .anlage-quer td.r, .abrechnung .anlage-quer th.r { text-align: right !important; }
   }
 </style>
 
@@ -219,28 +242,57 @@
       {{if and (not .Eigennutzung) $ab.Saldo.Nachzahlung .Haus.IBAN}}
       <p class="klein">Bankverbindung: {{if .Haus.Kontoinhaber}}{{.Haus.Kontoinhaber}}{{else}}{{.Haus.VermieterName}}{{end}}, IBAN {{.Haus.IBAN}}</p>
       {{end}}
+      <h3>Anlagen</h3>
+      <ol class="klein anlagen-liste">
+        {{range anlagen}}<li value="{{.Nr}}">{{.Titel}}</li>
+        {{end}}
+      </ol>
     </aside>
   </div>
 
   <div class="anhang">
     <h2>Anhang</h2>
-
-    <h3>Verbrauchsübersicht</h3>
+    <section class="anlage" id="anlage-monatsverlauf">
+    <h3>{{anlage "monatsverlauf"}}</h3>
     <table>
-      <thead><tr><th>Zähler</th><th class="r">Stand Beginn</th><th class="r">Stand Ende</th><th class="r">Verbrauch</th></tr></thead>
+      <thead><tr><th>Monat</th><th class="r">Fixkosten</th><th class="r">Verbrauchskosten<sup>1</sup></th><th class="r">Abschlag</th><th class="r">Saldo kumuliert</th></tr></thead>
       <tbody>
-        {{range $ab.Verbrauch}}
-        <tr {{if .Eigen}}class="b"{{end}}>
-          <td data-l="Zähler">{{.Zaehler}}</td>
-          <td class="r" data-l="Beginn">{{de3 .Beginn}}&nbsp;{{.Einheit}}</td>
-          <td class="r" data-l="Ende">{{de3 .Ende}}&nbsp;{{.Einheit}}</td>
-          <td class="r" data-l="Verbrauch">{{de3 .Verbrauch}}&nbsp;{{.Einheit}}</td>
+        {{if $ab.Monatsverlauf.Uebertrag.Vorhanden}}
+        <tr>
+          <td data-l="Monat"><em>Übertrag Vorjahre</em></td>
+          <td></td><td></td><td></td>
+          <td class="r b" data-l="Saldo kumuliert">{{deEUR $ab.Monatsverlauf.Uebertrag.Betrag}}&nbsp;€</td>
         </tr>
         {{end}}
+        {{range $ab.Monatsverlauf.Zeilen}}
+        <tr>
+          <td data-l="Monat">{{monat .Monat}}</td>
+          <td class="r" data-l="Fixkosten">{{deEUR .Fixkosten}}&nbsp;€</td>
+          <td class="r" data-l="Verbrauchskosten">{{deEUR .Verbrauch}}&nbsp;€</td>
+          <td class="r" data-l="Abschlag">{{deEUR .Abschlag}}&nbsp;€</td>
+          <td class="r b" data-l="Saldo kumuliert">{{deEUR .Saldo}}&nbsp;€</td>
+        </tr>
+        {{end}}
+        <tr class="summe">
+          <td data-l="Monat">Summe</td>
+          <td class="r" data-l="Fixkosten">{{deEUR $ab.Monatsverlauf.Fixkosten}}&nbsp;€</td>
+          <td class="r" data-l="Verbrauchskosten">{{deEUR $ab.Monatsverlauf.Verbrauch}}&nbsp;€</td>
+          <td class="r" data-l="Abschlag">{{deEUR $ab.Monatsverlauf.Abschlag}}&nbsp;€</td>
+          <td class="r" data-l="Saldo kumuliert">{{deEUR $ab.Monatsverlauf.Endsaldo}}&nbsp;€</td>
+        </tr>
+        <tr>
+          <td data-l="Monat">davon Jahressaldo (siehe Saldoberechnung)</td>
+          <td></td><td></td><td></td>
+          <td class="r" data-l="Jahressaldo">{{.SaldoText}}</td>
+        </tr>
       </tbody>
     </table>
+    <p class="muted klein"><sup>1</sup> Heizung, Wasser und Abwasser{{if $ab.StromW2}} sowie der laut Vereinbarung weiterberechnete Strom Wohnung 2{{end}}. Fixkosten: nur umlagefähige Kostenpositionen, jeweils der Anteil der abgerechneten Wohnung.{{with $ab.Monatsverlauf.Uebertrag}}{{if .Vorhanden}} Übertrag Vorjahre: Saldo aus Nebenkostenabschlag minus Kosten der Monate {{monat .Von}} bis {{monat .Bis}}.{{end}}{{end}}</p>
+    {{with $ab.Monatsverlauf.Uebertrag.Hinweis}}<p class="klein"><strong>{{.}}</strong></p>{{end}}
+    </section>
 
-    <h3>Heizung und Warmwasser je Monat</h3>
+    <section class="anlage" id="anlage-heizung">
+    <h3>{{anlage "heizung"}}</h3>
     <table>
       <thead><tr>
         <th>Monat</th><th class="r">WP-Strom (kWh)</th>
@@ -260,8 +312,9 @@
         {{end}}
       </tbody>
     </table>
-
-    <h3>Bezugsgrößen der Verteilerschlüssel</h3>
+    </section>
+    <section class="anlage" id="anlage-bezug">
+    <h3>{{anlage "bezug"}}</h3>
     <table>
       <thead><tr>
         <th>Schlüssel</th>
@@ -280,8 +333,9 @@
         {{end}}
       </tbody>
     </table>
-
-    <h3>Personenzahl je Monat</h3>
+    </section>
+    <section class="anlage" id="anlage-personen">
+    <h3>{{anlage "personen"}}</h3>
     <table>
       <thead>
         <tr><th rowspan="2">Monat</th><th colspan="2" class="r">Fixkosten-Eingabe (Schlüssel Personen)</th><th colspan="2" class="r">Ablesung (Warmwasser)</th></tr>
@@ -303,9 +357,50 @@
       </tbody>
     </table>
     <p class="muted klein">Die Personenzahl der Fixkosten-Eingabe bestimmt den Schlüssel "Personen", die der Ablesung verteilt den Verbrauch der Warmwasseraufbereitung auf beide Wohnungen.</p>
-
-    <h3>Verteilerschlüssel</h3>
+    </section>
+    <section class="anlage" id="anlage-schluessel">
+    <h3>{{anlage "schluessel"}}</h3>
     <p class="muted klein"><strong>Je Wohneinheit:</strong> beide Wohnungen zu gleichen Teilen. <strong>Wohnfläche:</strong> Anteil an der Gesamtwohnfläche laut Tabelle. <strong>Flurstück:</strong> Anteil am Grundstück laut Tabelle. <strong>Personen:</strong> Personenzahl je Monat laut Fixkosten-Eingabe, über den Zeitraum gewichtet. <strong>Heizung und Warmwasser:</strong> Die Kosten des Wärmepumpenstroms werden nach gemessenem Wärmeverbrauch und nach Wohnfläche im Verhältnis {{.GewichtungWaerme}} % zu {{.GewichtungFlaeche}} % verteilt.</p>
+  
+    </section>
+    <section class="anlage" id="anlage-verbrauch">
+    <h3>{{anlage "verbrauch"}}</h3>
+    <table>
+      <thead><tr><th>Zähler</th><th class="r">Stand Beginn</th><th class="r">Stand Ende</th><th class="r">Verbrauch</th></tr></thead>
+      <tbody>
+        {{range $ab.Verbrauch}}
+        <tr {{if .Eigen}}class="b"{{end}}>
+          <td data-l="Zähler">{{.Zaehler}}</td>
+          <td class="r" data-l="Beginn">{{de3 .Beginn}}&nbsp;{{.Einheit}}</td>
+          <td class="r" data-l="Ende">{{de3 .Ende}}&nbsp;{{.Einheit}}</td>
+          <td class="r" data-l="Verbrauch">{{de3 .Verbrauch}}&nbsp;{{.Einheit}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </section>
+    {{/* Anlage 7 steht allein auf einer Querseite und ist das letzte Element im
+         Fluss: Nach ihr darf nichts mehr folgen, sonst entsteht eine leere Seite. */}}
+    <section class="anlage anlage-quer" id="anlage-zaehlerstaende">
+      <h3>{{anlage "zaehlerstaende"}}</h3>
+      <div class="tabwrap">
+        <table>
+          <thead><tr>
+            <th>Ablesedatum</th><th>Abrechnungsmonat</th>
+            {{range $ab.Zaehlerstaende.Spalten}}<th class="r{{if .Eigen}} sel{{end}}">{{.Zaehler}}<br><span class="einheit">{{.Einheit}}</span></th>{{end}}
+          </tr></thead>
+          <tbody>
+            {{range $ab.Zaehlerstaende.Zeilen}}
+            <tr>
+              <td>{{deDatum .Ablesedatum}}</td>
+              <td>{{monat .Monat}}{{if .Ausgangsstand}}<br><span class="muted klein">Ausgangsstand</span>{{end}}</td>
+              {{range .Staende}}<td class="r{{if .Eigen}} b{{end}}">{{de3 .Wert}}</td>{{end}}
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 </div>
 
