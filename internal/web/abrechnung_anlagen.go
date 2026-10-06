@@ -16,6 +16,7 @@ type abrechnungAnlage struct {
 
 // abrechnungAnlagen lists the Anlagen in print order.
 var abrechnungAnlagen = []abrechnungAnlage{
+	{Key: "monatsverlauf", Nr: 1, Titel: "Monatsverlauf und Saldo"},
 	{Key: "heizung", Nr: 2, Titel: "Heizung und Warmwasser je Monat"},
 	{Key: "bezug", Nr: 3, Titel: "Bezugsgrößen der Verteilerschlüssel"},
 	{Key: "personen", Nr: 4, Titel: "Personenzahl je Monat"},

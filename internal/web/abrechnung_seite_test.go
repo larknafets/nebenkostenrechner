@@ -381,3 +381,24 @@ func TestAbrechnungSeite_Anlagen(t *testing.T) {
 		t.Error("Anlage 6 steht vor Anlage 5")
 	}
 }
+
+// TestAbrechnungSeite_Monatsverlauf checks that the Monatsverlauf (Anlage 1)
+// is rendered with its rows, the sum row and the Jahressaldo.
+func TestAbrechnungSeite_Monatsverlauf(t *testing.T) {
+	mux := demoMux(t)
+	_, body := getAbrechnung(t, mux, "?jahr=2025&wohnung=2", nil)
+
+	mustContain(t, body,
+		"<h3>Anlage 1: Monatsverlauf und Saldo</h3>",
+		`data-l="Saldo kumuliert"`, "davon Jahressaldo", "Januar 2025", "Dezember 2025",
+		"weiterberechnete Strom Wohnung 2")
+	// Anlage 1 comes first in the Anhang.
+	if strings.Index(body, "Anlage 1: Monatsverlauf") > strings.Index(body, "Anlage 2: Heizung") {
+		t.Error("Anlage 1 steht nicht vor Anlage 2")
+	}
+	// The last cumulative balance is the Jahressaldo of the Saldoberechnung
+	// (no carry-over yet), so the page shows it twice in the table.
+	if got := strings.Count(body, "- 308,65"); got < 2 {
+		t.Errorf("Jahressaldo - 308,65 € erscheint %d Mal, want at least 2 (Saldoberechnung and Monatsverlauf)", got)
+	}
+}

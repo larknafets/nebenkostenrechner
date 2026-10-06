@@ -234,6 +234,36 @@
 
   <div class="anhang">
     <h2>Anhang</h2>
+    <section class="anlage" id="anlage-monatsverlauf">
+    <h3>{{anlage "monatsverlauf"}}</h3>
+    <table>
+      <thead><tr><th>Monat</th><th class="r">Fixkosten</th><th class="r">Verbrauchskosten<sup>1</sup></th><th class="r">Abschlag</th><th class="r">Saldo kumuliert</th></tr></thead>
+      <tbody>
+        {{range $ab.Monatsverlauf.Zeilen}}
+        <tr>
+          <td data-l="Monat">{{monat .Monat}}</td>
+          <td class="r" data-l="Fixkosten">{{deEUR .Fixkosten}}&nbsp;€</td>
+          <td class="r" data-l="Verbrauchskosten">{{deEUR .Verbrauch}}&nbsp;€</td>
+          <td class="r" data-l="Abschlag">{{deEUR .Abschlag}}&nbsp;€</td>
+          <td class="r b" data-l="Saldo kumuliert">{{deEUR .Saldo}}&nbsp;€</td>
+        </tr>
+        {{end}}
+        <tr class="summe">
+          <td data-l="Monat">Summe</td>
+          <td class="r" data-l="Fixkosten">{{deEUR $ab.Monatsverlauf.Fixkosten}}&nbsp;€</td>
+          <td class="r" data-l="Verbrauchskosten">{{deEUR $ab.Monatsverlauf.Verbrauch}}&nbsp;€</td>
+          <td class="r" data-l="Abschlag">{{deEUR $ab.Monatsverlauf.Abschlag}}&nbsp;€</td>
+          <td class="r" data-l="Saldo kumuliert">{{deEUR $ab.Monatsverlauf.Endsaldo}}&nbsp;€</td>
+        </tr>
+        <tr>
+          <td data-l="Monat">davon Jahressaldo (siehe Saldoberechnung)</td>
+          <td></td><td></td><td></td>
+          <td class="r" data-l="Jahressaldo">{{.SaldoText}}</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="muted klein"><sup>1</sup> Heizung, Wasser und Abwasser{{if $ab.StromW2}} sowie der laut Vereinbarung weiterberechnete Strom Wohnung 2{{end}}. Fixkosten: nur umlagefähige Kostenpositionen, jeweils der Anteil der abgerechneten Wohnung.</p>
+    </section>
 
     <section class="anlage" id="anlage-heizung">
     <h3>{{anlage "heizung"}}</h3>

@@ -73,6 +73,28 @@ type abrechnungPersonenMonat struct {
 	Ablesung  map[int64]int64
 }
 
+// abrechnungMonatZeile is one Abrechnungsmonat of the Monatsverlauf (Anlage
+// 1): the month's costs of the settled apartment against its
+// Nebenkostenabschlag, and the balance accumulated up to and including the
+// month. All values are rounded to the cent.
+type abrechnungMonatZeile struct {
+	Monat string
+	// Fixkosten are the umlagefähige Kostenpositionen, Verbrauch is
+	// Heizung plus Wasser and, if passed on, the electricity of Wohnung 2.
+	Fixkosten, Verbrauch, Abschlag float64
+	// Saldo is the running balance (Abschlag minus costs) from the first
+	// month of the period; positive Guthaben, negative Nachzahlung.
+	Saldo float64
+}
+
+// abrechnungMonatsverlauf is the Monatsverlauf with its sum row.
+type abrechnungMonatsverlauf struct {
+	Zeilen []abrechnungMonatZeile
+	// Fixkosten, Verbrauch and Abschlag are the column sums, Endsaldo the
+	// balance of the last month.
+	Fixkosten, Verbrauch, Abschlag, Endsaldo float64
+}
+
 // abrechnung is the computed Jahresabrechnung of one apartment and year.
 type abrechnung struct {
 	Jahr      int
@@ -98,6 +120,7 @@ type abrechnung struct {
 	Saldo *AbschlagSaldo
 
 	// Anhang data.
+	Monatsverlauf  abrechnungMonatsverlauf
 	Verbrauch      []abrechnungVerbrauchZeile
 	HeizungMonate  []abrechnungHeizungMonat
 	PersonenMonate []abrechnungPersonenMonat
@@ -186,6 +209,8 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich monatsb
 	var heizungMonate []abrechnungHeizungMonat
 	heizungIdx := map[string]int{}
 	var strom abrechnungStrom
+	stromWeiterberechnet := apartmentID == 2 && haus.StromWeiterberechnen
+	verbrauchJeMonat := map[string]float64{}
 	ab.Heizung = abrechnungZeile{Position: "Heizung und Warmwasser (Wärmepumpe)", Schluessel: heizungSchluessel(haus.HeizungWaermeGewichtung)}
 	ab.Wasser = abrechnungZeile{Position: "Wasser und Abwasser (Verbrauch)", Schluessel: "Gemessener Verbrauch"}
 	for _, p := range periods {
@@ -205,6 +230,10 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich monatsb
 		wasserGesamt, wasserAnteil := anteil.WasserGesamt, anteil.WasserKosten
 		strom.VerbrauchKWh += anteil.StromKWh
 		strom.Kosten += anteil.StromKosten
+		verbrauchJeMonat[p.Monat] += heizungAnteil + wasserAnteil
+		if stromWeiterberechnet {
+			verbrauchJeMonat[p.Monat] += anteil.StromKosten
+		}
 		ab.Heizung.Gesamt += heizungGesamt
 		ab.Heizung.Betrag += heizungAnteil
 		ab.Wasser.Gesamt += wasserGesamt
@@ -232,7 +261,7 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich monatsb
 		zeile.Prozent = prozent(zeile.Betrag, zeile.Gesamt)
 	}
 
-	if apartmentID == 2 && haus.StromWeiterberechnen {
+	if stromWeiterberechnet {
 		ab.StromW2 = &abrechnungStrom{VerbrauchKWh: strom.VerbrauchKWh, Kosten: calc.Round2(strom.Kosten)}
 	}
 
@@ -248,11 +277,52 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich monatsb
 	}
 	ab.Saldo = newAbschlagSaldo(calc.Round2(saldo))
 
+	ab.Monatsverlauf = monatsverlauf(monate, kostenpositionen, eingabeJeMonat, fixErgebnis, verbrauchJeMonat, apartmentID)
 	ab.Verbrauch = verbrauchUebersicht(periods, apartments, meters, imZeitraum, apartmentID)
 	ab.Bezugsgroessen = bezugsgroessen(apartments)
 	ab.PersonenMonate = personenMonate(monate, eingabeJeMonat, periods, apartments)
 
 	return abrechnungErgebnis{Pruefung: pruefung, Abrechnung: ab}, nil
+}
+
+// monatsverlauf builds the Monatsverlauf (Anlage 1) from the same monthly
+// values the cost overview sums, so there is no second cost formula. A month
+// with neither a Fixkosten-Eingabe nor a computable Ablesung (the month of
+// the first Ablesung, which has no consumption) has no row.
+func monatsverlauf(monate []string, kostenpositionen []store.Kostenposition, eingabeJeMonat map[string]*store.FixkostenEingabeDetails, fixErgebnis map[string]*calc.FixkostenErgebnis, verbrauchJeMonat map[string]float64, apartmentID int64) abrechnungMonatsverlauf {
+	var v abrechnungMonatsverlauf
+	for _, m := range monate {
+		e := eingabeJeMonat[m]
+		verbrauch, hatVerbrauch := verbrauchJeMonat[m]
+		if e == nil && !hatVerbrauch {
+			continue
+		}
+		z := abrechnungMonatZeile{Monat: m, Verbrauch: calc.Round2(verbrauch)}
+		if e != nil {
+			z.Abschlag = calc.Round2(e.Abschlag[apartmentID])
+		}
+		if erg := fixErgebnis[m]; erg != nil {
+			for _, kp := range kostenpositionen {
+				if !kp.Umlagefaehig {
+					continue
+				}
+				for _, pos := range erg.Positionen {
+					if pos.Key == kp.Key {
+						z.Fixkosten += pos.KostenFor(apartmentID)
+					}
+				}
+			}
+			z.Fixkosten = calc.Round2(z.Fixkosten)
+		}
+		z.Saldo = calc.Round2(v.Endsaldo + z.Abschlag - z.Fixkosten - z.Verbrauch)
+		v.Fixkosten += z.Fixkosten
+		v.Verbrauch += z.Verbrauch
+		v.Abschlag += z.Abschlag
+		v.Endsaldo = z.Saldo
+		v.Zeilen = append(v.Zeilen, z)
+	}
+	v.Fixkosten, v.Verbrauch, v.Abschlag = calc.Round2(v.Fixkosten), calc.Round2(v.Verbrauch), calc.Round2(v.Abschlag)
+	return v
 }
 
 // fixkostenZeilen builds the lines of one Kostenposition: consecutive months

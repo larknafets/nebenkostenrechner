@@ -31,6 +31,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
+- Neue Anlage "Monatsverlauf und Saldo" im Anhang der Abrechnung: je Monat Fixkosten, Verbrauchskosten und Nebenkostenabschlag mit kumuliertem Saldo, damit der Verlauf von Guthaben oder Nachzahlung nachvollziehbar ist (#205)
+
 - Neues Feld "Mieter seit" in den Stammdaten für vermietete Wohnungen: der Einzugsmonat des aktuellen Mieters, nur für angemeldete Nutzer sichtbar (#204)
 
 ## Verbesserungen

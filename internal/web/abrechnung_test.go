@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"math"
+	"reflect"
 	"testing"
 	"time"
 
@@ -279,6 +280,123 @@ func TestBerechneAbrechnung_VerbrauchVorauszahlungenUndSaldo(t *testing.T) {
 		if erg1.Abrechnung.Vorauszahlungen != 600 {
 			t.Errorf("Vorauszahlungen Wohnung 1 = %v, want 600 (3 x 200)", erg1.Abrechnung.Vorauszahlungen)
 		}
+	})
+}
+
+func TestBerechneAbrechnung_Monatsverlauf(t *testing.T) {
+	nah := func(x, y float64) bool { return math.Abs(x-y) < 0.0151 }
+
+	// pruefe checks the invariants every Monatsverlauf must hold against the
+	// Abrechnung it belongs to.
+	pruefe := func(t *testing.T, ab *abrechnung, stromDazu bool) {
+		t.Helper()
+		v := ab.Monatsverlauf
+		var saldo float64
+		for _, z := range v.Zeilen {
+			saldo = calc.Round2(saldo + z.Abschlag - z.Fixkosten - z.Verbrauch)
+			if !nah(z.Saldo, saldo) {
+				t.Errorf("%s: Saldo = %v, want the running balance %v", z.Monat, z.Saldo, saldo)
+			}
+		}
+		var fix float64
+		for _, z := range ab.Fixkosten {
+			fix += z.Betrag
+		}
+		verbrauch := ab.Heizung.Betrag + ab.Wasser.Betrag
+		if stromDazu {
+			verbrauch += ab.StromW2.Kosten
+		}
+		if !nah(v.Fixkosten, fix) {
+			t.Errorf("Summe Fixkosten = %v, want %v (the umlagefähige positions of the Abrechnung)", v.Fixkosten, fix)
+		}
+		if !nah(v.Verbrauch, verbrauch) {
+			t.Errorf("Summe Verbrauch = %v, want %v", v.Verbrauch, verbrauch)
+		}
+		if !nah(v.Abschlag, ab.Vorauszahlungen) {
+			t.Errorf("Summe Abschlag = %v, want %v", v.Abschlag, ab.Vorauszahlungen)
+		}
+		if !nah(v.Endsaldo, ab.Saldo.wert) {
+			t.Errorf("Endsaldo = %v, want the Jahressaldo %v", v.Endsaldo, ab.Saldo.wert)
+		}
+	}
+
+	t.Run("Wohnung 2 mit Strom", func(t *testing.T) {
+		db := teiljahrDB(t, true)
+		erg, err := berechneAbrechnungDB(db, 2026, 2)
+		if err != nil || erg.Abrechnung == nil {
+			t.Fatalf("berechneAbrechnung: err %v", err)
+		}
+		ab := erg.Abrechnung
+		var monate []string
+		var abschlaege []float64
+		for _, z := range ab.Monatsverlauf.Zeilen {
+			monate = append(monate, z.Monat)
+			abschlaege = append(abschlaege, z.Abschlag)
+		}
+		// The month of the Ausgangsstand (Sep) has no row, the December
+		// Abschlag is missing and counts as 0.
+		if want := []string{"2026-10-01", "2026-11-01", "2026-12-01"}; !reflect.DeepEqual(monate, want) {
+			t.Errorf("Monate = %v, want %v", monate, want)
+		}
+		if want := []float64{100, 100, 0}; !reflect.DeepEqual(abschlaege, want) {
+			t.Errorf("Abschlag = %v, want %v", abschlaege, want)
+		}
+		for _, z := range ab.Monatsverlauf.Zeilen {
+			if z.Fixkosten <= 0 || z.Verbrauch <= 0 {
+				t.Errorf("%s: Fixkosten %v, Verbrauch %v, want both positive", z.Monat, z.Fixkosten, z.Verbrauch)
+			}
+		}
+		// Streaming is not umlagefähig: the monthly Fixkosten do not carry it.
+		oct := ab.Monatsverlauf.Zeilen[0].Fixkosten
+		if want := 50 + 50.0/3 + 100.0/12/2; !nah(oct, want) {
+			t.Errorf("Fixkosten Oktober = %v, want %v (Grundsteuer 50 + Versicherung 1/3 of 50 + Strom-Grundgebühr half of 8,33)", oct, want)
+		}
+		pruefe(t, ab, true)
+	})
+
+	t.Run("Strom nicht weiterberechnet", func(t *testing.T) {
+		db := teiljahrDB(t, false)
+		erg, err := berechneAbrechnungDB(db, 2026, 2)
+		if err != nil || erg.Abrechnung == nil {
+			t.Fatalf("berechneAbrechnung: err %v", err)
+		}
+		pruefe(t, erg.Abrechnung, false)
+	})
+
+	t.Run("Wohnung 1", func(t *testing.T) {
+		db := teiljahrDB(t, true)
+		erg, err := berechneAbrechnungDB(db, 2026, 1)
+		if err != nil || erg.Abrechnung == nil {
+			t.Fatalf("berechneAbrechnung: err %v", err)
+		}
+		for _, z := range erg.Abrechnung.Monatsverlauf.Zeilen {
+			if z.Abschlag != 200 {
+				t.Errorf("%s: Abschlag = %v, want 200", z.Monat, z.Abschlag)
+			}
+		}
+		pruefe(t, erg.Abrechnung, false)
+	})
+
+	t.Run("Teilzeitraum", func(t *testing.T) {
+		db := teiljahrDB(t, true)
+		d, err := ladeAbrechnungDaten(db)
+		if err != nil {
+			t.Fatalf("ladeAbrechnungDaten: %v", err)
+		}
+		erg, err := berechneAbrechnung(db, d, 2026, monatsbereich{Von: 11, Bis: 12}, 2)
+		if err != nil || erg.Abrechnung == nil {
+			t.Fatalf("berechneAbrechnung: err %v", err)
+		}
+		ab := erg.Abrechnung
+		if got := len(ab.Monatsverlauf.Zeilen); got != 2 {
+			t.Fatalf("rows = %d, want 2 (November, December)", got)
+		}
+		// The balance starts at 0 in the first month of the period.
+		z := ab.Monatsverlauf.Zeilen[0]
+		if want := calc.Round2(z.Abschlag - z.Fixkosten - z.Verbrauch); !nah(z.Saldo, want) {
+			t.Errorf("Saldo November = %v, want %v (no carry-over)", z.Saldo, want)
+		}
+		pruefe(t, ab, true)
 	})
 }
 
