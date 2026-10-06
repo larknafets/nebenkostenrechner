@@ -33,6 +33,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Verbesserungen
 
+- Der Anhang der Abrechnung ist in nummerierte Anlagen gegliedert, auf Seite 1 steht eine Anlagenliste, und keine Anlage bricht im Druck mitten in der Tabelle um. Die Verbrauchsübersicht steht jetzt als Anlage 6 am Ende des Anhangs (#203)
+
 ## Fehlerkorrekturen
 
 ## Wartung

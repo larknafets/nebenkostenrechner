@@ -30,6 +30,7 @@
   .zeitraum-felder[hidden] { display: none; }
   .anhang { margin-top: 1.5rem; }
   .anhang table { font-size: .85rem; }
+  .anlagen-liste { margin: 0 0 .5rem 1.1rem; padding: 0; }
 
   /* Druck und PDF: immer DIN A4, hell, ohne Bedienelemente. */
   @page { size: A4; margin: 14mm 15mm; }
@@ -53,6 +54,10 @@
     .abr-ergebnis, .abr-seite { break-inside: avoid; }
     .abr-body { grid-template-columns: 1fr 58mm; gap: 6mm; }
     .anhang { break-before: page; margin-top: 0; }
+    /* Eine Anlage bricht nicht um und rückt ganz auf die nächste Seite. Ist sie
+       länger als eine Seite, wiederholt sich die Kopfzeile. */
+    .anlage { break-inside: avoid; }
+    .abrechnung thead { display: table-header-group; }
   }
 
   /* Mobil: Kopf mit Ergebnis oben, Tabellen als gestapelte Karten, die
@@ -219,28 +224,19 @@
       {{if and (not .Eigennutzung) $ab.Saldo.Nachzahlung .Haus.IBAN}}
       <p class="klein">Bankverbindung: {{if .Haus.Kontoinhaber}}{{.Haus.Kontoinhaber}}{{else}}{{.Haus.VermieterName}}{{end}}, IBAN {{.Haus.IBAN}}</p>
       {{end}}
+      <h3>Anlagen</h3>
+      <ol class="klein anlagen-liste">
+        {{range anlagen}}<li value="{{.Nr}}">{{.Titel}}</li>
+        {{end}}
+      </ol>
     </aside>
   </div>
 
   <div class="anhang">
     <h2>Anhang</h2>
 
-    <h3>Verbrauchsübersicht</h3>
-    <table>
-      <thead><tr><th>Zähler</th><th class="r">Stand Beginn</th><th class="r">Stand Ende</th><th class="r">Verbrauch</th></tr></thead>
-      <tbody>
-        {{range $ab.Verbrauch}}
-        <tr {{if .Eigen}}class="b"{{end}}>
-          <td data-l="Zähler">{{.Zaehler}}</td>
-          <td class="r" data-l="Beginn">{{de3 .Beginn}}&nbsp;{{.Einheit}}</td>
-          <td class="r" data-l="Ende">{{de3 .Ende}}&nbsp;{{.Einheit}}</td>
-          <td class="r" data-l="Verbrauch">{{de3 .Verbrauch}}&nbsp;{{.Einheit}}</td>
-        </tr>
-        {{end}}
-      </tbody>
-    </table>
-
-    <h3>Heizung und Warmwasser je Monat</h3>
+    <section class="anlage" id="anlage-heizung">
+    <h3>{{anlage "heizung"}}</h3>
     <table>
       <thead><tr>
         <th>Monat</th><th class="r">WP-Strom (kWh)</th>
@@ -260,8 +256,9 @@
         {{end}}
       </tbody>
     </table>
-
-    <h3>Bezugsgrößen der Verteilerschlüssel</h3>
+    </section>
+    <section class="anlage" id="anlage-bezug">
+    <h3>{{anlage "bezug"}}</h3>
     <table>
       <thead><tr>
         <th>Schlüssel</th>
@@ -280,8 +277,9 @@
         {{end}}
       </tbody>
     </table>
-
-    <h3>Personenzahl je Monat</h3>
+    </section>
+    <section class="anlage" id="anlage-personen">
+    <h3>{{anlage "personen"}}</h3>
     <table>
       <thead>
         <tr><th rowspan="2">Monat</th><th colspan="2" class="r">Fixkosten-Eingabe (Schlüssel Personen)</th><th colspan="2" class="r">Ablesung (Warmwasser)</th></tr>
@@ -303,9 +301,28 @@
       </tbody>
     </table>
     <p class="muted klein">Die Personenzahl der Fixkosten-Eingabe bestimmt den Schlüssel "Personen", die der Ablesung verteilt den Verbrauch der Warmwasseraufbereitung auf beide Wohnungen.</p>
-
-    <h3>Verteilerschlüssel</h3>
+    </section>
+    <section class="anlage" id="anlage-schluessel">
+    <h3>{{anlage "schluessel"}}</h3>
     <p class="muted klein"><strong>Je Wohneinheit:</strong> beide Wohnungen zu gleichen Teilen. <strong>Wohnfläche:</strong> Anteil an der Gesamtwohnfläche laut Tabelle. <strong>Flurstück:</strong> Anteil am Grundstück laut Tabelle. <strong>Personen:</strong> Personenzahl je Monat laut Fixkosten-Eingabe, über den Zeitraum gewichtet. <strong>Heizung und Warmwasser:</strong> Die Kosten des Wärmepumpenstroms werden nach gemessenem Wärmeverbrauch und nach Wohnfläche im Verhältnis {{.GewichtungWaerme}} % zu {{.GewichtungFlaeche}} % verteilt.</p>
+  
+    </section>
+    <section class="anlage" id="anlage-verbrauch">
+    <h3>{{anlage "verbrauch"}}</h3>
+    <table>
+      <thead><tr><th>Zähler</th><th class="r">Stand Beginn</th><th class="r">Stand Ende</th><th class="r">Verbrauch</th></tr></thead>
+      <tbody>
+        {{range $ab.Verbrauch}}
+        <tr {{if .Eigen}}class="b"{{end}}>
+          <td data-l="Zähler">{{.Zaehler}}</td>
+          <td class="r" data-l="Beginn">{{de3 .Beginn}}&nbsp;{{.Einheit}}</td>
+          <td class="r" data-l="Ende">{{de3 .Ende}}&nbsp;{{.Einheit}}</td>
+          <td class="r" data-l="Verbrauch">{{de3 .Verbrauch}}&nbsp;{{.Einheit}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </section>
   </div>
 </div>
 

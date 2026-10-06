@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -219,7 +221,7 @@ func TestAbrechnungSeite_Layout(t *testing.T) {
 		mustContain(t, body,
 			`class="abr-ergebnis"`, `class="abr-body"`, `class="abr-haupt"`, `<aside class="abr-seite">`,
 			"<h3>Fixkosten</h3>", "<h3>Verbrauchsabhängig</h3>", "<h3>Saldoberechnung</h3>",
-			`<div class="anhang">`, "<h3>Verbrauchsübersicht</h3>", "<h3>Bezugsgrößen der Verteilerschlüssel</h3>", "<h3>Personenzahl je Monat</h3>")
+			`<div class="anhang">`, "<h3>Anlage 6: Verbrauchsübersicht</h3>", "<h3>Anlage 3: Bezugsgrößen der Verteilerschlüssel</h3>", "<h3>Anlage 4: Personenzahl je Monat</h3>")
 		// The sidebar carries the calculation and the notes, the notes name the legal basis.
 		mustContain(t, body, "Belege können auf Verlangen eingesehen werden", "Rundungsdifferenzen")
 		// The month table of the heating has no weighting and no Personen column.
@@ -230,6 +232,7 @@ func TestAbrechnungSeite_Layout(t *testing.T) {
 		mustContain(t, body,
 			"@page { size: A4; margin: 14mm 15mm; }",
 			"break-before: page",
+			".anlage { break-inside: avoid; }", "thead { display: table-header-group; }",
 			"--bg: #fff !important", "--text: #000 !important",
 			`class="muted no-print"`,          // the navigation
 			`class="theme-toggle no-print"`,   // the theme switch
@@ -334,4 +337,47 @@ func TestAbrechnungSeite_Teilzeitraum(t *testing.T) {
 			mustContain(t, body, "Nebenkostenabrechnung 2026")
 		}
 	})
+}
+
+// TestAbrechnungSeite_Anlagen checks the numbered Anlagen of the Anhang: the
+// list on page 1 and the headings carry the same numbers and titles in the
+// same order, and each Anlage is its own block that does not break.
+func TestAbrechnungSeite_Anlagen(t *testing.T) {
+	mux := demoMux(t)
+	_, body := getAbrechnung(t, mux, "?jahr=2025&wohnung=2", nil)
+
+	var want []string
+	for _, a := range abrechnungAnlagen {
+		want = append(want, fmt.Sprintf("Anlage %d: %s", a.Nr, a.Titel))
+	}
+
+	headings := regexp.MustCompile(`<h3>(Anlage \d+: [^<]*)</h3>`).FindAllStringSubmatch(body, -1)
+	var got []string
+	for _, m := range headings {
+		got = append(got, m[1])
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("headings = %v, want %v", got, want)
+	}
+
+	liste := regexp.MustCompile(`<li value="(\d+)">([^<]*)</li>`).FindAllStringSubmatch(body, -1)
+	var items []string
+	for _, m := range liste {
+		items = append(items, "Anlage "+m[1]+": "+m[2])
+	}
+	if !reflect.DeepEqual(items, want) {
+		t.Errorf("Anlagenliste = %v, want %v", items, want)
+	}
+
+	// The list sits in the sidebar of page 1, before the Anhang.
+	if strings.Index(body, `class="klein anlagen-liste"`) > strings.Index(body, `<div class="anhang">`) {
+		t.Error("Anlagenliste steht nicht vor dem Anhang")
+	}
+	if got := strings.Count(body, `<section class="anlage"`); got != len(want) {
+		t.Errorf("Anlage blocks = %d, want %d", got, len(want))
+	}
+	// The Verbrauchsübersicht follows the Verteilerschlüssel as Anlage 6.
+	if strings.Index(body, "Anlage 5: Verteilerschlüssel</h3>") > strings.Index(body, "Anlage 6: Verbrauchsübersicht</h3>") {
+		t.Error("Anlage 6 steht vor Anlage 5")
+	}
 }
