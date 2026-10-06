@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<script>
+  
+  
+  
+  
+  (function () {
+    try {
+      var t = localStorage.getItem("theme");
+      if (t === "light" || t === "dark") {
+        document.documentElement.setAttribute("data-theme", t);
+      }
+    } catch (e) {}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nebenkostenrechner</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f5f7; --panel: #ffffff; --border: #e0e2e7; --text: #1c1e21;
+    --muted: #6b7280; --accent: #2563eb; --accent-soft: #eef2ff; --success: #16a34a;
+    --danger: #b91c1c; --warning: #b45309;
+    --cat-strom: #f59e0b; --cat-heizung: #ef4444; --cat-wasser: #3b82f6; --cat-fix: #8b5cf6;
+    --logik-wohneinheit: #8b5cf6; --logik-flurstueck: #22c55e; --logik-qm: #ec4899; --logik-personen: #06b6d4;
+    --logik-wohnung1: #f59e0b; --logik-wohnung2: #6366f1;
+    --tooltip-bg: #1c1e21; --tooltip-text: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #14161a; --panel: #1c1f26; --border: #2e323c; --text: #e8eaed;
+      --muted: #9aa1ac; --accent: #5b9bf5; --accent-soft: #1e2a3f; --success: #16a34a;
+      --danger: #f87171; --warning: #fbbf24;
+      --cat-strom: #fbbf24; --cat-heizung: #f87171; --cat-wasser: #60a5fa; --cat-fix: #a78bfa;
+      --logik-wohneinheit: #a78bfa; --logik-flurstueck: #4ade80; --logik-qm: #f472b6; --logik-personen: #22d3ee;
+      --logik-wohnung1: #fbbf24; --logik-wohnung2: #818cf8;
+      --tooltip-bg: #e8eaed; --tooltip-text: #14161a;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #14161a; --panel: #1c1f26; --border: #2e323c; --text: #e8eaed;
+    --muted: #9aa1ac; --accent: #5b9bf5; --accent-soft: #1e2a3f; --success: #16a34a;
+    --danger: #f87171; --warning: #fbbf24;
+    --cat-strom: #fbbf24; --cat-heizung: #f87171; --cat-wasser: #60a5fa; --cat-fix: #a78bfa;
+    --logik-wohneinheit: #a78bfa; --logik-flurstueck: #4ade80; --logik-qm: #f472b6; --logik-personen: #22d3ee;
+    --logik-wohnung1: #fbbf24; --logik-wohnung2: #818cf8;
+    --tooltip-bg: #e8eaed; --tooltip-text: #14161a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  a { color: var(--accent); }
+  h1, h2, h3 { margin: 0 0 .5rem; }
+  .app { max-width: 700px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
+   
+  @media print { .no-print { display: none !important; } }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; }
+  .muted { color: var(--muted); font-size: .85rem; }
+  label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: .25rem; }
+  input[type=number], input[type=date], input[type=password], select { width: 100%; padding: .5rem .6rem; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
+  input:disabled { opacity: .6; cursor: not-allowed; }
+  .demo-banner { background: var(--warning); color: #1a1200; font-size: .85rem; font-weight: 600; text-align: center; padding: .5rem 1rem; margin-bottom: 1rem; border-radius: 8px; }
+  .login-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .login-backdrop[hidden] { display: none; }
+  .login-modal { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; width: 320px; max-width: 90vw; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+  .login-error { color: var(--danger); font-size: .8rem; margin-top: .3rem; }
+  .field { margin-bottom: .9rem; }
+  .radio-options { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+  .radio-option { display: flex; align-items: center; gap: .35rem; width: auto; font-size: .9rem; color: var(--text); margin-bottom: 0; }
+  .radio-option input[type=radio] { width: auto; }
+  .warning { color: var(--warning); font-size: .8rem; margin-top: .25rem; min-height: 1em; white-space: pre-line; }
+  .grid { display: grid; gap: 1rem; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .jahressummen-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  button, a.button { display: inline-block; border-radius: 6px; padding: .6rem 1.1rem; font-size: .9rem; cursor: pointer; text-decoration: none; line-height: 1.2; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.primary, a.button.primary { background: var(--accent); color: white; border: none; }
+  button.secondary, a.button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  button.success, a.button.success { background: var(--success); color: white; border: none; }
+  button.danger, a.button.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+  .btn-row { display: flex; gap: .75rem; justify-content: center; align-items: center; flex-wrap: wrap; margin-top: 1.25rem; }
+  .wizard-actions { display: flex; justify-content: space-between; margin-top: 1.25rem; }
+  .c-steps { display: flex; gap: .5rem; margin-bottom: 1.25rem; }
+  .c-step-dot { flex: 1; text-align: center; padding: .5rem; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-size: .8rem; font-weight: 600; }
+  .c-step-dot.active { background: var(--accent); color: white; }
+  .c-pane { display: none; }
+  .c-pane.active { display: block; }
+  .formula { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: .75rem 1rem; font-size: .85rem; overflow-x: auto; white-space: pre; }
+  table.letzte { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  table.letzte th, table.letzte td { padding: .4rem .5rem; text-align: left; border-bottom: 1px solid var(--border); }
+  .badge { display: inline-block; background: var(--accent-soft); color: var(--accent); font-size: .75rem; padding: .15rem .5rem; border-radius: 999px; }
+  .badge-icon { display: inline-flex; align-items: center; gap: .25rem; }
+  .badge-icon svg { width: 12px; height: 12px; fill: currentColor; flex-shrink: 0; }
+   
+  .badge-warning { background: var(--warning); color: #1a1200; }
+  .text-warning { color: var(--warning); }
+  .stat-card .stat-value { font-size: 1.5rem; font-weight: 700; margin-top: .3rem; }
+  .stat-bar-track { display: flex; height: .5rem; border-radius: 999px; overflow: hidden; background: var(--border); margin-top: .5rem; }
+  .stat-bar-seg { height: 100%; }
+  .cat-strom { background: var(--cat-strom); }
+  .cat-heizung { background: var(--cat-heizung); }
+  .cat-wasser { background: var(--cat-wasser); }
+  .cat-fix { background: var(--cat-fix); }
+  .cat-pv { background: var(--success); }
+  .cat-verbrauch-gesamt { background: var(--accent); }
+  .logik-wohneinheit { background: var(--logik-wohneinheit); }
+  .logik-flurstueck { background: var(--logik-flurstueck); }
+  .logik-qm { background: var(--logik-qm); }
+  .logik-personen { background: var(--logik-personen); }
+  .logik-wohnung1 { background: var(--logik-wohnung1); }
+  .logik-wohnung2 { background: var(--logik-wohnung2); }
+  .stat-kategorien { margin-top: .4rem; display: flex; flex-wrap: wrap; gap: .1rem .75rem; }
+  .stat-kategorien span { font-weight: normal; }
+
+  .wohnung-tabs { display: flex; gap: .5rem; margin: 1.5rem 0 1rem; }
+  .wohnung-tab { flex: 1; text-align: center; padding: .55rem; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-size: .85rem; font-weight: 600; border: none; cursor: pointer; }
+  .wohnung-tab.active { background: var(--accent); color: white; }
+  .wohnung-panel { display: none; }
+  .wohnung-panel.active { display: block; }
+
+  .verlauf-legend { display: flex; align-items: center; gap: .3rem 1.25rem; font-size: .75rem; color: var(--muted); margin-bottom: .9rem; flex-wrap: wrap; }
+  .verlauf-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: .35rem; vertical-align: middle; }
+  .mode-toggle { order: -1; flex: 1 0 100%; margin-bottom: .3rem; display: flex; justify-content: flex-end; gap: .3rem; flex-wrap: wrap; }
+  .mode-toggle button { padding: .25rem .6rem; font-size: .72rem; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; }
+  .mode-toggle button.active { background: var(--accent); color: white; border-color: var(--accent); }
+  [data-modus] { display: none; }  
+  .verlauf-year-row span[data-modus] { display: inline; }  
+  .legend-item { display: inline-flex; align-items: center; }
+  .verbrauch-liste { display: block; font-size: .72rem; color: var(--muted); }
+  .v-strom { color: var(--cat-strom); font-weight: 600; }
+  .v-heizung { color: var(--cat-heizung); font-weight: 600; }
+  .v-wasser { color: var(--cat-wasser); font-weight: 600; }
+  .v-fix { color: var(--cat-fix); font-weight: 600; }
+  .v-pv { color: var(--success); font-weight: 600; }
+  .verlauf-tooltip { display: none; position: fixed; background: var(--tooltip-bg); color: var(--tooltip-text); font-size: .72rem; font-weight: 600; padding: .25rem .5rem; border-radius: 4px; pointer-events: none; z-index: 30; white-space: nowrap; }
+  .verlauf-row { display: flex; align-items: center; gap: .5rem; padding: .3rem 0; }
+  .verlauf-row.is-current .month-label { font-weight: 700; color: var(--text); }
+  .month-label { width: 60px; font-size: .72rem; color: var(--muted); flex-shrink: 0; }
+  .value-label { display: inline-block; min-width: 60px; text-align: right; font-size: .78rem; font-weight: 600; flex-shrink: 0; white-space: nowrap; }
+  .bar-track { display: flex; flex: 1; min-width: 0; height: 20px; border-radius: 4px; background: var(--border); overflow: hidden; }
+  .bar-track > div { height: 100%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .bar-track > div span { color: #fff; font-size: .68rem; font-weight: 600; white-space: nowrap; padding: 0 .2rem; text-shadow: 0 1px 1px rgba(0,0,0,.25); }
+  .bar-track > div.fix-seg { border-left: 2px dashed rgba(255,255,255,.6); }
+  .verlauf-row.is-current .bar-track { box-shadow: 0 0 0 2px var(--accent); }
+  .verlauf-none { display: flex; align-items: center; justify-content: center; flex: 1; height: 100%; text-align: center; font-size: .72rem; color: var(--muted); }
+  .verlauf-year-row { display: flex; justify-content: space-between; align-items: center; background: var(--accent-soft); border-radius: 6px; padding: .5rem .7rem; margin-bottom: .5rem; font-weight: 700; font-size: .85rem; color: var(--accent); gap: 1rem; }
+
+   
+  .abschlag-divider { border-top: 1px dashed var(--border); margin: 1.1rem 0; }
+
+   
+  .abschlag-value { margin-top: .7rem; padding-top: .7rem; border-top: 1px solid var(--border); }
+  .abschlag-value .label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  .abschlag-value .amount { font-size: 1.35rem; font-weight: 700; margin-top: .15rem; font-variant-numeric: tabular-nums; }
+  .abschlag-value.guthaben .amount { color: var(--success); }
+  .abschlag-value.nachzahlung .amount { color: var(--danger); }
+  .abschlag-value.ausgeglichen .amount { color: var(--muted); }
+
+   
+  .bar-track-center { display: block; position: relative; flex: 1; min-width: 0; height: 20px; border-radius: 4px; background: var(--border); overflow: hidden; }
+  .bar-track-center .zero-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--muted); opacity: .55; }
+  .bar-track-center .fill { position: absolute; top: 0; height: 100%; }
+  .bar-track-center .fill.guthaben { left: 50%; background: var(--success); border-radius: 0 3px 3px 0; }
+  .bar-track-center .fill.nachzahlung { right: 50%; background: var(--danger); border-radius: 3px 0 0 3px; }
+  .verlauf-row.is-current .bar-track-center { box-shadow: 0 0 0 2px var(--accent); }
+  .value-label.guthaben { color: var(--success); }
+  .value-label.nachzahlung { color: var(--danger); }
+  .value-label.ausgeglichen { color: var(--muted); font-weight: normal; }
+
+  .footer-version { position: fixed; bottom: .85rem; right: 1rem; display: flex; align-items: center; gap: .4rem; color: var(--muted); font-size: .78rem; z-index: 40; }
+  .footer-version a { color: var(--muted); display: flex; align-items: center; }
+  .footer-version a:hover { color: var(--text); }
+  .footer-version span { cursor: default; border-bottom: 1px dotted var(--border); }
+  .footer-version a.update-dot { color: var(--success); text-decoration: none; font-size: .7rem; line-height: 1; }
+   
+  .footer-version a.update-dot[hidden] { display: none; }
+
+  .theme-toggle { position: fixed; top: .75rem; right: 1rem; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: .25rem; z-index: 40; }
+  .theme-btn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: none; background: transparent; border-radius: 6px; color: var(--muted); cursor: pointer; }
+  .theme-btn:hover { background: var(--bg); }
+  .theme-btn svg { width: 16px; height: 16px; }
+
+  @media (max-width: 480px) {
+    .app { padding: 1rem 1rem 3rem; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .c-steps { flex-wrap: wrap; }
+    .c-step-dot { flex: 1 1 45%; font-size: .75rem; }
+    .verlauf-row { flex-wrap: wrap; row-gap: .2rem; }
+    .month-label { order: 1; }
+    .value-label { order: 2; margin-left: auto; }
+    .bar-track { order: 3; flex-basis: 100%; }
+    .bar-track-center { order: 3; flex-basis: 100%; }
+    .verbrauch-liste { order: 3; flex-basis: 100%; }
+    .hide-mobil { display: none; }
+    .badge-umbruch { display: block; width: fit-content; margin-top: .2rem; }
+    table.letzte th, table.letzte td { padding: .4rem .3rem; }
+  }
+  .nur-mobil { display: none; }
+  @media (max-width: 480px) { .nur-mobil { display: block; font-size: .75rem; color: var(--muted); } }
+</style>
+</head>
+<body>
+<div class="theme-toggle no-print">
+  <button type="button" id="theme-toggle-btn" class="theme-btn"></button>
+</div>
+<div class="app">
+  
+<style>
+   
+  .app { max-width: 960px; }
+  .abrechnung h2 { font-size: 1.15rem; margin: 0 0 .25rem; }
+  .abrechnung h3 { font-size: .95rem; margin: 1rem 0 .35rem; }
+  .abrechnung p { margin: 0 0 .5rem; }
+  .abrechnung .klein { font-size: .8rem; }
+  .abrechnung table { width: 100%; border-collapse: collapse; margin: 0 0 .75rem; font-size: .85rem; }
+  .abrechnung th, .abrechnung td { padding: .3rem .4rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+  .abrechnung th { font-size: .72rem; text-transform: uppercase; letter-spacing: .02em; color: var(--muted); border-bottom: 1.5px solid var(--text); }
+  .abrechnung .r { text-align: right; font-variant-numeric: tabular-nums; }
+  .abrechnung th.sel { color: var(--text); font-weight: 800; }
+  .abrechnung tr.b td, .abrechnung td.b { font-weight: 700; }
+  .abrechnung tr.summe td { font-weight: 700; border-top: 1.5px solid var(--text); border-bottom: 0; }
+  .abr-banner { border: 1.5px dashed var(--muted); padding: .5rem .75rem; margin: 0 0 1rem; font-weight: 600; }
+  .abr-parteien { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: .75rem 0; }
+  .abr-ergebnis { border: 2px solid var(--text); padding: .6rem 1rem; margin: .75rem 0 1rem; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+  .abr-ergebnis .betrag { font-size: 1.5rem; font-weight: 800; }
+  .abr-ergebnis .nachzahlung { color: var(--danger); }
+  .abr-ergebnis .guthaben { color: var(--success); }
+  .abr-body { display: grid; grid-template-columns: 1fr 16rem; gap: 1.5rem; align-items: start; }
+  .abr-seite { border-left: 1.5px solid var(--text); padding-left: 1rem; }
+  .abr-seite h3:first-child { margin-top: 0; }
+  .abr-seite td.r { white-space: nowrap; }
+  .zeitraum-felder { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .zeitraum-felder .field { min-width: 160px; flex: 0 1 200px; }
+  .zeitraum-felder[hidden] { display: none; }
+  .anhang { margin-top: 1.5rem; }
+  .anhang table { font-size: .85rem; }
+
+   
+  @page { size: A4; margin: 14mm 15mm; }
+  @media print {
+    :root, :root[data-theme="dark"], :root[data-theme="light"] {
+      --bg: #fff !important; --panel: #fff !important; --border: #cfd3da !important; --text: #000 !important;
+      --muted: #555 !important; --danger: #b91c1c !important; --success: #15803d !important;
+    }
+    body { background: #fff !important; color: #000 !important; font-size: 10pt; }
+    .app { max-width: none; padding: 0; }
+    .abrechnung { border: 0; padding: 0; background: #fff; }
+    .abrechnung table { font-size: 8.5pt; margin-bottom: .4rem; }
+    .abrechnung th, .abrechnung td { padding: .15rem .3rem; }
+    .abrechnung h3 { margin: .6rem 0 .25rem; }
+    .abrechnung p { margin-bottom: .3rem; }
+    .abr-parteien { margin: .4rem 0; }
+    .abr-ergebnis { margin: .4rem 0 .6rem; padding: .35rem .8rem; }
+    .abr-ergebnis .betrag { font-size: 1.25rem; }
+    .abrechnung tr { break-inside: avoid; }
+    .abrechnung h2, .abrechnung h3 { break-after: avoid; }
+    .abr-ergebnis, .abr-seite { break-inside: avoid; }
+    .abr-body { grid-template-columns: 1fr 58mm; gap: 6mm; }
+    .anhang { break-before: page; margin-top: 0; }
+  }
+
+   
+  @media screen and (max-width: 760px) {
+    .abr-parteien, .abr-body { grid-template-columns: 1fr; }
+    .abr-ergebnis { flex-direction: column; align-items: flex-start; gap: .25rem; }
+    .abr-seite { border-left: 0; padding-left: 0; border-top: 1.5px solid var(--text); padding-top: .75rem; }
+    .abrechnung table, .abrechnung tbody, .abrechnung tr, .abrechnung td { display: block; width: 100%; }
+    .abrechnung thead { display: none; }
+    .abrechnung tr { border: 1px solid var(--border); border-radius: 6px; padding: .4rem .6rem; margin-bottom: .4rem; }
+    .abrechnung td { border: 0; padding: .1rem 0; text-align: left !important; }
+    .abrechnung td[data-l]::before { content: attr(data-l) ": "; color: var(--muted); font-size: .75rem; }
+    .abrechnung tr.summe { border-color: var(--text); }
+  }
+</style>
+
+<div class="mockbanner no-print"><b>MOCKUP</b>: Demo-Daten, neue Tabellen im Anhang (Monatsverlauf und Zählerstände) mit verteilten Beispielwerten. Drucken zeigt das echte Seitenlayout.</div><h1 class="no-print">Abrechnung</h1>
+<div class="demo-banner no-print">Demo-Modus: geteilte Vorführumgebung mit Testdaten - Änderungen wirken sich nie auf echte Daten aus.</div>
+<p class="muted no-print"><a href="/dashboard">Dashboard</a> · <a href="/ablesungen">Ablesungen</a> · <a href="/fixkosten">Fixkosten</a> · <a href="/stammdaten">Stammdaten</a> · <strong>Abrechnung</strong> · <a href="/berechnungslogik">Wie wird gerechnet?</a> · <a href="#" id="logout-link">Abmelden</a></p>
+
+<form method="post" action="/logout" id="logout-form" hidden></form>
+<script>
+document.getElementById("logout-link").addEventListener("click", function (e) {
+  e.preventDefault();
+  document.getElementById("logout-form").submit();
+});
+</script>
+
+
+
+
+
+
+
+<form method="get" action="/abrechnung" class="no-print">
+  <div class="panel">
+    <div class="field" style="max-width:200px">
+      <label>Jahr</label>
+      <select name="jahr">
+        <option value="2026" >2026</option><option value="2025" selected>2025</option><option value="2024" >2024</option><option value="2023" >2023</option>
+      </select>
+    </div>
+    <div class="field">
+      <label><input type="checkbox" name="teil" value="1"  onchange="document.getElementById('zeitraum-felder').hidden=!this.checked"> Abweichender Zeitraum (z. B. Mieterwechsel)</label>
+    </div>
+    <div class="zeitraum-felder" id="zeitraum-felder" hidden>
+      <div class="field"><label>Von Monat</label>
+        <select name="von"><option value="1" selected>Januar</option><option value="2" >Februar</option><option value="3" >März</option><option value="4" >April</option><option value="5" >Mai</option><option value="6" >Juni</option><option value="7" >Juli</option><option value="8" >August</option><option value="9" >September</option><option value="10" >Oktober</option><option value="11" >November</option><option value="12" >Dezember</option></select></div>
+      <div class="field"><label>Bis Monat</label>
+        <select name="bis"><option value="1" >Januar</option><option value="2" >Februar</option><option value="3" >März</option><option value="4" >April</option><option value="5" >Mai</option><option value="6" >Juni</option><option value="7" >Juli</option><option value="8" >August</option><option value="9" >September</option><option value="10" >Oktober</option><option value="11" >November</option><option value="12" selected>Dezember</option></select></div>
+    </div>
+    <div class="btn-row">
+      
+      <button type="submit" name="wohnung" value="1" class="secondary">Wohnung 1 (Eigennutzung)</button>
+      
+      <button type="submit" name="wohnung" value="2" class="primary">Wohnung 2 (Vermietung)</button>
+      
+      <input type="hidden" name="wohnung" value="2">
+      <button type="submit" class="secondary">Anzeigen</button>
+      <button type="button" class="secondary" onclick="window.print()">Drucken</button>
+    </div>
+    <p class="muted">Zum Sichern als PDF: Drucken, Ziel PDF.</p>
+  </div>
+</form>
+
+
+
+
+
+<div class="panel no-print" style="margin-top:1rem">
+  <strong>Hinweise zur Abrechnung</strong>
+  <ul><li>Frist: Die Abrechnung muss dem Mieter bis zum 31.12.2026 zugehen, sonst ist eine Nachforderung ausgeschlossen (§ 556 Abs. 3 BGB).</li><li>Aufbewahrung: Den verschickten Stand als PDF aufbewahren, die App speichert nichts.</li></ul>
+</div>
+
+
+<div class="panel abrechnung" style="margin-top:1rem">
+  
+
+  <h2>Nebenkostenabrechnung 2025</h2>
+  <p class="muted">Objekt: <span style="white-space:pre-line">Beispielweg 1
+12345 Musterstadt</span><br>
+  Zeitraum: 01.01.2025 bis 31.12.2025 | Erstellt am: 06.10.2026</p>
+  
+
+  <div class="abr-parteien">
+    <div>
+      <strong>Vermieter</strong>
+      <p style="white-space:pre-line">Max Mustermann
+Beispielweg 1
+12345 Musterstadt</p>
+    </div>
+    <div>
+      
+      <strong>Mieter</strong>
+      <p style="white-space:pre-line">Erika Beispiel
+Beispielweg 1, Wohnung 2
+12345 Musterstadt</p>
+      
+    </div>
+  </div>
+
+  <div class="abr-ergebnis">
+    <span>Nachzahlung</span>
+    <span class="betrag nachzahlung">- 308,65 €</span>
+  </div>
+
+  <div class="abr-body">
+    <div class="abr-haupt">
+      <h3>Fixkosten</h3>
+      <table>
+        <thead><tr><th>Position</th><th class="r">Haus</th><th class="r">Anteil</th><th class="r">Betrag</th></tr></thead>
+        <tbody>
+          
+          <tr>
+            <td data-l="Position">Grundsteuer<br><span class="muted klein">Je anteilige Wohnungsgröße</span></td>
+            <td class="r" data-l="Haus">620,00&nbsp;€</td>
+            <td class="r" data-l="Anteil">42,5&nbsp;%</td>
+            <td class="r b" data-l="Betrag">263,64&nbsp;€</td>
+          </tr>
+          
+          <tr>
+            <td data-l="Position">Wohngebäudeversicherung<br><span class="muted klein">Je anteilige Wohnungsgröße</span></td>
+            <td class="r" data-l="Haus">455,00&nbsp;€</td>
+            <td class="r" data-l="Anteil">42,5&nbsp;%</td>
+            <td class="r b" data-l="Betrag">193,44&nbsp;€</td>
+          </tr>
+          
+          <tr>
+            <td data-l="Position">Deichbeitrag Grund und Boden<br><span class="muted klein">Je anteiliges Flurstück</span></td>
+            <td class="r" data-l="Haus">58,00&nbsp;€</td>
+            <td class="r" data-l="Anteil">42,4&nbsp;%</td>
+            <td class="r b" data-l="Betrag">24,60&nbsp;€</td>
+          </tr>
+          
+          <tr>
+            <td data-l="Position">Deichbeitrag Bauliche Anlagen<br><span class="muted klein">Je anteiliges Flurstück</span></td>
+            <td class="r" data-l="Haus">92,00&nbsp;€</td>
+            <td class="r" data-l="Anteil">42,5&nbsp;%</td>
+            <td class="r b" data-l="Betrag">39,12&nbsp;€</td>
+          </tr>
+          
+          <tr>
+            <td data-l="Position">Kreisverband Wesermarsch der Wasser- und Bodenverbände<br><span class="muted klein">Je anteiliges Flurstück</span></td>
+            <td class="r" data-l="Haus">41,00&nbsp;€</td>
+            <td class="r" data-l="Anteil">42,4&nbsp;%</td>
+            <td class="r b" data-l="Betrag">17,40&nbsp;€</td>
+          </tr>
+          
+          <tr>
+            <td data-l="Position">Abfallwirtschaft Grundgebühr Haushalt<br><span class="muted klein">Je Wohneinheit</span></td>
+            <td class="r" data-l="Haus">118,00&nbsp;€</td>
+            <td class="r" data-l="Anteil">50,0&nbsp;%</td>
+            <td class="r b" data-l="Betrag">59,04&nbsp;€</td>
+          </tr>
+          
+          <tr>
+            <td data-l="Position">Abfallwirtschaft Grundgebühr Personen<br><span class="muted klein">Je Anzahl Personen</span></td>
+            <td class="r" data-l="Haus">176,00&nbsp;€</td>
+            <td class="r" data-l="Anteil">50,0&nbsp;%</td>
+            <td class="r b" data-l="Betrag">87,96&nbsp;€</td>
+          </tr>
+          
+          <tr>
+            <td data-l="Position">Abfallwirtschaft Biomüll<br><span class="muted klein">Je Wohneinheit</span></td>
+            <td class="r" data-l="Haus">52,00&nbsp;€</td>
+            <td class="r" data-l="Anteil">50,1&nbsp;%</td>
+            <td class="r b" data-l="Betrag">26,04&nbsp;€</td>
+          </tr>
+          
+          <tr>
+            <td data-l="Position">Abfallwirtschaft Restmüll<br><span class="muted klein">Je Wohneinheit</span></td>
+            <td class="r" data-l="Haus">184,00&nbsp;€</td>
+            <td class="r" data-l="Anteil">50,0&nbsp;%</td>
+            <td class="r b" data-l="Betrag">92,04&nbsp;€</td>
+          </tr>
+          
+          <tr>
+            <td data-l="Position">Grundgebühr Strom<br><span class="muted klein">Je Wohneinheit</span></td>
+            <td class="r" data-l="Haus">148,80&nbsp;€</td>
+            <td class="r" data-l="Anteil">50,0&nbsp;%</td>
+            <td class="r b" data-l="Betrag">74,40&nbsp;€</td>
+          </tr>
+          
+          <tr>
+            <td data-l="Position">Grundgebühr Trinkwasser<br><span class="muted klein">Je Wohneinheit</span></td>
+            <td class="r" data-l="Haus">98,40&nbsp;€</td>
+            <td class="r" data-l="Anteil">50,0&nbsp;%</td>
+            <td class="r b" data-l="Betrag">49,20&nbsp;€</td>
+          </tr>
+          
+          <tr>
+            <td data-l="Position">Grundgebühr Abwasser<br><span class="muted klein">Je Wohneinheit</span></td>
+            <td class="r" data-l="Haus">117,60&nbsp;€</td>
+            <td class="r" data-l="Anteil">50,0&nbsp;%</td>
+            <td class="r b" data-l="Betrag">58,80&nbsp;€</td>
+          </tr>
+          
+          <tr>
+            <td data-l="Position">Wartungskosten Wärmepumpe<br><span class="muted klein">Je Wohneinheit</span></td>
+            <td class="r" data-l="Haus">174,00&nbsp;€</td>
+            <td class="r" data-l="Anteil">50,0&nbsp;%</td>
+            <td class="r b" data-l="Betrag">87,00&nbsp;€</td>
+          </tr>
+          
+        </tbody>
+      </table>
+
+      <h3>Verbrauchsabhängig</h3>
+      <table>
+        <thead><tr><th>Position</th><th class="r">Haus</th><th class="r">Anteil</th><th class="r">Betrag</th></tr></thead>
+        <tbody>
+          
+          <tr>
+            <td data-l="Position">Heizung und Warmwasser (Wärmepumpe)<br><span class="muted klein">70 % Wärmeverbrauch, 30 % Wohnfläche</span></td>
+            <td class="r" data-l="Haus">1.593,19&nbsp;€</td>
+            <td class="r" data-l="Anteil">42,6&nbsp;%</td>
+            <td class="r b" data-l="Betrag">678,98&nbsp;€</td>
+          </tr>
+          
+          <tr>
+            <td data-l="Position">Wasser und Abwasser (Verbrauch)<br><span class="muted klein">Gemessener Verbrauch</span></td>
+            <td class="r" data-l="Haus">1.139,68&nbsp;€</td>
+            <td class="r" data-l="Anteil">35,0&nbsp;%</td>
+            <td class="r b" data-l="Betrag">398,66&nbsp;€</td>
+          </tr>
+        </tbody>
+      </table>
+
+      
+      <h3>Stromverbrauch Wohnung 2 <span class="muted">(laut Vereinbarung weiterberechnet)</span></h3>
+      <table>
+        <tbody><tr>
+          <td data-l="Verbrauch">2.110&nbsp;kWh</td>
+          <td class="r b" data-l="Betrag">438,33&nbsp;€</td>
+        </tr></tbody>
+      </table>
+      
+    </div>
+
+    <aside class="abr-seite">
+      <h3>Saldoberechnung</h3>
+      <table>
+        <tbody>
+          <tr><td data-l="Betriebskosten">Betriebskosten</td><td class="r">2.150,32&nbsp;€</td></tr>
+          <tr><td data-l="Strom Wohnung 2">Strom Wohnung 2</td><td class="r">438,33&nbsp;€</td></tr>
+          <tr><td data-l="Vorauszahlungen">Vorauszahlungen</td><td class="r">- 2.280,00&nbsp;€</td></tr>
+          <tr class="summe"><td data-l="Ergebnis">Nachzahlung</td><td class="r nachzahlung">- 308,65 €</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Hinweise</h3>
+      
+      <p class="klein">Belege können auf Verlangen eingesehen werden (§ 556 Abs. 4 BGB). Einwendungen gegen diese Abrechnung sind spätestens zwölf Monate nach Zugang zu erheben (§ 556 Abs. 3 BGB).</p>
+      
+      <p class="klein">Rundungsdifferenzen von wenigen Cent sind möglich.</p>
+      
+      <p class="klein">Bankverbindung: Max Mustermann, IBAN DE00 0000 0000 0000 0000 00</p>
+      
+    <h3>Anlagen</h3><ol class="klein" style="margin:0 0 .5rem 1.1rem;padding:0"><li>Monatsverlauf und Saldo</li><li>Heizung und Warmwasser je Monat</li><li>Bezugsgrößen der Verteilerschlüssel</li><li>Personenzahl je Monat</li><li>Verteilerschlüssel</li><li>Verbrauchsübersicht</li><li>Zählerstände</li></ol></aside>
+  </div>
+
+  <div class="anhang">
+    <h2>Anhang</h2>
+<section class="anlage"><h3>Anlage 1: Monatsverlauf und Saldo</h3>
+<table><thead><tr><th>Monat</th><th class="r">Fixkosten</th><th class="r">Verbrauchskosten<sup>1</sup></th><th class="r">Abschlag</th><th class="r">Saldo kumuliert</th></tr></thead><tbody>
+<tr><td data-l="Monat"><i>Übertrag Vorjahre</i></td><td></td><td></td><td></td><td class="r b" data-l="Saldo kumuliert">-120,00&nbsp;€</td></tr>
+<tr><td data-l="Monat">Januar 2025</td><td class="r" data-l="Fixkosten">89,39&nbsp;€</td><td class="r" data-l="Verbrauchskosten">171,08&nbsp;€</td><td class="r" data-l="Abschlag">190,00&nbsp;€</td><td class="r b" data-l="Saldo kumuliert">-190,47&nbsp;€</td></tr><tr><td data-l="Monat">Februar 2025</td><td class="r" data-l="Fixkosten">89,39&nbsp;€</td><td class="r" data-l="Verbrauchskosten">171,46&nbsp;€</td><td class="r" data-l="Abschlag">190,00&nbsp;€</td><td class="r b" data-l="Saldo kumuliert">-261,32&nbsp;€</td></tr><tr><td data-l="Monat">März 2025</td><td class="r" data-l="Fixkosten">89,39&nbsp;€</td><td class="r" data-l="Verbrauchskosten">138,73&nbsp;€</td><td class="r" data-l="Abschlag">190,00&nbsp;€</td><td class="r b" data-l="Saldo kumuliert">-299,44&nbsp;€</td></tr><tr><td data-l="Monat">April 2025</td><td class="r" data-l="Fixkosten">89,39&nbsp;€</td><td class="r" data-l="Verbrauchskosten">118,21&nbsp;€</td><td class="r" data-l="Abschlag">190,00&nbsp;€</td><td class="r b" data-l="Saldo kumuliert">-317,04&nbsp;€</td></tr><tr><td data-l="Monat">Mai 2025</td><td class="r" data-l="Fixkosten">89,39&nbsp;€</td><td class="r" data-l="Verbrauchskosten">101,73&nbsp;€</td><td class="r" data-l="Abschlag">190,00&nbsp;€</td><td class="r b" data-l="Saldo kumuliert">-318,16&nbsp;€</td></tr><tr><td data-l="Monat">Juni 2025</td><td class="r" data-l="Fixkosten">89,39&nbsp;€</td><td class="r" data-l="Verbrauchskosten">92,26&nbsp;€</td><td class="r" data-l="Abschlag">190,00&nbsp;€</td><td class="r b" data-l="Saldo kumuliert">-309,81&nbsp;€</td></tr><tr><td data-l="Monat">Juli 2025</td><td class="r" data-l="Fixkosten">89,39&nbsp;€</td><td class="r" data-l="Verbrauchskosten">92,35&nbsp;€</td><td class="r" data-l="Abschlag">190,00&nbsp;€</td><td class="r b" data-l="Saldo kumuliert">-301,55&nbsp;€</td></tr><tr><td data-l="Monat">August 2025</td><td class="r" data-l="Fixkosten">89,39&nbsp;€</td><td class="r" data-l="Verbrauchskosten">92,45&nbsp;€</td><td class="r" data-l="Abschlag">190,00&nbsp;€</td><td class="r b" data-l="Saldo kumuliert">-293,39&nbsp;€</td></tr><tr><td data-l="Monat">September 2025</td><td class="r" data-l="Fixkosten">89,39&nbsp;€</td><td class="r" data-l="Verbrauchskosten">102,24&nbsp;€</td><td class="r" data-l="Abschlag">190,00&nbsp;€</td><td class="r b" data-l="Saldo kumuliert">-295,02&nbsp;€</td></tr><tr><td data-l="Monat">Oktober 2025</td><td class="r" data-l="Fixkosten">89,39&nbsp;€</td><td class="r" data-l="Verbrauchskosten">119,34&nbsp;€</td><td class="r" data-l="Abschlag">190,00&nbsp;€</td><td class="r b" data-l="Saldo kumuliert">-313,75&nbsp;€</td></tr><tr><td data-l="Monat">November 2025</td><td class="r" data-l="Fixkosten">89,39&nbsp;€</td><td class="r" data-l="Verbrauchskosten">140,82&nbsp;€</td><td class="r" data-l="Abschlag">190,00&nbsp;€</td><td class="r b" data-l="Saldo kumuliert">-353,96&nbsp;€</td></tr><tr><td data-l="Monat">Dezember 2025</td><td class="r" data-l="Fixkosten">89,39&nbsp;€</td><td class="r" data-l="Verbrauchskosten">175,30&nbsp;€</td><td class="r" data-l="Abschlag">190,00&nbsp;€</td><td class="r b" data-l="Saldo kumuliert">-428,65&nbsp;€</td></tr>
+<tr class="summe"><td data-l="Monat">Summe 2025</td><td class="r">1.072,68&nbsp;€</td><td class="r">1.515,97&nbsp;€</td><td class="r">2.280,00&nbsp;€</td><td class="r b">-428,65&nbsp;€</td></tr>
+<tr><td data-l="Monat">davon Jahressaldo 2025 (siehe Saldoberechnung)</td><td></td><td></td><td></td><td class="r" data-l="Jahressaldo">-308,65&nbsp;€</td></tr>
+</tbody></table>
+<p class="muted klein"><sup>1</sup> Heizung, Wasser/Abwasser und weiterberechneter Strom Wohnung 2. Übertrag Vorjahre: Summe der Monatssalden seit "Mieter seit" bzw. Erfassungsbeginn (Beispielwert).</p>
+
+    
+
+    </section><section class="anlage"><h3>Anlage 2: Heizung und Warmwasser je Monat</h3>
+    <table>
+      <thead><tr>
+        <th>Monat</th><th class="r">WP-Strom (kWh)</th>
+        <th class="r">Wärme Wohnung 1 (MWh)</th>
+        <th class="r sel">Wärme Wohnung 2 (MWh)</th>
+        <th class="r sel">Anteil Wohnung 2</th>
+      </tr></thead>
+      <tbody>
+        
+        <tr>
+          <td data-l="Monat">Januar 2025</td>
+          <td class="r" data-l="WP-Strom (kWh)">1.150</td>
+          <td class="r" data-l="Wärme Wohnung 1 (MWh)">1,25</td>
+          <td class="r b" data-l="Wärme Wohnung 2 (MWh)">0,90</td>
+          <td class="r b" data-l="Anteil">98,39&nbsp;€</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">Februar 2025</td>
+          <td class="r" data-l="WP-Strom (kWh)">1.150</td>
+          <td class="r" data-l="Wärme Wohnung 1 (MWh)">1,25</td>
+          <td class="r b" data-l="Wärme Wohnung 2 (MWh)">0,90</td>
+          <td class="r b" data-l="Anteil">98,77&nbsp;€</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">März 2025</td>
+          <td class="r" data-l="WP-Strom (kWh)">790</td>
+          <td class="r" data-l="Wärme Wohnung 1 (MWh)">0,75</td>
+          <td class="r b" data-l="Wärme Wohnung 2 (MWh)">0,54</td>
+          <td class="r b" data-l="Anteil">68,12&nbsp;€</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">April 2025</td>
+          <td class="r" data-l="WP-Strom (kWh)">565</td>
+          <td class="r" data-l="Wärme Wohnung 1 (MWh)">0,44</td>
+          <td class="r b" data-l="Wärme Wohnung 2 (MWh)">0,31</td>
+          <td class="r b" data-l="Anteil">48,90&nbsp;€</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">Mai 2025</td>
+          <td class="r" data-l="WP-Strom (kWh)">385</td>
+          <td class="r" data-l="Wärme Wohnung 1 (MWh)">0,19</td>
+          <td class="r b" data-l="Wärme Wohnung 2 (MWh)">0,13</td>
+          <td class="r b" data-l="Anteil">33,45&nbsp;€</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">Juni 2025</td>
+          <td class="r" data-l="WP-Strom (kWh)">250</td>
+          <td class="r" data-l="Wärme Wohnung 1 (MWh)">0,00</td>
+          <td class="r b" data-l="Wärme Wohnung 2 (MWh)">0,00</td>
+          <td class="r b" data-l="Anteil">24,76&nbsp;€</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">Juli 2025</td>
+          <td class="r" data-l="WP-Strom (kWh)">250</td>
+          <td class="r" data-l="Wärme Wohnung 1 (MWh)">0,00</td>
+          <td class="r b" data-l="Wärme Wohnung 2 (MWh)">0,00</td>
+          <td class="r b" data-l="Anteil">24,85&nbsp;€</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">August 2025</td>
+          <td class="r" data-l="WP-Strom (kWh)">250</td>
+          <td class="r" data-l="Wärme Wohnung 1 (MWh)">0,00</td>
+          <td class="r b" data-l="Wärme Wohnung 2 (MWh)">0,00</td>
+          <td class="r b" data-l="Anteil">24,95&nbsp;€</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">September 2025</td>
+          <td class="r" data-l="WP-Strom (kWh)">385</td>
+          <td class="r" data-l="Wärme Wohnung 1 (MWh)">0,19</td>
+          <td class="r b" data-l="Wärme Wohnung 2 (MWh)">0,13</td>
+          <td class="r b" data-l="Anteil">33,96&nbsp;€</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">Oktober 2025</td>
+          <td class="r" data-l="WP-Strom (kWh)">565</td>
+          <td class="r" data-l="Wärme Wohnung 1 (MWh)">0,44</td>
+          <td class="r b" data-l="Wärme Wohnung 2 (MWh)">0,31</td>
+          <td class="r b" data-l="Anteil">50,03&nbsp;€</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">November 2025</td>
+          <td class="r" data-l="WP-Strom (kWh)">790</td>
+          <td class="r" data-l="Wärme Wohnung 1 (MWh)">0,75</td>
+          <td class="r b" data-l="Wärme Wohnung 2 (MWh)">0,54</td>
+          <td class="r b" data-l="Anteil">70,21&nbsp;€</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">Dezember 2025</td>
+          <td class="r" data-l="WP-Strom (kWh)">1.150</td>
+          <td class="r" data-l="Wärme Wohnung 1 (MWh)">1,25</td>
+          <td class="r b" data-l="Wärme Wohnung 2 (MWh)">0,90</td>
+          <td class="r b" data-l="Anteil">102,59&nbsp;€</td>
+        </tr>
+        
+      </tbody>
+    </table>
+
+    </section><section class="anlage"><h3>Anlage 3: Bezugsgrößen der Verteilerschlüssel</h3>
+    <table>
+      <thead><tr>
+        <th>Schlüssel</th>
+        <th class="r">Wohnung 1</th>
+        <th class="r sel">Wohnung 2</th>
+        <th class="r">Gesamt</th>
+      </tr></thead>
+      <tbody>
+        
+        <tr>
+          <td data-l="Schlüssel">Wohnfläche (m²)</td>
+          <td class="r" data-l="Wohnung 1">116,23</td>
+          <td class="r b" data-l="Wohnung 2">86</td>
+          <td class="r" data-l="Gesamt">202,23</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Schlüssel">Flurstück (m²)</td>
+          <td class="r" data-l="Wohnung 1">460</td>
+          <td class="r b" data-l="Wohnung 2">340</td>
+          <td class="r" data-l="Gesamt">800</td>
+        </tr>
+        
+      </tbody>
+    </table>
+
+    </section><section class="anlage"><h3>Anlage 4: Personenzahl je Monat</h3>
+    <table>
+      <thead>
+        <tr><th rowspan="2">Monat</th><th colspan="2" class="r">Fixkosten-Eingabe (Schlüssel Personen)</th><th colspan="2" class="r">Ablesung (Warmwasser)</th></tr>
+        <tr>
+          <th class="r">Wohnung 1</th><th class="r sel">Wohnung 2</th>
+          <th class="r">Wohnung 1</th><th class="r sel">Wohnung 2</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td data-l="Monat">Januar 2025</td>
+          <td class="r" data-l="Fixkosten Wohnung 1">2</td>
+          <td class="r b" data-l="Fixkosten Wohnung 2">2</td>
+          <td class="r" data-l="Ablesung Wohnung 1">2</td>
+          <td class="r b" data-l="Ablesung Wohnung 2">2</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">Februar 2025</td>
+          <td class="r" data-l="Fixkosten Wohnung 1">2</td>
+          <td class="r b" data-l="Fixkosten Wohnung 2">2</td>
+          <td class="r" data-l="Ablesung Wohnung 1">2</td>
+          <td class="r b" data-l="Ablesung Wohnung 2">2</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">März 2025</td>
+          <td class="r" data-l="Fixkosten Wohnung 1">2</td>
+          <td class="r b" data-l="Fixkosten Wohnung 2">2</td>
+          <td class="r" data-l="Ablesung Wohnung 1">2</td>
+          <td class="r b" data-l="Ablesung Wohnung 2">2</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">April 2025</td>
+          <td class="r" data-l="Fixkosten Wohnung 1">2</td>
+          <td class="r b" data-l="Fixkosten Wohnung 2">2</td>
+          <td class="r" data-l="Ablesung Wohnung 1">2</td>
+          <td class="r b" data-l="Ablesung Wohnung 2">2</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">Mai 2025</td>
+          <td class="r" data-l="Fixkosten Wohnung 1">2</td>
+          <td class="r b" data-l="Fixkosten Wohnung 2">2</td>
+          <td class="r" data-l="Ablesung Wohnung 1">2</td>
+          <td class="r b" data-l="Ablesung Wohnung 2">2</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">Juni 2025</td>
+          <td class="r" data-l="Fixkosten Wohnung 1">2</td>
+          <td class="r b" data-l="Fixkosten Wohnung 2">2</td>
+          <td class="r" data-l="Ablesung Wohnung 1">2</td>
+          <td class="r b" data-l="Ablesung Wohnung 2">2</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">Juli 2025</td>
+          <td class="r" data-l="Fixkosten Wohnung 1">2</td>
+          <td class="r b" data-l="Fixkosten Wohnung 2">2</td>
+          <td class="r" data-l="Ablesung Wohnung 1">2</td>
+          <td class="r b" data-l="Ablesung Wohnung 2">2</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">August 2025</td>
+          <td class="r" data-l="Fixkosten Wohnung 1">2</td>
+          <td class="r b" data-l="Fixkosten Wohnung 2">2</td>
+          <td class="r" data-l="Ablesung Wohnung 1">2</td>
+          <td class="r b" data-l="Ablesung Wohnung 2">2</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">September 2025</td>
+          <td class="r" data-l="Fixkosten Wohnung 1">2</td>
+          <td class="r b" data-l="Fixkosten Wohnung 2">2</td>
+          <td class="r" data-l="Ablesung Wohnung 1">2</td>
+          <td class="r b" data-l="Ablesung Wohnung 2">2</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">Oktober 2025</td>
+          <td class="r" data-l="Fixkosten Wohnung 1">2</td>
+          <td class="r b" data-l="Fixkosten Wohnung 2">2</td>
+          <td class="r" data-l="Ablesung Wohnung 1">2</td>
+          <td class="r b" data-l="Ablesung Wohnung 2">2</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">November 2025</td>
+          <td class="r" data-l="Fixkosten Wohnung 1">2</td>
+          <td class="r b" data-l="Fixkosten Wohnung 2">2</td>
+          <td class="r" data-l="Ablesung Wohnung 1">2</td>
+          <td class="r b" data-l="Ablesung Wohnung 2">1</td>
+        </tr>
+        
+        <tr>
+          <td data-l="Monat">Dezember 2025</td>
+          <td class="r" data-l="Fixkosten Wohnung 1">2</td>
+          <td class="r b" data-l="Fixkosten Wohnung 2">2</td>
+          <td class="r" data-l="Ablesung Wohnung 1">2</td>
+          <td class="r b" data-l="Ablesung Wohnung 2">1</td>
+        </tr>
+        
+      </tbody>
+    </table>
+    <p class="muted klein">Die Personenzahl der Fixkosten-Eingabe bestimmt den Schlüssel "Personen", die der Ablesung verteilt den Verbrauch der Warmwasseraufbereitung auf beide Wohnungen.</p>
+
+    </section><section class="anlage"><h3>Anlage 5: Verteilerschlüssel</h3>
+    <p class="muted klein"><strong>Je Wohneinheit:</strong> beide Wohnungen zu gleichen Teilen. <strong>Wohnfläche:</strong> Anteil an der Gesamtwohnfläche laut Tabelle. <strong>Flurstück:</strong> Anteil am Grundstück laut Tabelle. <strong>Personen:</strong> Personenzahl je Monat laut Fixkosten-Eingabe, über den Zeitraum gewichtet. <strong>Heizung und Warmwasser:</strong> Die Kosten des Wärmepumpenstroms werden nach gemessenem Wärmeverbrauch und nach Wohnfläche im Verhältnis 70 % zu 30 % verteilt.</p>
+  </section><section class="anlage"><h3>Anlage 6: Verbrauchsübersicht</h3>
+    <table>
+      <thead><tr><th>Zähler</th><th class="r">Stand Beginn</th><th class="r">Stand Ende</th><th class="r">Verbrauch</th></tr></thead>
+      <tbody>
+        
+        <tr >
+          <td data-l="Zähler">Stromzähler Gesamt</td>
+          <td class="r" data-l="Beginn">61.036,500&nbsp;kWh</td>
+          <td class="r" data-l="Ende">77.062,500&nbsp;kWh</td>
+          <td class="r" data-l="Verbrauch">16.026,000&nbsp;kWh</td>
+        </tr>
+        
+        <tr class="b">
+          <td data-l="Zähler">Zwischenstromzähler Wohnung 2</td>
+          <td class="r" data-l="Beginn">12.187,500&nbsp;kWh</td>
+          <td class="r" data-l="Ende">14.297,500&nbsp;kWh</td>
+          <td class="r" data-l="Verbrauch">2.110,000&nbsp;kWh</td>
+        </tr>
+        
+        <tr >
+          <td data-l="Zähler">Zwischenstromzähler Wärmepumpe</td>
+          <td class="r" data-l="Beginn">25.420,000&nbsp;kWh</td>
+          <td class="r" data-l="Ende">33.100,000&nbsp;kWh</td>
+          <td class="r" data-l="Verbrauch">7.680,000&nbsp;kWh</td>
+        </tr>
+        
+        <tr >
+          <td data-l="Zähler">Zwischenzähler Wallboxen</td>
+          <td class="r" data-l="Beginn">7.201,000&nbsp;kWh</td>
+          <td class="r" data-l="Ende">8.685,000&nbsp;kWh</td>
+          <td class="r" data-l="Verbrauch">1.484,000&nbsp;kWh</td>
+        </tr>
+        
+        <tr >
+          <td data-l="Zähler">Wasserzähler Gesamt</td>
+          <td class="r" data-l="Beginn">871,840&nbsp;m³</td>
+          <td class="r" data-l="Ende">1.056,400&nbsp;m³</td>
+          <td class="r" data-l="Verbrauch">184,560&nbsp;m³</td>
+        </tr>
+        
+        <tr class="b">
+          <td data-l="Zähler">Zwischenwasserzähler Wohnung 2</td>
+          <td class="r" data-l="Beginn">239,400&nbsp;m³</td>
+          <td class="r" data-l="Ende">289,800&nbsp;m³</td>
+          <td class="r" data-l="Verbrauch">50,400&nbsp;m³</td>
+        </tr>
+        
+        <tr >
+          <td data-l="Zähler">Zwischenwasserzähler Warmwasseraufbereitung</td>
+          <td class="r" data-l="Beginn">136,500&nbsp;m³</td>
+          <td class="r" data-l="Ende">166,500&nbsp;m³</td>
+          <td class="r" data-l="Verbrauch">30,000&nbsp;m³</td>
+        </tr>
+        
+        <tr >
+          <td data-l="Zähler">Wärmemengenzähler Wohnung 1</td>
+          <td class="r" data-l="Beginn">61,525&nbsp;MWh</td>
+          <td class="r" data-l="Ende">68,025&nbsp;MWh</td>
+          <td class="r" data-l="Verbrauch">6,500&nbsp;MWh</td>
+        </tr>
+        
+        <tr class="b">
+          <td data-l="Zähler">Wärmemengenzähler Wohnung 2</td>
+          <td class="r" data-l="Beginn">44,670&nbsp;MWh</td>
+          <td class="r" data-l="Ende">49,350&nbsp;MWh</td>
+          <td class="r" data-l="Verbrauch">4,680&nbsp;MWh</td>
+        </tr>
+        
+        <tr >
+          <td data-l="Zähler">Einspeisezähler (PV)</td>
+          <td class="r" data-l="Beginn">17.437,600&nbsp;kWh</td>
+          <td class="r" data-l="Ende">22.096,000&nbsp;kWh</td>
+          <td class="r" data-l="Verbrauch">4.658,400&nbsp;kWh</td>
+        </tr>
+        
+      </tbody>
+    </table></section></div><div class="quer"><h3>Anlage 7: Zählerstände</h3><div class="tabwrap"><table><thead><tr><th>Ablese&shy;datum</th><th>Abrechnungs&shy;monat</th><th class="r">Strom gesamt<br><span class="u">kWh</span></th><th class="r">Strom Whg 2<br><span class="u">kWh</span></th><th class="r">Strom WP<br><span class="u">kWh</span></th><th class="r">Wallbox<br><span class="u">kWh</span></th><th class="r">Wasser gesamt<br><span class="u">m³</span></th><th class="r">Wasser Whg 2<br><span class="u">m³</span></th><th class="r">Warmwasser<br><span class="u">m³</span></th><th class="r">Wärme Whg 1<br><span class="u">MWh</span></th><th class="r">Wärme Whg 2<br><span class="u">MWh</span></th><th class="r">Einspeisung<br><span class="u">kWh</span></th></tr></thead><tbody><tr class=b><td>01.12.2024</td><td>Ausgangsstand</td><td class="r">61.036,500</td><td class="r">12.187,500</td><td class="r">25.420,000</td><td class="r">7.201,000</td><td class="r">871,840</td><td class="r">239,400</td><td class="r">136,500</td><td class="r">61,525</td><td class="r">44,670</td><td class="r">17.437,600</td></tr><tr><td>01.01.2025</td><td>Januar 2025</td><td class="r">62.941,500</td><td class="r">12.377,500</td><td class="r">26.570,000</td><td class="r">7.336,000</td><td class="r">885,930</td><td class="r">243,600</td><td class="r">139,000</td><td class="r">62,775</td><td class="r">45,570</td><td class="r">17.537,700</td></tr><tr><td>01.02.2025</td><td>Februar 2025</td><td class="r">64.846,500</td><td class="r">12.567,500</td><td class="r">27.720,000</td><td class="r">7.471,000</td><td class="r">900,170</td><td class="r">247,800</td><td class="r">141,500</td><td class="r">64,025</td><td class="r">46,470</td><td class="r">17.671,300</td></tr><tr><td>01.03.2025</td><td>März 2025</td><td class="r">66.349,500</td><td class="r">12.747,500</td><td class="r">28.510,000</td><td class="r">7.598,000</td><td class="r">914,920</td><td class="r">252,000</td><td class="r">144,000</td><td class="r">64,775</td><td class="r">47,010</td><td class="r">17.918,800</td></tr><tr><td>01.04.2025</td><td>April 2025</td><td class="r">67.601,250</td><td class="r">12.921,250</td><td class="r">29.075,000</td><td class="r">7.720,000</td><td class="r">930,570</td><td class="r">256,200</td><td class="r">146,500</td><td class="r">65,213</td><td class="r">47,325</td><td class="r">18.367,300</td></tr><tr><td>01.05.2025</td><td>Mai 2025</td><td class="r">68.652,000</td><td class="r">13.090,000</td><td class="r">29.460,000</td><td class="r">7.838,000</td><td class="r">947,120</td><td class="r">260,400</td><td class="r">149,000</td><td class="r">65,400</td><td class="r">47,460</td><td class="r">19.016,800</td></tr><tr><td>01.06.2025</td><td>Juni 2025</td><td class="r">69.552,000</td><td class="r">13.255,000</td><td class="r">29.710,000</td><td class="r">7.953,000</td><td class="r">964,120</td><td class="r">264,600</td><td class="r">151,500</td><td class="r">65,400</td><td class="r">47,460</td><td class="r">19.766,800</td></tr><tr><td>01.07.2025</td><td>Juli 2025</td><td class="r">70.452,000</td><td class="r">13.420,000</td><td class="r">29.960,000</td><td class="r">8.068,000</td><td class="r">981,120</td><td class="r">268,800</td><td class="r">154,000</td><td class="r">65,400</td><td class="r">47,460</td><td class="r">20.516,800</td></tr><tr><td>01.08.2025</td><td>August 2025</td><td class="r">71.352,000</td><td class="r">13.585,000</td><td class="r">30.210,000</td><td class="r">8.183,000</td><td class="r">997,670</td><td class="r">273,000</td><td class="r">156,500</td><td class="r">65,400</td><td class="r">47,460</td><td class="r">21.166,300</td></tr><tr><td>01.09.2025</td><td>September 2025</td><td class="r">72.402,750</td><td class="r">13.753,750</td><td class="r">30.595,000</td><td class="r">8.301,000</td><td class="r">1.013,320</td><td class="r">277,200</td><td class="r">159,000</td><td class="r">65,588</td><td class="r">47,595</td><td class="r">21.614,800</td></tr><tr><td>01.10.2025</td><td>Oktober 2025</td><td class="r">73.654,500</td><td class="r">13.927,500</td><td class="r">31.160,000</td><td class="r">8.423,000</td><td class="r">1.028,070</td><td class="r">281,400</td><td class="r">161,500</td><td class="r">66,025</td><td class="r">47,910</td><td class="r">21.862,300</td></tr><tr><td>01.11.2025</td><td>November 2025</td><td class="r">75.157,500</td><td class="r">14.107,500</td><td class="r">31.950,000</td><td class="r">8.550,000</td><td class="r">1.042,310</td><td class="r">285,600</td><td class="r">164,000</td><td class="r">66,775</td><td class="r">48,450</td><td class="r">21.995,900</td></tr><tr><td>01.12.2025</td><td>Dezember 2025</td><td class="r">77.062,500</td><td class="r">14.297,500</td><td class="r">33.100,000</td><td class="r">8.685,000</td><td class="r">1.056,400</td><td class="r">289,800</td><td class="r">166,500</td><td class="r">68,025</td><td class="r">49,350</td><td class="r">22.096,000</td></tr></tbody></table></div></div>
+</div>
+
+
+
+
+
+</div>
+<script>
+  
+  
+  
+  
+  
+  (function () {
+    var choices = ["system", "light", "dark"];
+    var icons = {
+      system: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M2.25 5.25a3 3 0 013-3h13.5a3 3 0 013 3V15a3 3 0 01-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 01-.53 1.28h-9a.75.75 0 01-.53-1.28l.621-.622a2.25 2.25 0 00.659-1.591V18h-3a3 3 0 01-3-3V5.25zm1.5 0v9a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5z" clip-rule="evenodd"></path></svg>',
+      light: '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"></path></svg>',
+      dark: '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.455 2.004a.75.75 0 01.26.77 7 7 0 009.958 7.967.75.75 0 011.067.853A8.5 8.5 0 116.647 1.921a.75.75 0 01.808.083z" clip-rule="evenodd"></path></svg>'
+    };
+    var labels = { system: "System", light: "Hell", dark: "Dunkel" };
+    var btn = document.getElementById("theme-toggle-btn");
+
+    function apply(choice) {
+      try {
+        if (choice === "system") {
+          localStorage.removeItem("theme");
+          document.documentElement.removeAttribute("data-theme");
+        } else {
+          localStorage.setItem("theme", choice);
+          document.documentElement.setAttribute("data-theme", choice);
+        }
+      } catch (e) {}
+      btn.innerHTML = icons[choice];
+      btn.title = labels[choice];
+    }
+
+    var stored = null;
+    try {
+      stored = localStorage.getItem("theme");
+    } catch (e) {}
+    var current = stored === "light" || stored === "dark" ? stored : "system";
+    apply(current);
+
+    btn.addEventListener("click", function () {
+      current = choices[(choices.indexOf(current) + 1) % choices.length];
+      apply(current);
+    });
+  })();
+</script>
+<style>.tabwrap{overflow-x:auto}
+@page quer{size:A4 landscape;margin:14mm 12mm}
+.anlage{break-inside:avoid}.quer{page:quer;break-before:page}.quer .u{font-weight:400;color:#555}.quer h3{margin-top:0}
+@media print{.quer table{font-size:7.5pt}.quer th,.quer td{padding:.12rem .25rem}.quer .tabwrap{overflow:visible}.quer thead{display:table-header-group}.mockbanner{display:none}}
+@media screen and (max-width:760px){.quer table{display:table!important}.quer tbody,.quer thead{display:table-row-group!important}.quer tr{display:table-row!important;border:0!important;padding:0!important;margin:0!important}.quer td,.quer th{display:table-cell!important;width:auto!important}.quer thead{display:table-header-group!important}}
+.mockbanner{background:#fff3cd;color:#000;padding:.5rem 1rem;border:1px solid #e0c36a;margin:.5rem 0}</style></body>
+</html>
