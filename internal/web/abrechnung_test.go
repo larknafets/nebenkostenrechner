@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -291,7 +292,7 @@ func TestBerechneAbrechnung_Monatsverlauf(t *testing.T) {
 	pruefe := func(t *testing.T, ab *abrechnung, stromDazu bool) {
 		t.Helper()
 		v := ab.Monatsverlauf
-		var saldo float64
+		saldo := v.Uebertrag.Betrag
 		for _, z := range v.Zeilen {
 			saldo = calc.Round2(saldo + z.Abschlag - z.Fixkosten - z.Verbrauch)
 			if !nah(z.Saldo, saldo) {
@@ -315,8 +316,8 @@ func TestBerechneAbrechnung_Monatsverlauf(t *testing.T) {
 		if !nah(v.Abschlag, ab.Vorauszahlungen) {
 			t.Errorf("Summe Abschlag = %v, want %v", v.Abschlag, ab.Vorauszahlungen)
 		}
-		if !nah(v.Endsaldo, ab.Saldo.wert) {
-			t.Errorf("Endsaldo = %v, want the Jahressaldo %v", v.Endsaldo, ab.Saldo.wert)
+		if !nah(v.Endsaldo-v.Uebertrag.Betrag, ab.Saldo.wert) {
+			t.Errorf("Endsaldo - Übertrag = %v, want the Jahressaldo %v", v.Endsaldo-v.Uebertrag.Betrag, ab.Saldo.wert)
 		}
 	}
 
@@ -377,11 +378,15 @@ func TestBerechneAbrechnung_Monatsverlauf(t *testing.T) {
 		pruefe(t, erg.Abrechnung, false)
 	})
 
-	t.Run("Teilzeitraum", func(t *testing.T) {
+	t.Run("Teilzeitraum zählt die Monate davor als Übertrag", func(t *testing.T) {
 		db := teiljahrDB(t, true)
 		d, err := ladeAbrechnungDaten(db)
 		if err != nil {
 			t.Fatalf("ladeAbrechnungDaten: %v", err)
+		}
+		ganz, err := berechneAbrechnung(db, d, 2026, ganzesJahr, 2)
+		if err != nil || ganz.Abrechnung == nil {
+			t.Fatalf("berechneAbrechnung (ganz): err %v", err)
 		}
 		erg, err := berechneAbrechnung(db, d, 2026, monatsbereich{Von: 11, Bis: 12}, 2)
 		if err != nil || erg.Abrechnung == nil {
@@ -391,12 +396,148 @@ func TestBerechneAbrechnung_Monatsverlauf(t *testing.T) {
 		if got := len(ab.Monatsverlauf.Zeilen); got != 2 {
 			t.Fatalf("rows = %d, want 2 (November, December)", got)
 		}
-		// The balance starts at 0 in the first month of the period.
+		// October is before the period: it is the Übertrag, the same number
+		// as its balance in the whole year.
+		u := ab.Monatsverlauf.Uebertrag
+		oktober := ganz.Abrechnung.Monatsverlauf.Zeilen[0].Saldo
+		if !u.Vorhanden || !nah(u.Betrag, oktober) || u.Von != "2026-10-01" || u.Bis != "2026-10-01" {
+			t.Errorf("Übertrag = %+v, want October's balance %v", u, oktober)
+		}
+		// Übertrag plus the two months is the balance of the whole year.
+		if !nah(ab.Monatsverlauf.Endsaldo, ganz.Abrechnung.Monatsverlauf.Endsaldo) {
+			t.Errorf("Endsaldo = %v, want %v (as in the whole year)", ab.Monatsverlauf.Endsaldo, ganz.Abrechnung.Monatsverlauf.Endsaldo)
+		}
+		// The Jahressaldo of the period alone excludes the Übertrag.
+		pruefe(t, ab, true)
+	})
+}
+
+// TestBerechneAbrechnung_Uebertrag covers the rules of the Übertrag Vorjahre
+// for a December-only period of the test scenario (months October and
+// November are before it).
+func TestBerechneAbrechnung_Uebertrag(t *testing.T) {
+	nah := func(x, y float64) bool { return math.Abs(x-y) < 0.0151 }
+	dezember := monatsbereich{Von: 12, Bis: 12}
+	rechne := func(t *testing.T, db *sql.DB, apartmentID int64) *abrechnung {
+		t.Helper()
+		d, err := ladeAbrechnungDaten(db)
+		if err != nil {
+			t.Fatalf("ladeAbrechnungDaten: %v", err)
+		}
+		erg, err := berechneAbrechnung(db, d, 2026, dezember, apartmentID)
+		if err != nil || erg.Abrechnung == nil {
+			t.Fatalf("berechneAbrechnung: err %v, Maengel %v", err, maengelTexte(erg.Pruefung))
+		}
+		return erg.Abrechnung
+	}
+	mieterSeit := func(t *testing.T, db *sql.DB, apartmentID int64, seit string) {
+		t.Helper()
+		if _, err := db.Exec(`UPDATE apartments SET mieter_seit = ? WHERE id = ?`, seit, apartmentID); err != nil {
+			t.Fatalf("set mieter_seit: %v", err)
+		}
+	}
+	ohneSeit := rechne(t, teiljahrDB(t, true), 2)
+	u0 := ohneSeit.Monatsverlauf.Uebertrag
+	if !u0.Vorhanden || u0.Von != "2026-10-01" || u0.Bis != "2026-11-01" || u0.Hinweis != "" {
+		t.Fatalf("Übertrag ohne Mieter seit = %+v, want October to November", u0)
+	}
+
+	t.Run("Mieter seit spät: nur die Monate ab dort", func(t *testing.T) {
+		db := teiljahrDB(t, true)
+		mieterSeit(t, db, 2, "2026-11-01")
+		u := rechne(t, db, 2).Monatsverlauf.Uebertrag
+		if !u.Vorhanden || u.Von != "2026-11-01" || u.Bis != "2026-11-01" {
+			t.Fatalf("Übertrag = %+v, want November only", u)
+		}
+		if nah(u.Betrag, u0.Betrag) {
+			t.Errorf("Übertrag = %v as without Mieter seit, want only November", u.Betrag)
+		}
+	})
+
+	t.Run("Mieter seit vor dem Erfassungsbeginn: der Erfassungsbeginn zählt", func(t *testing.T) {
+		db := teiljahrDB(t, true)
+		mieterSeit(t, db, 2, "2020-01-01")
+		u := rechne(t, db, 2).Monatsverlauf.Uebertrag
+		if !u.Vorhanden || u.Von != "2026-10-01" || !nah(u.Betrag, u0.Betrag) {
+			t.Errorf("Übertrag = %+v, want the same as without Mieter seit (%v)", u, u0.Betrag)
+		}
+	})
+
+	t.Run("Mieter seit gleich Von-Monat: Übertrag 0", func(t *testing.T) {
+		db := teiljahrDB(t, true)
+		mieterSeit(t, db, 2, "2026-12-01")
+		ab := rechne(t, db, 2)
+		u := ab.Monatsverlauf.Uebertrag
+		if u.Vorhanden || u.Betrag != 0 || u.Hinweis != "" {
+			t.Errorf("Übertrag = %+v, want none", u)
+		}
+		// The balance starts at 0: the Endsaldo is the Jahressaldo.
+		if !nah(ab.Monatsverlauf.Endsaldo, ab.Saldo.wert) {
+			t.Errorf("Endsaldo = %v, want the Jahressaldo %v", ab.Monatsverlauf.Endsaldo, ab.Saldo.wert)
+		}
+	})
+
+	t.Run("Mieter seit nach dem Von-Monat: kein Übertrag, mit Hinweis", func(t *testing.T) {
+		db := teiljahrDB(t, true)
+		mieterSeit(t, db, 2, "2027-02-01")
+		u := rechne(t, db, 2).Monatsverlauf.Uebertrag
+		if u.Vorhanden || u.Betrag != 0 || !strings.Contains(u.Hinweis, "Februar 2027") {
+			t.Errorf("Übertrag = %+v, want none with a note naming Februar 2027", u)
+		}
+	})
+
+	t.Run("Eigennutzung ignoriert Mieter seit", func(t *testing.T) {
+		db := teiljahrDB(t, true)
+		mieterSeit(t, db, 1, "2026-12-01") // Wohnung 1 is Eigennutzung
+		u := rechne(t, db, 1).Monatsverlauf.Uebertrag
+		if !u.Vorhanden || u.Von != "2026-10-01" {
+			t.Errorf("Übertrag = %+v, want from October (Mieter seit ignored)", u)
+		}
+	})
+
+	t.Run("Mangel vor dem Zeitraum: nicht berechenbar, erster Monat im Hinweis", func(t *testing.T) {
+		db := teiljahrDB(t, true)
+		eingaben, err := store.AllFixkostenEingabenDetails(db)
+		if err != nil {
+			t.Fatalf("AllFixkostenEingabenDetails: %v", err)
+		}
+		for _, e := range eingaben {
+			if e.Monat == "2026-10-01" || e.Monat == "2026-11-01" {
+				if err := store.DeleteFixkostenEingabe(db, e.ID); err != nil {
+					t.Fatalf("DeleteFixkostenEingabe: %v", err)
+				}
+			}
+		}
+		ab := rechne(t, db, 2) // December alone is fine
+		u := ab.Monatsverlauf.Uebertrag
+		if u.Vorhanden || u.Betrag != 0 || u.Hinweis != "Übertrag nicht berechenbar: Fixkosten-Eingabe fehlt: Oktober 2026" {
+			t.Errorf("Übertrag = %+v, want a note on the first affected month (October)", u)
+		}
+		// The running balance starts at 0.
 		z := ab.Monatsverlauf.Zeilen[0]
 		if want := calc.Round2(z.Abschlag - z.Fixkosten - z.Verbrauch); !nah(z.Saldo, want) {
-			t.Errorf("Saldo November = %v, want %v (no carry-over)", z.Saldo, want)
+			t.Errorf("Saldo = %v, want %v (balance starts at 0)", z.Saldo, want)
 		}
-		pruefe(t, ab, true)
+	})
+
+	t.Run("fehlender Abschlag ist kein Mangel", func(t *testing.T) {
+		// The December Abschlag of Wohnung 2 is missing in the scenario and
+		// December alone is settled without a finding.
+		ab := ohneSeit
+		if len(ab.Monatsverlauf.Zeilen) != 1 || ab.Monatsverlauf.Zeilen[0].Abschlag != 0 {
+			t.Errorf("rows = %+v, want December with Abschlag 0", ab.Monatsverlauf.Zeilen)
+		}
+	})
+
+	t.Run("erstes Erfassungsjahr: nichts davor", func(t *testing.T) {
+		db := teiljahrDB(t, true)
+		erg, err := berechneAbrechnungDB(db, 2026, 2)
+		if err != nil || erg.Abrechnung == nil {
+			t.Fatalf("berechneAbrechnung: err %v", err)
+		}
+		if u := erg.Abrechnung.Monatsverlauf.Uebertrag; u.Vorhanden || u.Hinweis != "" {
+			t.Errorf("Übertrag = %+v, want none in the first Erfassungsjahr", u)
+		}
 	})
 }
 
@@ -724,4 +865,32 @@ func ladeTeiljahrPruefDaten(t *testing.T) abrechnungPruefDaten {
 		t.Fatalf("ladeAbrechnungDaten: %v", err)
 	}
 	return d.Pruef
+}
+
+// TestBerechneAbrechnung_UebertragStimmtMitDenVorjahrenUeberein checks the
+// Übertrag against the demo data: with gap-free data and only umlagefähige
+// positions it is the sum of the Jahressaldi of the earlier years, and the
+// Endsaldo of the Monatsverlauf is that sum plus the Jahressaldo.
+func TestBerechneAbrechnung_UebertragStimmtMitDenVorjahrenUeberein(t *testing.T) {
+	db := openTestDB(t)
+	if err := store.SeedDemoData(db, time.Date(2026, time.October, 15, 0, 0, 0, 0, time.UTC)); err != nil {
+		t.Fatalf("SeedDemoData: %v", err)
+	}
+	nah := func(x, y float64) bool { return math.Abs(x-y) < 0.0351 }
+
+	var vorher float64
+	for _, jahr := range []int{2023, 2024, 2025} {
+		erg, err := berechneAbrechnungDB(db, jahr, 2)
+		if err != nil || erg.Abrechnung == nil {
+			t.Fatalf("berechneAbrechnung(%d): err %v, Maengel %v", jahr, err, maengelTexte(erg.Pruefung))
+		}
+		v := erg.Abrechnung.Monatsverlauf
+		if !nah(v.Uebertrag.Betrag, vorher) {
+			t.Errorf("%d: Übertrag = %v, want %v (sum of the Jahressaldi before)", jahr, v.Uebertrag.Betrag, vorher)
+		}
+		if !nah(v.Endsaldo, vorher+erg.Abrechnung.Saldo.wert) {
+			t.Errorf("%d: Endsaldo = %v, want Übertrag + Jahressaldo = %v", jahr, v.Endsaldo, vorher+erg.Abrechnung.Saldo.wert)
+		}
+		vorher += erg.Abrechnung.Saldo.wert
+	}
 }

@@ -435,3 +435,35 @@ func TestAbrechnungSeite_Zaehlerstaende(t *testing.T) {
 	mustContain(t, body, ".anlage-quer table { display: table;")
 	mustNotContain(t, body, `data-l="Strom gesamt"`)
 }
+
+// TestAbrechnungSeite_Uebertrag checks the Übertrag Vorjahre in Anlage 1: the
+// row and the explaining footnote, and the note when it cannot be calculated.
+func TestAbrechnungSeite_Uebertrag(t *testing.T) {
+	t.Run("Übertrag und Fußnote", func(t *testing.T) {
+		_, body := getAbrechnung(t, demoMux(t), "?jahr=2025&wohnung=2", nil)
+		mustContain(t, body, "<em>Übertrag Vorjahre</em>", "Übertrag Vorjahre: Saldo aus Nebenkostenabschlag minus Kosten der Monate")
+		mustNotContain(t, body, "Übertrag nicht berechenbar")
+	})
+
+	t.Run("nicht berechenbar", func(t *testing.T) {
+		db := openTestDB(t)
+		if err := store.SeedDemoData(db, time.Date(2026, time.October, 15, 0, 0, 0, 0, time.UTC)); err != nil {
+			t.Fatalf("SeedDemoData: %v", err)
+		}
+		eingaben, err := store.AllFixkostenEingabenDetails(db)
+		if err != nil {
+			t.Fatalf("AllFixkostenEingabenDetails: %v", err)
+		}
+		for _, e := range eingaben {
+			if e.Monat == "2024-06-01" {
+				if err := store.DeleteFixkostenEingabe(db, e.ID); err != nil {
+					t.Fatalf("DeleteFixkostenEingabe: %v", err)
+				}
+			}
+		}
+		mux := NewMux(db, openTestDB(t), "", "")
+		_, body := getAbrechnung(t, mux, "?jahr=2025&wohnung=2", nil)
+		mustContain(t, body, "Übertrag nicht berechenbar: Fixkosten-Eingabe fehlt: Juni 2024")
+		mustNotContain(t, body, "<em>Übertrag Vorjahre</em>")
+	})
+}

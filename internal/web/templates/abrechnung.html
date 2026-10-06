@@ -257,6 +257,13 @@
     <table>
       <thead><tr><th>Monat</th><th class="r">Fixkosten</th><th class="r">Verbrauchskosten<sup>1</sup></th><th class="r">Abschlag</th><th class="r">Saldo kumuliert</th></tr></thead>
       <tbody>
+        {{if $ab.Monatsverlauf.Uebertrag.Vorhanden}}
+        <tr>
+          <td data-l="Monat"><em>Übertrag Vorjahre</em></td>
+          <td></td><td></td><td></td>
+          <td class="r b" data-l="Saldo kumuliert">{{deEUR $ab.Monatsverlauf.Uebertrag.Betrag}}&nbsp;€</td>
+        </tr>
+        {{end}}
         {{range $ab.Monatsverlauf.Zeilen}}
         <tr>
           <td data-l="Monat">{{monat .Monat}}</td>
@@ -280,7 +287,8 @@
         </tr>
       </tbody>
     </table>
-    <p class="muted klein"><sup>1</sup> Heizung, Wasser und Abwasser{{if $ab.StromW2}} sowie der laut Vereinbarung weiterberechnete Strom Wohnung 2{{end}}. Fixkosten: nur umlagefähige Kostenpositionen, jeweils der Anteil der abgerechneten Wohnung.</p>
+    <p class="muted klein"><sup>1</sup> Heizung, Wasser und Abwasser{{if $ab.StromW2}} sowie der laut Vereinbarung weiterberechnete Strom Wohnung 2{{end}}. Fixkosten: nur umlagefähige Kostenpositionen, jeweils der Anteil der abgerechneten Wohnung.{{with $ab.Monatsverlauf.Uebertrag}}{{if .Vorhanden}} Übertrag Vorjahre: Saldo aus Nebenkostenabschlag minus Kosten der Monate {{monat .Von}} bis {{monat .Bis}}.{{end}}{{end}}</p>
+    {{with $ab.Monatsverlauf.Uebertrag.Hinweis}}<p class="klein"><strong>{{.}}</strong></p>{{end}}
     </section>
 
     <section class="anlage" id="anlage-heizung">

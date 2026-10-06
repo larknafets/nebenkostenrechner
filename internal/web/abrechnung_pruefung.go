@@ -26,6 +26,9 @@ const (
 // (Issue #165): what is wrong and where to fix it.
 type abrechnungMangel struct {
 	Art mangelArt
+	// Monat is the Abrechnungsmonat ("YYYY-MM-01") the finding is about, empty
+	// for one that belongs to no month (Stammdaten).
+	Monat string
 	// Text names the problem for the user, e.g. "Fixkosten-Eingabe fehlt:
 	// November 2027".
 	Text string
@@ -205,6 +208,18 @@ func pruefeAbrechnungDaten(d abrechnungPruefDaten, jahr int, bereich monatsberei
 	}
 	res.Zeitraum = &zeitraum
 
+	res.Maengel = append(res.Maengel, pruefeMonate(d, ablesungVon, zeitraum.LetzterMonat, fixkostenVon)...)
+	res.Maengel = append(res.Maengel, pruefeStammdaten(d, *apartment)...)
+	return res, nil
+}
+
+// pruefeMonate applies the month rules 1 and 2 (see pruefeAbrechnungDaten)
+// to the months ablesungVon to letzter: every month needs a complete
+// Ablesung, every month from fixkostenVon needs exactly one Fixkosten-
+// Eingabe (more than one is ambiguous in any month). The Übertrag Vorjahre
+// reuses it for the months before the period.
+func pruefeMonate(d abrechnungPruefDaten, ablesungVon, letzter, fixkostenVon time.Time) []abrechnungMangel {
+	var maengel []abrechnungMangel
 	// Ablesungen per Abrechnungsmonat, split into complete ones and
 	// Teilstände (the newest Ablesung may be one, it never counts).
 	vollstaendig := map[string]bool{}
@@ -221,22 +236,24 @@ func pruefeAbrechnungDaten(d abrechnungPruefDaten, jahr int, bereich monatsberei
 		}
 		vollstaendig[p.Monat] = true
 	}
-	for m := ablesungVon; !m.After(zeitraum.LetzterMonat); m = m.AddDate(0, 1, 0) {
+	for m := ablesungVon; !m.After(letzter); m = m.AddDate(0, 1, 0) {
 		key := m.Format("2006-01-02")
 		if vollstaendig[key] {
 			continue
 		}
 		if p := teilstand[key]; p != nil {
-			res.Maengel = append(res.Maengel, abrechnungMangel{
+			maengel = append(maengel, abrechnungMangel{
 				Art:    mangelAblesungTeilstand,
+				Monat:  key,
 				Text:   "Ablesung ist ein Teilstand: " + germanPeriodLabel(key),
 				Aktion: "Ablesung vervollständigen",
 				Pfad:   "/ablesungen/" + strconv.FormatInt(p.ID, 10) + "/bearbeiten",
 			})
 			continue
 		}
-		res.Maengel = append(res.Maengel, abrechnungMangel{
+		maengel = append(maengel, abrechnungMangel{
 			Art:    mangelAblesungFehlt,
+			Monat:  key,
 			Text:   "Ablesung fehlt: " + germanPeriodLabel(key),
 			Aktion: "Ablesung erfassen",
 			Pfad:   "/ablesungen/neu",
@@ -247,29 +264,29 @@ func pruefeAbrechnungDaten(d abrechnungPruefDaten, jahr int, bereich monatsberei
 	for _, e := range d.Eingaben {
 		eingabenJeMonat[e.Monat]++
 	}
-	for m := ablesungVon; !m.After(zeitraum.LetzterMonat); m = m.AddDate(0, 1, 0) {
+	for m := ablesungVon; !m.After(letzter); m = m.AddDate(0, 1, 0) {
 		key := m.Format("2006-01-02")
 		n := eingabenJeMonat[key]
 		switch {
 		case n > 1:
-			res.Maengel = append(res.Maengel, abrechnungMangel{
+			maengel = append(maengel, abrechnungMangel{
 				Art:    mangelFixkostenMehrfach,
+				Monat:  key,
 				Text:   "Mehr als eine Fixkosten-Eingabe: " + germanPeriodLabel(key),
 				Aktion: "Fixkosten korrigieren",
 				Pfad:   "/fixkosten",
 			})
 		case n == 0 && !m.Before(fixkostenVon):
-			res.Maengel = append(res.Maengel, abrechnungMangel{
+			maengel = append(maengel, abrechnungMangel{
 				Art:    mangelFixkostenFehlt,
+				Monat:  key,
 				Text:   "Fixkosten-Eingabe fehlt: " + germanPeriodLabel(key),
 				Aktion: "Fixkosten erfassen",
 				Pfad:   "/fixkosten/neu",
 			})
 		}
 	}
-
-	res.Maengel = append(res.Maengel, pruefeStammdaten(d, *apartment)...)
-	return res, nil
+	return maengel
 }
 
 // bestimmeZeitraum derives the billing period of jahr from the Ablesungen.
@@ -288,7 +305,7 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich monatsber
 	}
 
 	first := periods[0]
-	firstDate, err := time.Parse("2006-01-02", first.ReadingDate)
+	firstDate, firstMonat, err := erfassungsbeginn(first)
 	if err != nil {
 		res.Maengel = append(res.Maengel, abrechnungMangel{
 			Art:    mangelKeinZeitraum,
@@ -298,13 +315,6 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich monatsber
 		})
 		return z, ablesungVon, fixkostenVon, false
 	}
-	// The Abrechnungsmonat decides which month the first Ablesung belongs
-	// to; without one (a Teilstand) its reading date does.
-	firstMonat := time.Date(firstDate.Year(), firstDate.Month(), 1, 0, 0, 0, 0, time.UTC)
-	if t, err := time.Parse("2006-01-02", first.Monat); err == nil {
-		firstMonat = t
-	}
-
 	if jahr < firstMonat.Year() {
 		res.Maengel = append(res.Maengel, abrechnungMangel{
 			Art:  mangelKeinZeitraum,
@@ -345,6 +355,21 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich monatsber
 		}
 	}
 	return z, ablesungVon, fixkostenVon, true
+}
+
+// erfassungsbeginn returns the reading date and the Abrechnungsmonat of the
+// first Ablesung ever. The Abrechnungsmonat decides which month it belongs
+// to; without one (a Teilstand) its reading date does.
+func erfassungsbeginn(first *store.LatestPeriod) (datum, monat time.Time, err error) {
+	datum, err = time.Parse("2006-01-02", first.ReadingDate)
+	if err != nil {
+		return datum, monat, err
+	}
+	monat = time.Date(datum.Year(), datum.Month(), 1, 0, 0, 0, 0, time.UTC)
+	if t, err := time.Parse("2006-01-02", first.Monat); err == nil {
+		monat = t
+	}
+	return datum, monat, nil
 }
 
 // pruefeStammdaten checks the Stammdaten the Jahresabrechnung needs for

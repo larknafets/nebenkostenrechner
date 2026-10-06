@@ -39,6 +39,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Verbesserungen
 
+- Die Monatstabelle der Abrechnung (Anlage 1) zeigt oben den Übertrag Vorjahre und rechnet den Saldo darauf weiter. Er zählt ab "Mieter seit" bzw. dem Beginn der Erfassung, ist bei einem Mangel in den Vormonaten "nicht berechenbar" und bei einem Mieterwechsel 0 (#207)
+
 - Der Anhang der Abrechnung ist in nummerierte Anlagen gegliedert, auf Seite 1 steht eine Anlagenliste, und keine Anlage bricht im Druck mitten in der Tabelle um. Die Verbrauchsübersicht steht jetzt als Anlage 6 am Ende des Anhangs (#203)
 
 ## Fehlerkorrekturen
