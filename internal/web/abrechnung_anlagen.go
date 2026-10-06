@@ -6,9 +6,7 @@ import "fmt"
 // and the headings of the Anhang both come from abrechnungAnlagen, so title
 // and number cannot drift apart.
 type abrechnungAnlage struct {
-	// Key names the Anlage in the templates, Nr is its fixed number (the
-	// Anlagen of the Spec are numbered 1 to 7, a not yet built one leaves a
-	// gap).
+	// Key names the Anlage in the templates, Nr is its fixed number (1 to 7).
 	Key   string
 	Nr    int
 	Titel string
