@@ -47,6 +47,37 @@ type abrechnungVerbrauchZeile struct {
 	Eigen bool
 }
 
+// abrechnungZaehlerSpalte is one meter column of the Zählerstände table.
+type abrechnungZaehlerSpalte struct {
+	Zaehler, Einheit string
+	// Eigen is true for a meter of the settled apartment, shown in bold.
+	Eigen bool
+}
+
+// abrechnungZaehlerstandZeile is one Ablesung of the Zählerstände table.
+type abrechnungZaehlerstandZeile struct {
+	// Ablesedatum is the reading date ("YYYY-MM-DD"), Monat the
+	// Abrechnungsmonat ("YYYY-MM-01") the Ablesung is assigned to.
+	Ablesedatum, Monat string
+	// Ausgangsstand is true for the first row, the start of the period.
+	Ausgangsstand bool
+	// Staende are the Zählerstände in the order of the columns.
+	Staende []abrechnungZaehlerstand
+}
+
+// abrechnungZaehlerstand is one Zählerstand of a row, Eigen if its meter
+// belongs to the settled apartment (shown in bold).
+type abrechnungZaehlerstand struct {
+	Wert  float64
+	Eigen bool
+}
+
+// abrechnungZaehlerstaende is the Zählerstände table (Anlage 7).
+type abrechnungZaehlerstaende struct {
+	Spalten []abrechnungZaehlerSpalte
+	Zeilen  []abrechnungZaehlerstandZeile
+}
+
 // abrechnungBezugsgroesse is one row of the Bezugsgrößen table: the
 // reference value of a Verteilerschlüssel per apartment and in total.
 type abrechnungBezugsgroesse struct {
@@ -121,6 +152,7 @@ type abrechnung struct {
 
 	// Anhang data.
 	Monatsverlauf  abrechnungMonatsverlauf
+	Zaehlerstaende abrechnungZaehlerstaende
 	Verbrauch      []abrechnungVerbrauchZeile
 	HeizungMonate  []abrechnungHeizungMonat
 	PersonenMonate []abrechnungPersonenMonat
@@ -279,6 +311,7 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich monatsb
 
 	ab.Monatsverlauf = monatsverlauf(monate, kostenpositionen, eingabeJeMonat, fixErgebnis, verbrauchJeMonat, apartmentID)
 	ab.Verbrauch = verbrauchUebersicht(periods, apartments, meters, imZeitraum, apartmentID)
+	ab.Zaehlerstaende = zaehlerstaende(periods, apartments, meters, imZeitraum, apartmentID)
 	ab.Bezugsgroessen = bezugsgroessen(apartments)
 	ab.PersonenMonate = personenMonate(monate, eingabeJeMonat, periods, apartments)
 
@@ -395,13 +428,10 @@ func heizungSchluessel(gewichtung float64) string {
 	return fmt.Sprintf("%d %% Wärmeverbrauch, %d %% Wohnfläche", waerme, 100-waerme)
 }
 
-// verbrauchUebersicht lists every meter with its Zählerstand at the start
-// and end of the period. The start is the stand of the Ablesung before the
-// period's first one - or, in the first Erfassungsjahr, the stand of that
-// first Ablesung itself (the Ausgangsstand). The end is the stand of the
-// period's last Ablesung. Teilstände are ignored.
-func verbrauchUebersicht(periods []*store.LatestPeriod, apartments []store.Apartment, meters []store.Meter, imZeitraum map[string]bool, apartmentID int64) []abrechnungVerbrauchZeile {
-	var complete []*store.LatestPeriod
+// ablesungenImZeitraum returns the complete Ablesungen (no Teilstände) oldest
+// first and the index range [first, last] of those whose Abrechnungsmonat is
+// in the period, first == -1 if there is none.
+func ablesungenImZeitraum(periods []*store.LatestPeriod, apartments []store.Apartment, imZeitraum map[string]bool) (complete []*store.LatestPeriod, first, last int) {
 	for _, p := range periods {
 		if !newTeilstandStatus(p, apartments).IstTeilstand {
 			complete = append(complete, p)
@@ -409,7 +439,7 @@ func verbrauchUebersicht(periods []*store.LatestPeriod, apartments []store.Apart
 	}
 	sort.SliceStable(complete, func(i, j int) bool { return complete[i].ReadingDate < complete[j].ReadingDate })
 
-	first, last := -1, -1
+	first, last = -1, -1
 	for i, p := range complete {
 		if imZeitraum[p.Monat] {
 			if first == -1 {
@@ -418,6 +448,72 @@ func verbrauchUebersicht(periods []*store.LatestPeriod, apartments []store.Apart
 			last = i
 		}
 	}
+	return complete, first, last
+}
+
+// zaehlerstaende lists the Zählerstände of every complete Ablesung of the
+// period (Anlage 7), one row per Ablesung with its date and Abrechnungsmonat.
+// The first row is the Ausgangsstand: the Ablesung before the period's first
+// one, or in the first Erfassungsjahr that first Ablesung itself, the same
+// start the Verbrauchsübersicht uses. Several Ablesungen of one month are
+// separate rows.
+func zaehlerstaende(periods []*store.LatestPeriod, apartments []store.Apartment, meters []store.Meter, imZeitraum map[string]bool, apartmentID int64) abrechnungZaehlerstaende {
+	complete, first, last := ablesungenImZeitraum(periods, apartments, imZeitraum)
+	if first == -1 {
+		return abrechnungZaehlerstaende{}
+	}
+	von := first
+	if first > 0 {
+		von = first - 1
+	}
+	var z abrechnungZaehlerstaende
+	for _, m := range meters {
+		unit := m.Unit
+		if unit == "m3" {
+			unit = "m³"
+		}
+		z.Spalten = append(z.Spalten, abrechnungZaehlerSpalte{Zaehler: zaehlerKurzname(m), Einheit: unit, Eigen: m.ApartmentID == apartmentID})
+	}
+	for i := von; i <= last; i++ {
+		p := complete[i]
+		zeile := abrechnungZaehlerstandZeile{Ablesedatum: p.ReadingDate, Monat: p.Monat, Ausgangsstand: i == von}
+		for _, m := range meters {
+			zeile.Staende = append(zeile.Staende, abrechnungZaehlerstand{Wert: p.Readings[m.Key], Eigen: m.ApartmentID == apartmentID})
+		}
+		z.Zeilen = append(z.Zeilen, zeile)
+	}
+	return z
+}
+
+// zaehlerKurznamen are the short column headings of the Zählerstände table,
+// 10 columns plus the dates have to fit on a landscape page.
+var zaehlerKurznamen = map[string]string{
+	"strom_gesamt":                  "Strom gesamt",
+	"strom_wohnung2":                "Strom Whg 2",
+	"strom_waermepumpe":             "Strom WP",
+	"strom_wallbox":                 "Wallboxen",
+	"wasser_gesamt":                 "Wasser gesamt",
+	"wasser_wohnung2":               "Wasser Whg 2",
+	"wasser_warmwasseraufbereitung": "Warmwasser",
+	"waerme_wohnung1":               "Wärme Whg 1",
+	"waerme_wohnung2":               "Wärme Whg 2",
+	"strom_einspeisung":             "Einspeisung (PV)",
+}
+
+func zaehlerKurzname(m store.Meter) string {
+	if n, ok := zaehlerKurznamen[m.Key]; ok {
+		return n
+	}
+	return m.Label
+}
+
+// verbrauchUebersicht lists every meter with its Zählerstand at the start
+// and end of the period. The start is the stand of the Ablesung before the
+// period's first one - or, in the first Erfassungsjahr, the stand of that
+// first Ablesung itself (the Ausgangsstand). The end is the stand of the
+// period's last Ablesung. Teilstände are ignored.
+func verbrauchUebersicht(periods []*store.LatestPeriod, apartments []store.Apartment, meters []store.Meter, imZeitraum map[string]bool, apartmentID int64) []abrechnungVerbrauchZeile {
+	complete, first, last := ablesungenImZeitraum(periods, apartments, imZeitraum)
 	if first == -1 {
 		return nil
 	}

@@ -400,6 +400,109 @@ func TestBerechneAbrechnung_Monatsverlauf(t *testing.T) {
 	})
 }
 
+func TestBerechneAbrechnung_Zaehlerstaende(t *testing.T) {
+	t.Run("erstes Erfassungsjahr: Ausgangsstand und alle Ablesungen", func(t *testing.T) {
+		db := teiljahrDB(t, true)
+		erg, err := berechneAbrechnungDB(db, 2026, 2)
+		if err != nil || erg.Abrechnung == nil {
+			t.Fatalf("berechneAbrechnung: err %v", err)
+		}
+		z := erg.Abrechnung.Zaehlerstaende
+		if len(z.Spalten) != len(store.MeterKeys) {
+			t.Fatalf("columns = %d, want %d (all meters)", len(z.Spalten), len(store.MeterKeys))
+		}
+		var datum, monate []string
+		for _, r := range z.Zeilen {
+			datum = append(datum, r.Ablesedatum)
+			monate = append(monate, r.Monat)
+		}
+		if want := []string{"2026-09-15", "2026-10-28", "2026-11-28", "2026-12-28"}; !reflect.DeepEqual(datum, want) {
+			t.Errorf("Ablesedatum = %v, want %v", datum, want)
+		}
+		if want := []string{"2026-09-01", "2026-10-01", "2026-11-01", "2026-12-01"}; !reflect.DeepEqual(monate, want) {
+			t.Errorf("Abrechnungsmonat = %v, want %v", monate, want)
+		}
+		for i, r := range z.Zeilen {
+			if r.Ausgangsstand != (i == 0) {
+				t.Errorf("row %d: Ausgangsstand = %v", i, r.Ausgangsstand)
+			}
+			for j, key := range store.MeterKeys {
+				if want := abrechnungDelta[key] * float64(i); r.Staende[j].Wert != want {
+					t.Errorf("row %d %s = %v, want %v", i, key, r.Staende[j].Wert, want)
+				}
+			}
+		}
+		// The meters of Wohnung 2 are the settled apartment's own.
+		var eigen []string
+		for i, sp := range z.Spalten {
+			if sp.Eigen {
+				eigen = append(eigen, store.MeterKeys[i])
+			}
+			if sp.Eigen != z.Zeilen[1].Staende[i].Eigen {
+				t.Errorf("column %d: Eigen differs between header and cell", i)
+			}
+		}
+		if want := []string{"strom_wohnung2", "wasser_wohnung2", "waerme_wohnung2"}; !reflect.DeepEqual(eigen, want) {
+			t.Errorf("own meters = %v, want %v", eigen, want)
+		}
+	})
+
+	t.Run("Teilzeitraum beginnt mit der Ablesung davor", func(t *testing.T) {
+		db := teiljahrDB(t, true)
+		d, err := ladeAbrechnungDaten(db)
+		if err != nil {
+			t.Fatalf("ladeAbrechnungDaten: %v", err)
+		}
+		erg, err := berechneAbrechnung(db, d, 2026, monatsbereich{Von: 11, Bis: 12}, 2)
+		if err != nil || erg.Abrechnung == nil {
+			t.Fatalf("berechneAbrechnung: err %v", err)
+		}
+		var monate []string
+		for _, r := range erg.Abrechnung.Zaehlerstaende.Zeilen {
+			monate = append(monate, r.Monat)
+		}
+		if want := []string{"2026-10-01", "2026-11-01", "2026-12-01"}; !reflect.DeepEqual(monate, want) {
+			t.Errorf("Abrechnungsmonate = %v, want %v (October is the Ausgangsstand)", monate, want)
+		}
+		if !erg.Abrechnung.Zaehlerstaende.Zeilen[0].Ausgangsstand {
+			t.Error("the first row is not the Ausgangsstand")
+		}
+	})
+
+	t.Run("untermonatige Ablesungen eigene Zeilen, Teilstand fehlt", func(t *testing.T) {
+		apartments := []store.Apartment{{ID: 1}, {ID: 2}}
+		meters := []store.Meter{{Key: "strom_gesamt", Label: "Stromzähler Gesamt", Unit: "kWh"}}
+		preis := store.Float64(0.3)
+		ablesung := func(id int64, datum, monat string, stand float64, vollstaendig bool) *store.LatestPeriod {
+			p := &store.LatestPeriod{ID: id, ReadingDate: datum, Monat: monat, Readings: map[string]float64{}, PersonenByApartment: map[int64]int64{1: 1, 2: 1}}
+			if vollstaendig {
+				p.Strompreis, p.FrischwasserPreis, p.AbwasserPreis, p.EinspeisungPreis = preis, preis, preis, preis
+			}
+			for _, key := range store.MeterKeys {
+				p.Readings[key] = stand
+			}
+			return p
+		}
+		periods := []*store.LatestPeriod{
+			ablesung(4, "2026-03-01", "2026-03-01", 40, false), // Teilstand
+			ablesung(3, "2026-02-20", "2026-02-01", 30, true),
+			ablesung(2, "2026-02-10", "2026-02-01", 20, true),
+			ablesung(1, "2026-01-10", "2026-01-01", 10, true),
+		}
+		imZeitraum := map[string]bool{"2026-02-01": true, "2026-03-01": true}
+		z := zaehlerstaende(periods, apartments, meters, imZeitraum, 2)
+		var datum []string
+		for _, r := range z.Zeilen {
+			datum = append(datum, r.Ablesedatum)
+		}
+		// January is the Ausgangsstand, both February Ablesungen are rows, the
+		// Teilstand of March is not.
+		if want := []string{"2026-01-10", "2026-02-10", "2026-02-20"}; !reflect.DeepEqual(datum, want) {
+			t.Errorf("Ablesedatum = %v, want %v", datum, want)
+		}
+	})
+}
+
 func TestBerechneAbrechnung_Anhang(t *testing.T) {
 	db := teiljahrDB(t, true)
 	erg, err := berechneAbrechnungDB(db, 2026, 2)

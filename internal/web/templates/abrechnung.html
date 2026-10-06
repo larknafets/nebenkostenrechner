@@ -31,9 +31,16 @@
   .anhang { margin-top: 1.5rem; }
   .anhang table { font-size: .85rem; }
   .anlagen-liste { margin: 0 0 .5rem 1.1rem; padding: 0; }
+  .tabwrap { overflow-x: auto; }
+  .tabwrap th { vertical-align: bottom; }
+  .tabwrap th .einheit { display: block; font-weight: 400; text-transform: none; }
 
   /* Druck und PDF: immer DIN A4, hell, ohne Bedienelemente. */
   @page { size: A4; margin: 14mm 15mm; }
+  /* Benannte Seite für Anlage 7: Querformat. Muss NACH der Regel oben stehen,
+     sonst überschreibt Chrome sie und alles bleibt Hochformat. */
+  @page quer { size: A4 landscape; margin: 14mm 12mm; }
+  .anlage-quer { page: quer; break-before: page; }
   @media print {
     :root, :root[data-theme="dark"], :root[data-theme="light"] {
       --bg: #fff !important; --panel: #fff !important; --border: #cfd3da !important; --text: #000 !important;
@@ -57,6 +64,10 @@
     /* Eine Anlage bricht nicht um und rückt ganz auf die nächste Seite. Ist sie
        länger als eine Seite, wiederholt sich die Kopfzeile. */
     .anlage { break-inside: avoid; }
+    .tabwrap { overflow: visible; }
+    .anlage-quer table { font-size: 7.5pt; }
+    .anlage-quer th, .anlage-quer td { padding: .12rem .25rem; }
+    .anlage-quer .klein { font-size: 7pt; }
     .abrechnung thead { display: table-header-group; }
   }
 
@@ -74,6 +85,13 @@
     .abrechnung td { border: 0; padding: .1rem 0; text-align: left !important; }
     .abrechnung td[data-l]::before { content: attr(data-l) ": "; color: var(--muted); font-size: .75rem; }
     .abrechnung tr.summe { border-color: var(--text); }
+    /* Anlage 7 hat 12 Spalten: kein Karten-Layout, sondern waagerecht scrollen. */
+    .anlage-quer table { display: table; width: auto; min-width: 100%; }
+    .anlage-quer thead { display: table-header-group; }
+    .anlage-quer tbody { display: table-row-group; }
+    .anlage-quer tr { display: table-row; border: 0; padding: 0; margin: 0; }
+    .anlage-quer th, .anlage-quer td { display: table-cell; width: auto; padding: .3rem .4rem; white-space: nowrap; border-bottom: 1px solid var(--border); }
+    .abrechnung .anlage-quer td.r, .abrechnung .anlage-quer th.r { text-align: right !important; }
   }
 </style>
 
@@ -352,6 +370,28 @@
         {{end}}
       </tbody>
     </table>
+    </section>
+    {{/* Anlage 7 steht allein auf einer Querseite und ist das letzte Element im
+         Fluss: Nach ihr darf nichts mehr folgen, sonst entsteht eine leere Seite. */}}
+    <section class="anlage anlage-quer" id="anlage-zaehlerstaende">
+      <h3>{{anlage "zaehlerstaende"}}</h3>
+      <div class="tabwrap">
+        <table>
+          <thead><tr>
+            <th>Ablesedatum</th><th>Abrechnungsmonat</th>
+            {{range $ab.Zaehlerstaende.Spalten}}<th class="r{{if .Eigen}} sel{{end}}">{{.Zaehler}}<br><span class="einheit">{{.Einheit}}</span></th>{{end}}
+          </tr></thead>
+          <tbody>
+            {{range $ab.Zaehlerstaende.Zeilen}}
+            <tr>
+              <td>{{deDatum .Ablesedatum}}</td>
+              <td>{{monat .Monat}}{{if .Ausgangsstand}}<br><span class="muted klein">Ausgangsstand</span>{{end}}</td>
+              {{range .Staende}}<td class="r{{if .Eigen}} b{{end}}">{{de3 .Wert}}</td>{{end}}
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
     </section>
   </div>
 </div>

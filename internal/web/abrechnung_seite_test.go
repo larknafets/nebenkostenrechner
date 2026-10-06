@@ -373,7 +373,7 @@ func TestAbrechnungSeite_Anlagen(t *testing.T) {
 	if strings.Index(body, `class="klein anlagen-liste"`) > strings.Index(body, `<div class="anhang">`) {
 		t.Error("Anlagenliste steht nicht vor dem Anhang")
 	}
-	if got := strings.Count(body, `<section class="anlage"`); got != len(want) {
+	if got := strings.Count(body, `<section class="anlage`); got != len(want) {
 		t.Errorf("Anlage blocks = %d, want %d", got, len(want))
 	}
 	// The Verbrauchsübersicht follows the Verteilerschlüssel as Anlage 6.
@@ -401,4 +401,37 @@ func TestAbrechnungSeite_Monatsverlauf(t *testing.T) {
 	if got := strings.Count(body, "- 308,65"); got < 2 {
 		t.Errorf("Jahressaldo - 308,65 € erscheint %d Mal, want at least 2 (Saldoberechnung and Monatsverlauf)", got)
 	}
+}
+
+// TestAbrechnungSeite_Zaehlerstaende checks Anlage 7: all meters as columns,
+// the Ausgangsstand, the landscape page rule in the right order and the
+// Anlage as the last block of the Anhang.
+func TestAbrechnungSeite_Zaehlerstaende(t *testing.T) {
+	mux := demoMux(t)
+	_, body := getAbrechnung(t, mux, "?jahr=2025&wohnung=2", nil)
+
+	mustContain(t, body,
+		"<h3>Anlage 7: Zählerstände</h3>", `id="anlage-zaehlerstaende"`, "Ausgangsstand",
+		"Ablesedatum", "Abrechnungsmonat", "Einspeisung (PV)", "Wallboxen", "01.12.2024", "Dezember 2024")
+
+	// The named page must come after the default @page rule, or Chrome keeps
+	// everything in portrait.
+	standard := strings.Index(body, "@page { size: A4;")
+	quer := strings.Index(body, "@page quer { size: A4 landscape;")
+	if standard < 0 || quer < 0 || quer < standard {
+		t.Errorf("@page quer (%d) must follow the default @page (%d)", quer, standard)
+	}
+	mustContain(t, body, ".anlage-quer { page: quer; break-before: page; }")
+
+	// Anlage 7 is the last block of the Anhang: after it only closing tags.
+	rest := body[strings.Index(body, `id="anlage-zaehlerstaende"`):]
+	rest = rest[strings.Index(rest, "</section>")+len("</section>"):]
+	nach := regexp.MustCompile(`(?s)^(\s|</div>)*`).FindString(rest)
+	if after := strings.TrimPrefix(rest, nach); strings.Contains(after[:min(len(after), 400)], "<section") || strings.Contains(after[:min(len(after), 400)], "<h3") {
+		t.Errorf("there is more content after Anlage 7: %q", after[:min(len(after), 120)])
+	}
+
+	// Not in the card layout: the mobile rules keep it a table.
+	mustContain(t, body, ".anlage-quer table { display: table;")
+	mustNotContain(t, body, `data-l="Strom gesamt"`)
 }

@@ -22,6 +22,7 @@ var abrechnungAnlagen = []abrechnungAnlage{
 	{Key: "personen", Nr: 4, Titel: "Personenzahl je Monat"},
 	{Key: "schluessel", Nr: 5, Titel: "Verteilerschlüssel"},
 	{Key: "verbrauch", Nr: 6, Titel: "Verbrauchsübersicht"},
+	{Key: "zaehlerstaende", Nr: 7, Titel: "Zählerstände"},
 }
 
 // anlageUeberschrift is the heading of an Anlage, "Anlage N: Titel".
