@@ -359,32 +359,6 @@ func GetFixkostenEingabeDetails(db *sql.DB, eingabeID int64) (*FixkostenEingabeD
 	return nil, nil
 }
 
-// AllAbschlaege returns every recorded Nebenkostenabschlag-Wert, keyed by
-// fixkosten_eingabe_id then apartment_id - alleFixkostenKosten's source for
-// attaching Abschlag-Werte to each Monat's Fixkosten-Ergebnis without a
-// per-Eingabe query.
-func AllAbschlaege(db *sql.DB) (map[int64]map[int64]float64, error) {
-	rows, err := db.Query(`SELECT fixkosten_eingabe_id, apartment_id, wert FROM nebenkosten_abschlaege`)
-	if err != nil {
-		return nil, fmt.Errorf("query nebenkosten abschlaege: %w", err)
-	}
-	defer rows.Close()
-
-	out := map[int64]map[int64]float64{}
-	for rows.Next() {
-		var eingabeID, apartmentID int64
-		var wert float64
-		if err := rows.Scan(&eingabeID, &apartmentID, &wert); err != nil {
-			return nil, fmt.Errorf("scan nebenkosten abschlag: %w", err)
-		}
-		if out[eingabeID] == nil {
-			out[eingabeID] = map[int64]float64{}
-		}
-		out[eingabeID][apartmentID] = wert
-	}
-	return out, rows.Err()
-}
-
 // AllFixkostenEingabenDetails returns every Fixkosten-Eingabe with its full
 // Werte/Personen/Abschlag, oldest first - the CSV export's data source
 // (Issue #132). 4 batched queries total (eingaben, werte, personen,
