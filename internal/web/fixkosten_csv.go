@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -119,7 +120,7 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 	werte := make(map[int64]store.FixkostenPositionWert, len(store.KostenpositionDefaults))
 	for _, kd := range store.KostenpositionDefaults {
 		logik := strings.TrimSpace(cell(kd.Key + "_logik"))
-		if _, ok := logikLabels[logik]; !ok {
+		if _, ok := abr.LogikLabels[logik]; !ok {
 			return store.FixkostenInput{}, fmt.Errorf("Zeile %d: ungültige Berechnungslogik für %s: %q", line, kd.Label, logik)
 		}
 

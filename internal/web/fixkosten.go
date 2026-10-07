@@ -7,35 +7,23 @@ import (
 	"strconv"
 	"time"
 
+	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// logikLabels renders a cost position's (Kostenposition) allocation logic
-// (Logik) as the German label shown throughout the Fixkosten/Stammdaten
-// UI - shared by the form, detail, and Stammdaten Kostenpositionen-Jahre
-// templates.
-var logikLabels = map[string]string{
-	store.LogikWohneinheit: "Je Wohneinheit",
-	store.LogikFlurstueck:  "Je anteiliges Flurstück",
-	store.LogikQM:          "Je anteilige Wohnungsgröße",
-	store.LogikPersonen:    "Je Anzahl Personen",
-	store.LogikWohnung1:    "Wohnung 1",
-	store.LogikWohnung2:    "Wohnung 2",
-}
-
 // logikOption is one <select> choice for a cost position's allocation logic.
 type logikOption struct{ Value, Label string }
 
-// logikOptions is logikLabels in a stable, display order - the Stammdaten
+// logikOptions is abr.LogikLabels in a stable, display order - the Stammdaten
 // Kostenpositionen-Jahre logic dropdown's option list.
 var logikOptions = []logikOption{
-	{store.LogikWohneinheit, logikLabels[store.LogikWohneinheit]},
-	{store.LogikFlurstueck, logikLabels[store.LogikFlurstueck]},
-	{store.LogikQM, logikLabels[store.LogikQM]},
-	{store.LogikPersonen, logikLabels[store.LogikPersonen]},
-	{store.LogikWohnung1, logikLabels[store.LogikWohnung1]},
-	{store.LogikWohnung2, logikLabels[store.LogikWohnung2]},
+	{store.LogikWohneinheit, abr.LogikLabels[store.LogikWohneinheit]},
+	{store.LogikFlurstueck, abr.LogikLabels[store.LogikFlurstueck]},
+	{store.LogikQM, abr.LogikLabels[store.LogikQM]},
+	{store.LogikPersonen, abr.LogikLabels[store.LogikPersonen]},
+	{store.LogikWohnung1, abr.LogikLabels[store.LogikWohnung1]},
+	{store.LogikWohnung2, abr.LogikLabels[store.LogikWohnung2]},
 }
 
 // parseFixkostenMonat turns the form's <input type="month"> value ("YYYY-MM")
@@ -235,7 +223,7 @@ func parseFixkostenInput(r *http.Request, apartments []store.Apartment) (store.F
 		idStr := strconv.FormatInt(kp.ID, 10)
 
 		logik := r.FormValue("logik_" + idStr)
-		if _, ok := logikLabels[logik]; !ok {
+		if _, ok := abr.LogikLabels[logik]; !ok {
 			return store.FixkostenInput{}, fmt.Errorf("ungültige Berechnungslogik für %s", kp.Label)
 		}
 
@@ -480,7 +468,7 @@ func handleFixkostenDetail(a auth) http.HandlerFunc {
 		for _, p := range erg.Positionen {
 			positionen = append(positionen, fixkostenDetailPosition{
 				Label:      p.Label,
-				LogikLabel: logikLabels[p.Logik],
+				LogikLabel: abr.LogikLabels[p.Logik],
 				KostenW1:   p.KostenW1,
 				KostenW2:   p.KostenW2,
 			})

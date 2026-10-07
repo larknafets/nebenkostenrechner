@@ -1,21 +1,21 @@
-package web
+package abrechnung
+
+// Berechnung of the Jahresabrechnung, Übertrag Vorjahre and Monatsverlauf.
 
 import (
-	"database/sql"
 	"fmt"
 	"math"
 	"sort"
 	"time"
 
-	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// abrechnungZeile is one line of the cost overview: a position (or a block
+// Zeile is one line of the cost overview: a position (or a block
 // of consecutive months of it with the same Verteilerschlüssel) with the
 // whole-house cost and the share of the settled apartment.
-type abrechnungZeile struct {
+type Zeile struct {
 	Position string
 	// Von/Bis are the first and last Abrechnungsmonat of the block
 	// ("YYYY-MM-01").
@@ -34,62 +34,62 @@ type abrechnungZeile struct {
 	Geteilt bool
 }
 
-// abrechnungStrom is the electricity consumption of Wohnung 2 passed on by
+// Strom is the electricity consumption of Wohnung 2 passed on by
 // agreement (not a Betriebskostenart).
-type abrechnungStrom struct {
+type Strom struct {
 	VerbrauchKWh, Kosten float64
 }
 
-// abrechnungVerbrauchZeile is one meter in the Anhang: the Zählerstand at
+// VerbrauchZeile is one meter in the Anhang: the Zählerstand at
 // the start and the end of the period and the consumption in between.
-type abrechnungVerbrauchZeile struct {
+type VerbrauchZeile struct {
 	Zaehler, Einheit        string
 	Beginn, Ende, Verbrauch float64
 	// Eigen is true for a meter of the settled apartment, shown in bold.
 	Eigen bool
 }
 
-// abrechnungZaehlerSpalte is one meter column of the Zählerstände table.
-type abrechnungZaehlerSpalte struct {
+// ZaehlerSpalte is one meter column of the Zählerstände table.
+type ZaehlerSpalte struct {
 	Zaehler, Einheit string
 	// Eigen is true for a meter of the settled apartment, shown in bold.
 	Eigen bool
 }
 
-// abrechnungZaehlerstandZeile is one Ablesung of the Zählerstände table.
-type abrechnungZaehlerstandZeile struct {
+// ZaehlerstandZeile is one Ablesung of the Zählerstände table.
+type ZaehlerstandZeile struct {
 	// Ablesedatum is the reading date ("YYYY-MM-DD"), Monat the
 	// Abrechnungsmonat ("YYYY-MM-01") the Ablesung is assigned to.
 	Ablesedatum, Monat string
 	// Ausgangsstand is true for the first row, the start of the period.
 	Ausgangsstand bool
 	// Staende are the Zählerstände in the order of the columns.
-	Staende []abrechnungZaehlerstand
+	Staende []Zaehlerstand
 }
 
-// abrechnungZaehlerstand is one Zählerstand of a row, Eigen if its meter
+// Zaehlerstand is one Zählerstand of a row, Eigen if its meter
 // belongs to the settled apartment (shown in bold).
-type abrechnungZaehlerstand struct {
+type Zaehlerstand struct {
 	Wert  float64
 	Eigen bool
 }
 
-// abrechnungZaehlerstaende is the Zählerstände table (Anlage 7).
-type abrechnungZaehlerstaende struct {
-	Spalten []abrechnungZaehlerSpalte
-	Zeilen  []abrechnungZaehlerstandZeile
+// Zaehlerstaende is the Zählerstände table (Anlage 7).
+type Zaehlerstaende struct {
+	Spalten []ZaehlerSpalte
+	Zeilen  []ZaehlerstandZeile
 }
 
-// abrechnungBezugsgroesse is one row of the Bezugsgrößen table: the
+// Bezugsgroesse is one row of the Bezugsgrößen table: the
 // reference value of a Verteilerschlüssel per apartment and in total.
-type abrechnungBezugsgroesse struct {
+type Bezugsgroesse struct {
 	Schluessel     string
 	W1, W2, Gesamt float64
 }
 
-// abrechnungHeizungMonat is one Abrechnungsmonat of the heating table in
+// HeizungMonat is one Abrechnungsmonat of the heating table in
 // the Anhang.
-type abrechnungHeizungMonat struct {
+type HeizungMonat struct {
 	Monat string
 	// WPStromKWh is the heat pump electricity of the whole house, Waerme*
 	// the heat meter consumption per apartment (MWh), Anteil the settled
@@ -97,20 +97,20 @@ type abrechnungHeizungMonat struct {
 	WPStromKWh, WaermeW1MWh, WaermeW2MWh, Anteil float64
 }
 
-// abrechnungPersonenMonat is the occupant count of one month from its two
+// PersonenMonat is the occupant count of one month from its two
 // independent sources. A nil map means the source has no value that month
 // (e.g. no Fixkosten-Eingabe in the month of the first Ablesung).
-type abrechnungPersonenMonat struct {
+type PersonenMonat struct {
 	Monat     string
 	Fixkosten map[int64]int64
 	Ablesung  map[int64]int64
 }
 
-// abrechnungMonatZeile is one Abrechnungsmonat of the Monatsverlauf (Anlage
+// MonatZeile is one Abrechnungsmonat of the Monatsverlauf (Anlage
 // 1): the month's costs of the settled apartment against its
 // Nebenkostenabschlag, and the balance accumulated up to and including the
 // month. All values are rounded to the cent.
-type abrechnungMonatZeile struct {
+type MonatZeile struct {
 	Monat string
 	// Fixkosten are the umlagefähige Kostenpositionen, Verbrauch is
 	// Heizung plus Wasser and, if passed on, the electricity of Wohnung 2.
@@ -120,22 +120,22 @@ type abrechnungMonatZeile struct {
 	Saldo float64
 }
 
-// abrechnungMonatsverlauf is the Monatsverlauf with its sum row.
-type abrechnungMonatsverlauf struct {
-	Zeilen []abrechnungMonatZeile
+// Monatsverlauf is the Monatsverlauf with its sum row.
+type Monatsverlauf struct {
+	Zeilen []MonatZeile
 	// Uebertrag is the balance carried in from the months before the period,
 	// the running balance starts with it.
-	Uebertrag abrechnungUebertrag
+	Uebertrag Uebertrag
 	// Fixkosten, Verbrauch and Abschlag are the column sums of the period,
 	// Endsaldo the balance of the last month (including the Übertrag).
 	Fixkosten, Verbrauch, Abschlag, Endsaldo float64
 }
 
-// abrechnungUebertrag is the "Übertrag Vorjahre" of the Monatsverlauf: the
+// Uebertrag is the "Übertrag Vorjahre" of the Monatsverlauf: the
 // balance (Abschlag minus costs) of the months from the start month (the
 // later of "Mieter seit" and the start of the recording) up to the month
 // before the period.
-type abrechnungUebertrag struct {
+type Uebertrag struct {
 	// Vorhanden is true if the table shows the row. It does not if there is
 	// nothing to carry in (no month before the period, e.g. the first
 	// Erfassungsjahr or a move-in at the start of the period) or the carry-
@@ -151,60 +151,73 @@ type abrechnungUebertrag struct {
 	Hinweis string
 }
 
-// abrechnung is the computed Jahresabrechnung of one apartment and year.
-type abrechnung struct {
+// Jahresabrechnung is the computed Jahresabrechnung of one apartment and year.
+type Jahresabrechnung struct {
 	Jahr      int
 	Apartment store.Apartment
-	Zeitraum  abr.Zeitraum
+	Zeitraum  Zeitraum
 
 	// Fixkosten are the umlagefähige Kostenpositionen, Heizung and Wasser
 	// the two consumption-based lines (zero Gesamt if there is no data).
-	Fixkosten []abrechnungZeile
-	Heizung   abrechnungZeile
-	Wasser    abrechnungZeile
+	Fixkosten []Zeile
+	Heizung   Zeile
+	Wasser    Zeile
 	// Betriebskosten is the sum of all three.
 	Betriebskosten float64
 	// StromW2 is nil unless Wohnung 2 is settled and the Stammdaten flag
 	// "Stromverbrauch weiterberechnen" is on.
-	StromW2 *abrechnungStrom
+	StromW2 *Strom
 	// Vorauszahlungen is the sum of the Nebenkostenabschläge of the period
 	// (a month without a recorded Abschlag counts as 0).
 	Vorauszahlungen float64
 	// Saldo is Vorauszahlungen minus Betriebskosten minus the passed-on
 	// electricity: positive Guthaben, negative Nachzahlung. Not the
 	// cumulative balance of the Dashboard.
-	Saldo *AbschlagSaldo
+	Saldo *calc.AbschlagSaldo
 
 	// Anhang data.
-	Monatsverlauf  abrechnungMonatsverlauf
-	Zaehlerstaende abrechnungZaehlerstaende
-	Verbrauch      []abrechnungVerbrauchZeile
-	HeizungMonate  []abrechnungHeizungMonat
-	PersonenMonate []abrechnungPersonenMonat
-	Bezugsgroessen []abrechnungBezugsgroesse
+	Monatsverlauf  Monatsverlauf
+	Zaehlerstaende Zaehlerstaende
+	Verbrauch      []VerbrauchZeile
+	HeizungMonate  []HeizungMonat
+	PersonenMonate []PersonenMonat
+	Bezugsgroessen []Bezugsgroesse
 	Gewichtung     float64
 	Apartments     []store.Apartment
 }
 
-// abrechnungErgebnis is what the page needs: the check and, if it found
-// nothing, the Abrechnung.
-type abrechnungErgebnis struct {
-	Pruefung abr.Pruefung
-	// Abrechnung is nil if the Pruefung found Mängel.
-	Abrechnung *abrechnung
+// BerechnungsDaten is everything Berechne reads, all of it loaded by the
+// caller: Berechne itself never touches a database.
+type BerechnungsDaten struct {
+	// Pruef is the subset the Prüfung and the Übertrag need.
+	Pruef            Daten
+	Kostenpositionen []store.Kostenposition
+	Meters           []store.Meter
+	// Fixkosten are the Fixkosten results of every Fixkosten-Eingabe.
+	Fixkosten *calc.Fixkostenreihe
+	// Kosten are the Verbrauchskosten of every Ablesung in Pruef.Periods.
+	Kosten *calc.Verbrauchskosten
 }
 
-// berechneAbrechnung checks whether jahr can be settled for apartmentID and,
+// Ergebnis is what the page needs: the check and, if it found
+// nothing, the Abrechnung.
+type Ergebnis struct {
+	Pruefung Pruefung
+	// Abrechnung is nil if the Pruefung found Mängel.
+	Abrechnung *Jahresabrechnung
+}
+
+// Berechne checks whether jahr can be settled for apartmentID and,
 // if so, computes the Jahresabrechnung (Issue #166). It reuses
 // the Fixkostenreihe and the Verbrauchskosten per Ablesung and
 // only sums them, there is no second cost formula.
-func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich abr.Monatsbereich, apartmentID int64) (abrechnungErgebnis, error) {
-	pruefung, err := abr.Pruefe(d.Pruef, jahr, bereich, apartmentID)
+func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID int64) (Ergebnis, error) {
+	pruefung, err := Pruefe(d.Pruef, jahr, bereich, apartmentID)
 	if err != nil {
-		return abrechnungErgebnis{}, err
+		return Ergebnis{}, err
 	}
 	if !pruefung.Abrechenbar() {
-		return abrechnungErgebnis{Pruefung: pruefung}, nil
+		return Ergebnis{Pruefung: pruefung}, nil
 	}
 
 	periods, apartments, haus := d.Pruef.Periods, d.Pruef.Apartments, d.Pruef.Haus
@@ -227,7 +240,7 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich abr.Mon
 		imZeitraum[m] = true
 	}
 
-	ab := &abrechnung{Jahr: jahr, Apartment: apartment, Zeitraum: z, Gewichtung: haus.HeizungWaermeGewichtung, Apartments: apartments}
+	ab := &Jahresabrechnung{Jahr: jahr, Apartment: apartment, Zeitraum: z, Gewichtung: haus.HeizungWaermeGewichtung, Apartments: apartments}
 
 	// Fixkosten: one Eingabe per month (the Pruefung guarantees at most
 	// one, and none only in the month of the first Ablesung).
@@ -250,13 +263,13 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich abr.Mon
 
 	// Verbrauch: every complete Ablesung of the period, except the Ausgangs-
 	// stand of the first year, which has no predecessor and so no consumption.
-	var heizungMonate []abrechnungHeizungMonat
+	var heizungMonate []HeizungMonat
 	heizungIdx := map[string]int{}
-	var strom abrechnungStrom
+	var strom Strom
 	stromWeiterberechnet := apartmentID == 2 && haus.StromWeiterberechnen
 	verbrauchJeMonat := map[string]float64{}
-	ab.Heizung = abrechnungZeile{Position: "Heizung und Warmwasser (Wärmepumpe)", Schluessel: heizungSchluessel(haus.HeizungWaermeGewichtung)}
-	ab.Wasser = abrechnungZeile{Position: "Wasser und Abwasser (Verbrauch)", Schluessel: "Gemessener Verbrauch"}
+	ab.Heizung = Zeile{Position: "Heizung und Warmwasser (Wärmepumpe)", Schluessel: heizungSchluessel(haus.HeizungWaermeGewichtung)}
+	ab.Wasser = Zeile{Position: "Wasser und Abwasser (Verbrauch)", Schluessel: "Gemessener Verbrauch"}
 	for _, a := range d.Kosten.Berechenbare() {
 		p := a.Period
 		if !imZeitraum[p.Monat] {
@@ -280,7 +293,7 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich abr.Mon
 		if !ok {
 			i = len(heizungMonate)
 			heizungIdx[p.Monat] = i
-			heizungMonate = append(heizungMonate, abrechnungHeizungMonat{Monat: p.Monat})
+			heizungMonate = append(heizungMonate, HeizungMonat{Monat: p.Monat})
 		}
 		heizungMonate[i].WPStromKWh += a.Kosten.Heizung.WPVerbrauchW1KWh + a.Kosten.Heizung.WPVerbrauchW2KWh
 		heizungMonate[i].WaermeW1MWh += a.Kosten.Heizung.WaermeW1MWh
@@ -291,13 +304,13 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich abr.Mon
 		heizungMonate[i].Anteil = calc.Round2(heizungMonate[i].Anteil)
 	}
 	ab.HeizungMonate = heizungMonate
-	for _, zeile := range []*abrechnungZeile{&ab.Heizung, &ab.Wasser} {
+	for _, zeile := range []*Zeile{&ab.Heizung, &ab.Wasser} {
 		zeile.Gesamt, zeile.Betrag = calc.Round2(zeile.Gesamt), calc.Round2(zeile.Betrag)
 		zeile.Prozent = prozent(zeile.Betrag, zeile.Gesamt)
 	}
 
 	if stromWeiterberechnet {
-		ab.StromW2 = &abrechnungStrom{VerbrauchKWh: strom.VerbrauchKWh, Kosten: calc.Round2(strom.Kosten)}
+		ab.StromW2 = &Strom{VerbrauchKWh: strom.VerbrauchKWh, Kosten: calc.Round2(strom.Kosten)}
 	}
 
 	ab.Betriebskosten = ab.Heizung.Betrag + ab.Wasser.Betrag
@@ -310,11 +323,11 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich abr.Mon
 	if ab.StromW2 != nil {
 		saldo -= ab.StromW2.Kosten
 	}
-	ab.Saldo = newAbschlagSaldo(calc.Round2(saldo))
+	ab.Saldo = calc.NewAbschlagSaldo(calc.Round2(saldo))
 
-	uebertrag, err := berechneUebertrag(db, d, z, apartment, stromWeiterberechnet)
+	uebertrag, err := berechneUebertrag(d, z, apartment, stromWeiterberechnet)
 	if err != nil {
-		return abrechnungErgebnis{}, err
+		return Ergebnis{}, err
 	}
 	ab.Monatsverlauf = monatsverlauf(monate, kostenpositionen, eingabeJeMonat, fixErgebnis, verbrauchJeMonat, apartmentID, uebertrag.Betrag)
 	ab.Monatsverlauf.Uebertrag = uebertrag
@@ -323,7 +336,7 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich abr.Mon
 	ab.Bezugsgroessen = bezugsgroessen(apartments)
 	ab.PersonenMonate = personenMonate(monate, eingabeJeMonat, periods, apartments)
 
-	return abrechnungErgebnis{Pruefung: pruefung, Abrechnung: ab}, nil
+	return Ergebnis{Pruefung: pruefung, Abrechnung: ab}, nil
 }
 
 // fixkostenJeMonat returns the Fixkosten-Eingabe and its calculated result per
@@ -358,21 +371,21 @@ func monatsVerbrauch(anteil calc.Wohnungsanteil, stromWeiterberechnet bool) floa
 // are not part of it. If a month before the period has a Mangel of the
 // Abrechnungsprüfung the carry-over cannot be calculated and the result says
 // why instead of a wrong number.
-func berechneUebertrag(db *sql.DB, d abrechnungDaten, z abr.Zeitraum, apartment store.Apartment, stromWeiterberechnet bool) (abrechnungUebertrag, error) {
+func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment, stromWeiterberechnet bool) (Uebertrag, error) {
 	periods := d.Pruef.Periods
 	if len(periods) == 0 {
-		return abrechnungUebertrag{}, nil
+		return Uebertrag{}, nil
 	}
-	_, beginn, err := abr.Erfassungsbeginn(periods[0])
+	_, beginn, err := Erfassungsbeginn(periods[0])
 	if err != nil {
-		return abrechnungUebertrag{}, nil // the Prüfung already reported it
+		return Uebertrag{}, nil // the Prüfung already reported it
 	}
 	start := beginn
 	if apartment.Status == store.StatusVermietet && apartment.MieterSeit != "" {
 		seit, err := time.Parse("2006-01-02", apartment.MieterSeit)
 		if err == nil {
 			if seit.After(z.ErsterMonat) {
-				return abrechnungUebertrag{Hinweis: "Kein Übertrag: Mieter seit " + germanPeriodLabel(apartment.MieterSeit) + ", also nach dem Beginn dieses Zeitraums."}, nil
+				return Uebertrag{Hinweis: "Kein Übertrag: Mieter seit " + MonatLabel(apartment.MieterSeit) + ", also nach dem Beginn dieses Zeitraums."}, nil
 			}
 			if seit.After(start) {
 				start = seit
@@ -381,14 +394,14 @@ func berechneUebertrag(db *sql.DB, d abrechnungDaten, z abr.Zeitraum, apartment 
 	}
 	letzter := z.ErsterMonat.AddDate(0, -1, 0)
 	if letzter.Before(start) {
-		return abrechnungUebertrag{}, nil // nothing before the period
+		return Uebertrag{}, nil // nothing before the period
 	}
 
 	fixkostenVon := start
 	if start.Equal(beginn) {
 		fixkostenVon = beginn.AddDate(0, 1, 0) // the Ausgangsstand month needs no Fixkosten-Eingabe
 	}
-	maengel := abr.PruefeMonate(d.Pruef, start, letzter, fixkostenVon)
+	maengel := PruefeMonate(d.Pruef, start, letzter, fixkostenVon)
 	if len(maengel) > 0 {
 		erster := maengel[0]
 		for _, m := range maengel[1:] {
@@ -396,7 +409,7 @@ func berechneUebertrag(db *sql.DB, d abrechnungDaten, z abr.Zeitraum, apartment 
 				erster = m
 			}
 		}
-		return abrechnungUebertrag{Hinweis: "Übertrag nicht berechenbar: " + erster.Text}, nil
+		return Uebertrag{Hinweis: "Übertrag nicht berechenbar: " + erster.Text}, nil
 	}
 
 	var monate []string
@@ -416,9 +429,9 @@ func berechneUebertrag(db *sql.DB, d abrechnungDaten, z abr.Zeitraum, apartment 
 	}
 	v := monatsverlauf(monate, d.Kostenpositionen, eingabeJeMonat, fixErgebnis, verbrauchJeMonat, apartment.ID, 0)
 	if len(v.Zeilen) == 0 {
-		return abrechnungUebertrag{}, nil // only the month of the Ausgangsstand, no costs yet
+		return Uebertrag{}, nil // only the month of the Ausgangsstand, no costs yet
 	}
-	return abrechnungUebertrag{Vorhanden: true, Betrag: v.Endsaldo, Von: v.Zeilen[0].Monat, Bis: v.Zeilen[len(v.Zeilen)-1].Monat}, nil
+	return Uebertrag{Vorhanden: true, Betrag: v.Endsaldo, Von: v.Zeilen[0].Monat, Bis: v.Zeilen[len(v.Zeilen)-1].Monat}, nil
 }
 
 // monatsverlauf builds the Monatsverlauf (Anlage 1), its balance starting at
@@ -426,15 +439,15 @@ func berechneUebertrag(db *sql.DB, d abrechnungDaten, z abr.Zeitraum, apartment 
 // values the cost overview sums, so there is no second cost formula. A month
 // with neither a Fixkosten-Eingabe nor a computable Ablesung (the month of
 // the first Ablesung, which has no consumption) has no row.
-func monatsverlauf(monate []string, kostenpositionen []store.Kostenposition, eingabeJeMonat map[string]*store.FixkostenEingabeDetails, fixErgebnis map[string]*calc.FixkostenErgebnis, verbrauchJeMonat map[string]float64, apartmentID int64, uebertrag float64) abrechnungMonatsverlauf {
-	v := abrechnungMonatsverlauf{Endsaldo: uebertrag}
+func monatsverlauf(monate []string, kostenpositionen []store.Kostenposition, eingabeJeMonat map[string]*store.FixkostenEingabeDetails, fixErgebnis map[string]*calc.FixkostenErgebnis, verbrauchJeMonat map[string]float64, apartmentID int64, uebertrag float64) Monatsverlauf {
+	v := Monatsverlauf{Endsaldo: uebertrag}
 	for _, m := range monate {
 		e := eingabeJeMonat[m]
 		verbrauch, hatVerbrauch := verbrauchJeMonat[m]
 		if e == nil && !hatVerbrauch {
 			continue
 		}
-		z := abrechnungMonatZeile{Monat: m, Verbrauch: calc.Round2(verbrauch)}
+		z := MonatZeile{Monat: m, Verbrauch: calc.Round2(verbrauch)}
 		if e != nil {
 			z.Abschlag = calc.Round2(e.Abschlag[apartmentID])
 		}
@@ -474,9 +487,9 @@ func monatsverlauf(monate []string, kostenpositionen []store.Kostenposition, ein
 // split it, the months' values are simply summed). A block in which the
 // settled apartment pays nothing - e.g. a position the landlord allocated
 // fully to the other apartment - is left out.
-func fixkostenZeilen(kp store.Kostenposition, monate []string, erg map[string]*calc.FixkostenErgebnis, apartmentID int64) []abrechnungZeile {
-	var out []abrechnungZeile
-	var cur *abrechnungZeile
+func fixkostenZeilen(kp store.Kostenposition, monate []string, erg map[string]*calc.FixkostenErgebnis, apartmentID int64) []Zeile {
+	var out []Zeile
+	var cur *Zeile
 	var curLogik string
 	for _, m := range monate {
 		e := erg[m]
@@ -493,7 +506,7 @@ func fixkostenZeilen(kp store.Kostenposition, monate []string, erg map[string]*c
 			continue
 		}
 		if cur == nil || pos.Logik != curLogik {
-			out = append(out, abrechnungZeile{Position: kp.Label, Von: m, Schluessel: logikLabels[pos.Logik]})
+			out = append(out, Zeile{Position: kp.Label, Von: m, Schluessel: LogikLabels[pos.Logik]})
 			cur = &out[len(out)-1]
 			curLogik = pos.Logik
 		}
@@ -568,28 +581,28 @@ func ablesungenImZeitraum(periods []*store.LatestPeriod, apartments []store.Apar
 // one, or in the first Erfassungsjahr that first Ablesung itself, the same
 // start the Verbrauchsübersicht uses. Several Ablesungen of one month are
 // separate rows.
-func zaehlerstaende(periods []*store.LatestPeriod, apartments []store.Apartment, meters []store.Meter, imZeitraum map[string]bool, apartmentID int64) abrechnungZaehlerstaende {
+func zaehlerstaende(periods []*store.LatestPeriod, apartments []store.Apartment, meters []store.Meter, imZeitraum map[string]bool, apartmentID int64) Zaehlerstaende {
 	complete, first, last := ablesungenImZeitraum(periods, apartments, imZeitraum)
 	if first == -1 {
-		return abrechnungZaehlerstaende{}
+		return Zaehlerstaende{}
 	}
 	von := first
 	if first > 0 {
 		von = first - 1
 	}
-	var z abrechnungZaehlerstaende
+	var z Zaehlerstaende
 	for _, m := range meters {
 		unit := m.Unit
 		if unit == "m3" {
 			unit = "m³"
 		}
-		z.Spalten = append(z.Spalten, abrechnungZaehlerSpalte{Zaehler: zaehlerKurzname(m), Einheit: unit, Eigen: m.ApartmentID == apartmentID})
+		z.Spalten = append(z.Spalten, ZaehlerSpalte{Zaehler: zaehlerKurzname(m), Einheit: unit, Eigen: m.ApartmentID == apartmentID})
 	}
 	for i := von; i <= last; i++ {
 		p := complete[i]
-		zeile := abrechnungZaehlerstandZeile{Ablesedatum: p.ReadingDate, Monat: p.Monat, Ausgangsstand: i == von}
+		zeile := ZaehlerstandZeile{Ablesedatum: p.ReadingDate, Monat: p.Monat, Ausgangsstand: i == von}
 		for _, m := range meters {
-			zeile.Staende = append(zeile.Staende, abrechnungZaehlerstand{Wert: p.Readings[m.Key], Eigen: m.ApartmentID == apartmentID})
+			zeile.Staende = append(zeile.Staende, Zaehlerstand{Wert: p.Readings[m.Key], Eigen: m.ApartmentID == apartmentID})
 		}
 		z.Zeilen = append(z.Zeilen, zeile)
 	}
@@ -623,7 +636,7 @@ func zaehlerKurzname(m store.Meter) string {
 // period's first one - or, in the first Erfassungsjahr, the stand of that
 // first Ablesung itself (the Ausgangsstand). The end is the stand of the
 // period's last Ablesung. Teilstände are ignored.
-func verbrauchUebersicht(periods []*store.LatestPeriod, apartments []store.Apartment, meters []store.Meter, imZeitraum map[string]bool, apartmentID int64) []abrechnungVerbrauchZeile {
+func verbrauchUebersicht(periods []*store.LatestPeriod, apartments []store.Apartment, meters []store.Meter, imZeitraum map[string]bool, apartmentID int64) []VerbrauchZeile {
 	complete, first, last := ablesungenImZeitraum(periods, apartments, imZeitraum)
 	if first == -1 {
 		return nil
@@ -634,23 +647,23 @@ func verbrauchUebersicht(periods []*store.LatestPeriod, apartments []store.Apart
 	}
 	ende := complete[last]
 
-	out := make([]abrechnungVerbrauchZeile, 0, len(meters))
+	out := make([]VerbrauchZeile, 0, len(meters))
 	for _, m := range meters {
 		b, e := beginn.Readings[m.Key], ende.Readings[m.Key]
 		unit := m.Unit
 		if unit == "m3" {
 			unit = "m³"
 		}
-		out = append(out, abrechnungVerbrauchZeile{Zaehler: m.Label, Einheit: unit, Beginn: b, Ende: e, Verbrauch: e - b, Eigen: m.ApartmentID == apartmentID})
+		out = append(out, VerbrauchZeile{Zaehler: m.Label, Einheit: unit, Beginn: b, Ende: e, Verbrauch: e - b, Eigen: m.ApartmentID == apartmentID})
 	}
 	return out
 }
 
 // bezugsgroessen lists the Wohnfläche and Flurstück of both apartments with
 // their totals - the reference values of the Verteilerschlüssel.
-func bezugsgroessen(apartments []store.Apartment) []abrechnungBezugsgroesse {
-	wohnflaeche := abrechnungBezugsgroesse{Schluessel: "Wohnfläche (m²)"}
-	flurstueck := abrechnungBezugsgroesse{Schluessel: "Flurstück (m²)"}
+func bezugsgroessen(apartments []store.Apartment) []Bezugsgroesse {
+	wohnflaeche := Bezugsgroesse{Schluessel: "Wohnfläche (m²)"}
+	flurstueck := Bezugsgroesse{Schluessel: "Flurstück (m²)"}
 	for _, a := range apartments {
 		switch a.ID {
 		case 1:
@@ -661,14 +674,14 @@ func bezugsgroessen(apartments []store.Apartment) []abrechnungBezugsgroesse {
 	}
 	wohnflaeche.Gesamt = wohnflaeche.W1 + wohnflaeche.W2
 	flurstueck.Gesamt = flurstueck.W1 + flurstueck.W2
-	return []abrechnungBezugsgroesse{wohnflaeche, flurstueck}
+	return []Bezugsgroesse{wohnflaeche, flurstueck}
 }
 
 // personenMonate lists the occupant count of every month from both sources:
 // the Fixkosten-Eingabe (for the Schlüssel "Personen") and the Ablesung (for
 // the warm water split). With several Ablesungen in a month the latest one
 // is shown.
-func personenMonate(monate []string, eingabeJeMonat map[string]*store.FixkostenEingabeDetails, periods []*store.LatestPeriod, apartments []store.Apartment) []abrechnungPersonenMonat {
+func personenMonate(monate []string, eingabeJeMonat map[string]*store.FixkostenEingabeDetails, periods []*store.LatestPeriod, apartments []store.Apartment) []PersonenMonat {
 	ablesung := map[string]map[int64]int64{}
 	spaetestes := map[string]string{}
 	for _, p := range periods {
@@ -681,9 +694,9 @@ func personenMonate(monate []string, eingabeJeMonat map[string]*store.FixkostenE
 		}
 	}
 
-	out := make([]abrechnungPersonenMonat, 0, len(monate))
+	out := make([]PersonenMonat, 0, len(monate))
 	for _, m := range monate {
-		row := abrechnungPersonenMonat{Monat: m, Ablesung: ablesung[m]}
+		row := PersonenMonat{Monat: m, Ablesung: ablesung[m]}
 		if e := eingabeJeMonat[m]; e != nil {
 			row.Fixkosten = e.Personen
 		}

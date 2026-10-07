@@ -9,6 +9,7 @@ import (
 	"time"
 
 	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -100,7 +101,7 @@ type abrechnungSeite struct {
 	Apartment    store.Apartment
 	Haus         store.Haus
 
-	Ergebnis abrechnungErgebnis
+	Ergebnis abr.Ergebnis
 	// Von/Bis are the period's days ("YYYY-MM-DD") and Erstellt the day of
 	// the call, for the head.
 	Von, Bis, Erstellt string
@@ -178,7 +179,7 @@ func handleAbrechnung(a auth) http.HandlerFunc {
 			}
 		}
 
-		data.Ergebnis, err = berechneAbrechnung(db, daten, data.Jahr, data.Bereich, data.ApartmentID)
+		data.Ergebnis, err = abr.Berechne(daten, data.Jahr, data.Bereich, data.ApartmentID)
 		if err != nil {
 			http.Error(w, "abrechnung: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -204,7 +205,7 @@ func renderAbrechnung(w http.ResponseWriter, data abrechnungSeite) {
 
 // saldoText formats the balance as "Betrag EUR", with a leading "- " for a
 // Nachzahlung.
-func saldoText(s *AbschlagSaldo) string {
+func saldoText(s *calc.AbschlagSaldo) string {
 	text := formatEuroDE(s.Betrag()) + " €"
 	if s.Nachzahlung() {
 		return "- " + text
@@ -215,7 +216,7 @@ func saldoText(s *AbschlagSaldo) string {
 // abrechnungHinweise are the screen-only notes for the person creating the
 // Abrechnung - only for a rented apartment, the Eigennutzung overview has no
 // legal deadlines.
-func abrechnungHinweise(ab *abrechnung, eigennutzung bool) []string {
+func abrechnungHinweise(ab *abr.Jahresabrechnung, eigennutzung bool) []string {
 	if eigennutzung {
 		return nil
 	}
