@@ -98,7 +98,7 @@ func (z Zeitraum) Titel() string {
 	if !z.Teilzeitraum {
 		return fmt.Sprintf("Nebenkostenabrechnung %d", z.Jahr)
 	}
-	return "Nebenkostenabrechnung " + MonatLabel(z.Von.Format("2006-01-02")) + " bis " + MonatLabel(z.Bis.Format("2006-01-02"))
+	return "Nebenkostenabrechnung " + store.MonatLabel(z.Von.Format("2006-01-02")) + " bis " + store.MonatLabel(z.Bis.Format("2006-01-02"))
 }
 
 // Abrechenbar reports whether the Abrechnung can be produced.
@@ -195,7 +195,7 @@ func PruefeMonate(d Daten, ablesungVon, letzter, fixkostenVon time.Time) []Mange
 			maengel = append(maengel, Mangel{
 				Art:    MangelAblesungTeilstand,
 				Monat:  key,
-				Text:   "Ablesung ist ein Teilstand: " + MonatLabel(key),
+				Text:   "Ablesung ist ein Teilstand: " + store.MonatLabel(key),
 				Aktion: "Ablesung vervollständigen",
 				Pfad:   "/ablesungen/" + strconv.FormatInt(p.ID, 10) + "/bearbeiten",
 			})
@@ -204,7 +204,7 @@ func PruefeMonate(d Daten, ablesungVon, letzter, fixkostenVon time.Time) []Mange
 		maengel = append(maengel, Mangel{
 			Art:    MangelAblesungFehlt,
 			Monat:  key,
-			Text:   "Ablesung fehlt: " + MonatLabel(key),
+			Text:   "Ablesung fehlt: " + store.MonatLabel(key),
 			Aktion: "Ablesung erfassen",
 			Pfad:   "/ablesungen/neu",
 		})
@@ -222,7 +222,7 @@ func PruefeMonate(d Daten, ablesungVon, letzter, fixkostenVon time.Time) []Mange
 			maengel = append(maengel, Mangel{
 				Art:    MangelFixkostenMehrfach,
 				Monat:  key,
-				Text:   "Mehr als eine Fixkosten-Eingabe: " + MonatLabel(key),
+				Text:   "Mehr als eine Fixkosten-Eingabe: " + store.MonatLabel(key),
 				Aktion: "Fixkosten korrigieren",
 				Pfad:   "/fixkosten",
 			})
@@ -230,7 +230,7 @@ func PruefeMonate(d Daten, ablesungVon, letzter, fixkostenVon time.Time) []Mange
 			maengel = append(maengel, Mangel{
 				Art:    MangelFixkostenFehlt,
 				Monat:  key,
-				Text:   "Fixkosten-Eingabe fehlt: " + MonatLabel(key),
+				Text:   "Fixkosten-Eingabe fehlt: " + store.MonatLabel(key),
 				Aktion: "Fixkosten erfassen",
 				Pfad:   "/fixkosten/neu",
 			})
@@ -276,7 +276,7 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich Monatsber
 	if jahr == firstMonat.Year() && int(firstMonat.Month()) > bereich.Bis {
 		res.Maengel = append(res.Maengel, Mangel{
 			Art:  MangelKeinZeitraum,
-			Text: "Für den gewählten Zeitraum gibt es keine Daten: die erste Ablesung liegt im " + MonatLabel(firstMonat.Format("2006-01-02")),
+			Text: "Für den gewählten Zeitraum gibt es keine Daten: die erste Ablesung liegt im " + store.MonatLabel(firstMonat.Format("2006-01-02")),
 		})
 		return z, ablesungVon, fixkostenVon, false
 	}
@@ -298,7 +298,7 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich Monatsber
 			z.Von = firstDate
 		}
 		if fixkostenVon.Year() == jahr {
-			z.Zusatz = "Fixkosten und Vorauszahlungen ab " + MonatLabel(fixkostenVon.Format("2006-01-02")) +
+			z.Zusatz = "Fixkosten und Vorauszahlungen ab " + store.MonatLabel(fixkostenVon.Format("2006-01-02")) +
 				" (Ausgangsstand: erste Ablesung am " + firstDate.Format("02.01.2006") + ")."
 		} else {
 			z.Zusatz = "Fixkosten und Vorauszahlungen entfallen (Ausgangsstand: erste Ablesung am " + firstDate.Format("02.01.2006") + ")."
@@ -370,21 +370,4 @@ func pruefeStammdaten(d Daten, apartment store.Apartment) []Mangel {
 		}
 	}
 	return out
-}
-
-// Monatsnamen are the German month names, January first.
-var Monatsnamen = [...]string{
-	"Januar", "Februar", "März", "April", "Mai", "Juni",
-	"Juli", "August", "September", "Oktober", "November", "Dezember",
-}
-
-// MonatLabel renders a date ("YYYY-MM-DD") as its German month name and year
-// (e.g. "November 2026"). Falls back to the raw string if it isn't a
-// parseable date.
-func MonatLabel(datum string) string {
-	t, err := time.Parse("2006-01-02", datum)
-	if err != nil {
-		return datum
-	}
-	return fmt.Sprintf("%s %d", Monatsnamen[t.Month()-1], t.Year())
 }

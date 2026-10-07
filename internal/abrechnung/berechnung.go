@@ -412,7 +412,7 @@ func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment
 		seit, err := time.Parse("2006-01-02", apartment.MieterSeit)
 		if err == nil {
 			if seit.After(z.ErsterMonat) {
-				return Uebertrag{Hinweis: "Kein Übertrag: Mieter seit " + MonatLabel(apartment.MieterSeit) + ", also nach dem Beginn dieses Zeitraums."}
+				return Uebertrag{Hinweis: "Kein Übertrag: Mieter seit " + store.MonatLabel(apartment.MieterSeit) + ", also nach dem Beginn dieses Zeitraums."}
 			}
 			if seit.After(start) {
 				start = seit
@@ -515,7 +515,7 @@ func fixkostenZeilen(kp store.Kostenposition, monate []string, erg map[string]ca
 			continue
 		}
 		if cur == nil || pos.Logik != curLogik {
-			out = append(out, Zeile{Position: kp.Label, Von: m, Schluessel: LogikLabels[pos.Logik]})
+			out = append(out, Zeile{Position: kp.Label, Von: m, Schluessel: calc.LogikLabels[pos.Logik]})
 			cur = &out[len(out)-1]
 			curLogik = pos.Logik
 		}

@@ -76,7 +76,7 @@ var templateFuncs = template.FuncMap{
 	"de3":           formatDecimalDE3,
 	"deEUR":         formatEuroDE,
 	"deDatum":       formatDatumDE,
-	"monat":         germanPeriodLabel,
+	"monat":         store.MonatLabel,
 	"monatKurz":     germanPeriodLabelShort,
 	"personen":      personenZelle,
 	"mieterSeit":    func(stored string) monatInput { return monatInputFromStored(stored) },
