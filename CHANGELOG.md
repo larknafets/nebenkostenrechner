@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.15.0 - 2026-10-07
+
+### Neue Funktionen
+
+- Neue Anlage "Zählerstände" als letzte Seite der Abrechnung im Querformat: alle Zählerstände je Ablesung mit Ablesedatum, zugeordnetem Abrechnungsmonat und dem Ausgangsstand (#206)
+
+- Neue Anlage "Monatsverlauf und Saldo" im Anhang der Abrechnung: je Monat Fixkosten, Verbrauchskosten und Nebenkostenabschlag mit kumuliertem Saldo, damit der Verlauf von Guthaben oder Nachzahlung nachvollziehbar ist (#205)
+
+- Neues Feld "Mieter seit" in den Stammdaten für vermietete Wohnungen: der Einzugsmonat des aktuellen Mieters, nur für angemeldete Nutzer sichtbar (#204)
+
+### Verbesserungen
+
+- Die Monatstabelle der Abrechnung (Anlage 1) zeigt oben den Übertrag Vorjahre und rechnet den Saldo darauf weiter. Er zählt ab "Mieter seit" bzw. dem Beginn der Erfassung. Hat ein Vormonat einen Mangel, steht stattdessen der Hinweis "Übertrag nicht berechenbar". Beim Einzug eines neuen Mieters (Mieter seit gleich Beginn des Zeitraums) startet der Saldo bei 0 (#207)
+
+- Der Anhang der Abrechnung ist in nummerierte Anlagen gegliedert, auf Seite 1 steht eine Anlagenliste, und keine Anlage bricht im Druck mitten in der Tabelle um. Die Verbrauchsübersicht steht jetzt als Anlage 6 am Ende des Anhangs (#203)
+
+### Wartung
+
+- Die Datenbank bekommt beim Start automatisch die neue Spalte "Mieter seit" für Wohnungen, bestehende Daten bleiben unverändert (#204)
+- Interne Aufräumarbeiten am Code ohne sichtbare Änderung
+- Aktualisierung der Abhängigkeiten
+
 ## v0.14.2 - 2026-10-02
 
 ### Fehlerkorrekturen
