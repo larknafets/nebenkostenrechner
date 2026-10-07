@@ -1,32 +1,33 @@
-package web
+// Package abrechnung holds the pure rules of the Jahresabrechnung: the
+// Zeitraum of a year and the Prüfung whether it can be settled. It reads
+// only the data handed in (Daten), never a database.
+package abrechnung
 
 import (
-	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// mangelArt classifies one finding of the Abrechnungsprüfung.
-type mangelArt string
+// MangelArt classifies one finding of the Abrechnungsprüfung.
+type MangelArt string
 
 const (
-	mangelKeinZeitraum      mangelArt = "kein_zeitraum"
-	mangelAblesungFehlt     mangelArt = "ablesung_fehlt"
-	mangelAblesungTeilstand mangelArt = "ablesung_teilstand"
-	mangelFixkostenFehlt    mangelArt = "fixkosten_fehlt"
-	mangelFixkostenMehrfach mangelArt = "fixkosten_mehrfach"
-	mangelStammdaten        mangelArt = "stammdaten"
+	MangelKeinZeitraum      MangelArt = "kein_zeitraum"
+	MangelAblesungFehlt     MangelArt = "ablesung_fehlt"
+	MangelAblesungTeilstand MangelArt = "ablesung_teilstand"
+	MangelFixkostenFehlt    MangelArt = "fixkosten_fehlt"
+	MangelFixkostenMehrfach MangelArt = "fixkosten_mehrfach"
+	MangelStammdaten        MangelArt = "stammdaten"
 )
 
-// abrechnungMangel is one reason a Jahresabrechnung cannot be produced
+// Mangel is one reason a Jahresabrechnung cannot be produced
 // (Issue #165): what is wrong and where to fix it.
-type abrechnungMangel struct {
-	Art mangelArt
+type Mangel struct {
+	Art MangelArt
 	// Monat is the Abrechnungsmonat ("YYYY-MM-01") the finding is about, empty
 	// for one that belongs to no month (Stammdaten).
 	Monat string
@@ -45,20 +46,20 @@ type abrechnungMangel struct {
 // HatZiel reports whether the finding links to a place where it can be
 // fixed. A finding without one is deliberately not fixable, the page shows
 // its text without a link.
-func (m abrechnungMangel) HatZiel() bool { return m.Pfad != "" }
+func (m Mangel) HatZiel() bool { return m.Pfad != "" }
 
-// monatsbereich is the range of months of a year a Jahresabrechnung covers,
+// Monatsbereich is the range of months of a year a Jahresabrechnung covers,
 // as month numbers 1-12 (volle Monate, for a Mieterwechsel inside the year).
-type monatsbereich struct{ Von, Bis int }
+type Monatsbereich struct{ Von, Bis int }
 
-// ganzesJahr is the default: the whole calendar year.
-var ganzesJahr = monatsbereich{Von: 1, Bis: 12}
+// GanzesJahr is the default: the whole calendar year.
+var GanzesJahr = Monatsbereich{Von: 1, Bis: 12}
 
-// gueltig reports whether the range is 1 <= Von <= Bis <= 12.
-func (b monatsbereich) gueltig() bool { return 1 <= b.Von && b.Von <= b.Bis && b.Bis <= 12 }
+// Gueltig reports whether the range is 1 <= Von <= Bis <= 12.
+func (b Monatsbereich) Gueltig() bool { return 1 <= b.Von && b.Von <= b.Bis && b.Bis <= 12 }
 
-// abrechnungZeitraum is the billing period of one Jahresabrechnung.
-type abrechnungZeitraum struct {
+// Zeitraum is the billing period of one Jahresabrechnung.
+type Zeitraum struct {
 	Jahr int
 	// Teilzeitraum is true if the period was narrowed to some months of the
 	// year (a Mieterwechsel). The first Erfassungsjahr alone is a TeilJahr,
@@ -82,29 +83,29 @@ type abrechnungZeitraum struct {
 	Zusatz string
 }
 
-// abrechnungPruefung is the result of checking whether a year can be
+// Pruefung is the result of checking whether a year can be
 // settled for one apartment. An empty Maengel list means abrechenbar.
-type abrechnungPruefung struct {
+type Pruefung struct {
 	// Zeitraum is nil if the year has no period at all (before the first
 	// Ablesung, or no Ablesung yet) - then Maengel says why.
-	Zeitraum *abrechnungZeitraum
-	Maengel  []abrechnungMangel
+	Zeitraum *Zeitraum
+	Maengel  []Mangel
 }
 
 // Titel is the heading of the Abrechnung.
-func (z abrechnungZeitraum) Titel() string {
+func (z Zeitraum) Titel() string {
 	if !z.Teilzeitraum {
 		return fmt.Sprintf("Nebenkostenabrechnung %d", z.Jahr)
 	}
-	return "Nebenkostenabrechnung " + germanPeriodLabel(z.Von.Format("2006-01-02")) + " bis " + germanPeriodLabel(z.Bis.Format("2006-01-02"))
+	return "Nebenkostenabrechnung " + MonatLabel(z.Von.Format("2006-01-02")) + " bis " + MonatLabel(z.Bis.Format("2006-01-02"))
 }
 
 // Abrechenbar reports whether the Abrechnung can be produced.
-func (p abrechnungPruefung) Abrechenbar() bool { return len(p.Maengel) == 0 }
+func (p Pruefung) Abrechenbar() bool { return len(p.Maengel) == 0 }
 
-// abrechnungPruefDaten is everything pruefeAbrechnungDaten reads, so the
+// Daten is everything Pruefe reads, so the
 // rules themselves are a pure function of this data.
-type abrechnungPruefDaten struct {
+type Daten struct {
 	// Periods are all Ablesungen, oldest first (store.AllPeriodDetails).
 	Periods    []*store.LatestPeriod
 	Eingaben   []store.FixkostenEingabeSummary
@@ -112,66 +113,7 @@ type abrechnungPruefDaten struct {
 	Haus       store.Haus
 }
 
-// abrechnungDaten is everything the Jahresabrechnung reads, loaded once per
-// request by ladeAbrechnungDaten. Jahresvorauswahl, Prüfung and Berechnung
-// work on it instead of loading again (the Berechnung still hands its db to
-// calc for the Fixkosten).
-type abrechnungDaten struct {
-	// Pruef is the subset the Prüfung and the Jahresvorauswahl need.
-	Pruef abrechnungPruefDaten
-	// Eingaben are the Fixkosten-Eingaben with Werte/Personen/Abschlag,
-	// oldest first. Pruef.Eingaben is derived from them.
-	Eingaben         []*store.FixkostenEingabeDetails
-	Kostenpositionen []store.Kostenposition
-	Meters           []store.Meter
-	// Fixkosten are the Fixkosten results of every Eingabe in Eingaben.
-	Fixkosten *calc.Fixkostenreihe
-	// Kosten are the Verbrauchskosten of every Ablesung in Pruef.Periods.
-	Kosten *calc.Verbrauchskosten
-}
-
-// ladeAbrechnungDaten loads all data of the Jahresabrechnung (Issue #165).
-func ladeAbrechnungDaten(db *sql.DB) (abrechnungDaten, error) {
-	periods, err := store.AllPeriodDetails(db)
-	if err != nil {
-		return abrechnungDaten{}, fmt.Errorf("periods: %w", err)
-	}
-	eingaben, err := store.AllFixkostenEingabenDetails(db)
-	if err != nil {
-		return abrechnungDaten{}, fmt.Errorf("fixkosten eingaben: %w", err)
-	}
-	apartments, err := store.Apartments(db)
-	if err != nil {
-		return abrechnungDaten{}, fmt.Errorf("apartments: %w", err)
-	}
-	haus, err := store.GetHaus(db)
-	if err != nil {
-		return abrechnungDaten{}, fmt.Errorf("haus: %w", err)
-	}
-	kostenpositionen, err := store.Kostenpositionen(db)
-	if err != nil {
-		return abrechnungDaten{}, fmt.Errorf("kostenpositionen: %w", err)
-	}
-	meters, err := store.Meters(db)
-	if err != nil {
-		return abrechnungDaten{}, err
-	}
-
-	summaries := make([]store.FixkostenEingabeSummary, len(eingaben))
-	for i, e := range eingaben {
-		summaries[i] = store.FixkostenEingabeSummary{ID: e.ID, Monat: e.Monat}
-	}
-	return abrechnungDaten{
-		Pruef:            abrechnungPruefDaten{Periods: periods, Eingaben: summaries, Apartments: apartments, Haus: haus},
-		Eingaben:         eingaben,
-		Kostenpositionen: kostenpositionen,
-		Meters:           meters,
-		Fixkosten:        calc.NewFixkostenreihe(calc.FixkostenDaten{Eingaben: eingaben, Kostenpositionen: kostenpositionen, Apartments: apartments}),
-		Kosten:           calc.New(calc.Daten{Periods: periods, Apartments: apartments, Haus: haus}),
-	}, nil
-}
-
-// pruefeAbrechnungDaten applies the rules to already loaded data. It
+// Pruefe applies the rules to already loaded data. It
 // returns an error only for an unknown apartmentID.
 //
 // The period is the calendar year, except in the first Erfassungsjahr: it
@@ -197,7 +139,7 @@ func ladeAbrechnungDaten(db *sql.DB) (abrechnungDaten, error) {
 // inside the year, always volle Monate): the rules then apply to those months
 // only. A period starting after the first month needs nothing special, its
 // first consumption is the difference to the Ablesung before it.
-func pruefeAbrechnungDaten(d abrechnungPruefDaten, jahr int, bereich monatsbereich, apartmentID int64) (abrechnungPruefung, error) {
+func Pruefe(d Daten, jahr int, bereich Monatsbereich, apartmentID int64) (Pruefung, error) {
 	var apartment *store.Apartment
 	for i := range d.Apartments {
 		if d.Apartments[i].ID == apartmentID {
@@ -205,28 +147,28 @@ func pruefeAbrechnungDaten(d abrechnungPruefDaten, jahr int, bereich monatsberei
 		}
 	}
 	if apartment == nil {
-		return abrechnungPruefung{}, fmt.Errorf("unknown apartment %d", apartmentID)
+		return Pruefung{}, fmt.Errorf("unknown apartment %d", apartmentID)
 	}
 
-	var res abrechnungPruefung
+	var res Pruefung
 	zeitraum, ablesungVon, fixkostenVon, ok := bestimmeZeitraum(d.Periods, jahr, bereich, &res)
 	if !ok {
 		return res, nil
 	}
 	res.Zeitraum = &zeitraum
 
-	res.Maengel = append(res.Maengel, pruefeMonate(d, ablesungVon, zeitraum.LetzterMonat, fixkostenVon)...)
+	res.Maengel = append(res.Maengel, PruefeMonate(d, ablesungVon, zeitraum.LetzterMonat, fixkostenVon)...)
 	res.Maengel = append(res.Maengel, pruefeStammdaten(d, *apartment)...)
 	return res, nil
 }
 
-// pruefeMonate applies the month rules 1 and 2 (see pruefeAbrechnungDaten)
+// PruefeMonate applies the month rules 1 and 2 (see Pruefe)
 // to the months ablesungVon to letzter: every month needs a complete
 // Ablesung, every month from fixkostenVon needs exactly one Fixkosten-
 // Eingabe (more than one is ambiguous in any month). The Übertrag Vorjahre
 // reuses it for the months before the period.
-func pruefeMonate(d abrechnungPruefDaten, ablesungVon, letzter, fixkostenVon time.Time) []abrechnungMangel {
-	var maengel []abrechnungMangel
+func PruefeMonate(d Daten, ablesungVon, letzter, fixkostenVon time.Time) []Mangel {
+	var maengel []Mangel
 	// Ablesungen per Abrechnungsmonat, split into complete ones and
 	// Teilstände (the newest Ablesung may be one, it never counts).
 	vollstaendig := map[string]bool{}
@@ -249,19 +191,19 @@ func pruefeMonate(d abrechnungPruefDaten, ablesungVon, letzter, fixkostenVon tim
 			continue
 		}
 		if p := teilstand[key]; p != nil {
-			maengel = append(maengel, abrechnungMangel{
-				Art:    mangelAblesungTeilstand,
+			maengel = append(maengel, Mangel{
+				Art:    MangelAblesungTeilstand,
 				Monat:  key,
-				Text:   "Ablesung ist ein Teilstand: " + germanPeriodLabel(key),
+				Text:   "Ablesung ist ein Teilstand: " + MonatLabel(key),
 				Aktion: "Ablesung vervollständigen",
 				Pfad:   "/ablesungen/" + strconv.FormatInt(p.ID, 10) + "/bearbeiten",
 			})
 			continue
 		}
-		maengel = append(maengel, abrechnungMangel{
-			Art:    mangelAblesungFehlt,
+		maengel = append(maengel, Mangel{
+			Art:    MangelAblesungFehlt,
 			Monat:  key,
-			Text:   "Ablesung fehlt: " + germanPeriodLabel(key),
+			Text:   "Ablesung fehlt: " + MonatLabel(key),
 			Aktion: "Ablesung erfassen",
 			Pfad:   "/ablesungen/neu",
 		})
@@ -276,18 +218,18 @@ func pruefeMonate(d abrechnungPruefDaten, ablesungVon, letzter, fixkostenVon tim
 		n := eingabenJeMonat[key]
 		switch {
 		case n > 1:
-			maengel = append(maengel, abrechnungMangel{
-				Art:    mangelFixkostenMehrfach,
+			maengel = append(maengel, Mangel{
+				Art:    MangelFixkostenMehrfach,
 				Monat:  key,
-				Text:   "Mehr als eine Fixkosten-Eingabe: " + germanPeriodLabel(key),
+				Text:   "Mehr als eine Fixkosten-Eingabe: " + MonatLabel(key),
 				Aktion: "Fixkosten korrigieren",
 				Pfad:   "/fixkosten",
 			})
 		case n == 0 && !m.Before(fixkostenVon):
-			maengel = append(maengel, abrechnungMangel{
-				Art:    mangelFixkostenFehlt,
+			maengel = append(maengel, Mangel{
+				Art:    MangelFixkostenFehlt,
 				Monat:  key,
-				Text:   "Fixkosten-Eingabe fehlt: " + germanPeriodLabel(key),
+				Text:   "Fixkosten-Eingabe fehlt: " + MonatLabel(key),
 				Aktion: "Fixkosten erfassen",
 				Pfad:   "/fixkosten/neu",
 			})
@@ -300,10 +242,10 @@ func pruefeMonate(d abrechnungPruefDaten, ablesungVon, letzter, fixkostenVon tim
 // It also returns the first month needing an Ablesung and the first month
 // needing a Fixkosten-Eingabe. ok is false if the year has no period; the
 // reason is then already appended to res.
-func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich monatsbereich, res *abrechnungPruefung) (z abrechnungZeitraum, ablesungVon, fixkostenVon time.Time, ok bool) {
+func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich Monatsbereich, res *Pruefung) (z Zeitraum, ablesungVon, fixkostenVon time.Time, ok bool) {
 	if len(periods) == 0 {
-		res.Maengel = append(res.Maengel, abrechnungMangel{
-			Art:    mangelKeinZeitraum,
+		res.Maengel = append(res.Maengel, Mangel{
+			Art:    MangelKeinZeitraum,
 			Text:   "Es gibt noch keine Ablesung",
 			Aktion: "Ablesung erfassen",
 			Pfad:   "/ablesungen/neu",
@@ -312,10 +254,10 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich monatsber
 	}
 
 	first := periods[0]
-	firstDate, firstMonat, err := erfassungsbeginn(first)
+	firstDate, firstMonat, err := Erfassungsbeginn(first)
 	if err != nil {
-		res.Maengel = append(res.Maengel, abrechnungMangel{
-			Art:    mangelKeinZeitraum,
+		res.Maengel = append(res.Maengel, Mangel{
+			Art:    MangelKeinZeitraum,
 			Text:   "Das Datum der ersten Ablesung ist ungültig: " + first.ReadingDate,
 			Aktion: "Ablesung korrigieren",
 			Pfad:   "/ablesungen/" + strconv.FormatInt(first.ID, 10) + "/bearbeiten",
@@ -323,25 +265,25 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich monatsber
 		return z, ablesungVon, fixkostenVon, false
 	}
 	if jahr < firstMonat.Year() {
-		res.Maengel = append(res.Maengel, abrechnungMangel{
-			Art:  mangelKeinZeitraum,
+		res.Maengel = append(res.Maengel, Mangel{
+			Art:  MangelKeinZeitraum,
 			Text: fmt.Sprintf("Für %d gibt es keine Daten: die erste Ablesung liegt im Jahr %d", jahr, firstMonat.Year()),
 		})
 		return z, ablesungVon, fixkostenVon, false
 	}
 
 	if jahr == firstMonat.Year() && int(firstMonat.Month()) > bereich.Bis {
-		res.Maengel = append(res.Maengel, abrechnungMangel{
-			Art:  mangelKeinZeitraum,
-			Text: "Für den gewählten Zeitraum gibt es keine Daten: die erste Ablesung liegt im " + germanPeriodLabel(firstMonat.Format("2006-01-02")),
+		res.Maengel = append(res.Maengel, Mangel{
+			Art:  MangelKeinZeitraum,
+			Text: "Für den gewählten Zeitraum gibt es keine Daten: die erste Ablesung liegt im " + MonatLabel(firstMonat.Format("2006-01-02")),
 		})
 		return z, ablesungVon, fixkostenVon, false
 	}
 
 	ablesungVon = time.Date(jahr, time.Month(bereich.Von), 1, 0, 0, 0, 0, time.UTC)
 	letzter := time.Date(jahr, time.Month(bereich.Bis), 1, 0, 0, 0, 0, time.UTC)
-	z = abrechnungZeitraum{
-		Jahr: jahr, Teilzeitraum: bereich != ganzesJahr, ErsterMonat: ablesungVon, LetzterMonat: letzter,
+	z = Zeitraum{
+		Jahr: jahr, Teilzeitraum: bereich != GanzesJahr, ErsterMonat: ablesungVon, LetzterMonat: letzter,
 		Von: ablesungVon, Bis: letzter.AddDate(0, 1, -1),
 	}
 	fixkostenVon = ablesungVon
@@ -355,7 +297,7 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich monatsber
 			z.Von = firstDate
 		}
 		if fixkostenVon.Year() == jahr {
-			z.Zusatz = "Fixkosten und Vorauszahlungen ab " + germanPeriodLabel(fixkostenVon.Format("2006-01-02")) +
+			z.Zusatz = "Fixkosten und Vorauszahlungen ab " + MonatLabel(fixkostenVon.Format("2006-01-02")) +
 				" (Ausgangsstand: erste Ablesung am " + firstDate.Format("02.01.2006") + ")."
 		} else {
 			z.Zusatz = "Fixkosten und Vorauszahlungen entfallen (Ausgangsstand: erste Ablesung am " + firstDate.Format("02.01.2006") + ")."
@@ -364,10 +306,10 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich monatsber
 	return z, ablesungVon, fixkostenVon, true
 }
 
-// erfassungsbeginn returns the reading date and the Abrechnungsmonat of the
+// Erfassungsbeginn returns the reading date and the Abrechnungsmonat of the
 // first Ablesung ever. The Abrechnungsmonat decides which month it belongs
 // to; without one (a Teilstand) its reading date does.
-func erfassungsbeginn(first *store.LatestPeriod) (datum, monat time.Time, err error) {
+func Erfassungsbeginn(first *store.LatestPeriod) (datum, monat time.Time, err error) {
 	datum, err = time.Parse("2006-01-02", first.ReadingDate)
 	if err != nil {
 		return datum, monat, err
@@ -381,11 +323,11 @@ func erfassungsbeginn(first *store.LatestPeriod) (datum, monat time.Time, err er
 
 // pruefeStammdaten checks the Stammdaten the Jahresabrechnung needs for
 // apartment (rule 4 above).
-func pruefeStammdaten(d abrechnungPruefDaten, apartment store.Apartment) []abrechnungMangel {
+func pruefeStammdaten(d Daten, apartment store.Apartment) []Mangel {
 	leer := func(s string) bool { return strings.TrimSpace(s) == "" }
-	var out []abrechnungMangel
+	var out []Mangel
 	add := func(text string) {
-		out = append(out, abrechnungMangel{Art: mangelStammdaten, Text: text, Aktion: "Stammdaten ergänzen", Pfad: "/stammdaten"})
+		out = append(out, Mangel{Art: MangelStammdaten, Text: text, Aktion: "Stammdaten ergänzen", Pfad: "/stammdaten"})
 	}
 
 	if leer(d.Haus.VermieterName) {
@@ -411,4 +353,21 @@ func pruefeStammdaten(d abrechnungPruefDaten, apartment store.Apartment) []abrec
 		}
 	}
 	return out
+}
+
+// Monatsnamen are the German month names, January first.
+var Monatsnamen = [...]string{
+	"Januar", "Februar", "März", "April", "Mai", "Juni",
+	"Juli", "August", "September", "Oktober", "November", "Dezember",
+}
+
+// MonatLabel renders a date ("YYYY-MM-DD") as its German month name and year
+// (e.g. "November 2026"). Falls back to the raw string if it isn't a
+// parseable date.
+func MonatLabel(datum string) string {
+	t, err := time.Parse("2006-01-02", datum)
+	if err != nil {
+		return datum
+	}
+	return fmt.Sprintf("%s %d", Monatsnamen[t.Month()-1], t.Year())
 }

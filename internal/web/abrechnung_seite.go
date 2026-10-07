@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -24,7 +25,7 @@ func personenZelle(m map[int64]int64, apartmentID int64) string {
 // abrechnungJahre lists the years there is data for - from the Ablesungen
 // (by Abrechnungsmonat, else reading date) and the Fixkosten-Eingaben - newest
 // first.
-func abrechnungJahre(d abrechnungPruefDaten) []int {
+func abrechnungJahre(d abr.Daten) []int {
 	seen := map[int]bool{}
 	for _, p := range d.Periods {
 		if y, ok := store.Abrechnungsmonat(p.Monat).Jahr(); ok {
@@ -59,9 +60,9 @@ func standardWohnung(apartments []store.Apartment) int64 {
 
 // standardJahr is the preselected year: the newest one the check passes for
 // the apartment, else the newest year (the page then shows its Mängelliste).
-func standardJahr(d abrechnungPruefDaten, jahre []int, apartmentID int64) (int, error) {
+func standardJahr(d abr.Daten, jahre []int, apartmentID int64) (int, error) {
 	for _, y := range jahre {
-		p, err := pruefeAbrechnungDaten(d, y, ganzesJahr, apartmentID)
+		p, err := abr.Pruefe(d, y, abr.GanzesJahr, apartmentID)
 		if err != nil {
 			return 0, err
 		}
@@ -92,7 +93,7 @@ type abrechnungSeite struct {
 	// Von-/Bis-Monat (1-12, the whole year unless the checkbox is set and
 	// the range is valid).
 	Teilzeitraum bool
-	Bereich      monatsbereich
+	Bereich      abr.Monatsbereich
 	Monate       []monatOption
 	Apartments   []store.Apartment
 	ApartmentID  int64
@@ -165,14 +166,14 @@ func handleAbrechnung(a auth) http.HandlerFunc {
 			}
 		}
 
-		data.Bereich = ganzesJahr
+		data.Bereich = abr.GanzesJahr
 		for i, name := range germanMonths {
 			data.Monate = append(data.Monate, monatOption{Nr: i + 1, Name: name})
 		}
 		if r.URL.Query().Get("teil") == "1" {
 			von, _ := strconv.Atoi(r.URL.Query().Get("von"))
 			bis, _ := strconv.Atoi(r.URL.Query().Get("bis"))
-			if b := (monatsbereich{Von: von, Bis: bis}); b.gueltig() {
+			if b := (abr.Monatsbereich{Von: von, Bis: bis}); b.Gueltig() {
 				data.Teilzeitraum, data.Bereich = true, b
 			}
 		}
