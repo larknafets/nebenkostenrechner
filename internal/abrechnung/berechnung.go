@@ -242,15 +242,15 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	// Fixkosten: one Eingabe per month (the Pruefung guarantees at most
 	// one, and none only in the month of the first Ablesung).
 	for _, m := range f.monate {
-		if e := f.eingabeJeMonat[m]; e != nil {
-			ab.Vorauszahlungen += e.Abschlag[apartmentID]
+		if fm, ok := f.fixkosten[m]; ok {
+			ab.Vorauszahlungen += fm.Eingabe.Abschlag[apartmentID]
 		}
 	}
 	for _, kp := range kostenpositionen {
 		if !kp.Umlagefaehig {
 			continue
 		}
-		zeilen := fixkostenZeilen(kp, f.monate, f.fixErgebnis, apartmentID)
+		zeilen := fixkostenZeilen(kp, f.monate, f.fixkosten, apartmentID)
 		for i := range zeilen {
 			zeilen[i].Geteilt = len(zeilen) > 1
 		}
@@ -321,7 +321,7 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	ab.Verbrauch = verbrauchUebersicht(periods, apartments, meters, f.imBereich, apartmentID)
 	ab.Zaehlerstaende = zaehlerstaende(periods, apartments, meters, f.imBereich, apartmentID)
 	ab.Bezugsgroessen = bezugsgroessen(apartments)
-	ab.PersonenMonate = personenMonate(f.monate, f.eingabeJeMonat, periods, apartments)
+	ab.PersonenMonate = personenMonate(f.monate, f.fixkosten, periods, apartments)
 
 	return Ergebnis{Pruefung: pruefung, Abrechnung: ab}, nil
 }
@@ -336,10 +336,9 @@ type monatsfaltung struct {
 	// first; imBereich is the same as a set.
 	monate    []string
 	imBereich map[string]bool
-	// eingabeJeMonat and fixErgebnis are the Fixkosten-Eingabe and its result
-	// per month (a month without an Eingabe is missing from both).
-	eingabeJeMonat map[string]*store.FixkostenEingabeDetails
-	fixErgebnis    map[string]*calc.FixkostenErgebnis
+	// fixkosten is the Fixkosten-Eingabe and its result per month (a month
+	// without an Eingabe is missing).
+	fixkosten map[string]calc.FixkostenMonat
 	// ablesungen are the Ablesungen of the range that have Verbrauchskosten,
 	// oldest first. verbrauchJeMonat is their consumption cost per month
 	// (see monatsVerbrauch), a month without such an Ablesung is missing.
@@ -356,7 +355,7 @@ func faltMonate(d BerechnungsDaten, von, bis time.Time, apartmentID int64, strom
 		f.monate = append(f.monate, key)
 		f.imBereich[key] = true
 	}
-	f.eingabeJeMonat, f.fixErgebnis = fixkostenJeMonat(d.Fixkosten, f.monate)
+	f.fixkosten = fixkostenJeMonat(d.Fixkosten, f.monate)
 	for _, a := range d.Kosten.Berechenbare() {
 		if !f.imBereich[a.Period.Monat] {
 			continue
@@ -369,17 +368,15 @@ func faltMonate(d BerechnungsDaten, von, bis time.Time, apartmentID int64, strom
 
 // fixkostenJeMonat returns the Fixkosten-Eingabe and its calculated result per
 // Abrechnungsmonat for the given months (a month without an Eingabe is
-// missing from both maps).
-func fixkostenJeMonat(reihe *calc.Fixkostenreihe, monate []string) (map[string]*store.FixkostenEingabeDetails, map[string]*calc.FixkostenErgebnis) {
-	eingabeJeMonat := map[string]*store.FixkostenEingabeDetails{}
-	fixErgebnis := map[string]*calc.FixkostenErgebnis{}
+// missing from the map).
+func fixkostenJeMonat(reihe *calc.Fixkostenreihe, monate []string) map[string]calc.FixkostenMonat {
+	out := map[string]calc.FixkostenMonat{}
 	for _, m := range monate {
 		if fm, ok := reihe.Monat(m); ok {
-			eingabeJeMonat[m] = fm.Eingabe
-			fixErgebnis[m] = fm.Ergebnis
+			out[m] = fm
 		}
 	}
-	return eingabeJeMonat, fixErgebnis
+	return out
 }
 
 // monatsVerbrauch is the consumption cost of one Ablesung for the Monats-
@@ -453,16 +450,16 @@ func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment
 func (f monatsfaltung) verlauf(kostenpositionen []store.Kostenposition, apartmentID int64, uebertrag float64) Monatsverlauf {
 	v := Monatsverlauf{Endsaldo: uebertrag}
 	for _, m := range f.monate {
-		e := f.eingabeJeMonat[m]
+		fm, hatFix := f.fixkosten[m]
 		verbrauch, hatVerbrauch := f.verbrauchJeMonat[m]
-		if e == nil && !hatVerbrauch {
+		if !hatFix && !hatVerbrauch {
 			continue
 		}
 		z := MonatZeile{Monat: m, Verbrauch: calc.Round2(verbrauch)}
-		if e != nil {
-			z.Abschlag = calc.Round2(e.Abschlag[apartmentID])
+		if hatFix {
+			z.Abschlag = calc.Round2(fm.Eingabe.Abschlag[apartmentID])
 		}
-		if erg := f.fixErgebnis[m]; erg != nil {
+		if erg := fm.Ergebnis; erg != nil {
 			for _, kp := range kostenpositionen {
 				if !kp.Umlagefaehig {
 					continue
@@ -498,15 +495,16 @@ func (f monatsfaltung) verlauf(kostenpositionen []store.Kostenposition, apartmen
 // split it, the months' values are simply summed). A block in which the
 // settled apartment pays nothing - e.g. a position the landlord allocated
 // fully to the other apartment - is left out.
-func fixkostenZeilen(kp store.Kostenposition, monate []string, erg map[string]*calc.FixkostenErgebnis, apartmentID int64) []Zeile {
+func fixkostenZeilen(kp store.Kostenposition, monate []string, erg map[string]calc.FixkostenMonat, apartmentID int64) []Zeile {
 	var out []Zeile
 	var cur *Zeile
 	var curLogik string
 	for _, m := range monate {
-		e := erg[m]
-		if e == nil {
+		fm, ok := erg[m]
+		if !ok || fm.Ergebnis == nil {
 			continue
 		}
+		e := fm.Ergebnis
 		var pos *calc.FixkostenPosition
 		for i := range e.Positionen {
 			if e.Positionen[i].Key == kp.Key {
@@ -692,7 +690,7 @@ func bezugsgroessen(apartments []store.Apartment) []Bezugsgroesse {
 // the Fixkosten-Eingabe (for the Schlüssel "Personen") and the Ablesung (for
 // the warm water split). With several Ablesungen in a month the latest one
 // is shown.
-func personenMonate(monate []string, eingabeJeMonat map[string]*store.FixkostenEingabeDetails, periods []*store.LatestPeriod, apartments []store.Apartment) []PersonenMonat {
+func personenMonate(monate []string, fixkosten map[string]calc.FixkostenMonat, periods []*store.LatestPeriod, apartments []store.Apartment) []PersonenMonat {
 	ablesung := map[string]map[int64]int64{}
 	spaetestes := map[string]string{}
 	for _, p := range periods {
@@ -708,8 +706,8 @@ func personenMonate(monate []string, eingabeJeMonat map[string]*store.FixkostenE
 	out := make([]PersonenMonat, 0, len(monate))
 	for _, m := range monate {
 		row := PersonenMonat{Monat: m, Ablesung: ablesung[m]}
-		if e := eingabeJeMonat[m]; e != nil {
-			row.Fixkosten = e.Personen
+		if fm, ok := fixkosten[m]; ok {
+			row.Fixkosten = fm.Eingabe.Personen
 		}
 		out = append(out, row)
 	}
