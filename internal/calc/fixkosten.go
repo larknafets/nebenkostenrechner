@@ -127,8 +127,14 @@ func (r *Fixkostenreihe) Monat(monat string) (FixkostenMonat, bool) {
 	return r.alle[i], true
 }
 
-// Alle returns every Eingabe with its result, oldest first.
-func (r *Fixkostenreihe) Alle() []FixkostenMonat { return r.alle }
+// Neueste returns every Eingabe with its result, newest first (a fresh slice).
+func (r *Fixkostenreihe) Neueste() []FixkostenMonat {
+	out := make([]FixkostenMonat, 0, len(r.alle))
+	for i := len(r.alle) - 1; i >= 0; i-- {
+		out = append(out, r.alle[i])
+	}
+	return out
+}
 
 // fixkostenEingabe is everything the Fixkosten distribution reads: the entry
 // itself, the Kostenpositionen and both apartments' Wohnungs-/Flurstücksgröße.

@@ -60,10 +60,10 @@ func alleFixkostenKosten(db *sql.DB) ([]fixkostenKosten, error) {
 	if err != nil {
 		return nil, err
 	}
-	alle := reihe.Alle()
-	out := make([]fixkostenKosten, 0, len(alle))
-	for i := len(alle) - 1; i >= 0; i-- {
-		out = append(out, fixkostenKosten{Monat: alle[i].Eingabe.Monat, Erg: alle[i].Ergebnis, Abschlag: alle[i].Eingabe.Abschlag})
+	neueste := reihe.Neueste()
+	out := make([]fixkostenKosten, 0, len(neueste))
+	for _, m := range neueste {
+		out = append(out, fixkostenKosten{Monat: m.Eingabe.Monat, Erg: m.Ergebnis, Abschlag: m.Eingabe.Abschlag})
 	}
 	return out, nil
 }
