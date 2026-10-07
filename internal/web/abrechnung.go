@@ -470,13 +470,20 @@ func monatsverlauf(monate []string, kostenpositionen []store.Kostenposition, ein
 			}
 			z.Fixkosten = calc.Round2(z.Fixkosten)
 		}
-		z.Saldo = calc.Round2(v.Endsaldo + z.Abschlag - z.Fixkosten - z.Verbrauch)
 		v.Fixkosten += z.Fixkosten
 		v.Verbrauch += z.Verbrauch
 		v.Abschlag += z.Abschlag
-		v.Endsaldo = z.Saldo
 		v.Zeilen = append(v.Zeilen, z)
 	}
+	reihe := make([]calc.SaldoMonat, len(v.Zeilen))
+	for i, z := range v.Zeilen {
+		reihe[i] = calc.SaldoMonat{Abschlag: z.Abschlag, Kosten: z.Fixkosten + z.Verbrauch}
+	}
+	saldi, endsaldo := calc.Saldoverlauf(uebertrag, reihe)
+	for i := range v.Zeilen {
+		v.Zeilen[i].Saldo = saldi[i]
+	}
+	v.Endsaldo = endsaldo
 	v.Fixkosten, v.Verbrauch, v.Abschlag = calc.Round2(v.Fixkosten), calc.Round2(v.Verbrauch), calc.Round2(v.Abschlag)
 	return v
 }
