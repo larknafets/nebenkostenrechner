@@ -758,6 +758,52 @@ func TestBerechneAbrechnung_StimmtMitDemDashboardUeberein(t *testing.T) {
 	}
 }
 
+// TestJahressaldo_GleichtDashboardSaldoAufDenCent is the strict form of the
+// Glossar claim for "Jahressaldo": gap-free data and only umlagefähige
+// positions give exactly the Dashboard's change over the year, to the cent
+// (the test above allows half a cent).
+func TestJahressaldo_GleichtDashboardSaldoAufDenCent(t *testing.T) {
+	db := openTestDB(t)
+	if err := store.SeedDemoData(db, time.Date(2026, time.October, 15, 0, 0, 0, 0, time.UTC)); err != nil {
+		t.Fatalf("SeedDemoData: %v", err)
+	}
+	all := map[int64]bool{}
+	kps, _ := store.Kostenpositionen(db)
+	for _, kp := range kps {
+		all[kp.ID] = true
+	}
+	saveStammdaten(t, db, func(s *store.StammdatenSave) {
+		s.Flags = store.StammdatenFlags{Umlagefaehig: all, StromWeiterberechnen: true}
+	})
+	dd, err := loadDashboardData(db)
+	if err != nil {
+		t.Fatalf("loadDashboardData: %v", err)
+	}
+	var diffs []string
+	for _, apt := range dd.Apartments {
+		verlauf := buildDashboardVerlauf(apt.ID, apt.Name, dd.PeriodenKosten, dd.FixkostenListe)
+		endstand := map[int]float64{}
+		for _, e := range verlauf.Eintraege {
+			if e.Jahreszeile != nil && e.Jahreszeile.Endstand != nil {
+				endstand[e.Jahreszeile.Jahr] = e.Jahreszeile.Endstand.wert
+			}
+		}
+		for _, jahr := range []int{2023, 2024, 2025} {
+			erg, err := berechneAbrechnungDB(db, jahr, apt.ID)
+			if err != nil || erg.Abrechnung == nil {
+				t.Fatalf("%s %d: err %v", apt.Name, jahr, err)
+			}
+			want := calc.Round2(endstand[jahr] - endstand[jahr-1])
+			if got := erg.Abrechnung.Saldo.wert; calc.Round2(got) != want {
+				diffs = append(diffs, fmt.Sprintf("%s %d: Jahressaldo %.2f, Dashboard-Änderung %.2f", apt.Name, jahr, got, want))
+			}
+		}
+	}
+	if len(diffs) > 0 {
+		t.Errorf("Jahressaldo differs from the Dashboard change by whole cents:\n%s", strings.Join(diffs, "\n"))
+	}
+}
+
 // saveStammdaten applies mutate to a SaveStammdaten prefilled with the
 // database's current house values, so a test changes only what it names
 // (SaveStammdaten always writes the Heizungs-Gewichtung, the Strom flag and

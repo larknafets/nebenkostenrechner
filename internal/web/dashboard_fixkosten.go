@@ -341,18 +341,24 @@ func groupKostenByMonat(apartmentID int64, periodenKosten []periodKosten) map[st
 // being skipped like a month with no data (#94: "no data" instead of an
 // implicit jump).
 func accumulateAbschlagSaldo(monate []dashboardMonat, abschlagWerte []float64) {
-	var laufenderSaldo float64
-	saldi := make([]float64, len(monate))
-	hatSaldo := make([]bool, len(monate))
-	var maxAbsSaldo float64
+	// Walk oldest to newest over the months that have Fixkosten.
+	var idx []int
+	var reihe []calc.SaldoMonat
 	for i := len(monate) - 1; i >= 0; i-- {
 		if !monate[i].HasFixkosten {
 			continue
 		}
-		laufenderSaldo = calc.Round2(laufenderSaldo + calc.Round2(abschlagWerte[i]-monate[i].KombiniertGesamt))
-		saldi[i] = laufenderSaldo
+		idx = append(idx, i)
+		reihe = append(reihe, calc.SaldoMonat{Abschlag: abschlagWerte[i], Kosten: monate[i].KombiniertGesamt})
+	}
+	verlauf, _ := calc.Saldoverlauf(0, reihe)
+	saldi := make([]float64, len(monate))
+	hatSaldo := make([]bool, len(monate))
+	var maxAbsSaldo float64
+	for k, i := range idx {
+		saldi[i] = verlauf[k]
 		hatSaldo[i] = true
-		if abs := math.Abs(laufenderSaldo); abs > maxAbsSaldo {
+		if abs := math.Abs(verlauf[k]); abs > maxAbsSaldo {
 			maxAbsSaldo = abs
 		}
 	}
