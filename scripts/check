@@ -15,6 +15,15 @@ if [ -n "$unformatted" ]; then
   exit 1
 fi
 
+step "em dash"
+# AGENTS.md names the character in its own rule, so it is the one exception.
+dashes=$(git grep -lI $'\xe2\x80\x94' -- . ':!AGENTS.md' || true)
+if [ -n "$dashes" ]; then
+  echo "Em dash (U+2014) in committed files, use a comma, a colon or ' - ':"
+  echo "$dashes"
+  exit 1
+fi
+
 step "go vet"
 go vet ./...
 
