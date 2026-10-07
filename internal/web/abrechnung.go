@@ -195,7 +195,7 @@ type abrechnungErgebnis struct {
 
 // berechneAbrechnung checks whether jahr can be settled for apartmentID and,
 // if so, computes the Jahresabrechnung (Issue #166). It reuses
-// calc.Fixkosten per Fixkosten-Eingabe and the Verbrauchskosten per Ablesung and
+// the Fixkostenreihe and the Verbrauchskosten per Ablesung and
 // only sums them, there is no second cost formula.
 func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich monatsbereich, apartmentID int64) (abrechnungErgebnis, error) {
 	pruefung, err := pruefeAbrechnungDaten(d.Pruef, jahr, bereich, apartmentID)
@@ -207,7 +207,7 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich monatsb
 	}
 
 	periods, apartments, haus := d.Pruef.Periods, d.Pruef.Apartments, d.Pruef.Haus
-	kostenpositionen, eingaben, meters := d.Kostenpositionen, d.Eingaben, d.Meters
+	kostenpositionen, meters := d.Kostenpositionen, d.Meters
 
 	var apartment store.Apartment
 	for _, a := range apartments {
@@ -230,10 +230,7 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich monatsb
 
 	// Fixkosten: one Eingabe per month (the Pruefung guarantees at most
 	// one, and none only in the month of the first Ablesung).
-	eingabeJeMonat, fixErgebnis, err := fixkostenJeMonat(db, eingaben, monate)
-	if err != nil {
-		return abrechnungErgebnis{}, err
-	}
+	eingabeJeMonat, fixErgebnis := fixkostenJeMonat(d.Fixkosten, monate)
 	for _, m := range monate {
 		if e := eingabeJeMonat[m]; e != nil {
 			ab.Vorauszahlungen += e.Abschlag[apartmentID]
@@ -331,30 +328,16 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich monatsb
 // fixkostenJeMonat returns the Fixkosten-Eingabe and its calculated result per
 // Abrechnungsmonat for the given months (a month without an Eingabe is
 // missing from both maps).
-func fixkostenJeMonat(db *sql.DB, eingaben []*store.FixkostenEingabeDetails, monate []string) (map[string]*store.FixkostenEingabeDetails, map[string]*calc.FixkostenErgebnis, error) {
-	imBereich := make(map[string]bool, len(monate))
-	for _, m := range monate {
-		imBereich[m] = true
-	}
+func fixkostenJeMonat(reihe *calc.Fixkostenreihe, monate []string) (map[string]*store.FixkostenEingabeDetails, map[string]*calc.FixkostenErgebnis) {
 	eingabeJeMonat := map[string]*store.FixkostenEingabeDetails{}
-	for _, e := range eingaben {
-		if imBereich[e.Monat] {
-			eingabeJeMonat[e.Monat] = e
-		}
-	}
 	fixErgebnis := map[string]*calc.FixkostenErgebnis{}
 	for _, m := range monate {
-		e := eingabeJeMonat[m]
-		if e == nil {
-			continue
+		if fm, ok := reihe.Monat(m); ok {
+			eingabeJeMonat[m] = fm.Eingabe
+			fixErgebnis[m] = fm.Ergebnis
 		}
-		erg, err := calc.Fixkosten(db, e.ID)
-		if err != nil {
-			return nil, nil, fmt.Errorf("fixkosten %d: %w", e.ID, err)
-		}
-		fixErgebnis[m] = erg
 	}
-	return eingabeJeMonat, fixErgebnis, nil
+	return eingabeJeMonat, fixErgebnis
 }
 
 // monatsVerbrauch is the consumption cost of one Ablesung for the Monats-
@@ -422,10 +405,7 @@ func berechneUebertrag(db *sql.DB, d abrechnungDaten, z abrechnungZeitraum, apar
 		monate = append(monate, key)
 		imBereich[key] = true
 	}
-	eingabeJeMonat, fixErgebnis, err := fixkostenJeMonat(db, d.Eingaben, monate)
-	if err != nil {
-		return abrechnungUebertrag{}, err
-	}
+	eingabeJeMonat, fixErgebnis := fixkostenJeMonat(d.Fixkosten, monate)
 	verbrauchJeMonat := map[string]float64{}
 	for _, a := range d.Kosten.Berechenbare() {
 		if !imBereich[a.Period.Monat] {

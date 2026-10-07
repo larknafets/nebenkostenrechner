@@ -18,6 +18,48 @@ func mustCreateFixkostenEingabe(t *testing.T, db *sql.DB, monat string, personen
 	return id
 }
 
+// fixkostenOf loads the Fixkostenreihe and returns eingabeID's result.
+func fixkostenOf(t *testing.T, db *sql.DB, eingabeID int64) *calc.FixkostenErgebnis {
+	t.Helper()
+	reihe, err := calc.LoadFixkostenreihe(db)
+	if err != nil {
+		t.Fatalf("calc.LoadFixkostenreihe: %v", err)
+	}
+	m, ok := reihe.Eingabe(eingabeID)
+	if !ok {
+		t.Fatalf("Eingabe %d not in the Fixkostenreihe", eingabeID)
+	}
+	return m.Ergebnis
+}
+
+func TestFixkostenreihe_Lookups(t *testing.T) {
+	werte := map[int64]store.FixkostenPositionWert{6: {Logik: store.LogikWohneinheit, Typ: store.TypMonatlich, Wert: 20}}
+	reihe := calc.NewFixkostenreihe(calc.FixkostenDaten{
+		Eingaben: []*store.FixkostenEingabeDetails{
+			{ID: 7, Monat: "2026-09-01", Personen: map[int64]int64{1: 1, 2: 1}, Werte: werte},
+			{ID: 9, Monat: "2026-10-01", Personen: map[int64]int64{1: 1, 2: 1}, Werte: werte},
+		},
+		Kostenpositionen: []store.Kostenposition{{ID: 6, Key: "abfall_haushalt"}},
+		Apartments:       []store.Apartment{{ID: 1, QM: 100}, {ID: 2, QM: 100}},
+	})
+
+	if m, ok := reihe.Eingabe(9); !ok || m.Eingabe.Monat != "2026-10-01" || m.Ergebnis.KostenW1 != 10 {
+		t.Errorf("Eingabe(9) = %+v, ok=%v", m, ok)
+	}
+	if m, ok := reihe.Monat("2026-09-01"); !ok || m.Eingabe.ID != 7 {
+		t.Errorf("Monat(2026-09-01) = %+v, ok=%v", m, ok)
+	}
+	if _, ok := reihe.Eingabe(1); ok {
+		t.Error("Eingabe(1) found, want none")
+	}
+	if _, ok := reihe.Monat("2026-11-01"); ok {
+		t.Error("Monat(2026-11-01) found, want none")
+	}
+	if alle := reihe.Alle(); len(alle) != 2 || alle[0].Eingabe.ID != 7 {
+		t.Errorf("Alle() = %+v, want 2 oldest first", alle)
+	}
+}
+
 func findPosition(t *testing.T, erg *calc.FixkostenErgebnis, key string) calc.FixkostenPosition {
 	t.Helper()
 	for _, p := range erg.Positionen {
@@ -35,10 +77,7 @@ func TestFixkosten_LogikWohneinheit_5050(t *testing.T) {
 		6: {Logik: store.LogikWohneinheit, Typ: store.TypJaehrlich, Wert: 240}, // abfall_haushalt
 	})
 
-	got, err := calc.Fixkosten(db, id)
-	if err != nil {
-		t.Fatalf("calc.Fixkosten: %v", err)
-	}
+	got := fixkostenOf(t, db, id)
 	pos := findPosition(t, got, "abfall_haushalt")
 	if pos.Monatswert != 20 {
 		t.Errorf("Monatswert = %v, want 20 (240/12)", pos.Monatswert)
@@ -60,10 +99,7 @@ func TestFixkosten_LogikFlurstueck_Ratio(t *testing.T) {
 		3: {Logik: store.LogikFlurstueck, Typ: store.TypJaehrlich, Wert: 1200}, // deich_grund
 	})
 
-	got, err := calc.Fixkosten(db, id)
-	if err != nil {
-		t.Fatalf("calc.Fixkosten: %v", err)
-	}
+	got := fixkostenOf(t, db, id)
 	pos := findPosition(t, got, "deich_grund")
 	if pos.Monatswert != 100 {
 		t.Errorf("Monatswert = %v, want 100 (1200/12)", pos.Monatswert)
@@ -85,10 +121,7 @@ func TestFixkosten_LogikQM_Ratio(t *testing.T) {
 		1: {Logik: store.LogikQM, Typ: store.TypJaehrlich, Wert: 480}, // grundsteuer
 	})
 
-	got, err := calc.Fixkosten(db, id)
-	if err != nil {
-		t.Fatalf("calc.Fixkosten: %v", err)
-	}
+	got := fixkostenOf(t, db, id)
 	pos := findPosition(t, got, "grundsteuer")
 	if pos.Monatswert != 40 {
 		t.Errorf("Monatswert = %v, want 40 (480/12)", pos.Monatswert)
@@ -104,10 +137,7 @@ func TestFixkosten_LogikPersonen_Ratio(t *testing.T) {
 		7: {Logik: store.LogikPersonen, Typ: store.TypJaehrlich, Wert: 360}, // abfall_personen
 	})
 
-	got, err := calc.Fixkosten(db, id)
-	if err != nil {
-		t.Fatalf("calc.Fixkosten: %v", err)
-	}
+	got := fixkostenOf(t, db, id)
 	pos := findPosition(t, got, "abfall_personen")
 	if pos.Monatswert != 30 {
 		t.Errorf("Monatswert = %v, want 30 (360/12)", pos.Monatswert)
@@ -126,10 +156,7 @@ func TestFixkosten_LogikPersonen_KeinePersonen_FaelltAufHaelftigeVerteilungZurue
 		7: {Logik: store.LogikPersonen, Typ: store.TypJaehrlich, Wert: 240},
 	})
 
-	got, err := calc.Fixkosten(db, id)
-	if err != nil {
-		t.Fatalf("calc.Fixkosten: %v", err)
-	}
+	got := fixkostenOf(t, db, id)
 	pos := findPosition(t, got, "abfall_personen")
 	if pos.KostenW1 != 10 || pos.KostenW2 != 10 {
 		t.Errorf("KostenW1/W2 bei 0 Personen = %v/%v, want 10/10 (haelftiger Fallback statt 0/0)", pos.KostenW1, pos.KostenW2)
@@ -142,10 +169,7 @@ func TestFixkosten_TypMonatlich_ExpliziterWert(t *testing.T) {
 		13: {Logik: store.LogikWohneinheit, Typ: store.TypMonatlich, Wert: 39.90}, // internet
 	})
 
-	got, err := calc.Fixkosten(db, id)
-	if err != nil {
-		t.Fatalf("calc.Fixkosten: %v", err)
-	}
+	got := fixkostenOf(t, db, id)
 	pos := findPosition(t, got, "internet")
 	if pos.Monatswert != 39.90 {
 		t.Errorf("Monatswert = %v, want 39.90 (monatlich, keine /12-Teilung)", pos.Monatswert)
@@ -164,10 +188,7 @@ func TestFixkosten_PositionOhneWert_Uebersprungen(t *testing.T) {
 	db := openTestDB(t)
 	id := mustCreateFixkostenEingabe(t, db, "2026-03-01", map[int64]int64{1: 1, 2: 1}, nil)
 
-	got, err := calc.Fixkosten(db, id)
-	if err != nil {
-		t.Fatalf("calc.Fixkosten: %v", err)
-	}
+	got := fixkostenOf(t, db, id)
 	if len(got.Positionen) != 0 {
 		t.Errorf("len(Positionen) = %d, want 0 (keine Werte erfasst)", len(got.Positionen))
 	}
@@ -192,10 +213,7 @@ func TestFixkosten_SummenKonsistenz(t *testing.T) {
 		13: {Logik: store.LogikWohneinheit, Typ: store.TypMonatlich, Wert: 39.90},
 	})
 
-	got, err := calc.Fixkosten(db, id)
-	if err != nil {
-		t.Fatalf("calc.Fixkosten: %v", err)
-	}
+	got := fixkostenOf(t, db, id)
 	if len(got.Positionen) != 5 {
 		t.Fatalf("len(Positionen) = %d, want 5 (nur die erfassten)", len(got.Positionen))
 	}
@@ -218,17 +236,11 @@ func TestFixkosten_UnabhaengigVomUmlagefaehigFlag(t *testing.T) {
 		15: {Logik: store.LogikWohneinheit, Typ: store.TypMonatlich, Wert: 20}, // streaming
 	})
 
-	before, err := calc.Fixkosten(db, id)
-	if err != nil {
-		t.Fatalf("calc.Fixkosten: %v", err)
-	}
+	before := fixkostenOf(t, db, id)
 	saveStammdaten(t, db, func(s *store.StammdatenSave) {
 		s.Flags = store.StammdatenFlags{Umlagefaehig: map[int64]bool{15: false, 1: false}}
 	})
-	after, err := calc.Fixkosten(db, id)
-	if err != nil {
-		t.Fatalf("calc.Fixkosten after flag change: %v", err)
-	}
+	after := fixkostenOf(t, db, id)
 
 	if before.KostenW1 != after.KostenW1 || before.KostenW2 != after.KostenW2 || len(before.Positionen) != len(after.Positionen) {
 		t.Errorf("Fixkosten changed with the flags: before %+v, after %+v", before, after)

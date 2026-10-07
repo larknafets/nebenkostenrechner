@@ -124,6 +124,8 @@ type abrechnungDaten struct {
 	Eingaben         []*store.FixkostenEingabeDetails
 	Kostenpositionen []store.Kostenposition
 	Meters           []store.Meter
+	// Fixkosten are the Fixkosten results of every Eingabe in Eingaben.
+	Fixkosten *calc.Fixkostenreihe
 	// Kosten are the Verbrauchskosten of every Ablesung in Pruef.Periods.
 	Kosten *calc.Verbrauchskosten
 }
@@ -164,6 +166,7 @@ func ladeAbrechnungDaten(db *sql.DB) (abrechnungDaten, error) {
 		Eingaben:         eingaben,
 		Kostenpositionen: kostenpositionen,
 		Meters:           meters,
+		Fixkosten:        calc.NewFixkostenreihe(calc.FixkostenDaten{Eingaben: eingaben, Kostenpositionen: kostenpositionen, Apartments: apartments}),
 		Kosten:           calc.New(calc.Daten{Periods: periods, Apartments: apartments, Haus: haus}),
 	}, nil
 }

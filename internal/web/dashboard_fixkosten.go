@@ -2,7 +2,6 @@ package web
 
 import (
 	"database/sql"
-	"fmt"
 	"math"
 	"sort"
 	"time"
@@ -56,22 +55,14 @@ type fixkostenKosten struct {
 // alleFixkostenKosten returns every computable fixed-costs entry's result,
 // newest first (store.AllFixkostenEingaben's own order).
 func alleFixkostenKosten(db *sql.DB) ([]fixkostenKosten, error) {
-	eingaben, err := store.AllFixkostenEingaben(db)
+	reihe, err := calc.LoadFixkostenreihe(db)
 	if err != nil {
-		return nil, fmt.Errorf("fixkosten eingaben: %w", err)
+		return nil, err
 	}
-	abschlaege, err := store.AllAbschlaege(db)
-	if err != nil {
-		return nil, fmt.Errorf("nebenkosten abschlaege: %w", err)
-	}
-
-	out := make([]fixkostenKosten, 0, len(eingaben))
-	for _, e := range eingaben {
-		erg, err := calc.Fixkosten(db, e.ID)
-		if err != nil {
-			return nil, fmt.Errorf("fixkosten %d: %w", e.ID, err)
-		}
-		out = append(out, fixkostenKosten{Monat: e.Monat, Erg: erg, Abschlag: abschlaege[e.ID]})
+	alle := reihe.Alle()
+	out := make([]fixkostenKosten, 0, len(alle))
+	for i := len(alle) - 1; i >= 0; i-- {
+		out = append(out, fixkostenKosten{Monat: alle[i].Eingabe.Monat, Erg: alle[i].Ergebnis, Abschlag: alle[i].Eingabe.Abschlag})
 	}
 	return out, nil
 }
