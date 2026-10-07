@@ -172,7 +172,7 @@ func handleIndex() http.HandlerFunc {
 // handleBerechnungslogik serves a static, informational explanation of the
 // cost formulas (Ticket #33) - no DB access, the content never depends on
 // any period's data. Not Ablesungen- or Fixkosten-specific (Berechnungslogik
-// as a concept spans both, see CONTEXT.md), so it stays here rather than in
+// as a concept spans both, see GLOSSARY.md), so it stays here rather than in
 // either concept's own file.
 func handleBerechnungslogik(a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

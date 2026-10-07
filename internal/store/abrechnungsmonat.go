@@ -2,7 +2,7 @@ package store
 
 import "time"
 
-// Abrechnungsmonat is a periods.monat value ("YYYY-MM-01") - see CONTEXT.md.
+// Abrechnungsmonat is a periods.monat value ("YYYY-MM-01") - see GLOSSARY.md.
 type Abrechnungsmonat string
 
 // Jahr returns the calendar year, or ok=false if m isn't a valid "YYYY-MM-01"

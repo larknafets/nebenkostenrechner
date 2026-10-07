@@ -136,7 +136,7 @@ type dashboardJahresCard struct {
 	Segmente            []dashboardSegment
 
 	// PVAnteilKWh is the yearly total of StromErgebnis.PVAnteilW2KWh ("not
-	// allocated to grid draw (PV)", CONTEXT.md) - only set for apartment 2
+	// allocated to grid draw (PV)", GLOSSARY.md) - only set for apartment 2
 	// (Issue #98), since apartment 1 has no own electricity meter. 0 =
 	// row is hidden.
 	PVAnteilKWh float64

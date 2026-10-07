@@ -22,7 +22,7 @@ Conventional Commits, in German, terse and exact. Why over what. The release not
   - `fix`: bug fix
   - `refactor`: restructuring without a change of behavior
   - `perf`: performance improvement
-  - `docs`: documentation (README, `AGENTS.md`, `CONTEXT.md`, ADRs)
+  - `docs`: documentation (README, `AGENTS.md`, `GLOSSARY.md`, ADRs)
   - `test`: new or corrected tests
   - `style`: formatting only (whitespace, `gofmt`), behavior identical
   - `chore`: tooling and housekeeping that touches neither the app nor its tests (e.g. `scripts/`, hooks)

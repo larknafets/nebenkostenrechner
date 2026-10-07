@@ -9,7 +9,7 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 - `internal/calc`: pure cost calculation (Strom, Wasser, Heizung, Einspeisung, Fixkosten), no HTTP
 - `internal/store`: SQLite (modernc), `schema.sql`, Ablesungen, Fixkosten-Eingaben, Stammdaten
 - `internal/web`: handlers, Dashboard, Abrechnung, CSV; templates in `templates/` (embedded)
-- Domain terms: `CONTEXT.md` (use its vocabulary), decisions: `docs/adr/`. User docs: `README.md`.
+- Domain terms: `GLOSSARY.md` (use its vocabulary), decisions: `docs/adr/`. User docs: `README.md`.
 
 ## Rules that always apply
 
