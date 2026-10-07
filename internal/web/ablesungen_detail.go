@@ -122,11 +122,13 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			meters = append(meters, entry)
 		}
 
-		k, err := berechneKosten(db, period.ID)
+		verbrauchskosten, err := calc.Load(db)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		ablesung, _ := verbrauchskosten.Ablesung(period.ID)
+		k := ablesung.Kosten
 
 		data := struct {
 			navData
@@ -164,7 +166,7 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			Wasser:          k.Wasser,
 			Heizung:         k.Heizung,
 			Einspeisung:     k.Einspeisung,
-			KostenNote:      k.KostenNote,
+			KostenNote:      kostenHinweis(ablesung.Grund),
 			MonatLabel:      germanPeriodLabel(period.Monat),
 		}
 

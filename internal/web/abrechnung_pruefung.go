@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -114,7 +115,7 @@ type abrechnungPruefDaten struct {
 // abrechnungDaten is everything the Jahresabrechnung reads, loaded once per
 // request by ladeAbrechnungDaten. Jahresvorauswahl, Prüfung and Berechnung
 // work on it instead of loading again (the Berechnung still hands its db to
-// calc for the per-month costs).
+// calc for the Fixkosten).
 type abrechnungDaten struct {
 	// Pruef is the subset the Prüfung and the Jahresvorauswahl need.
 	Pruef abrechnungPruefDaten
@@ -123,6 +124,8 @@ type abrechnungDaten struct {
 	Eingaben         []*store.FixkostenEingabeDetails
 	Kostenpositionen []store.Kostenposition
 	Meters           []store.Meter
+	// Kosten are the Verbrauchskosten of every Ablesung in Pruef.Periods.
+	Kosten *calc.Verbrauchskosten
 }
 
 // ladeAbrechnungDaten loads all data of the Jahresabrechnung (Issue #165).
@@ -161,6 +164,7 @@ func ladeAbrechnungDaten(db *sql.DB) (abrechnungDaten, error) {
 		Eingaben:         eingaben,
 		Kostenpositionen: kostenpositionen,
 		Meters:           meters,
+		Kosten:           calc.New(calc.Daten{Periods: periods, Apartments: apartments, Haus: haus}),
 	}, nil
 }
 

@@ -16,7 +16,7 @@ import (
 )
 
 func TestKategorien(t *testing.T) {
-	k := kosten{
+	k := calc.Kosten{
 		Strom: &calc.StromErgebnis{
 			W2AnteilKWh:    305,
 			W2VerbrauchKWh: 320,
@@ -143,7 +143,7 @@ func TestKategorien(t *testing.T) {
 	})
 
 	t.Run("Gesamtbetrag 0 erzeugt kein NaN", func(t *testing.T) {
-		zero := kosten{
+		zero := calc.Kosten{
 			Strom:   &calc.StromErgebnis{},
 			Wasser:  &calc.WasserErgebnis{},
 			Heizung: &calc.HeizungErgebnis{},
@@ -176,9 +176,9 @@ func TestGermanPeriodLabelShort(t *testing.T) {
 // (sub-monthly meter readings) get their kategorien summed per Label, not
 // overwritten by whichever period is processed last.
 func TestGroupKostenByMonat(t *testing.T) {
-	first := kosten{Strom: &calc.StromErgebnis{KostenW2: 10, W2VerbrauchKWh: 50}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
-	second := kosten{Strom: &calc.StromErgebnis{KostenW2: 15, W2VerbrauchKWh: 60}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
-	october := kosten{Strom: &calc.StromErgebnis{KostenW2: 40, W2VerbrauchKWh: 200}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
+	first := calc.Kosten{Strom: &calc.StromErgebnis{KostenW2: 10, W2VerbrauchKWh: 50}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
+	second := calc.Kosten{Strom: &calc.StromErgebnis{KostenW2: 15, W2VerbrauchKWh: 60}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
+	october := calc.Kosten{Strom: &calc.StromErgebnis{KostenW2: 40, W2VerbrauchKWh: 200}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
 
 	periods := []periodKosten{
 		{ReadingDate: "2026-09-01", Monat: "2026-09-01", K: first},
@@ -223,12 +223,12 @@ func TestBuildDashboardVerlauf_Skalierung(t *testing.T) {
 	// is relative to the largest month in the range (architecture review:
 	// previously relative to the newest month, which let older/pricier
 	// months run past 100% and cut off their text at the bar-track edge).
-	neu := kosten{
+	neu := calc.Kosten{
 		Strom:   &calc.StromErgebnis{KostenW2: 20, W2AnteilKWh: 123, W2VerbrauchKWh: 123},
 		Wasser:  &calc.WasserErgebnis{KostenFrischwasserW2: 5, KostenAbwasserW2: 5},
 		Heizung: &calc.HeizungErgebnis{KostenHeizungW2: 10},
 	}
-	alt := kosten{
+	alt := calc.Kosten{
 		Strom:   &calc.StromErgebnis{KostenW2: 40},
 		Wasser:  &calc.WasserErgebnis{KostenFrischwasserW2: 10, KostenAbwasserW2: 10},
 		Heizung: &calc.HeizungErgebnis{KostenHeizungW2: 20},
@@ -293,7 +293,7 @@ func TestBuildDashboardVerlauf_Skalierung(t *testing.T) {
 	})
 
 	t.Run("neuester VerbrauchGesamt 0 erzeugt kein NaN", func(t *testing.T) {
-		zero := kosten{Strom: &calc.StromErgebnis{}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
+		zero := calc.Kosten{Strom: &calc.StromErgebnis{}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
 		spalte := buildDashboardVerlauf(2, "Wohnung 2", []periodKosten{{ReadingDate: "2026-11-15", Monat: "2026-11-01", K: zero}}, nil)
 		for _, seg := range spalte.Eintraege[0].Monat.VerbrauchSegmente {
 			if seg.ProzentNeuestesGesamt != 0 {
@@ -308,9 +308,9 @@ func TestBuildSimpleVerlaufUndJahresCard(t *testing.T) {
 	// no Fixkosten share, no Wohnung allocation. The Wallbox share comes
 	// from StromErgebnis (third, PV-Netzbezug-capped allocation tier after
 	// Wohnung 2 and Wärmepumpe, Ticket #67 follow-up).
-	neu := kosten{Strom: &calc.StromErgebnis{WallboxAnteilKWh: 30, PVAnteilWallboxKWh: 10, KostenWallbox: 12}}
-	alt := kosten{Strom: &calc.StromErgebnis{WallboxAnteilKWh: 15, PVAnteilWallboxKWh: 5, KostenWallbox: 6}}
-	ohneWallbox := kosten{} // Strom nil - erste Periode ohne Vorperiode
+	neu := calc.Kosten{Strom: &calc.StromErgebnis{WallboxAnteilKWh: 30, PVAnteilWallboxKWh: 10, KostenWallbox: 12}}
+	alt := calc.Kosten{Strom: &calc.StromErgebnis{WallboxAnteilKWh: 15, PVAnteilWallboxKWh: 5, KostenWallbox: 6}}
+	ohneWallbox := calc.Kosten{} // Strom nil - erste Periode ohne Vorperiode
 
 	periods := []periodKosten{
 		{ReadingDate: "2026-11-15", Monat: "2026-11-01", K: neu},
@@ -390,7 +390,7 @@ func TestBuildSimpleVerlaufUndJahresCard(t *testing.T) {
 	}
 
 	t.Run("PV-Anlage nutzt Einspeisung statt Wallbox", func(t *testing.T) {
-		p := []periodKosten{{ReadingDate: "2026-11-15", Monat: "2026-11-01", K: kosten{Einspeisung: &calc.EinspeisungErgebnis{EinspeisungKWh: 100, Ertrag: 8}}}}
+		p := []periodKosten{{ReadingDate: "2026-11-15", Monat: "2026-11-01", K: calc.Kosten{Einspeisung: &calc.EinspeisungErgebnis{EinspeisungKWh: 100, Ertrag: 8}}}}
 		pvCard := buildSimpleJahresCard(pvSeries, 2026, p)
 		if pvCard.GesamtEUR != 8 || !pvCard.IstErtrag {
 			t.Errorf("pvCard = %+v, want GesamtEUR=8 IstErtrag=true", pvCard)
@@ -405,8 +405,8 @@ func TestBuildSimpleVerlaufUndJahresCard(t *testing.T) {
 	})
 
 	t.Run("mehrere Ablesungen im selben Monat werden zu einem Balken summiert", func(t *testing.T) {
-		erste := kosten{Strom: &calc.StromErgebnis{WallboxAnteilKWh: 10, PVAnteilWallboxKWh: 2, KostenWallbox: 4}}
-		zweite := kosten{Strom: &calc.StromErgebnis{WallboxAnteilKWh: 20, PVAnteilWallboxKWh: 3, KostenWallbox: 8}}
+		erste := calc.Kosten{Strom: &calc.StromErgebnis{WallboxAnteilKWh: 10, PVAnteilWallboxKWh: 2, KostenWallbox: 4}}
+		zweite := calc.Kosten{Strom: &calc.StromErgebnis{WallboxAnteilKWh: 20, PVAnteilWallboxKWh: 3, KostenWallbox: 8}}
 		periods := []periodKosten{
 			{ReadingDate: "2026-09-15", Monat: "2026-09-01", K: zweite},
 			{ReadingDate: "2026-09-01", Monat: "2026-09-01", K: erste},
@@ -426,7 +426,7 @@ func TestBuildSimpleVerlaufUndJahresCard(t *testing.T) {
 }
 
 func TestBuildDashboardVerlauf_KombiniertModus(t *testing.T) {
-	verbrauch := kosten{
+	verbrauch := calc.Kosten{
 		Strom:   &calc.StromErgebnis{KostenW2: 20},
 		Wasser:  &calc.WasserErgebnis{KostenFrischwasserW2: 5, KostenAbwasserW2: 5},
 		Heizung: &calc.HeizungErgebnis{KostenHeizungW2: 10},
@@ -495,7 +495,7 @@ func TestBuildDashboardVerlauf_AbschlagSaldo_UeberspringtMonatOhneFixkosten(t *t
 		Positionen: []calc.FixkostenPosition{{Key: "abfall_haushalt", Label: "Abfallwirtschaft Grundgebühr Haushalt", Logik: store.LogikWohneinheit, KostenW1: 15, KostenW2: 20}},
 		KostenW1:   15, KostenW2: 20,
 	}
-	verbrauch := kosten{
+	verbrauch := calc.Kosten{
 		Strom:   &calc.StromErgebnis{KostenW2: 20},
 		Wasser:  &calc.WasserErgebnis{},
 		Heizung: &calc.HeizungErgebnis{},
@@ -625,7 +625,7 @@ func TestBuildDashboardVerlauf_LatestSaldo(t *testing.T) {
 	}
 
 	t.Run("nimmt neuesten Monat mit Saldo, ueberspringt luecken", func(t *testing.T) {
-		verbrauch := kosten{Strom: &calc.StromErgebnis{KostenW2: 20}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
+		verbrauch := calc.Kosten{Strom: &calc.StromErgebnis{KostenW2: 20}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
 		periods := []periodKosten{{ReadingDate: "2026-02-01", Monat: "2026-02-01", K: verbrauch}} // Feb: nur Ablesung, kein Saldo
 		fixkostenListe := []fixkostenKosten{
 			{Monat: "2026-01-01", Erg: fix, Abschlag: map[int64]float64{2: 100}},
@@ -637,7 +637,7 @@ func TestBuildDashboardVerlauf_LatestSaldo(t *testing.T) {
 	})
 
 	t.Run("kein Monat mit Fixkosten-Eingabe -> nil", func(t *testing.T) {
-		verbrauch := kosten{Strom: &calc.StromErgebnis{KostenW2: 20}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
+		verbrauch := calc.Kosten{Strom: &calc.StromErgebnis{KostenW2: 20}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
 		periods := []periodKosten{{ReadingDate: "2026-02-01", Monat: "2026-02-01", K: verbrauch}}
 		spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, nil)
 		if got := spalte.LatestSaldo; got != nil {
@@ -675,7 +675,7 @@ func TestGruppiereNachJahr(t *testing.T) {
 }
 
 func TestMitJahreszeilen(t *testing.T) {
-	leer := kosten{Strom: &calc.StromErgebnis{}, Wasser: &calc.WasserErgebnis{KostenFrischwasserW2: 10}, Heizung: &calc.HeizungErgebnis{}}
+	leer := calc.Kosten{Strom: &calc.StromErgebnis{}, Wasser: &calc.WasserErgebnis{KostenFrischwasserW2: 10}, Heizung: &calc.HeizungErgebnis{}}
 
 	t.Run("jedes Jahr bekommt eine Summenzeile, auch das laufende", func(t *testing.T) {
 		periods := []periodKosten{
@@ -728,12 +728,12 @@ func TestMitJahreszeilen(t *testing.T) {
 }
 
 func TestBuildJahresCard(t *testing.T) {
-	verbrauch2026 := kosten{
+	verbrauch2026 := calc.Kosten{
 		Strom:   &calc.StromErgebnis{KostenW2: 20},
 		Wasser:  &calc.WasserErgebnis{KostenFrischwasserW2: 5, KostenAbwasserW2: 5},
 		Heizung: &calc.HeizungErgebnis{KostenHeizungW2: 10},
 	}
-	verbrauch2025 := kosten{
+	verbrauch2025 := calc.Kosten{
 		Strom:   &calc.StromErgebnis{KostenW2: 999},
 		Wasser:  &calc.WasserErgebnis{},
 		Heizung: &calc.HeizungErgebnis{},
@@ -770,8 +770,8 @@ func TestBuildJahresCard(t *testing.T) {
 }
 
 func TestBuildJahresCard_PVAnteilKWh(t *testing.T) {
-	kMitPV := func(pv float64) kosten {
-		return kosten{
+	kMitPV := func(pv float64) calc.Kosten {
+		return calc.Kosten{
 			Strom:   &calc.StromErgebnis{PVAnteilW2KWh: pv},
 			Wasser:  &calc.WasserErgebnis{},
 			Heizung: &calc.HeizungErgebnis{},
@@ -1758,11 +1758,11 @@ func TestHandleWizardForm_NoRedirectWhenComplete(t *testing.T) {
 	}
 }
 
-// TestBerechneKosten_TeilstandReturnsKostenNote verifies berechneKosten
-// doesn't compute (wrong) numbers off a Teilstand's missing values -
-// KostenNote explains why instead, the same mechanism already used for
-// "no Vorperiode yet".
-func TestBerechneKosten_TeilstandReturnsKostenNote(t *testing.T) {
+// TestVerbrauchskosten_TeilstandHatKeineKosten verifies the model doesn't
+// compute (wrong) numbers off a Teilstand's missing values - Grund
+// explains why instead, the same mechanism already used for "no Vorperiode
+// yet".
+func TestVerbrauchskosten_TeilstandHatKeineKosten(t *testing.T) {
 	db := openTestDB(t)
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
@@ -1772,12 +1772,14 @@ func TestBerechneKosten_TeilstandReturnsKostenNote(t *testing.T) {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 
-	k, err := berechneKosten(db, id)
+	verbrauchskosten, err := calc.Load(db)
 	if err != nil {
-		t.Fatalf("berechneKosten: %v", err)
+		t.Fatalf("calc.Load: %v", err)
 	}
-	if k.KostenNote == "" {
-		t.Error("KostenNote ist leer, want einen Hinweis auf den Teilstand")
+	a, _ := verbrauchskosten.Ablesung(id)
+	k := a.Kosten
+	if a.Grund != calc.GrundTeilstand || kostenHinweis(a.Grund) == "" {
+		t.Errorf("Grund = %v, want GrundTeilstand mit Hinweistext", a.Grund)
 	}
 	if k.Strom != nil || k.Wasser != nil || k.Heizung != nil || k.Einspeisung != nil {
 		t.Error("Strom/Wasser/Heizung/Einspeisung sind gesetzt, want alle nil (keine Berechnung für einen Teilstand)")
@@ -2033,7 +2035,7 @@ func TestHandleEditWizardForm_TeilstandBlankNotZero(t *testing.T) {
 }
 
 func TestKostenAnteil(t *testing.T) {
-	k := kosten{
+	k := calc.Kosten{
 		Strom: &calc.StromErgebnis{KostenW2: 7.5, W2VerbrauchKWh: 30},
 		Wasser: &calc.WasserErgebnis{
 			KostenFrischwasserW1: 1.10, KostenAbwasserW1: 2.20, FrischwasserW1: 5,

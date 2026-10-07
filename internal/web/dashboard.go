@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -41,10 +42,8 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 	// Teilstand/partial reading (Ticket #129): only the newest period can
 	// be incomplete (enforced on creation, see handleCreateAblesung) -
 	// stays completely excluded here (no yearly-totals/monthly-history
-	// entry) until it's completed. Without this, berechneKosten's own
-	// partial-reading KostenNote guard further below would otherwise hide
-	// the entire history: the loop runs newest->oldest and stops at the
-	// first KostenNote.
+	// entry, no effect on HasAnyData or the display year) until it's
+	// completed.
 	if len(allPeriods) > 0 {
 		complete, err := store.PeriodComplete(db, allPeriods[0].ID)
 		if err != nil {
@@ -63,24 +62,18 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 		return dashboardData{Apartments: apartments}, nil
 	}
 
-	// Verbrauch walks newest -> oldest and stops at the first period
-	// without a Vorperiode - that's always the very first period ever
-	// recorded (every later one has an earlier neighbour to diff
-	// against), so it's the natural end of the available history.
+	// Verbrauchskosten newest -> oldest. The very first period ever
+	// recorded has no Vorperiode and so no Verbrauchskosten, which is the
+	// natural end of the available history.
+	verbrauchskosten, err := calc.Load(db)
+	if err != nil {
+		return dashboardData{}, fmt.Errorf("verbrauchskosten: %w", err)
+	}
 	var periodenKosten []periodKosten
-	for _, p := range allPeriods {
-		pk, err := berechneKosten(db, p.ID)
-		if err != nil {
-			return dashboardData{}, err
-		}
-		if pk.KostenNote != "" {
-			break
-		}
-		personen, err := store.PersonenByApartment(db, p.ID)
-		if err != nil {
-			return dashboardData{}, fmt.Errorf("personen: %w", err)
-		}
-		periodenKosten = append(periodenKosten, periodKosten{ReadingDate: p.ReadingDate, Monat: p.Monat, K: pk, Personen: personen})
+	berechenbar := verbrauchskosten.Berechenbare()
+	for i := len(berechenbar) - 1; i >= 0; i-- {
+		a := berechenbar[i]
+		periodenKosten = append(periodenKosten, periodKosten{ReadingDate: a.Period.ReadingDate, Monat: a.Period.Monat, K: a.Kosten, Personen: a.Period.PersonenByApartment})
 	}
 
 	fixkostenListe, err := alleFixkostenKosten(db)
