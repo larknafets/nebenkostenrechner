@@ -50,36 +50,85 @@ func (e FixkostenErgebnis) KostenFor(apartmentID int64) float64 {
 	return e.KostenW1
 }
 
-// Fixkosten computes eingabeID's full cost position breakdown. Logik/
-// Typ/Wert come directly from the entry itself (Issue #105/#107) - each
-// entry carries its own independent state, no more shared per-year
-// master-data source.
-func Fixkosten(db *sql.DB, eingabeID int64) (*FixkostenErgebnis, error) {
-	eingabe, err := store.GetFixkostenEingabeDetails(db, eingabeID)
-	if err != nil {
-		return nil, fmt.Errorf("fixkosten eingabe: %w", err)
-	}
-	if eingabe == nil {
-		return nil, fmt.Errorf("fixkosten eingabe %d not found", eingabeID)
-	}
+// FixkostenMonat is one Abrechnungsmonat's Fixkosten-Eingabe together with
+// its calculated result.
+type FixkostenMonat struct {
+	Eingabe  *store.FixkostenEingabeDetails
+	Ergebnis *FixkostenErgebnis
+}
 
+// FixkostenDaten is everything the Fixkostenreihe reads. Eingaben must be
+// ordered oldest first (as store.AllFixkostenEingabenDetails returns them).
+// Logik/Typ/Wert come directly from each Eingabe (Issue #105/#107) - each
+// entry carries its own independent state.
+type FixkostenDaten struct {
+	Eingaben         []*store.FixkostenEingabeDetails
+	Kostenpositionen []store.Kostenposition
+	Apartments       []store.Apartment
+}
+
+// Fixkostenreihe holds the Fixkosten result of every Eingabe, computed once.
+// There is exactly one Eingabe per Abrechnungsmonat.
+type Fixkostenreihe struct {
+	alle    []FixkostenMonat
+	byID    map[int64]int
+	byMonat map[string]int
+}
+
+// LoadFixkostenreihe reads all Fixkosten-Eingaben and the Stammdaten they
+// depend on.
+func LoadFixkostenreihe(db *sql.DB) (*Fixkostenreihe, error) {
+	eingaben, err := store.AllFixkostenEingabenDetails(db)
+	if err != nil {
+		return nil, fmt.Errorf("fixkosten eingaben: %w", err)
+	}
 	kostenpositionen, err := store.Kostenpositionen(db)
 	if err != nil {
 		return nil, fmt.Errorf("kostenpositionen: %w", err)
 	}
-
 	apartments, err := store.Apartments(db)
 	if err != nil {
 		return nil, fmt.Errorf("apartments: %w", err)
 	}
-	qmW1, qmW2 := apartmentValues(apartments, func(a store.Apartment) float64 { return a.QM })
-	flurstueckW1, flurstueckW2 := apartmentValues(apartments, func(a store.Apartment) float64 { return a.FlurstueckGroesse })
-
-	return berechneFixkosten(fixkostenEingabe{
-		Eingabe: eingabe, Kostenpositionen: kostenpositionen,
-		QMW1: qmW1, QMW2: qmW2, FlurstueckW1: flurstueckW1, FlurstueckW2: flurstueckW2,
-	}), nil
+	return NewFixkostenreihe(FixkostenDaten{Eingaben: eingaben, Kostenpositionen: kostenpositionen, Apartments: apartments}), nil
 }
+
+// NewFixkostenreihe computes the result of every Eingabe in d.
+func NewFixkostenreihe(d FixkostenDaten) *Fixkostenreihe {
+	r := &Fixkostenreihe{alle: make([]FixkostenMonat, len(d.Eingaben)), byID: make(map[int64]int, len(d.Eingaben)), byMonat: make(map[string]int, len(d.Eingaben))}
+	qmW1, qmW2 := apartmentValues(d.Apartments, func(a store.Apartment) float64 { return a.QM })
+	flurstueckW1, flurstueckW2 := apartmentValues(d.Apartments, func(a store.Apartment) float64 { return a.FlurstueckGroesse })
+	for i, e := range d.Eingaben {
+		r.byID[e.ID] = i
+		r.byMonat[e.Monat] = i
+		r.alle[i] = FixkostenMonat{Eingabe: e, Ergebnis: berechneFixkosten(fixkostenEingabe{
+			Eingabe: e, Kostenpositionen: d.Kostenpositionen,
+			QMW1: qmW1, QMW2: qmW2, FlurstueckW1: flurstueckW1, FlurstueckW2: flurstueckW2,
+		})}
+	}
+	return r
+}
+
+// Eingabe returns the Fixkosten-Eingabe with the given id.
+func (r *Fixkostenreihe) Eingabe(id int64) (FixkostenMonat, bool) {
+	i, ok := r.byID[id]
+	if !ok {
+		return FixkostenMonat{}, false
+	}
+	return r.alle[i], true
+}
+
+// Monat returns the Fixkosten-Eingabe of the given Abrechnungsmonat.
+func (r *Fixkostenreihe) Monat(monat string) (FixkostenMonat, bool) {
+	i, ok := r.byMonat[monat]
+	if !ok {
+		return FixkostenMonat{}, false
+	}
+	return r.alle[i], true
+}
+
+// Alle returns every Eingabe with its result, oldest first.
+func (r *Fixkostenreihe) Alle() []FixkostenMonat { return r.alle }
 
 // fixkostenEingabe is everything the Fixkosten distribution reads: the entry
 // itself, the Kostenpositionen and both apartments' Wohnungs-/Flurstücksgröße.
