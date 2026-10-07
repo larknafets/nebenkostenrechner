@@ -1,4 +1,4 @@
-package web
+package calc
 
 // AbschlagSaldo is one apartment's credit/repayment balance (Guthaben/
 // Nachzahlung) at a point in the Monatsverlauf (monthly history) - the
@@ -15,12 +15,15 @@ type AbschlagSaldo struct {
 	wert float64
 }
 
-// newAbschlagSaldo wraps an already Round2'd, signed balance value. The
+// NewAbschlagSaldo wraps an already Round2'd, signed balance value. The
 // single construction point for the whole package, so the "wert is already
 // rounded" contract lives in one place instead of at every call site.
-func newAbschlagSaldo(wert float64) *AbschlagSaldo {
+func NewAbschlagSaldo(wert float64) *AbschlagSaldo {
 	return &AbschlagSaldo{wert: wert}
 }
+
+// Wert is the signed balance: positive Guthaben, negative Nachzahlung.
+func (s *AbschlagSaldo) Wert() float64 { return s.wert }
 
 // Betrag is the balance's absolute amount, always >= 0 - the sign lives in
 // Guthaben/Nachzahlung, not here.

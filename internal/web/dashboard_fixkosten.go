@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -79,7 +80,7 @@ func fixkostenGruppen(apartmentID int64, erg *calc.FixkostenErgebnis) []dashboar
 	logiken := []string{store.LogikWohneinheit, store.LogikFlurstueck, store.LogikQM, store.LogikPersonen, store.LogikWohnung1, store.LogikWohnung2}
 	out := make([]dashboardSegment, len(logiken))
 	for i, logik := range logiken {
-		out[i] = dashboardSegment{Farbe: "logik-" + logik, Label: logikLabels[logik], Kosten: calc.Round2(sums[logik])}
+		out[i] = dashboardSegment{Farbe: "logik-" + logik, Label: abr.LogikLabels[logik], Kosten: calc.Round2(sums[logik])}
 	}
 	return out
 }
@@ -138,7 +139,7 @@ type dashboardJahresCard struct {
 	// the balance per month; taken over from there (handleDashboard), not
 	// computed here in buildJahresCard. nil = no balance calculable (see
 	// AbschlagSaldo).
-	Saldo *AbschlagSaldo
+	Saldo *calc.AbschlagSaldo
 }
 
 // buildJahresCard sums the given apartment's consumption and fixed costs
@@ -235,7 +236,7 @@ type dashboardMonat struct {
 	// since the very first recorded month, no yearly reset. nil if the
 	// month is not HasKombiniert (missing months leave the balance
 	// unchanged, see buildDashboardVerlauf).
-	Saldo *AbschlagSaldo
+	Saldo *calc.AbschlagSaldo
 
 	// AbschlagProzent (0-50) is the bar's half-width - share of the
 	// largest |Saldo| across the whole series, so a property of the
@@ -262,7 +263,7 @@ type dashboardJahreszeile struct {
 	// per year (see #92/#94). Own field name instead of "Saldo" like on
 	// dashboardMonat, because this refers to a different point in time
 	// (year end, not the current month).
-	Endstand *AbschlagSaldo
+	Endstand *calc.AbschlagSaldo
 }
 
 // dashboardVerlaufEintrag is one row of a Monatsverlauf column: either a
@@ -285,7 +286,7 @@ type dashboardVerlaufSpalte struct {
 	// (latestAbschlagSaldo) walking through Eintraege afterwards to find
 	// the same value again (#99/#102: duplicated code). nil = no balance
 	// calculable.
-	LatestSaldo *AbschlagSaldo
+	LatestSaldo *calc.AbschlagSaldo
 }
 
 // groupKostenByMonat merges every periodKosten's kategorien(apartmentID, ...)
@@ -357,7 +358,7 @@ func accumulateAbschlagSaldo(monate []dashboardMonat, abschlagWerte []float64) {
 		if !hatSaldo[i] {
 			continue
 		}
-		monate[i].Saldo = newAbschlagSaldo(saldi[i])
+		monate[i].Saldo = calc.NewAbschlagSaldo(saldi[i])
 		if maxAbsSaldo > 0 {
 			monate[i].AbschlagProzent = math.Abs(saldi[i]) / maxAbsSaldo * 50
 		}
@@ -477,7 +478,7 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 
 	accumulateAbschlagSaldo(monate, abschlagWerte)
 
-	var latestSaldo *AbschlagSaldo
+	var latestSaldo *calc.AbschlagSaldo
 	for i := range monate {
 		if monate[i].Saldo != nil {
 			latestSaldo = monate[i].Saldo
@@ -550,7 +551,7 @@ func mitJahreszeilen(monate []dashboardMonat) []dashboardVerlaufEintrag {
 	out := make([]dashboardVerlaufEintrag, 0, len(monate)+4)
 	for _, g := range gruppiereNachJahr(monate, func(m dashboardMonat) int { return m.Jahr }) {
 		var vSumme, fSumme float64
-		var endstand *AbschlagSaldo
+		var endstand *calc.AbschlagSaldo
 		for _, m := range g.Items {
 			vSumme += m.VerbrauchGesamt
 			fSumme += m.FixkostenGesamt

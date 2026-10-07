@@ -98,9 +98,9 @@ func teiljahrDB(t *testing.T, stromWeiterberechnen bool) *sql.DB {
 	return db
 }
 
-func zeile(t *testing.T, zeilen []abrechnungZeile, position string) []abrechnungZeile {
+func zeile(t *testing.T, zeilen []abr.Zeile, position string) []abr.Zeile {
 	t.Helper()
-	var out []abrechnungZeile
+	var out []abr.Zeile
 	for _, z := range zeilen {
 		if z.Position == position {
 			out = append(out, z)
@@ -170,7 +170,7 @@ func TestBerechneAbrechnung_Fixkosten(t *testing.T) {
 	t.Run("Wohnung 1 sieht den Deichbeitrag voll", func(t *testing.T) {
 		erg1, err := berechneAbrechnungDB(db, 2026, 1)
 		if err != nil || erg1.Abrechnung == nil {
-			t.Fatalf("berechneAbrechnung(Wohnung 1): err %v, Maengel %v", err, maengelTexte(erg1.Pruefung))
+			t.Fatalf("abr.Berechne(Wohnung 1): err %v, Maengel %v", err, maengelTexte(erg1.Pruefung))
 		}
 		z := zeile(t, erg1.Abrechnung.Fixkosten, "Deichbeitrag Grund und Boden")
 		if len(z) != 1 || z[0].Gesamt != 300 || z[0].Betrag != 300 || z[0].Prozent != 100 {
@@ -247,7 +247,7 @@ func TestBerechneAbrechnung_VerbrauchVorauszahlungenUndSaldo(t *testing.T) {
 		t.Errorf("Betriebskosten = %v, want %v (Fixkosten + Heizung + Wasser, without the Strom)", ab.Betriebskosten, want)
 	}
 	wantSaldo := calc.Round2(ab.Vorauszahlungen - ab.Betriebskosten - ab.StromW2.Kosten)
-	got := ab.Saldo.wert
+	got := ab.Saldo.Wert()
 	if got != wantSaldo {
 		t.Errorf("Saldo = %v, want %v (Vorauszahlungen - Betriebskosten - Strom)", got, wantSaldo)
 	}
@@ -264,14 +264,14 @@ func TestBerechneAbrechnung_VerbrauchVorauszahlungenUndSaldo(t *testing.T) {
 		if erg.Abrechnung.StromW2 != nil {
 			t.Errorf("StromW2 = %+v, want nil with the flag off", erg.Abrechnung.StromW2)
 		}
-		if want := calc.Round2(ab.Saldo.wert + ab.StromW2.Kosten); !near(erg.Abrechnung.Saldo.wert, want) {
-			t.Errorf("Saldo = %v, want %v (the same without the Strom)", erg.Abrechnung.Saldo.wert, want)
+		if want := calc.Round2(ab.Saldo.Wert() + ab.StromW2.Kosten); !near(erg.Abrechnung.Saldo.Wert(), want) {
+			t.Errorf("Saldo = %v, want %v (the same without the Strom)", erg.Abrechnung.Saldo.Wert(), want)
 		}
 	})
 	t.Run("Wohnung 1 hat keinen Strom-Block", func(t *testing.T) {
 		erg1, err := berechneAbrechnungDB(db, 2026, 1)
 		if err != nil || erg1.Abrechnung == nil {
-			t.Fatalf("berechneAbrechnung(Wohnung 1): err %v", err)
+			t.Fatalf("abr.Berechne(Wohnung 1): err %v", err)
 		}
 		if erg1.Abrechnung.StromW2 != nil {
 			t.Errorf("StromW2 for Wohnung 1 = %+v, want nil", erg1.Abrechnung.StromW2)
@@ -287,7 +287,7 @@ func TestBerechneAbrechnung_Monatsverlauf(t *testing.T) {
 
 	// pruefe checks the invariants every Monatsverlauf must hold against the
 	// Abrechnung it belongs to.
-	pruefe := func(t *testing.T, ab *abrechnung, stromDazu bool) {
+	pruefe := func(t *testing.T, ab *abr.Jahresabrechnung, stromDazu bool) {
 		t.Helper()
 		v := ab.Monatsverlauf
 		saldo := v.Uebertrag.Betrag
@@ -314,8 +314,8 @@ func TestBerechneAbrechnung_Monatsverlauf(t *testing.T) {
 		if !nah(v.Abschlag, ab.Vorauszahlungen) {
 			t.Errorf("Summe Abschlag = %v, want %v", v.Abschlag, ab.Vorauszahlungen)
 		}
-		if !nah(v.Endsaldo-v.Uebertrag.Betrag, ab.Saldo.wert) {
-			t.Errorf("Endsaldo - Übertrag = %v, want the Jahressaldo %v", v.Endsaldo-v.Uebertrag.Betrag, ab.Saldo.wert)
+		if !nah(v.Endsaldo-v.Uebertrag.Betrag, ab.Saldo.Wert()) {
+			t.Errorf("Endsaldo - Übertrag = %v, want the Jahressaldo %v", v.Endsaldo-v.Uebertrag.Betrag, ab.Saldo.Wert())
 		}
 	}
 
@@ -382,11 +382,11 @@ func TestBerechneAbrechnung_Monatsverlauf(t *testing.T) {
 		if err != nil {
 			t.Fatalf("ladeAbrechnungDaten: %v", err)
 		}
-		ganz, err := berechneAbrechnung(db, d, 2026, abr.GanzesJahr, 2)
+		ganz, err := abr.Berechne(d, 2026, abr.GanzesJahr, 2)
 		if err != nil || ganz.Abrechnung == nil {
 			t.Fatalf("berechneAbrechnung (ganz): err %v", err)
 		}
-		erg, err := berechneAbrechnung(db, d, 2026, abr.Monatsbereich{Von: 11, Bis: 12}, 2)
+		erg, err := abr.Berechne(d, 2026, abr.Monatsbereich{Von: 11, Bis: 12}, 2)
 		if err != nil || erg.Abrechnung == nil {
 			t.Fatalf("berechneAbrechnung: err %v", err)
 		}
@@ -416,13 +416,13 @@ func TestBerechneAbrechnung_Monatsverlauf(t *testing.T) {
 func TestBerechneAbrechnung_Uebertrag(t *testing.T) {
 	nah := func(x, y float64) bool { return math.Abs(x-y) < 0.0151 }
 	dezember := abr.Monatsbereich{Von: 12, Bis: 12}
-	rechne := func(t *testing.T, db *sql.DB, apartmentID int64) *abrechnung {
+	rechne := func(t *testing.T, db *sql.DB, apartmentID int64) *abr.Jahresabrechnung {
 		t.Helper()
 		d, err := ladeAbrechnungDaten(db)
 		if err != nil {
 			t.Fatalf("ladeAbrechnungDaten: %v", err)
 		}
-		erg, err := berechneAbrechnung(db, d, 2026, dezember, apartmentID)
+		erg, err := abr.Berechne(d, 2026, dezember, apartmentID)
 		if err != nil || erg.Abrechnung == nil {
 			t.Fatalf("berechneAbrechnung: err %v, Maengel %v", err, maengelTexte(erg.Pruefung))
 		}
@@ -470,8 +470,8 @@ func TestBerechneAbrechnung_Uebertrag(t *testing.T) {
 			t.Errorf("Übertrag = %+v, want none", u)
 		}
 		// The balance starts at 0: the Endsaldo is the Jahressaldo.
-		if !nah(ab.Monatsverlauf.Endsaldo, ab.Saldo.wert) {
-			t.Errorf("Endsaldo = %v, want the Jahressaldo %v", ab.Monatsverlauf.Endsaldo, ab.Saldo.wert)
+		if !nah(ab.Monatsverlauf.Endsaldo, ab.Saldo.Wert()) {
+			t.Errorf("Endsaldo = %v, want the Jahressaldo %v", ab.Monatsverlauf.Endsaldo, ab.Saldo.Wert())
 		}
 	})
 
@@ -592,7 +592,7 @@ func TestBerechneAbrechnung_Zaehlerstaende(t *testing.T) {
 		if err != nil {
 			t.Fatalf("ladeAbrechnungDaten: %v", err)
 		}
-		erg, err := berechneAbrechnung(db, d, 2026, abr.Monatsbereich{Von: 11, Bis: 12}, 2)
+		erg, err := abr.Berechne(d, 2026, abr.Monatsbereich{Von: 11, Bis: 12}, 2)
 		if err != nil || erg.Abrechnung == nil {
 			t.Fatalf("berechneAbrechnung: err %v", err)
 		}
@@ -607,39 +607,6 @@ func TestBerechneAbrechnung_Zaehlerstaende(t *testing.T) {
 			t.Error("the first row is not the Ausgangsstand")
 		}
 	})
-
-	t.Run("untermonatige Ablesungen eigene Zeilen, Teilstand fehlt", func(t *testing.T) {
-		apartments := []store.Apartment{{ID: 1}, {ID: 2}}
-		meters := []store.Meter{{Key: "strom_gesamt", Label: "Stromzähler Gesamt", Unit: "kWh"}}
-		preis := store.Float64(0.3)
-		ablesung := func(id int64, datum, monat string, stand float64, vollstaendig bool) *store.LatestPeriod {
-			p := &store.LatestPeriod{ID: id, ReadingDate: datum, Monat: monat, Readings: map[string]float64{}, PersonenByApartment: map[int64]int64{1: 1, 2: 1}}
-			if vollstaendig {
-				p.Strompreis, p.FrischwasserPreis, p.AbwasserPreis, p.EinspeisungPreis = preis, preis, preis, preis
-			}
-			for _, key := range store.MeterKeys {
-				p.Readings[key] = stand
-			}
-			return p
-		}
-		periods := []*store.LatestPeriod{
-			ablesung(4, "2026-03-01", "2026-03-01", 40, false), // Teilstand
-			ablesung(3, "2026-02-20", "2026-02-01", 30, true),
-			ablesung(2, "2026-02-10", "2026-02-01", 20, true),
-			ablesung(1, "2026-01-10", "2026-01-01", 10, true),
-		}
-		imZeitraum := map[string]bool{"2026-02-01": true, "2026-03-01": true}
-		z := zaehlerstaende(periods, apartments, meters, imZeitraum, 2)
-		var datum []string
-		for _, r := range z.Zeilen {
-			datum = append(datum, r.Ablesedatum)
-		}
-		// January is the Ausgangsstand, both February Ablesungen are rows, the
-		// Teilstand of March is not.
-		if want := []string{"2026-01-10", "2026-02-10", "2026-02-20"}; !reflect.DeepEqual(datum, want) {
-			t.Errorf("Ablesedatum = %v, want %v", datum, want)
-		}
-	})
 }
 
 func TestBerechneAbrechnung_Anhang(t *testing.T) {
@@ -650,7 +617,7 @@ func TestBerechneAbrechnung_Anhang(t *testing.T) {
 	}
 	ab := erg.Abrechnung
 
-	byZaehler := map[string]abrechnungVerbrauchZeile{}
+	byZaehler := map[string]abr.VerbrauchZeile{}
 	for _, v := range ab.Verbrauch {
 		byZaehler[v.Zaehler] = v
 	}
@@ -742,7 +709,7 @@ func TestBerechneAbrechnung_StimmtMitDemDashboardUeberein(t *testing.T) {
 		endstand := map[int]float64{}
 		for _, e := range verlauf.Eintraege {
 			if e.Jahreszeile != nil && e.Jahreszeile.Endstand != nil {
-				endstand[e.Jahreszeile.Jahr] = e.Jahreszeile.Endstand.wert
+				endstand[e.Jahreszeile.Jahr] = e.Jahreszeile.Endstand.Wert()
 			}
 		}
 
@@ -752,7 +719,7 @@ func TestBerechneAbrechnung_StimmtMitDemDashboardUeberein(t *testing.T) {
 				t.Fatalf("%s %d: err %v, Maengel %v", apt.Name, jahr, err, maengelTexte(erg.Pruefung))
 			}
 			want := endstand[jahr] - endstand[jahr-1] // 2022 has none: the balance starts at 0
-			if got := erg.Abrechnung.Saldo.wert; !near(got, want) {
+			if got := erg.Abrechnung.Saldo.Wert(); !near(got, want) {
 				t.Errorf("%s %d: Jahressaldo = %v, want the Dashboard's change over the year %v", apt.Name, jahr, got, want)
 			}
 		}
@@ -786,7 +753,7 @@ func TestJahressaldo_GleichtDashboardSaldoAufDenCent(t *testing.T) {
 		endstand := map[int]float64{}
 		for _, e := range verlauf.Eintraege {
 			if e.Jahreszeile != nil && e.Jahreszeile.Endstand != nil {
-				endstand[e.Jahreszeile.Jahr] = e.Jahreszeile.Endstand.wert
+				endstand[e.Jahreszeile.Jahr] = e.Jahreszeile.Endstand.Wert()
 			}
 		}
 		for _, jahr := range []int{2023, 2024, 2025} {
@@ -795,7 +762,7 @@ func TestJahressaldo_GleichtDashboardSaldoAufDenCent(t *testing.T) {
 				t.Fatalf("%s %d: err %v", apt.Name, jahr, err)
 			}
 			want := calc.Round2(endstand[jahr] - endstand[jahr-1])
-			if got := erg.Abrechnung.Saldo.wert; calc.Round2(got) != want {
+			if got := erg.Abrechnung.Saldo.Wert(); calc.Round2(got) != want {
 				diffs = append(diffs, fmt.Sprintf("%s %d: Jahressaldo %.2f, Dashboard-Änderung %.2f", apt.Name, jahr, got, want))
 			}
 		}
@@ -838,11 +805,11 @@ func TestBerechneAbrechnung_Teilzeitraum(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ladeAbrechnungDaten: %v", err)
 	}
-	rechne := func(b abr.Monatsbereich) *abrechnung {
+	rechne := func(b abr.Monatsbereich) *abr.Jahresabrechnung {
 		t.Helper()
-		erg, err := berechneAbrechnung(db, d, 2026, b, 2)
+		erg, err := abr.Berechne(d, 2026, b, 2)
 		if err != nil || erg.Abrechnung == nil {
-			t.Fatalf("berechneAbrechnung(%+v): err %v, Maengel %v", b, err, maengelTexte(erg.Pruefung))
+			t.Fatalf("abr.Berechne(%+v): err %v, Maengel %v", b, err, maengelTexte(erg.Pruefung))
 		}
 		return erg.Abrechnung
 	}
@@ -873,8 +840,8 @@ func TestBerechneAbrechnung_Teilzeitraum(t *testing.T) {
 	if !nah(a.Heizung.Betrag+b.Heizung.Betrag, ganz.Heizung.Betrag) || !nah(a.Wasser.Betrag+b.Wasser.Betrag, ganz.Wasser.Betrag) {
 		t.Errorf("Heizung/Wasser of the parts do not add up to the whole")
 	}
-	if !nah(a.Saldo.wert+b.Saldo.wert, ganz.Saldo.wert) {
-		t.Errorf("Saldo %v + %v, want %v", a.Saldo.wert, b.Saldo.wert, ganz.Saldo.wert)
+	if !nah(a.Saldo.Wert()+b.Saldo.Wert(), ganz.Saldo.Wert()) {
+		t.Errorf("Saldo %v + %v, want %v", a.Saldo.Wert(), b.Saldo.Wert(), ganz.Saldo.Wert())
 	}
 }
 
@@ -926,15 +893,15 @@ func TestBerechneAbrechnung_UebertragStimmtMitDenVorjahrenUeberein(t *testing.T)
 	for _, jahr := range []int{2023, 2024, 2025} {
 		erg, err := berechneAbrechnungDB(db, jahr, 2)
 		if err != nil || erg.Abrechnung == nil {
-			t.Fatalf("berechneAbrechnung(%d): err %v, Maengel %v", jahr, err, maengelTexte(erg.Pruefung))
+			t.Fatalf("abr.Berechne(%d): err %v, Maengel %v", jahr, err, maengelTexte(erg.Pruefung))
 		}
 		v := erg.Abrechnung.Monatsverlauf
 		if !nah(v.Uebertrag.Betrag, vorher) {
 			t.Errorf("%d: Übertrag = %v, want %v (sum of the Jahressaldi before)", jahr, v.Uebertrag.Betrag, vorher)
 		}
-		if !nah(v.Endsaldo, vorher+erg.Abrechnung.Saldo.wert) {
-			t.Errorf("%d: Endsaldo = %v, want Übertrag + Jahressaldo = %v", jahr, v.Endsaldo, vorher+erg.Abrechnung.Saldo.wert)
+		if !nah(v.Endsaldo, vorher+erg.Abrechnung.Saldo.Wert()) {
+			t.Errorf("%d: Endsaldo = %v, want Übertrag + Jahressaldo = %v", jahr, v.Endsaldo, vorher+erg.Abrechnung.Saldo.Wert())
 		}
-		vorher += erg.Abrechnung.Saldo.wert
+		vorher += erg.Abrechnung.Saldo.Wert()
 	}
 }

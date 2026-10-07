@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -98,8 +99,8 @@ func TestBuildFixkostenPositionRows_OhneVorherigeEingabe(t *testing.T) {
 
 func TestLogikLabels_CoversAllLogikKonstanten(t *testing.T) {
 	for _, logik := range []string{store.LogikWohneinheit, store.LogikFlurstueck, store.LogikQM, store.LogikPersonen} {
-		if logikLabels[logik] == "" {
-			t.Errorf("logikLabels missing entry for %q", logik)
+		if abr.LogikLabels[logik] == "" {
+			t.Errorf("abr.LogikLabels missing entry for %q", logik)
 		}
 	}
 }

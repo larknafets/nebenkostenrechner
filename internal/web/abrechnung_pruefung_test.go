@@ -21,12 +21,12 @@ func pruefeAbrechnungDB(db *sql.DB, jahr int, apartmentID int64) (abr.Pruefung, 
 
 // berechneAbrechnungDB loads the data and computes the Abrechnung, the way
 // the page does.
-func berechneAbrechnungDB(db *sql.DB, jahr int, apartmentID int64) (abrechnungErgebnis, error) {
+func berechneAbrechnungDB(db *sql.DB, jahr int, apartmentID int64) (abr.Ergebnis, error) {
 	d, err := ladeAbrechnungDaten(db)
 	if err != nil {
-		return abrechnungErgebnis{}, err
+		return abr.Ergebnis{}, err
 	}
-	return berechneAbrechnung(db, d, jahr, abr.GanzesJahr, apartmentID)
+	return abr.Berechne(d, jahr, abr.GanzesJahr, apartmentID)
 }
 
 // pruefeAbrechnungAlteLadung is the loading of the Prüfung from before
