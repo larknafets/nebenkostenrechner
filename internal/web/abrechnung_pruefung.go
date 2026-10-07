@@ -228,7 +228,7 @@ func pruefeMonate(d abrechnungPruefDaten, ablesungVon, letzter, fixkostenVon tim
 		if p.Monat == "" {
 			continue
 		}
-		if newTeilstandStatus(p, d.Apartments).IstTeilstand {
+		if p.Teilstand(d.Apartments).IstTeilstand {
 			if teilstand[p.Monat] == nil {
 				teilstand[p.Monat] = p
 			}
