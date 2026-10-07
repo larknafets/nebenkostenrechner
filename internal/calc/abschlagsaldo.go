@@ -4,7 +4,7 @@ package calc
 // Nachzahlung) at a point in the Monatsverlauf (monthly history) - the
 // difference between the recorded utility advance payment
 // (Nebenkostenabschlag) and the actual fixed costs plus consumption,
-// accumulated (see buildDashboardVerlauf). A nil *AbschlagSaldo means "no
+// accumulated over the months up to that point. A nil *AbschlagSaldo means "no
 // balance calculable for this point in time" (e.g. the month has no fixed-
 // costs entry/reading) - callers and templates check for nil instead of a
 // separate Has-bool. wert (value) is signed and unexported: every other
