@@ -210,7 +210,9 @@ type Ergebnis struct {
 // Berechne checks whether jahr can be settled for apartmentID and,
 // if so, computes the Jahresabrechnung (Issue #166). It reuses
 // the Fixkostenreihe and the Verbrauchskosten per Ablesung and
-// only sums them, there is no second cost formula.
+// only sums them, there is no second cost formula. The Übertrag Vorjahre
+// and the Jahresabrechnung read their months through the same fold
+// (faltMonate), only the range differs.
 func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID int64) (Ergebnis, error) {
 	pruefung, err := Pruefe(d.Pruef, jahr, bereich, apartmentID)
 	if err != nil {
@@ -231,22 +233,16 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	}
 
 	z := *pruefung.Zeitraum
-	var monate []string // the Abrechnungsmonate of the period, oldest first
-	for m := z.ErsterMonat; !m.After(z.LetzterMonat); m = m.AddDate(0, 1, 0) {
-		monate = append(monate, m.Format("2006-01-02"))
-	}
-	imZeitraum := make(map[string]bool, len(monate))
-	for _, m := range monate {
-		imZeitraum[m] = true
-	}
+	stromWeiterberechnet := apartmentID == 2 && haus.StromWeiterberechnen
+	// The months of the period, oldest first.
+	f := faltMonate(d, z.ErsterMonat, z.LetzterMonat, apartmentID, stromWeiterberechnet)
 
 	ab := &Jahresabrechnung{Jahr: jahr, Apartment: apartment, Zeitraum: z, Gewichtung: haus.HeizungWaermeGewichtung, Apartments: apartments}
 
 	// Fixkosten: one Eingabe per month (the Pruefung guarantees at most
 	// one, and none only in the month of the first Ablesung).
-	eingabeJeMonat, fixErgebnis := fixkostenJeMonat(d.Fixkosten, monate)
-	for _, m := range monate {
-		if e := eingabeJeMonat[m]; e != nil {
+	for _, m := range f.monate {
+		if e := f.eingabeJeMonat[m]; e != nil {
 			ab.Vorauszahlungen += e.Abschlag[apartmentID]
 		}
 	}
@@ -254,7 +250,7 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 		if !kp.Umlagefaehig {
 			continue
 		}
-		zeilen := fixkostenZeilen(kp, monate, fixErgebnis, apartmentID)
+		zeilen := fixkostenZeilen(kp, f.monate, f.fixErgebnis, apartmentID)
 		for i := range zeilen {
 			zeilen[i].Geteilt = len(zeilen) > 1
 		}
@@ -266,22 +262,16 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	var heizungMonate []HeizungMonat
 	heizungIdx := map[string]int{}
 	var strom Strom
-	stromWeiterberechnet := apartmentID == 2 && haus.StromWeiterberechnen
-	verbrauchJeMonat := map[string]float64{}
 	ab.Heizung = Zeile{Position: "Heizung und Warmwasser (Wärmepumpe)", Schluessel: heizungSchluessel(haus.HeizungWaermeGewichtung)}
 	ab.Wasser = Zeile{Position: "Wasser und Abwasser (Verbrauch)", Schluessel: "Gemessener Verbrauch"}
-	for _, a := range d.Kosten.Berechenbare() {
+	for _, a := range f.ablesungen {
 		p := a.Period
-		if !imZeitraum[p.Monat] {
-			continue
-		}
 
 		anteil := a.Kosten.Anteil(apartmentID)
 		heizungGesamt, heizungAnteil := anteil.HeizungGesamt, anteil.HeizungKosten
 		wasserGesamt, wasserAnteil := anteil.WasserGesamt, anteil.WasserKosten
 		strom.VerbrauchKWh += anteil.StromKWh
 		strom.Kosten += anteil.StromKosten
-		verbrauchJeMonat[p.Monat] += monatsVerbrauch(anteil, stromWeiterberechnet)
 		ab.Heizung.Gesamt += heizungGesamt
 		ab.Heizung.Betrag += heizungAnteil
 		ab.Wasser.Gesamt += wasserGesamt
@@ -325,18 +315,56 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	}
 	ab.Saldo = calc.NewAbschlagSaldo(calc.Round2(saldo))
 
-	uebertrag, err := berechneUebertrag(d, z, apartment, stromWeiterberechnet)
-	if err != nil {
-		return Ergebnis{}, err
-	}
-	ab.Monatsverlauf = monatsverlauf(monate, kostenpositionen, eingabeJeMonat, fixErgebnis, verbrauchJeMonat, apartmentID, uebertrag.Betrag)
+	uebertrag := berechneUebertrag(d, z, apartment, stromWeiterberechnet)
+	ab.Monatsverlauf = f.verlauf(kostenpositionen, apartmentID, uebertrag.Betrag)
 	ab.Monatsverlauf.Uebertrag = uebertrag
-	ab.Verbrauch = verbrauchUebersicht(periods, apartments, meters, imZeitraum, apartmentID)
-	ab.Zaehlerstaende = zaehlerstaende(periods, apartments, meters, imZeitraum, apartmentID)
+	ab.Verbrauch = verbrauchUebersicht(periods, apartments, meters, f.imBereich, apartmentID)
+	ab.Zaehlerstaende = zaehlerstaende(periods, apartments, meters, f.imBereich, apartmentID)
 	ab.Bezugsgroessen = bezugsgroessen(apartments)
-	ab.PersonenMonate = personenMonate(monate, eingabeJeMonat, periods, apartments)
+	ab.PersonenMonate = personenMonate(f.monate, f.eingabeJeMonat, periods, apartments)
 
 	return Ergebnis{Pruefung: pruefung, Abrechnung: ab}, nil
+}
+
+// monatsfaltung is the monthly fold shared by the Jahresabrechnung and the
+// Übertrag Vorjahre: for a range of Abrechnungsmonate and one apartment, the
+// Fixkosten-Eingabe and its result per month and the consumption cost per
+// month. Everything else (cost overview, Monatsverlauf, Übertrag) is a sum
+// over it.
+type monatsfaltung struct {
+	// monate are the Abrechnungsmonate of the range ("YYYY-MM-01"), oldest
+	// first; imBereich is the same as a set.
+	monate    []string
+	imBereich map[string]bool
+	// eingabeJeMonat and fixErgebnis are the Fixkosten-Eingabe and its result
+	// per month (a month without an Eingabe is missing from both).
+	eingabeJeMonat map[string]*store.FixkostenEingabeDetails
+	fixErgebnis    map[string]*calc.FixkostenErgebnis
+	// ablesungen are the Ablesungen of the range that have Verbrauchskosten,
+	// oldest first. verbrauchJeMonat is their consumption cost per month
+	// (see monatsVerbrauch), a month without such an Ablesung is missing.
+	ablesungen       []calc.Ablesung
+	verbrauchJeMonat map[string]float64
+}
+
+// faltMonate folds the months von to bis (first of month, both included) for
+// apartmentID.
+func faltMonate(d BerechnungsDaten, von, bis time.Time, apartmentID int64, stromWeiterberechnet bool) monatsfaltung {
+	f := monatsfaltung{imBereich: map[string]bool{}, verbrauchJeMonat: map[string]float64{}}
+	for m := von; !m.After(bis); m = m.AddDate(0, 1, 0) {
+		key := m.Format("2006-01-02")
+		f.monate = append(f.monate, key)
+		f.imBereich[key] = true
+	}
+	f.eingabeJeMonat, f.fixErgebnis = fixkostenJeMonat(d.Fixkosten, f.monate)
+	for _, a := range d.Kosten.Berechenbare() {
+		if !f.imBereich[a.Period.Monat] {
+			continue
+		}
+		f.ablesungen = append(f.ablesungen, a)
+		f.verbrauchJeMonat[a.Period.Monat] += monatsVerbrauch(a.Kosten.Anteil(apartmentID), stromWeiterberechnet)
+	}
+	return f
 }
 
 // fixkostenJeMonat returns the Fixkosten-Eingabe and its calculated result per
@@ -370,38 +398,36 @@ func monatsVerbrauch(anteil calc.Wohnungsanteil, stromWeiterberechnet bool) floa
 // apartment) and the month of the first Ablesung. Months of the period itself
 // are not part of it. If a month before the period has a Mangel of the
 // Abrechnungsprüfung the carry-over cannot be calculated and the result says
-// why instead of a wrong number.
-func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment, stromWeiterberechnet bool) (Uebertrag, error) {
+// why instead of a wrong number. The month range and the first month needing
+// a Fixkosten-Eingabe follow the same rules as the Zeitraum of the Prüfung
+// (Zeitraum.Vormonat, fixkostenBeginn).
+func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment, stromWeiterberechnet bool) Uebertrag {
 	periods := d.Pruef.Periods
 	if len(periods) == 0 {
-		return Uebertrag{}, nil
+		return Uebertrag{}
 	}
 	_, beginn, err := Erfassungsbeginn(periods[0])
 	if err != nil {
-		return Uebertrag{}, nil // the Prüfung already reported it
+		return Uebertrag{} // the Prüfung already reported it
 	}
 	start := beginn
 	if apartment.Status == store.StatusVermietet && apartment.MieterSeit != "" {
 		seit, err := time.Parse("2006-01-02", apartment.MieterSeit)
 		if err == nil {
 			if seit.After(z.ErsterMonat) {
-				return Uebertrag{Hinweis: "Kein Übertrag: Mieter seit " + MonatLabel(apartment.MieterSeit) + ", also nach dem Beginn dieses Zeitraums."}, nil
+				return Uebertrag{Hinweis: "Kein Übertrag: Mieter seit " + MonatLabel(apartment.MieterSeit) + ", also nach dem Beginn dieses Zeitraums."}
 			}
 			if seit.After(start) {
 				start = seit
 			}
 		}
 	}
-	letzter := z.ErsterMonat.AddDate(0, -1, 0)
+	letzter := z.Vormonat()
 	if letzter.Before(start) {
-		return Uebertrag{}, nil // nothing before the period
+		return Uebertrag{} // nothing before the period
 	}
 
-	fixkostenVon := start
-	if start.Equal(beginn) {
-		fixkostenVon = beginn.AddDate(0, 1, 0) // the Ausgangsstand month needs no Fixkosten-Eingabe
-	}
-	maengel := PruefeMonate(d.Pruef, start, letzter, fixkostenVon)
+	maengel := PruefeMonate(d.Pruef, start, letzter, fixkostenBeginn(beginn, start))
 	if len(maengel) > 0 {
 		erster := maengel[0]
 		for _, m := range maengel[1:] {
@@ -409,41 +435,26 @@ func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment
 				erster = m
 			}
 		}
-		return Uebertrag{Hinweis: "Übertrag nicht berechenbar: " + erster.Text}, nil
+		return Uebertrag{Hinweis: "Übertrag nicht berechenbar: " + erster.Text}
 	}
 
-	var monate []string
-	imBereich := map[string]bool{}
-	for m := start; !m.After(letzter); m = m.AddDate(0, 1, 0) {
-		key := m.Format("2006-01-02")
-		monate = append(monate, key)
-		imBereich[key] = true
-	}
-	eingabeJeMonat, fixErgebnis := fixkostenJeMonat(d.Fixkosten, monate)
-	verbrauchJeMonat := map[string]float64{}
-	for _, a := range d.Kosten.Berechenbare() {
-		if !imBereich[a.Period.Monat] {
-			continue
-		}
-		verbrauchJeMonat[a.Period.Monat] += monatsVerbrauch(a.Kosten.Anteil(apartment.ID), stromWeiterberechnet)
-	}
-	v := monatsverlauf(monate, d.Kostenpositionen, eingabeJeMonat, fixErgebnis, verbrauchJeMonat, apartment.ID, 0)
+	v := faltMonate(d, start, letzter, apartment.ID, stromWeiterberechnet).verlauf(d.Kostenpositionen, apartment.ID, 0)
 	if len(v.Zeilen) == 0 {
-		return Uebertrag{}, nil // only the month of the Ausgangsstand, no costs yet
+		return Uebertrag{} // only the month of the Ausgangsstand, no costs yet
 	}
-	return Uebertrag{Vorhanden: true, Betrag: v.Endsaldo, Von: v.Zeilen[0].Monat, Bis: v.Zeilen[len(v.Zeilen)-1].Monat}, nil
+	return Uebertrag{Vorhanden: true, Betrag: v.Endsaldo, Von: v.Zeilen[0].Monat, Bis: v.Zeilen[len(v.Zeilen)-1].Monat}
 }
 
-// monatsverlauf builds the Monatsverlauf (Anlage 1), its balance starting at
-// uebertrag, from the same monthly
-// values the cost overview sums, so there is no second cost formula. A month
-// with neither a Fixkosten-Eingabe nor a computable Ablesung (the month of
-// the first Ablesung, which has no consumption) has no row.
-func monatsverlauf(monate []string, kostenpositionen []store.Kostenposition, eingabeJeMonat map[string]*store.FixkostenEingabeDetails, fixErgebnis map[string]*calc.FixkostenErgebnis, verbrauchJeMonat map[string]float64, apartmentID int64, uebertrag float64) Monatsverlauf {
+// verlauf builds the Monatsverlauf (Anlage 1), its balance starting at
+// uebertrag, from the same monthly values the cost overview sums, so there is
+// no second cost formula. A month with neither a Fixkosten-Eingabe nor a
+// computable Ablesung (the month of the first Ablesung, which has no
+// consumption) has no row. The balance accumulates with calc.Saldoverlauf.
+func (f monatsfaltung) verlauf(kostenpositionen []store.Kostenposition, apartmentID int64, uebertrag float64) Monatsverlauf {
 	v := Monatsverlauf{Endsaldo: uebertrag}
-	for _, m := range monate {
-		e := eingabeJeMonat[m]
-		verbrauch, hatVerbrauch := verbrauchJeMonat[m]
+	for _, m := range f.monate {
+		e := f.eingabeJeMonat[m]
+		verbrauch, hatVerbrauch := f.verbrauchJeMonat[m]
 		if e == nil && !hatVerbrauch {
 			continue
 		}
@@ -451,7 +462,7 @@ func monatsverlauf(monate []string, kostenpositionen []store.Kostenposition, ein
 		if e != nil {
 			z.Abschlag = calc.Round2(e.Abschlag[apartmentID])
 		}
-		if erg := fixErgebnis[m]; erg != nil {
+		if erg := f.fixErgebnis[m]; erg != nil {
 			for _, kp := range kostenpositionen {
 				if !kp.Umlagefaehig {
 					continue

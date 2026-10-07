@@ -1,6 +1,7 @@
 // Package abrechnung holds the pure rules of the Jahresabrechnung: the
-// Zeitraum of a year and the Prüfung whether it can be settled. It reads
-// only the data handed in (Daten), never a database.
+// Zeitraum of a year, the Prüfung whether it can be settled and the Berechnung
+// of the Jahresabrechnung with its Übertrag Vorjahre and Monatsverlauf. It
+// reads only the data handed in (Daten, BerechnungsDaten), never a database.
 package abrechnung
 
 import (
@@ -286,13 +287,13 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich Monatsber
 		Jahr: jahr, Teilzeitraum: bereich != GanzesJahr, ErsterMonat: ablesungVon, LetzterMonat: letzter,
 		Von: ablesungVon, Bis: letzter.AddDate(0, 1, -1),
 	}
-	fixkostenVon = ablesungVon
+	fixkostenVon = fixkostenBeginn(firstMonat, ablesungVon)
 
 	if jahr == firstMonat.Year() && !firstMonat.Before(ablesungVon) {
 		z.TeilJahr = true
 		z.ErsterMonat = firstMonat
 		ablesungVon = firstMonat
-		fixkostenVon = firstMonat.AddDate(0, 1, 0)
+		fixkostenVon = fixkostenBeginn(firstMonat, ablesungVon)
 		if firstDate.Year() == jahr {
 			z.Von = firstDate
 		}
@@ -305,6 +306,22 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich Monatsber
 	}
 	return z, ablesungVon, fixkostenVon, true
 }
+
+// fixkostenBeginn is the first month needing a Fixkosten-Eingabe in a range of
+// months starting at ablesungVon: the month after ablesungVon if that is the
+// month of the first Ablesung ever (erfassungsmonat, the Ausgangsstand month
+// needs none), else ablesungVon itself. The Zeitraum and the Übertrag
+// Vorjahre both apply this rule.
+func fixkostenBeginn(erfassungsmonat, ablesungVon time.Time) time.Time {
+	if ablesungVon.Equal(erfassungsmonat) {
+		return ablesungVon.AddDate(0, 1, 0)
+	}
+	return ablesungVon
+}
+
+// Vormonat is the Abrechnungsmonat before the period, the last month an
+// Übertrag Vorjahre can sum up.
+func (z Zeitraum) Vormonat() time.Time { return z.ErsterMonat.AddDate(0, -1, 0) }
 
 // Erfassungsbeginn returns the reading date and the Abrechnungsmonat of the
 // first Ablesung ever. The Abrechnungsmonat decides which month it belongs
