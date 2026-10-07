@@ -260,7 +260,7 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich monatsb
 	ab.Heizung = abrechnungZeile{Position: "Heizung und Warmwasser (Wärmepumpe)", Schluessel: heizungSchluessel(haus.HeizungWaermeGewichtung)}
 	ab.Wasser = abrechnungZeile{Position: "Wasser und Abwasser (Verbrauch)", Schluessel: "Gemessener Verbrauch"}
 	for _, p := range periods {
-		if !imZeitraum[p.Monat] || newTeilstandStatus(p, apartments).IstTeilstand {
+		if !imZeitraum[p.Monat] || p.Teilstand(apartments).IstTeilstand {
 			continue
 		}
 		k, err := berechneKosten(db, p.ID)
@@ -434,7 +434,7 @@ func berechneUebertrag(db *sql.DB, d abrechnungDaten, z abrechnungZeitraum, apar
 	}
 	verbrauchJeMonat := map[string]float64{}
 	for _, p := range periods {
-		if !imBereich[p.Monat] || newTeilstandStatus(p, d.Pruef.Apartments).IstTeilstand {
+		if !imBereich[p.Monat] || p.Teilstand(d.Pruef.Apartments).IstTeilstand {
 			continue
 		}
 		k, err := berechneKosten(db, p.ID)
@@ -569,7 +569,7 @@ func heizungSchluessel(gewichtung float64) string {
 // in the period, first == -1 if there is none.
 func ablesungenImZeitraum(periods []*store.LatestPeriod, apartments []store.Apartment, imZeitraum map[string]bool) (complete []*store.LatestPeriod, first, last int) {
 	for _, p := range periods {
-		if !newTeilstandStatus(p, apartments).IstTeilstand {
+		if !p.Teilstand(apartments).IstTeilstand {
 			complete = append(complete, p)
 		}
 	}
@@ -697,7 +697,7 @@ func personenMonate(monate []string, eingabeJeMonat map[string]*store.FixkostenE
 	ablesung := map[string]map[int64]int64{}
 	spaetestes := map[string]string{}
 	for _, p := range periods {
-		if newTeilstandStatus(p, apartments).IstTeilstand {
+		if p.Teilstand(apartments).IstTeilstand {
 			continue
 		}
 		if prev, ok := spaetestes[p.Monat]; !ok || p.ReadingDate >= prev {

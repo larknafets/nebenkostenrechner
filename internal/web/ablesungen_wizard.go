@@ -167,7 +167,7 @@ func handleWizardForm(a auth) http.HandlerFunc {
 			// computed directly from the same source instead of
 			// hardcoded to true, so they stay correct if this invariant
 			// ever changes.
-			status := newTeilstandStatus(previousPeriod, apartments)
+			status := previousPeriod.Teilstand(apartments)
 			data.PreviousStrompreis = store.OrZero(previousPeriod.Strompreis)
 			data.PreviousFrischwasserPreis = store.OrZero(previousPeriod.FrischwasserPreis)
 			data.PreviousAbwasserPreis = store.OrZero(previousPeriod.AbwasserPreis)
@@ -260,7 +260,7 @@ func handleEditWizardForm(a auth) http.HandlerFunc {
 
 		// Ticket #131: target can be a Teilstand (partial reading) - these
 		// flags let the wizard distinguish "missing" from "0".
-		status := newTeilstandStatus(target, apartments)
+		status := target.Teilstand(apartments)
 
 		data := wizardData{
 			navData:                          a.NavData(r),

@@ -1,17 +1,14 @@
-package web
+package store
 
-import "github.com/larknafets/nebenkostenrechner/internal/store"
-
-// teilstandStatus is the itemized "what's still open" breakdown of a
+// TeilstandStatus is the itemized "what's still open" breakdown of a
 // Teilstand (partial reading, Ticket #128-#131) - which price, which meter,
 // which apartment's Personen are still missing, computed once from an
-// already-hydrated *store.LatestPeriod instead of every view re-deriving
-// its own nil-checks against Strompreis/Readings/PersonenByApartment.
-// store.PeriodComplete stays the DB-level completeness gate (used where
-// only a bare periodID is in hand, e.g. requireLoginUnlessTeilstand) - this
-// type is specifically the display-shaped itemization for views that
-// already paid for a full LatestPeriod.
-type teilstandStatus struct {
+// already-hydrated *LatestPeriod instead of every view re-deriving its own
+// nil-checks against Strompreis/Readings/PersonenByApartment.
+// PeriodComplete is the DB-level gate for callers that only hold a bare
+// periodID (e.g. requireLoginUnlessTeilstand); TestPeriodComplete asserts
+// both agree.
+type TeilstandStatus struct {
 	MonatErfasst            bool
 	StrompreisErfasst       bool
 	FrischwasserErfasst     bool
@@ -20,28 +17,28 @@ type teilstandStatus struct {
 	MeterErfasst            map[string]bool
 	PersonenErfasst         map[int64]bool
 	// IstTeilstand is true if any field above is missing - equivalent to
-	// !store.PeriodComplete for the same period, but derived from data
-	// already in hand instead of a 2nd DB round-trip.
+	// !PeriodComplete for the same period, but derived from data already in
+	// hand instead of a 2nd DB round-trip.
 	IstTeilstand bool
 }
 
-// newTeilstandStatus computes p's itemized completeness against apartments
-// (needed for PersonenErfasst - a missing apartment in PersonenByApartment
-// can't be told apart from "0 occupants" otherwise, Ticket #131).
-func newTeilstandStatus(p *store.LatestPeriod, apartments []store.Apartment) teilstandStatus {
-	s := teilstandStatus{
+// Teilstand computes p's itemized completeness against apartments (needed
+// for PersonenErfasst - a missing apartment in PersonenByApartment can't be
+// told apart from "0 occupants" otherwise, Ticket #131).
+func (p *LatestPeriod) Teilstand(apartments []Apartment) TeilstandStatus {
+	s := TeilstandStatus{
 		MonatErfasst:            p.Monat != "",
 		StrompreisErfasst:       p.Strompreis != nil,
 		FrischwasserErfasst:     p.FrischwasserPreis != nil,
 		AbwasserErfasst:         p.AbwasserPreis != nil,
 		EinspeisungPreisErfasst: p.EinspeisungPreis != nil,
-		MeterErfasst:            make(map[string]bool, len(store.MeterKeys)),
+		MeterErfasst:            make(map[string]bool, len(MeterKeys)),
 		PersonenErfasst:         make(map[int64]bool, len(apartments)),
 	}
 
 	complete := s.MonatErfasst && s.StrompreisErfasst && s.FrischwasserErfasst && s.AbwasserErfasst && s.EinspeisungPreisErfasst
 
-	for _, key := range store.MeterKeys {
+	for _, key := range MeterKeys {
 		_, erfasst := p.Readings[key]
 		s.MeterErfasst[key] = erfasst
 		complete = complete && erfasst

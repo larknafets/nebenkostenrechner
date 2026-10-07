@@ -1527,6 +1527,18 @@ func TestPeriodComplete(t *testing.T) {
 		if err != nil {
 			t.Fatalf("PeriodComplete: %v", err)
 		}
+		// The hydrated rule must agree with the SQL gate.
+		apartments, err := Apartments(db)
+		if err != nil {
+			t.Fatalf("Apartments: %v", err)
+		}
+		details, err := GetPeriodDetails(db, id)
+		if err != nil {
+			t.Fatalf("GetPeriodDetails: %v", err)
+		}
+		if got := !details.Teilstand(apartments).IstTeilstand; got != ok {
+			t.Errorf("Teilstand().IstTeilstand = %v, PeriodComplete = %v, want übereinstimmend", !got, ok)
+		}
 		return ok
 	}
 

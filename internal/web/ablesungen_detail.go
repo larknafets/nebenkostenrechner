@@ -93,7 +93,7 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			zeitraumStart = vorperiode[0].ReadingDate
 		}
 
-		status := newTeilstandStatus(period, apartments)
+		status := period.Teilstand(apartments)
 
 		// Diff is each meter's absolute change since the previous reading
 		// ("+23,00" / "-5,00"), formatted ready-to-print - empty for the
@@ -130,7 +130,7 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 
 		data := struct {
 			navData
-			teilstandStatus
+			store.TeilstandStatus
 			Aktuell       string
 			Period        *store.LatestPeriod
 			AllPeriods    []periodListItem
@@ -152,7 +152,7 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			MonatLabel  string
 		}{
 			navData:         a.NavData(r),
-			teilstandStatus: status,
+			TeilstandStatus: status,
 			Aktuell:         "ablesungen-detail",
 			Period:          period,
 			AllPeriods:      periodListItems(allPeriods),
