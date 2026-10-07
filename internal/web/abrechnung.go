@@ -195,7 +195,7 @@ type abrechnungErgebnis struct {
 
 // berechneAbrechnung checks whether jahr can be settled for apartmentID and,
 // if so, computes the Jahresabrechnung (Issue #166). It reuses
-// calc.Fixkosten per Fixkosten-Eingabe and berechneKosten per Ablesung and
+// calc.Fixkosten per Fixkosten-Eingabe and the Verbrauchskosten per Ablesung and
 // only sums them, there is no second cost formula.
 func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich monatsbereich, apartmentID int64) (abrechnungErgebnis, error) {
 	pruefung, err := pruefeAbrechnungDaten(d.Pruef, jahr, bereich, apartmentID)

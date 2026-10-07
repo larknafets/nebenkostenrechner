@@ -14,6 +14,8 @@ func TestHeizung_70_30_Verteilung(t *testing.T) {
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate:       "2026-11-01",
+		Monat:             monatVon("2026-11-01"),
+		EinspeisungPreis:  store.Float64(0.08),
 		Strompreis:        store.Float64(0.22),
 		FrischwasserPreis: store.Float64(1.46),
 		AbwasserPreis:     store.Float64(4.87),
@@ -30,10 +32,7 @@ func TestHeizung_70_30_Verteilung(t *testing.T) {
 		t.Fatalf("create period: %v", err)
 	}
 
-	got, err := calc.Heizung(db, id)
-	if err != nil {
-		t.Fatalf("calc.Heizung: %v", err)
-	}
+	got := kostenVon(t, db, id).Heizung
 
 	if got.TotalHeizungskostenUnrounded != 2164.80 {
 		t.Errorf("TotalHeizungskostenUnrounded = %v, want 2164.80 (WPAnteil 9840 * Strompreis 0.22)", got.TotalHeizungskostenUnrounded)
@@ -63,6 +62,8 @@ func TestHeizung_WPVerbrauch_TatsaechlicherWertOhnePVAbzug(t *testing.T) {
 	// covered by PV).
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate:       "2026-11-01",
+		Monat:             monatVon("2026-11-01"),
+		EinspeisungPreis:  store.Float64(0.08),
 		Strompreis:        store.Float64(0.22),
 		FrischwasserPreis: store.Float64(1.46),
 		AbwasserPreis:     store.Float64(4.87),
@@ -78,10 +79,7 @@ func TestHeizung_WPVerbrauch_TatsaechlicherWertOhnePVAbzug(t *testing.T) {
 		t.Fatalf("create period: %v", err)
 	}
 
-	got, err := calc.Heizung(db, id)
-	if err != nil {
-		t.Fatalf("calc.Heizung: %v", err)
-	}
+	got := kostenVon(t, db, id).Heizung
 	if got.WPAnteilW1KWh != 0 || got.WPAnteilW2KWh != 0 {
 		t.Errorf("WPAnteil = W1:%v W2:%v, want 0/0 (kein Netzbezug, kompletter WP-Verbrauch durch PV gedeckt)", got.WPAnteilW1KWh, got.WPAnteilW2KWh)
 	}
@@ -99,6 +97,8 @@ func TestHeizung_KeinWaermeVerbrauch_FaelltAufHaelftigeVerteilungZurueck(t *test
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate:       "2026-11-01",
+		Monat:             monatVon("2026-11-01"),
+		EinspeisungPreis:  store.Float64(0.08),
 		Strompreis:        store.Float64(0.22),
 		FrischwasserPreis: store.Float64(1.46),
 		AbwasserPreis:     store.Float64(4.87),
@@ -112,10 +112,7 @@ func TestHeizung_KeinWaermeVerbrauch_FaelltAufHaelftigeVerteilungZurueck(t *test
 		t.Fatalf("create period: %v", err)
 	}
 
-	got, err := calc.Heizung(db, id)
-	if err != nil {
-		t.Fatalf("calc.Heizung: %v", err)
-	}
+	got := kostenVon(t, db, id).Heizung
 	// Issue #26: at 0 heat consumption (e.g. summer, heat pump only ran for
 	// hot water) the 70% heat share must not fall through to 0/0 - that
 	// would silently make 70% of the heat pump's electricity cost vanish
@@ -129,18 +126,6 @@ func TestHeizung_KeinWaermeVerbrauch_FaelltAufHaelftigeVerteilungZurueck(t *test
 	}
 }
 
-func TestHeizung_ErsterPeriodeOhneVorperiode(t *testing.T) {
-	db := openTestDB(t)
-	p1 := mustCreatePeriod(t, db, "2026-11-01", 0.22, baseReadings(map[string]float64{
-		"strom_gesamt": 100,
-	}))
-
-	_, err := calc.Heizung(db, p1)
-	if err == nil {
-		t.Fatal("expected error for first period without a previous one")
-	}
-}
-
 // TestHeizung_GewichtungAusDenStammdaten verifies Issue #162: the split
 // reads the Heizungs-Gewichtung from the Stammdaten (one value for every
 // month), so changing it changes the result of an existing reading.
@@ -149,6 +134,8 @@ func TestHeizung_GewichtungAusDenStammdaten(t *testing.T) {
 	mustCreatePeriod(t, db, "2026-10-01", 0.22, baseReadings(nil))
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate:       "2026-11-01",
+		Monat:             monatVon("2026-11-01"),
+		EinspeisungPreis:  store.Float64(0.08),
 		Strompreis:        store.Float64(0.22),
 		FrischwasserPreis: store.Float64(1.46),
 		AbwasserPreis:     store.Float64(4.87),
@@ -176,10 +163,7 @@ func TestHeizung_GewichtungAusDenStammdaten(t *testing.T) {
 		if err := store.SaveStammdaten(db, store.StammdatenSave{HeizungWaermeGewichtung: gewichtung}); err != nil {
 			t.Fatalf("SaveStammdaten(%v): %v", gewichtung, err)
 		}
-		got, err := calc.Heizung(db, id)
-		if err != nil {
-			t.Fatalf("calc.Heizung: %v", err)
-		}
+		got := kostenVon(t, db, id).Heizung
 		return got
 	}
 

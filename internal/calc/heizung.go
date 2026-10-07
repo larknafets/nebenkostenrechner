@@ -1,12 +1,5 @@
 package calc
 
-import (
-	"database/sql"
-	"fmt"
-
-	"github.com/larknafets/nebenkostenrechner/internal/store"
-)
-
 // HeizungErgebnis is the heating/hot water cost distribution result for one
 // period. See https://github.com/larknafets/nebenkostenrechner/issues/16:
 // the heat pump's electricity cost (from the electricity cost calculation,
@@ -52,31 +45,6 @@ type heizungEingabe struct {
 	WaermeGewichtung float64
 	Verbrauch        map[string]float64
 	QMW1, QMW2       float64
-}
-
-// Heizung computes the heating cost allocation for the given period.
-func Heizung(db *sql.DB, periodID int64) (*HeizungErgebnis, error) {
-	strom, err := Strom(db, periodID)
-	if err != nil {
-		return nil, fmt.Errorf("strom: %w", err)
-	}
-
-	haus, err := store.GetHaus(db)
-	if err != nil {
-		return nil, fmt.Errorf("haus: %w", err)
-	}
-	verbrauch, err := store.Verbrauch(db, periodID)
-	if err != nil {
-		return nil, fmt.Errorf("verbrauch: %w", err)
-	}
-
-	apartments, err := store.Apartments(db)
-	if err != nil {
-		return nil, fmt.Errorf("apartments: %w", err)
-	}
-	qmW1, qmW2 := apartmentValues(apartments, func(a store.Apartment) float64 { return a.QM })
-
-	return berechneHeizung(heizungEingabe{Strom: strom, WaermeGewichtung: haus.HeizungWaermeGewichtung, Verbrauch: verbrauch, QMW1: qmW1, QMW2: qmW2}), nil
 }
 
 // berechneHeizung is the distribution itself, a pure function of its input.

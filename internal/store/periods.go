@@ -347,7 +347,7 @@ func (e *PeriodMonatTooLateError) Error() string {
 // UpdatePeriod overwrites an existing period's fields, readings, and
 // occupancy in place - no new row, no history of the previous values
 // (Ticket #34: only the latest period is ever editable, in-place, no
-// audit log). Costs aren't stored anywhere (berechneKosten/Verbrauch read
+// audit log). Costs aren't stored anywhere (calc.Verbrauchskosten reads
 // live from the DB on every request), so overwriting here is all that's
 // needed for the change to show up - nothing to invalidate. The neighbor-date
 // invariant (see checkReadingOrder) is enforced here, not just by the web

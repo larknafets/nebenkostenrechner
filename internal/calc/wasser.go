@@ -1,12 +1,5 @@
 package calc
 
-import (
-	"database/sql"
-	"fmt"
-
-	"github.com/larknafets/nebenkostenrechner/internal/store"
-)
-
 // WasserErgebnis is the water cost allocation result for one period. See
 // https://github.com/larknafets/nebenkostenrechner/issues/3 for the
 // formula: apartment 2 counts directly via its own submeter, apartment 1
@@ -40,29 +33,6 @@ type wasserEingabe struct {
 	FrischwasserPreis, AbwasserPreis float64
 	Verbrauch                        map[string]float64
 	PersonenW1, PersonenW2           int64
-}
-
-// Wasser computes the water cost allocation for the given period.
-func Wasser(db *sql.DB, periodID int64) (*WasserErgebnis, error) {
-	period, err := store.GetPeriodByID(db, periodID)
-	if err != nil {
-		return nil, err
-	}
-
-	verbrauch, err := store.Verbrauch(db, periodID)
-	if err != nil {
-		return nil, fmt.Errorf("verbrauch: %w", err)
-	}
-
-	personen, err := store.PersonenByApartment(db, periodID)
-	if err != nil {
-		return nil, fmt.Errorf("personen: %w", err)
-	}
-
-	return berechneWasser(wasserEingabe{
-		FrischwasserPreis: period.FrischwasserPreis, AbwasserPreis: period.AbwasserPreis,
-		Verbrauch: verbrauch, PersonenW1: personen[1], PersonenW2: personen[2],
-	}), nil
 }
 
 // berechneWasser is the allocation itself, a pure function of its input.

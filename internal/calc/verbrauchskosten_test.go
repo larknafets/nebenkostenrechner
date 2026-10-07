@@ -1,7 +1,6 @@
 package calc_test
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
@@ -46,22 +45,19 @@ func TestVerbrauchskosten_Gruende(t *testing.T) {
 	}
 }
 
-// TestLoad_MatchesPerPeriodCalc pins the in-memory model to the per-period
-// calc functions it replaces: same numbers for every calculable Ablesung.
-func TestLoad_MatchesPerPeriodCalc(t *testing.T) {
+// TestLoad_NurBerechenbareAblesungenInReihenfolge verifies Load reads every
+// Ablesung from the database and Berechenbare returns all but the first,
+// oldest first.
+func TestLoad_NurBerechenbareAblesungenInReihenfolge(t *testing.T) {
 	db := openTestDB(t)
 	var ids []int64
 	for i, date := range []string{"2026-09-01", "2026-10-01", "2026-11-01", "2026-11-15"} {
 		n := float64(i)
 		id, err := store.CreatePeriod(db, store.PeriodInput{
-			ReadingDate: date, Monat: date[:8] + "01",
+			ReadingDate: date, Monat: monatVon(date),
 			Strompreis: store.Float64(0.22), FrischwasserPreis: store.Float64(1.46),
 			AbwasserPreis: store.Float64(4.87), EinspeisungPreis: store.Float64(0.08),
-			Readings: baseReadings(map[string]float64{
-				"strom_gesamt": 1000 * n * n, "strom_wohnung2": 300 * n, "strom_waermepumpe": 700 * n,
-				"strom_einspeisung": 500 * n, "waerme_wohnung1": 3 * n, "waerme_wohnung2": 2 * n,
-				"wasser_gesamt": 18 * n, "wasser_wohnung2": 7 * n, "wasser_warmwasseraufbereitung": 5 * n,
-			}),
+			Readings: baseReadings(map[string]float64{"strom_gesamt": 1000 * n, "strom_einspeisung": 500 * n}),
 			Personen: map[int64]int64{1: 2, 2: 1},
 		})
 		if err != nil {
@@ -74,18 +70,16 @@ func TestLoad_MatchesPerPeriodCalc(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if got := len(v.Berechenbare()); got != 3 {
-		t.Fatalf("len(Berechenbare()) = %d, want 3", got)
+	got := v.Berechenbare()
+	if len(got) != 3 {
+		t.Fatalf("len(Berechenbare()) = %d, want 3", len(got))
 	}
-	for _, id := range ids[1:] {
-		a, _ := v.Ablesung(id)
-		strom, _ := calc.Strom(db, id)
-		wasser, _ := calc.Wasser(db, id)
-		heizung, _ := calc.Heizung(db, id)
-		einspeisung, _ := calc.Einspeisung(db, id)
-		want := calc.Kosten{Strom: strom, Wasser: wasser, Heizung: heizung, Einspeisung: einspeisung}
-		if !reflect.DeepEqual(a.Kosten, want) {
-			t.Errorf("Ablesung %d Kosten = %+v, want %+v", id, a.Kosten, want)
+	for i, a := range got {
+		if a.Period.ID != ids[i+1] {
+			t.Errorf("Berechenbare()[%d] = Ablesung %d, want %d", i, a.Period.ID, ids[i+1])
 		}
+	}
+	if got[0].Kosten.Einspeisung.EinspeisungKWh != 500 {
+		t.Errorf("EinspeisungKWh = %v, want 500", got[0].Kosten.Einspeisung.EinspeisungKWh)
 	}
 }
