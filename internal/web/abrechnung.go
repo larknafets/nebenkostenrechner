@@ -259,19 +259,13 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich monatsb
 	verbrauchJeMonat := map[string]float64{}
 	ab.Heizung = abrechnungZeile{Position: "Heizung und Warmwasser (Wärmepumpe)", Schluessel: heizungSchluessel(haus.HeizungWaermeGewichtung)}
 	ab.Wasser = abrechnungZeile{Position: "Wasser und Abwasser (Verbrauch)", Schluessel: "Gemessener Verbrauch"}
-	for _, p := range periods {
-		if !imZeitraum[p.Monat] || p.Teilstand(apartments).IstTeilstand {
-			continue
-		}
-		k, err := berechneKosten(db, p.ID)
-		if err != nil {
-			return abrechnungErgebnis{}, err
-		}
-		if k.KostenNote != "" {
+	for _, a := range d.Kosten.Berechenbare() {
+		p := a.Period
+		if !imZeitraum[p.Monat] {
 			continue
 		}
 
-		anteil := k.Anteil(apartmentID)
+		anteil := a.Kosten.Anteil(apartmentID)
 		heizungGesamt, heizungAnteil := anteil.HeizungGesamt, anteil.HeizungKosten
 		wasserGesamt, wasserAnteil := anteil.WasserGesamt, anteil.WasserKosten
 		strom.VerbrauchKWh += anteil.StromKWh
@@ -290,9 +284,9 @@ func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich monatsb
 			heizungIdx[p.Monat] = i
 			heizungMonate = append(heizungMonate, abrechnungHeizungMonat{Monat: p.Monat})
 		}
-		heizungMonate[i].WPStromKWh += k.Heizung.WPVerbrauchW1KWh + k.Heizung.WPVerbrauchW2KWh
-		heizungMonate[i].WaermeW1MWh += k.Heizung.WaermeW1MWh
-		heizungMonate[i].WaermeW2MWh += k.Heizung.WaermeW2MWh
+		heizungMonate[i].WPStromKWh += a.Kosten.Heizung.WPVerbrauchW1KWh + a.Kosten.Heizung.WPVerbrauchW2KWh
+		heizungMonate[i].WaermeW1MWh += a.Kosten.Heizung.WaermeW1MWh
+		heizungMonate[i].WaermeW2MWh += a.Kosten.Heizung.WaermeW2MWh
 		heizungMonate[i].Anteil += heizungAnteil
 	}
 	for i := range heizungMonate {
@@ -365,7 +359,7 @@ func fixkostenJeMonat(db *sql.DB, eingaben []*store.FixkostenEingabeDetails, mon
 
 // monatsVerbrauch is the consumption cost of one Ablesung for the Monats-
 // verlauf: Heizung plus Wasser, plus the passed-on electricity of Wohnung 2.
-func monatsVerbrauch(anteil monatsAnteil, stromWeiterberechnet bool) float64 {
+func monatsVerbrauch(anteil calc.Wohnungsanteil, stromWeiterberechnet bool) float64 {
 	v := anteil.HeizungKosten + anteil.WasserKosten
 	if stromWeiterberechnet {
 		v += anteil.StromKosten
@@ -433,18 +427,11 @@ func berechneUebertrag(db *sql.DB, d abrechnungDaten, z abrechnungZeitraum, apar
 		return abrechnungUebertrag{}, err
 	}
 	verbrauchJeMonat := map[string]float64{}
-	for _, p := range periods {
-		if !imBereich[p.Monat] || p.Teilstand(d.Pruef.Apartments).IstTeilstand {
+	for _, a := range d.Kosten.Berechenbare() {
+		if !imBereich[a.Period.Monat] {
 			continue
 		}
-		k, err := berechneKosten(db, p.ID)
-		if err != nil {
-			return abrechnungUebertrag{}, err
-		}
-		if k.KostenNote != "" {
-			continue
-		}
-		verbrauchJeMonat[p.Monat] += monatsVerbrauch(k.Anteil(apartment.ID), stromWeiterberechnet)
+		verbrauchJeMonat[a.Period.Monat] += monatsVerbrauch(a.Kosten.Anteil(apartment.ID), stromWeiterberechnet)
 	}
 	v := monatsverlauf(monate, d.Kostenpositionen, eingabeJeMonat, fixErgebnis, verbrauchJeMonat, apartment.ID, 0)
 	if len(v.Zeilen) == 0 {

@@ -1,58 +1,17 @@
 package web
 
-import (
-	"database/sql"
-	"errors"
-	"fmt"
+import "github.com/larknafets/nebenkostenrechner/internal/calc"
 
-	"github.com/larknafets/nebenkostenrechner/internal/calc"
-	"github.com/larknafets/nebenkostenrechner/internal/store"
-)
-
-type kosten struct {
-	Strom       *calc.StromErgebnis
-	Wasser      *calc.WasserErgebnis
-	Heizung     *calc.HeizungErgebnis
-	Einspeisung *calc.EinspeisungErgebnis
-	KostenNote  string
-}
-
-func berechneKosten(db *sql.DB, periodID int64) (kosten, error) {
-	// Teilstand/partial reading (Ticket #129): an incomplete reading does
-	// not flow into the calculation - otherwise missing meter readings/
-	// prices would silently be treated as 0 and show a wrong cost amount
-	// instead of "not yet calculable".
-	complete, err := store.PeriodComplete(db, periodID)
-	if err != nil {
-		return kosten{}, fmt.Errorf("period complete: %w", err)
+// kostenHinweis is the text shown on the Ablesung page for an Ablesung
+// without Verbrauchskosten.
+func kostenHinweis(g calc.Grund) string {
+	switch g {
+	case calc.GrundTeilstand:
+		return "Diese Ablesung ist ein Teilstand - Kosten werden erst berechnet, sobald sie vollständig ist."
+	case calc.GrundKeineVorperiode:
+		return "Kosten können erst ab der zweiten Ablesung berechnet werden (Verbrauch braucht eine Vorperiode)."
 	}
-	if !complete {
-		return kosten{KostenNote: "Diese Ablesung ist ein Teilstand - Kosten werden erst berechnet, sobald sie vollständig ist."}, nil
-	}
-
-	strom, err := calc.Strom(db, periodID)
-	if errors.Is(err, store.ErrNoPreviousPeriod) {
-		return kosten{KostenNote: "Kosten können erst ab der zweiten Ablesung berechnet werden (Verbrauch braucht eine Vorperiode)."}, nil
-	} else if err != nil {
-		return kosten{}, fmt.Errorf("strom kosten: %w", err)
-	}
-
-	wasser, err := calc.Wasser(db, periodID)
-	if err != nil {
-		return kosten{}, fmt.Errorf("wasser kosten: %w", err)
-	}
-
-	heizung, err := calc.Heizung(db, periodID)
-	if err != nil {
-		return kosten{}, fmt.Errorf("heizung kosten: %w", err)
-	}
-
-	einspeisung, err := calc.Einspeisung(db, periodID)
-	if err != nil {
-		return kosten{}, fmt.Errorf("einspeisung: %w", err)
-	}
-
-	return kosten{Strom: strom, Wasser: wasser, Heizung: heizung, Einspeisung: einspeisung}, nil
+	return ""
 }
 
 // kategorieKind identifies a kategorie's cost type at compile time - Kind is
@@ -95,49 +54,9 @@ type kategorie struct {
 	Einheit2   string
 }
 
-// monatsAnteil is one apartment's share of a month's costs together with the
-// house totals - the one place that decides which of the calc results belongs
-// to which apartment. Dashboard (kategorien) and Jahresabrechnung both read
-// it.
-//
-// Apartment 1's Strom has no own cost position - its grid draw stays implicit
-// (see calc.Strom) - so only apartment 2 has one (HatStrom). Frischwasser and
-// Abwasser are combined into one Wasser amount since they share one raw m³
-// consumption (no separate wastewater meter, see calc.Wasser).
-type monatsAnteil struct {
-	HatStrom      bool
-	StromKosten   float64
-	StromKWh      float64
-	HeizungKosten float64
-	HeizungGesamt float64 // both apartments
-	HeizungWPKWh  float64 // this apartment's heat pump electricity
-	HeizungMWh    float64 // this apartment's heat meter consumption
-	WasserKosten  float64
-	WasserGesamt  float64 // both apartments
-	WasserM3      float64
-}
-
-// Anteil returns apartmentID's share of this month's kosten. k must be a
-// calculated month (KostenNote empty).
-func (k kosten) Anteil(apartmentID int64) monatsAnteil {
-	a := monatsAnteil{
-		HeizungGesamt: calc.Round2(k.Heizung.KostenHeizungW1 + k.Heizung.KostenHeizungW2),
-		WasserGesamt:  calc.Round2(k.Wasser.KostenFrischwasserW1 + k.Wasser.KostenAbwasserW1 + k.Wasser.KostenFrischwasserW2 + k.Wasser.KostenAbwasserW2),
-	}
-	if apartmentID == 2 {
-		a.HatStrom, a.StromKosten, a.StromKWh = true, k.Strom.KostenW2, k.Strom.W2VerbrauchKWh
-		a.HeizungKosten, a.HeizungWPKWh, a.HeizungMWh = k.Heizung.KostenHeizungW2, k.Heizung.WPVerbrauchW2KWh, k.Heizung.WaermeW2MWh
-		a.WasserKosten, a.WasserM3 = calc.Round2(k.Wasser.KostenFrischwasserW2+k.Wasser.KostenAbwasserW2), k.Wasser.FrischwasserW2
-		return a
-	}
-	a.HeizungKosten, a.HeizungWPKWh, a.HeizungMWh = k.Heizung.KostenHeizungW1, k.Heizung.WPVerbrauchW1KWh, k.Heizung.WaermeW1MWh
-	a.WasserKosten, a.WasserM3 = calc.Round2(k.Wasser.KostenFrischwasserW1+k.Wasser.KostenAbwasserW1), k.Wasser.FrischwasserW1
-	return a
-}
-
 // kategorien builds the given apartment's cost breakdown for the period from
 // its monatsAnteil.
-func kategorien(apartmentID int64, k kosten) []kategorie {
+func kategorien(apartmentID int64, k calc.Kosten) []kategorie {
 	a := k.Anteil(apartmentID)
 	var list []kategorie
 	if a.HatStrom {
@@ -160,7 +79,7 @@ func kategorien(apartmentID int64, k kosten) []kategorie {
 	return list
 }
 
-// periodKosten is one period's already-computed kosten, for the yearly-
+// periodKosten is one period's already-computed calc.Kosten, for the yearly-
 // totals cards and Monatsverlauf (monthly history). ReadingDate stays in
 // its raw "YYYY-MM-DD" form (not pre-formatted) since downstream needs it
 // for both the month label and calendar-year grouping. Personen is this
@@ -172,6 +91,6 @@ type periodKosten struct {
 	// the key groupKostenByMonat and the yearly cards group/filter by,
 	// distinct from ReadingDate which stays the exact reading date.
 	Monat    string
-	K        kosten
+	K        calc.Kosten
 	Personen map[int64]int64
 }

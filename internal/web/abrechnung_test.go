@@ -205,15 +205,12 @@ func TestBerechneAbrechnung_VerbrauchVorauszahlungenUndSaldo(t *testing.T) {
 	// Expected consumption part: the sum over the three Ablesungen with a
 	// predecessor (the Ausgangsstand of 15 Sep has no consumption).
 	var heizung, wasser, strom, heizungGesamt, wasserGesamt float64
-	periods, _ := store.AllPeriods(db)
-	for _, p := range periods {
-		k, err := berechneKosten(db, p.ID)
-		if err != nil {
-			t.Fatalf("berechneKosten: %v", err)
-		}
-		if k.KostenNote != "" {
-			continue
-		}
+	verbrauchskosten, err := calc.Load(db)
+	if err != nil {
+		t.Fatalf("calc.Load: %v", err)
+	}
+	for _, a := range verbrauchskosten.Berechenbare() {
+		k := a.Kosten
 		heizung += k.Heizung.KostenHeizungW2
 		heizungGesamt += k.Heizung.KostenHeizungW1 + k.Heizung.KostenHeizungW2
 		wasser += k.Wasser.KostenFrischwasserW2 + k.Wasser.KostenAbwasserW2

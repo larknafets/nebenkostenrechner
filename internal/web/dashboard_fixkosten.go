@@ -628,7 +628,7 @@ type dashboardSimpleSpalte struct {
 // simpleWert extracts one period's bar segments (actual kWh per segment,
 // not just the billed share) and total EUR for a Wallbox/PV-Anlage series
 // - ok=false skips the period entirely (no reading/no previous period).
-type simpleWert func(k kosten) (segs []dashboardSegment, eur float64, ok bool)
+type simpleWert func(k calc.Kosten) (segs []dashboardSegment, eur float64, ok bool)
 
 // simpleSeries bundles a Wallbox/PV-Anlage entity's identity (ID/Name/
 // IstErtrag) with its value extractor - the 2 call sites in
@@ -652,7 +652,7 @@ type simpleSeries struct {
 // part.
 var wallboxSeries = simpleSeries{
 	ID: "wallbox", Name: "Wallboxen", IstErtrag: false,
-	Wert: func(k kosten) (segs []dashboardSegment, eur float64, ok bool) {
+	Wert: func(k calc.Kosten) (segs []dashboardSegment, eur float64, ok bool) {
 		if k.Strom == nil {
 			return nil, 0, false
 		}
@@ -665,7 +665,7 @@ var wallboxSeries = simpleSeries{
 
 var pvSeries = simpleSeries{
 	ID: "pv", Name: "PV-Anlage", IstErtrag: true,
-	Wert: func(k kosten) (segs []dashboardSegment, eur float64, ok bool) {
+	Wert: func(k calc.Kosten) (segs []dashboardSegment, eur float64, ok bool) {
 		if k.Einspeisung == nil {
 			return nil, 0, false
 		}
