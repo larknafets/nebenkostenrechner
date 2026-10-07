@@ -55,8 +55,8 @@ func TestFixkostenreihe_Lookups(t *testing.T) {
 	if _, ok := reihe.Monat("2026-11-01"); ok {
 		t.Error("Monat(2026-11-01) found, want none")
 	}
-	if alle := reihe.Alle(); len(alle) != 2 || alle[0].Eingabe.ID != 7 {
-		t.Errorf("Alle() = %+v, want 2 oldest first", alle)
+	if neueste := reihe.Neueste(); len(neueste) != 2 || neueste[1].Eingabe.ID != 7 {
+		t.Errorf("Neueste() = %+v, want 2 newest first", neueste)
 	}
 }
 

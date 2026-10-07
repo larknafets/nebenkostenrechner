@@ -391,11 +391,9 @@ func handleFixkostenListe(a auth) http.HandlerFunc {
 			return
 		}
 
-		// Newest first.
-		alle := reihe.Alle()
-		items := make([]fixkostenListItem, 0, len(alle))
-		for i := len(alle) - 1; i >= 0; i-- {
-			m := alle[i]
+		neueste := reihe.Neueste()
+		items := make([]fixkostenListItem, 0, len(neueste))
+		for _, m := range neueste {
 			items = append(items, fixkostenListItem{
 				ID: m.Eingabe.ID, Label: germanPeriodLabel(m.Eingabe.Monat),
 				SummeW1: m.Ergebnis.KostenW1, SummeW2: m.Ergebnis.KostenW2,
@@ -457,11 +455,10 @@ func handleFixkostenDetail(a auth) http.HandlerFunc {
 			return
 		}
 
-		// Newest first.
-		alle := reihe.Alle()
-		allItems := make([]fixkostenListItem, len(alle))
-		for i, m := range alle {
-			allItems[len(alle)-1-i] = fixkostenListItem{ID: m.Eingabe.ID, Label: germanPeriodLabel(m.Eingabe.Monat)}
+		neueste := reihe.Neueste()
+		allItems := make([]fixkostenListItem, len(neueste))
+		for i, m := range neueste {
+			allItems[i] = fixkostenListItem{ID: m.Eingabe.ID, Label: germanPeriodLabel(m.Eingabe.Monat)}
 		}
 
 		positionen := make([]fixkostenDetailPosition, 0, len(erg.Positionen))
