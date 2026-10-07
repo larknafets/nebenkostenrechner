@@ -117,7 +117,7 @@ _Avoid_: Fehler, Warnung
 Die Betriebskostenabrechnung einer Wohnung für einen Abrechnungszeitraum, live aus den vorhandenen Daten berechnet und nichts festgeschrieben. Sie zeigt nur umlagefähige Kostenpositionen, Heizung/Warmwasser und Wasser/Abwasser (Verbrauch) sowie, wenn das Stammdaten-Flag es erlaubt, den Stromverbrauch von Wohnung 2 als eigenen Block. Je Position steht der Anteil als Summe der je Monat auf den Cent gerundeten Monatsanteile, wie im Dashboard (daher sind wenige Cent Abweichung zu "Gesamtkosten mal Prozentsatz" möglich). Wechselt die Berechnungslogik einer Position im Zeitraum, gibt es je zusammenhängendem Zeitraum gleicher Logik eine Zeile. Eine Position, für die die abgerechnete Wohnung nichts zahlt (z. B. voll der anderen Wohnung zugerechnet), erscheint nicht.
 
 **Übertrag Vorjahre**:
-Der Saldo (Nebenkostenabschlag minus Kosten nach Abrechnungs-Logik) aller Monate vom Startmonat bis zum Monat vor dem Zeitraum der Jahresabrechnung, Anfangswert des kumulierten Saldos der Monatstabelle. Startmonat ist der spätere von "Mieter seit" (nur bei Vermietung) und dem Monat der ersten Ablesung. Hat ein Monat dieses Bereichs einen Mangel, ist er nicht berechenbar und entfällt mit Hinweis. Nicht der Dashboard-Saldo: Der zählt auch nicht umlagefähige Positionen.
+Der Saldo (Nebenkostenabschlag minus Kosten nach Abrechnungs-Logik) aller Monate vom Startmonat bis zum Monat vor dem Zeitraum der Jahresabrechnung, Anfangswert des kumulierten Saldos der Monatstabelle. Startmonat ist der spätere von "Mieter seit" (nur bei Vermietung) und dem Monat der ersten Ablesung. Hat ein Monat dieses Bereichs einen Mangel, ist er nicht berechenbar und entfällt mit Hinweis. Nicht der Dashboard-Saldo: Der zählt auch nicht umlagefähige Positionen. Im Code `abrechnung.Berechne` (`internal/abrechnung/berechnung.go`): Übertrag und Jahresabrechnung falten ihre Monate gleich und summieren mit `calc.Saldoverlauf`, der Übertrag ist dessen Startwert.
 _Avoid_: Vortrag, Saldovortrag
 
 **Anlage**:
@@ -128,4 +128,4 @@ Vorauszahlungen (Nebenkostenabschläge des Abrechnungszeitraums, ein fehlender z
 _Avoid_: Jahresergebnis
 
 **Guthaben / Nachzahlung**:
-Der fortlaufend seit Erfassungsbeginn kumulierte Saldo aus Nebenkostenabschlag minus Fixkosten minus Verbräuche einer Wohnung (kein Reset zum Jahreswechsel). Positiv heißt Guthaben, negativ Nachzahlung, exakt null Ausgeglichen. Im Code der Typ `AbschlagSaldo` (`internal/web/abschlag_saldo.go`).
+Der fortlaufend seit Erfassungsbeginn kumulierte Saldo aus Nebenkostenabschlag minus Fixkosten minus Verbräuche einer Wohnung (kein Reset zum Jahreswechsel). Positiv heißt Guthaben, negativ Nachzahlung, exakt null Ausgeglichen. Im Code der Typ `calc.AbschlagSaldo` (`internal/calc/abschlagsaldo.go`), die Monat-für-Monat-Summierung macht `calc.Saldoverlauf` (`internal/calc/saldoverlauf.go`) für Dashboard und Monatsverlauf.
