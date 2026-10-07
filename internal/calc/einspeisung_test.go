@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -12,6 +11,7 @@ func mustCreatePeriodMitEinspeisung(t *testing.T, db *sql.DB, date string, einsp
 	t.Helper()
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate:       date,
+		Monat:             monatVon(date),
 		Strompreis:        store.Float64(0.22),
 		FrischwasserPreis: store.Float64(1.46),
 		AbwasserPreis:     store.Float64(4.87),
@@ -34,26 +34,11 @@ func TestEinspeisung_ErtragBerechnung(t *testing.T) {
 		"strom_einspeisung": 1350,
 	}))
 
-	got, err := calc.Einspeisung(db, p2)
-	if err != nil {
-		t.Fatalf("calc.Einspeisung: %v", err)
-	}
+	got := kostenVon(t, db, p2).Einspeisung
 	if got.EinspeisungKWh != 350 {
 		t.Errorf("EinspeisungKWh = %v, want 350", got.EinspeisungKWh)
 	}
 	if got.Ertrag != 28.00 {
 		t.Errorf("Ertrag = %v, want 28.00 (350 * 0.08)", got.Ertrag)
-	}
-}
-
-func TestEinspeisung_ErsterPeriodeOhneVorperiode(t *testing.T) {
-	db := openTestDB(t)
-	p1 := mustCreatePeriodMitEinspeisung(t, db, "2026-11-01", 0.08, baseReadings(map[string]float64{
-		"strom_einspeisung": 100,
-	}))
-
-	_, err := calc.Einspeisung(db, p1)
-	if err == nil {
-		t.Fatal("expected error for first period without a previous one")
 	}
 }

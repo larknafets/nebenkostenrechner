@@ -3,7 +3,6 @@ package calc_test
 import (
 	"testing"
 
-	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -13,6 +12,8 @@ func TestWasser_PersonenanteilUndKosten(t *testing.T) {
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate:       "2026-11-01",
+		Monat:             monatVon("2026-11-01"),
+		EinspeisungPreis:  store.Float64(0.08),
 		Strompreis:        store.Float64(0.22),
 		FrischwasserPreis: store.Float64(1.46),
 		AbwasserPreis:     store.Float64(4.87),
@@ -27,10 +28,7 @@ func TestWasser_PersonenanteilUndKosten(t *testing.T) {
 		t.Fatalf("create period: %v", err)
 	}
 
-	got, err := calc.Wasser(db, id)
-	if err != nil {
-		t.Fatalf("calc.Wasser: %v", err)
-	}
+	got := kostenVon(t, db, id).Wasser
 
 	if got.PersonenW1 != 1 || got.PersonenW2 != 1 {
 		t.Errorf("Personen = W1:%v W2:%v, want W1:1 W2:1", got.PersonenW1, got.PersonenW2)
@@ -67,6 +65,8 @@ func TestWasser_KeinePersonen_FaelltAufHaelftigeVerteilungZurueck(t *testing.T) 
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate:       "2026-11-01",
+		Monat:             monatVon("2026-11-01"),
+		EinspeisungPreis:  store.Float64(0.08),
 		Strompreis:        store.Float64(0.22),
 		FrischwasserPreis: store.Float64(1.46),
 		AbwasserPreis:     store.Float64(4.87),
@@ -81,27 +81,12 @@ func TestWasser_KeinePersonen_FaelltAufHaelftigeVerteilungZurueck(t *testing.T) 
 		t.Fatalf("create period: %v", err)
 	}
 
-	got, err := calc.Wasser(db, id)
-	if err != nil {
-		t.Fatalf("calc.Wasser: %v", err)
-	}
+	got := kostenVon(t, db, id).Wasser
 	// Issue #26: at 0 occupants (empty fields, vacancy) the hot water
 	// preparation share must not fall through to 0/0 - that would silently
 	// make the entire hot water volume (and its cost) vanish from both
 	// bills. The fallback is an even split instead of NaN or lost cost.
 	if got.WWAnteilW1 != 10 || got.WWAnteilW2 != 10 {
 		t.Errorf("bei 0 Personen sollte WWAnteil hälftig verteilt werden (10/10 von 20m³), got W1=%v W2=%v", got.WWAnteilW1, got.WWAnteilW2)
-	}
-}
-
-func TestWasser_ErsterPeriodeOhneVorperiode(t *testing.T) {
-	db := openTestDB(t)
-	p1 := mustCreatePeriod(t, db, "2026-11-01", 0.22, baseReadings(map[string]float64{
-		"wasser_gesamt": 100,
-	}))
-
-	_, err := calc.Wasser(db, p1)
-	if err == nil {
-		t.Fatal("expected error for first period without a previous one")
 	}
 }

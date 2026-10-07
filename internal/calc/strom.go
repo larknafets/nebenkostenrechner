@@ -1,12 +1,5 @@
 package calc
 
-import (
-	"database/sql"
-	"fmt"
-
-	"github.com/larknafets/nebenkostenrechner/internal/store"
-)
-
 // StromErgebnis is the PV grid-draw allocation result for one period. See
 // https://github.com/larknafets/nebenkostenrechner/issues/2 for the
 // formula: grid draw is allocated to apartment 2 first (capped at its own
@@ -56,21 +49,6 @@ type StromErgebnis struct {
 type stromEingabe struct {
 	Strompreis float64
 	Verbrauch  map[string]float64
-}
-
-// Strom computes the electricity cost allocation for the given period.
-func Strom(db *sql.DB, periodID int64) (*StromErgebnis, error) {
-	period, err := store.GetPeriodByID(db, periodID)
-	if err != nil {
-		return nil, err
-	}
-
-	verbrauch, err := store.Verbrauch(db, periodID)
-	if err != nil {
-		return nil, fmt.Errorf("verbrauch: %w", err)
-	}
-
-	return berechneStrom(stromEingabe{Strompreis: period.Strompreis, Verbrauch: verbrauch}), nil
 }
 
 // berechneStrom is the allocation itself, a pure function of its input.
