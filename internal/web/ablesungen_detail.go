@@ -167,7 +167,7 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			Heizung:         k.Heizung,
 			Einspeisung:     k.Einspeisung,
 			KostenNote:      kostenHinweis(ablesung.Grund),
-			MonatLabel:      germanPeriodLabel(period.Monat),
+			MonatLabel:      store.MonatLabel(period.Monat),
 		}
 
 		if err := ablesungTemplate.ExecuteTemplate(w, "layout", data); err != nil {

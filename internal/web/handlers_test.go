@@ -1331,24 +1331,6 @@ func TestFormatDatumDE(t *testing.T) {
 	}
 }
 
-func TestGermanPeriodLabel(t *testing.T) {
-	cases := []struct {
-		readingDate string
-		want        string
-	}{
-		{"2026-11-15", "November 2026"},
-		{"2026-01-01", "Januar 2026"},
-		{"2026-12-31", "Dezember 2026"},
-		{"not-a-date", "not-a-date"},
-	}
-
-	for _, c := range cases {
-		if got := germanPeriodLabel(c.readingDate); got != c.want {
-			t.Errorf("germanPeriodLabel(%q) = %q, want %q", c.readingDate, got, c.want)
-		}
-	}
-}
-
 // seedPeriodInputAt builds a valid PeriodInput at the given "YYYY-MM-DD"
 // date, ReadingDate and Monat both set to it - everything else a fixed
 // valid default (exact values don't matter for the ordering tests using

@@ -81,7 +81,7 @@ func periodOverviewGroups(periods []store.PeriodSummary, teilstandID int64) []pe
 			continue
 		}
 		currentMonat = p.Monat
-		out = append(out, periodMonatGroup{MonatLabel: germanPeriodLabel(p.Monat), Rows: []periodOverviewRow{row}})
+		out = append(out, periodMonatGroup{MonatLabel: store.MonatLabel(p.Monat), Rows: []periodOverviewRow{row}})
 	}
 	return out
 }

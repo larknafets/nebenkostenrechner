@@ -168,7 +168,7 @@ func handleAbrechnung(a auth) http.HandlerFunc {
 		}
 
 		data.Bereich = abr.GanzesJahr
-		for i, name := range germanMonths {
+		for i, name := range store.Monatsnamen {
 			data.Monate = append(data.Monate, monatOption{Nr: i + 1, Name: name})
 		}
 		if r.URL.Query().Get("teil") == "1" {

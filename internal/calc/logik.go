@@ -1,4 +1,4 @@
-package abrechnung
+package calc
 
 import "github.com/larknafets/nebenkostenrechner/internal/store"
 

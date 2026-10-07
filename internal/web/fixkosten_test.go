@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -94,14 +93,6 @@ func TestBuildFixkostenPositionRows_OhneVorherigeEingabe(t *testing.T) {
 	}
 	if rows[1].Logik != store.LogikWohneinheit || rows[1].Typ != store.TypMonatlich || rows[1].Wert != 0 {
 		t.Errorf("Internet ohne Vorwert = %+v, want Logik:%s Typ:%s Wert:0 (aus KostenpositionDefaults)", rows[1], store.LogikWohneinheit, store.TypMonatlich)
-	}
-}
-
-func TestLogikLabels_CoversAllLogikKonstanten(t *testing.T) {
-	for _, logik := range []string{store.LogikWohneinheit, store.LogikFlurstueck, store.LogikQM, store.LogikPersonen} {
-		if abr.LogikLabels[logik] == "" {
-			t.Errorf("abr.LogikLabels missing entry for %q", logik)
-		}
 	}
 }
 

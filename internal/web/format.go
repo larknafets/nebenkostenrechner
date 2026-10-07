@@ -6,25 +6,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
 )
-
-// germanMonths are the German month names, owned by package abrechnung.
-var germanMonths = abr.Monatsnamen
-
-// germanPeriodLabel renders a period's ReadingDate ("YYYY-MM-DD") as its
-// German month name and year (e.g. "November 2026"), for the Dashboard
-// heading (Ticket #17 follow-up - no "Dashboard -" prefix). Falls back to
-// the raw string if it isn't a parseable date.
-func germanPeriodLabel(readingDate string) string { return abr.MonatLabel(readingDate) }
 
 var germanMonthsShort = [...]string{
 	"Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
 	"Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
 }
 
-// germanPeriodLabelShort is germanPeriodLabel's abbreviated form (e.g. "Nov
+// germanPeriodLabelShort is store.MonatLabel's abbreviated form (e.g. "Nov
 // 2026"), for the Verlauf (history) month labels (Ticket #19) where every
 // row needs to fit next to a bar.
 func germanPeriodLabelShort(readingDate string) string {
@@ -65,7 +54,7 @@ func groupThousandsDE(s string) string {
 	return out
 }
 
-// formatDecimalDE renders a float64 the way germanPeriodLabel renders a
+// formatDecimalDE renders a float64 the way store.MonatLabel renders a
 // date: German convention, decimal comma instead of point (Ticket #36),
 // rounded to at most 2 decimal places (Ticket #37 - raw calc.go values
 // like WWAnteil/WaermeMWh carry floating-point noise past 2 places, e.g.
@@ -121,7 +110,7 @@ func formatDecimalDE3(x float64) string {
 
 // formatDatumDE renders a period's ReadingDate ("YYYY-MM-DD") in the German
 // DD.MM.YYYY form (Ticket #36). Falls back to the raw string if it isn't a
-// parseable date, same convention as germanPeriodLabel.
+// parseable date, same convention as store.MonatLabel.
 func formatDatumDE(readingDate string) string {
 	t, err := time.Parse("2006-01-02", readingDate)
 	if err != nil {

@@ -6,7 +6,6 @@ import (
 	"sort"
 	"time"
 
-	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -80,7 +79,7 @@ func fixkostenGruppen(apartmentID int64, erg *calc.FixkostenErgebnis) []dashboar
 	logiken := []string{store.LogikWohneinheit, store.LogikFlurstueck, store.LogikQM, store.LogikPersonen, store.LogikWohnung1, store.LogikWohnung2}
 	out := make([]dashboardSegment, len(logiken))
 	for i, logik := range logiken {
-		out[i] = dashboardSegment{Farbe: "logik-" + logik, Label: abr.LogikLabels[logik], Kosten: calc.Round2(sums[logik])}
+		out[i] = dashboardSegment{Farbe: "logik-" + logik, Label: calc.LogikLabels[logik], Kosten: calc.Round2(sums[logik])}
 	}
 	return out
 }

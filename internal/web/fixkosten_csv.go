@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -96,7 +96,7 @@ func validateFixkostenMonateEindeutig(rows []store.FixkostenInput) error {
 	var doppelt []string
 	for _, in := range rows {
 		if seen[in.Monat] {
-			doppelt = append(doppelt, germanPeriodLabel(in.Monat))
+			doppelt = append(doppelt, store.MonatLabel(in.Monat))
 			continue
 		}
 		seen[in.Monat] = true
@@ -120,7 +120,7 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 	werte := make(map[int64]store.FixkostenPositionWert, len(store.KostenpositionDefaults))
 	for _, kd := range store.KostenpositionDefaults {
 		logik := strings.TrimSpace(cell(kd.Key + "_logik"))
-		if _, ok := abr.LogikLabels[logik]; !ok {
+		if _, ok := calc.LogikLabels[logik]; !ok {
 			return store.FixkostenInput{}, fmt.Errorf("Zeile %d: ungültige Berechnungslogik für %s: %q", line, kd.Label, logik)
 		}
 

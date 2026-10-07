@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -15,15 +14,15 @@ import (
 // logikOption is one <select> choice for a cost position's allocation logic.
 type logikOption struct{ Value, Label string }
 
-// logikOptions is abr.LogikLabels in a stable, display order - the Stammdaten
+// logikOptions is calc.LogikLabels in a stable, display order - the Stammdaten
 // Kostenpositionen-Jahre logic dropdown's option list.
 var logikOptions = []logikOption{
-	{store.LogikWohneinheit, abr.LogikLabels[store.LogikWohneinheit]},
-	{store.LogikFlurstueck, abr.LogikLabels[store.LogikFlurstueck]},
-	{store.LogikQM, abr.LogikLabels[store.LogikQM]},
-	{store.LogikPersonen, abr.LogikLabels[store.LogikPersonen]},
-	{store.LogikWohnung1, abr.LogikLabels[store.LogikWohnung1]},
-	{store.LogikWohnung2, abr.LogikLabels[store.LogikWohnung2]},
+	{store.LogikWohneinheit, calc.LogikLabels[store.LogikWohneinheit]},
+	{store.LogikFlurstueck, calc.LogikLabels[store.LogikFlurstueck]},
+	{store.LogikQM, calc.LogikLabels[store.LogikQM]},
+	{store.LogikPersonen, calc.LogikLabels[store.LogikPersonen]},
+	{store.LogikWohnung1, calc.LogikLabels[store.LogikWohnung1]},
+	{store.LogikWohnung2, calc.LogikLabels[store.LogikWohnung2]},
 }
 
 // parseFixkostenMonat turns the form's <input type="month"> value ("YYYY-MM")
@@ -223,7 +222,7 @@ func parseFixkostenInput(r *http.Request, apartments []store.Apartment) (store.F
 		idStr := strconv.FormatInt(kp.ID, 10)
 
 		logik := r.FormValue("logik_" + idStr)
-		if _, ok := abr.LogikLabels[logik]; !ok {
+		if _, ok := calc.LogikLabels[logik]; !ok {
 			return store.FixkostenInput{}, fmt.Errorf("ungültige Berechnungslogik für %s", kp.Label)
 		}
 
@@ -295,7 +294,7 @@ func handleCreateFixkosten() http.HandlerFunc {
 // monatBelegtMessage is the user-facing text when a month already has its
 // one Fixkosten-Eingabe (Issue #161).
 func monatBelegtMessage(monat string) string {
-	return "Für " + germanPeriodLabel(monat) + " gibt es bereits eine Fixkosten-Eingabe. Je Monat ist nur eine erlaubt, bitte die bestehende Eingabe korrigieren."
+	return "Für " + store.MonatLabel(monat) + " gibt es bereits eine Fixkosten-Eingabe. Je Monat ist nur eine erlaubt, bitte die bestehende Eingabe korrigieren."
 }
 
 func handleUpdateFixkosten() http.HandlerFunc {
@@ -395,7 +394,7 @@ func handleFixkostenListe(a auth) http.HandlerFunc {
 		items := make([]fixkostenListItem, 0, len(neueste))
 		for _, m := range neueste {
 			items = append(items, fixkostenListItem{
-				ID: m.Eingabe.ID, Label: germanPeriodLabel(m.Eingabe.Monat),
+				ID: m.Eingabe.ID, Label: store.MonatLabel(m.Eingabe.Monat),
 				SummeW1: m.Ergebnis.KostenW1, SummeW2: m.Ergebnis.KostenW2,
 			})
 		}
@@ -458,14 +457,14 @@ func handleFixkostenDetail(a auth) http.HandlerFunc {
 		neueste := reihe.Neueste()
 		allItems := make([]fixkostenListItem, len(neueste))
 		for i, m := range neueste {
-			allItems[i] = fixkostenListItem{ID: m.Eingabe.ID, Label: germanPeriodLabel(m.Eingabe.Monat)}
+			allItems[i] = fixkostenListItem{ID: m.Eingabe.ID, Label: store.MonatLabel(m.Eingabe.Monat)}
 		}
 
 		positionen := make([]fixkostenDetailPosition, 0, len(erg.Positionen))
 		for _, p := range erg.Positionen {
 			positionen = append(positionen, fixkostenDetailPosition{
 				Label:      p.Label,
-				LogikLabel: abr.LogikLabels[p.Logik],
+				LogikLabel: calc.LogikLabels[p.Logik],
 				KostenW1:   p.KostenW1,
 				KostenW2:   p.KostenW2,
 			})
@@ -485,7 +484,7 @@ func handleFixkostenDetail(a auth) http.HandlerFunc {
 			navData:     a.NavData(r),
 			Aktuell:     "fixkosten-detail",
 			Eingabe:     eingabe,
-			MonatLabel:  germanPeriodLabel(eingabe.Monat),
+			MonatLabel:  store.MonatLabel(eingabe.Monat),
 			AllEingaben: allItems,
 			Apartments:  apartments,
 			Positionen:  positionen,
