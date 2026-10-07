@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -154,7 +155,7 @@ type abrechnungUebertrag struct {
 type abrechnung struct {
 	Jahr      int
 	Apartment store.Apartment
-	Zeitraum  abrechnungZeitraum
+	Zeitraum  abr.Zeitraum
 
 	// Fixkosten are the umlagefähige Kostenpositionen, Heizung and Wasser
 	// the two consumption-based lines (zero Gesamt if there is no data).
@@ -188,7 +189,7 @@ type abrechnung struct {
 // abrechnungErgebnis is what the page needs: the check and, if it found
 // nothing, the Abrechnung.
 type abrechnungErgebnis struct {
-	Pruefung abrechnungPruefung
+	Pruefung abr.Pruefung
 	// Abrechnung is nil if the Pruefung found Mängel.
 	Abrechnung *abrechnung
 }
@@ -197,8 +198,8 @@ type abrechnungErgebnis struct {
 // if so, computes the Jahresabrechnung (Issue #166). It reuses
 // the Fixkostenreihe and the Verbrauchskosten per Ablesung and
 // only sums them, there is no second cost formula.
-func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich monatsbereich, apartmentID int64) (abrechnungErgebnis, error) {
-	pruefung, err := pruefeAbrechnungDaten(d.Pruef, jahr, bereich, apartmentID)
+func berechneAbrechnung(db *sql.DB, d abrechnungDaten, jahr int, bereich abr.Monatsbereich, apartmentID int64) (abrechnungErgebnis, error) {
+	pruefung, err := abr.Pruefe(d.Pruef, jahr, bereich, apartmentID)
 	if err != nil {
 		return abrechnungErgebnis{}, err
 	}
@@ -357,12 +358,12 @@ func monatsVerbrauch(anteil calc.Wohnungsanteil, stromWeiterberechnet bool) floa
 // are not part of it. If a month before the period has a Mangel of the
 // Abrechnungsprüfung the carry-over cannot be calculated and the result says
 // why instead of a wrong number.
-func berechneUebertrag(db *sql.DB, d abrechnungDaten, z abrechnungZeitraum, apartment store.Apartment, stromWeiterberechnet bool) (abrechnungUebertrag, error) {
+func berechneUebertrag(db *sql.DB, d abrechnungDaten, z abr.Zeitraum, apartment store.Apartment, stromWeiterberechnet bool) (abrechnungUebertrag, error) {
 	periods := d.Pruef.Periods
 	if len(periods) == 0 {
 		return abrechnungUebertrag{}, nil
 	}
-	_, beginn, err := erfassungsbeginn(periods[0])
+	_, beginn, err := abr.Erfassungsbeginn(periods[0])
 	if err != nil {
 		return abrechnungUebertrag{}, nil // the Prüfung already reported it
 	}
@@ -387,7 +388,7 @@ func berechneUebertrag(db *sql.DB, d abrechnungDaten, z abrechnungZeitraum, apar
 	if start.Equal(beginn) {
 		fixkostenVon = beginn.AddDate(0, 1, 0) // the Ausgangsstand month needs no Fixkosten-Eingabe
 	}
-	maengel := pruefeMonate(d.Pruef, start, letzter, fixkostenVon)
+	maengel := abr.PruefeMonate(d.Pruef, start, letzter, fixkostenVon)
 	if len(maengel) > 0 {
 		erster := maengel[0]
 		for _, m := range maengel[1:] {

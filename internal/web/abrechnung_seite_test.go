@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -62,7 +63,7 @@ func TestAbrechnungJahreUndStandard(t *testing.T) {
 		{ID: 1, ReadingDate: "2024-12-30", Monat: ""}, // a Teilstand: the reading date counts
 	}
 	eingaben := []store.FixkostenEingabeSummary{{ID: 1, Monat: "2027-02-01"}}
-	got := abrechnungJahre(abrechnungPruefDaten{Periods: periods, Eingaben: eingaben})
+	got := abrechnungJahre(abr.Daten{Periods: periods, Eingaben: eingaben})
 	if len(got) != 3 || got[0] != 2027 || got[1] != 2025 || got[2] != 2024 {
 		t.Errorf("abrechnungJahre = %v, want [2027 2025 2024] newest first, each once", got)
 	}

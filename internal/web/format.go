@@ -6,24 +6,18 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
 )
 
-var germanMonths = [...]string{
-	"Januar", "Februar", "März", "April", "Mai", "Juni",
-	"Juli", "August", "September", "Oktober", "November", "Dezember",
-}
+// germanMonths are the German month names, owned by package abrechnung.
+var germanMonths = abr.Monatsnamen
 
 // germanPeriodLabel renders a period's ReadingDate ("YYYY-MM-DD") as its
 // German month name and year (e.g. "November 2026"), for the Dashboard
 // heading (Ticket #17 follow-up - no "Dashboard -" prefix). Falls back to
 // the raw string if it isn't a parseable date.
-func germanPeriodLabel(readingDate string) string {
-	t, err := time.Parse("2006-01-02", readingDate)
-	if err != nil {
-		return readingDate
-	}
-	return fmt.Sprintf("%s %d", germanMonths[t.Month()-1], t.Year())
-}
+func germanPeriodLabel(readingDate string) string { return abr.MonatLabel(readingDate) }
 
 var germanMonthsShort = [...]string{
 	"Jan", "Feb", "Mär", "Apr", "Mai", "Jun",

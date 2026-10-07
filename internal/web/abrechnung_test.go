@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -381,11 +382,11 @@ func TestBerechneAbrechnung_Monatsverlauf(t *testing.T) {
 		if err != nil {
 			t.Fatalf("ladeAbrechnungDaten: %v", err)
 		}
-		ganz, err := berechneAbrechnung(db, d, 2026, ganzesJahr, 2)
+		ganz, err := berechneAbrechnung(db, d, 2026, abr.GanzesJahr, 2)
 		if err != nil || ganz.Abrechnung == nil {
 			t.Fatalf("berechneAbrechnung (ganz): err %v", err)
 		}
-		erg, err := berechneAbrechnung(db, d, 2026, monatsbereich{Von: 11, Bis: 12}, 2)
+		erg, err := berechneAbrechnung(db, d, 2026, abr.Monatsbereich{Von: 11, Bis: 12}, 2)
 		if err != nil || erg.Abrechnung == nil {
 			t.Fatalf("berechneAbrechnung: err %v", err)
 		}
@@ -414,7 +415,7 @@ func TestBerechneAbrechnung_Monatsverlauf(t *testing.T) {
 // November are before it).
 func TestBerechneAbrechnung_Uebertrag(t *testing.T) {
 	nah := func(x, y float64) bool { return math.Abs(x-y) < 0.0151 }
-	dezember := monatsbereich{Von: 12, Bis: 12}
+	dezember := abr.Monatsbereich{Von: 12, Bis: 12}
 	rechne := func(t *testing.T, db *sql.DB, apartmentID int64) *abrechnung {
 		t.Helper()
 		d, err := ladeAbrechnungDaten(db)
@@ -591,7 +592,7 @@ func TestBerechneAbrechnung_Zaehlerstaende(t *testing.T) {
 		if err != nil {
 			t.Fatalf("ladeAbrechnungDaten: %v", err)
 		}
-		erg, err := berechneAbrechnung(db, d, 2026, monatsbereich{Von: 11, Bis: 12}, 2)
+		erg, err := berechneAbrechnung(db, d, 2026, abr.Monatsbereich{Von: 11, Bis: 12}, 2)
 		if err != nil || erg.Abrechnung == nil {
 			t.Fatalf("berechneAbrechnung: err %v", err)
 		}
@@ -837,7 +838,7 @@ func TestBerechneAbrechnung_Teilzeitraum(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ladeAbrechnungDaten: %v", err)
 	}
-	rechne := func(b monatsbereich) *abrechnung {
+	rechne := func(b abr.Monatsbereich) *abrechnung {
 		t.Helper()
 		erg, err := berechneAbrechnung(db, d, 2026, b, 2)
 		if err != nil || erg.Abrechnung == nil {
@@ -845,9 +846,9 @@ func TestBerechneAbrechnung_Teilzeitraum(t *testing.T) {
 		}
 		return erg.Abrechnung
 	}
-	ganz := rechne(ganzesJahr)
-	a := rechne(monatsbereich{Von: 10, Bis: 10})
-	b := rechne(monatsbereich{Von: 11, Bis: 12})
+	ganz := rechne(abr.GanzesJahr)
+	a := rechne(abr.Monatsbereich{Von: 10, Bis: 10})
+	b := rechne(abr.Monatsbereich{Von: 11, Bis: 12})
 
 	if a.Zeitraum.Titel() != "Nebenkostenabrechnung Oktober 2026 bis Oktober 2026" || !a.Zeitraum.Teilzeitraum {
 		t.Errorf("Titel = %q, Teilzeitraum %v", a.Zeitraum.Titel(), a.Zeitraum.Teilzeitraum)
@@ -882,26 +883,26 @@ func TestPruefeAbrechnung_Teilzeitraum(t *testing.T) {
 	t.Run("nur Monate des Zeitraums pruefen", func(t *testing.T) {
 		d := d
 		d.Eingaben = d.Eingaben[:0] // no Fixkosten at all
-		got, err := pruefeAbrechnungDaten(d, 2026, monatsbereich{Von: 11, Bis: 11}, 2)
-		if err != nil || len(got.Maengel) != 1 || got.Maengel[0].Art != mangelFixkostenFehlt {
+		got, err := abr.Pruefe(d, 2026, abr.Monatsbereich{Von: 11, Bis: 11}, 2)
+		if err != nil || len(got.Maengel) != 1 || got.Maengel[0].Art != abr.MangelFixkostenFehlt {
 			t.Errorf("Maengel = %+v, err %v, want only the missing Fixkosten of November", got.Maengel, err)
 		}
 	})
 	t.Run("Zeitraum vor der ersten Ablesung", func(t *testing.T) {
-		got, _ := pruefeAbrechnungDaten(d, 2026, monatsbereich{Von: 1, Bis: 8}, 2)
-		if got.Zeitraum != nil || len(got.Maengel) != 1 || got.Maengel[0].Art != mangelKeinZeitraum {
+		got, _ := abr.Pruefe(d, 2026, abr.Monatsbereich{Von: 1, Bis: 8}, 2)
+		if got.Zeitraum != nil || len(got.Maengel) != 1 || got.Maengel[0].Art != abr.MangelKeinZeitraum {
 			t.Errorf("got %+v, want kein_zeitraum", got)
 		}
 	})
 	t.Run("Zeitraum mit dem ersten Monat bleibt Teiljahr", func(t *testing.T) {
-		got, _ := pruefeAbrechnungDaten(d, 2026, monatsbereich{Von: 1, Bis: 10}, 2)
+		got, _ := abr.Pruefe(d, 2026, abr.Monatsbereich{Von: 1, Bis: 10}, 2)
 		if got.Zeitraum == nil || !got.Zeitraum.TeilJahr || got.Zeitraum.Von.Format("2006-01-02") != "2026-09-15" || got.Zeitraum.Bis.Format("2006-01-02") != "2026-10-31" {
 			t.Errorf("Zeitraum = %+v", got.Zeitraum)
 		}
 	})
 }
 
-func ladeTeiljahrPruefDaten(t *testing.T) abrechnungPruefDaten {
+func ladeTeiljahrPruefDaten(t *testing.T) abr.Daten {
 	t.Helper()
 	d, err := ladeAbrechnungDaten(teiljahrDB(t, true))
 	if err != nil {
