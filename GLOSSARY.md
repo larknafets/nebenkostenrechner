@@ -19,6 +19,10 @@ _Avoid_: Messwert, Reading
 **Verbrauch**:
 Die Differenz zwischen dem Zählerstand einer Ablesung und dem der chronologisch nächst-älteren Ablesung desselben Zählers.
 
+**Verbrauchskosten**:
+Die aus dem Verbrauch einer Ablesung berechneten Kosten (Strom, Wasser, Heizung, Einspeisung), noch ohne Fixkosten. Nur für eine vollständige Ablesung mit Vorperiode berechenbar, ein Teilstand oder die erste Ablesung ist es nicht. Je Ablesung, nicht je Monat: mehrere Ablesungen desselben Abrechnungsmonats haben je eigene Verbrauchskosten.
+_Avoid_: Monatskosten (mehrere Ablesungen pro Abrechnungsmonat möglich)
+
 **Abrechnungsmonat**:
 Der Monat, dem eine Ablesung für die Abrechnung zugeordnet ist (`periods.monat`) - unabhängig vom Ablesedatum, das nur der tatsächliche Erfassungszeitpunkt ist. Wird beim Anlegen aus dem Ablesedatum vorbelegt, ist aber manuell überschreibbar; mehrere Ablesungen desselben Abrechnungsmonats (untermonatige Ablesungen) bleiben als eigene Datensätze erhalten, ihre Kosten werden für die Monatsanzeige summiert. Muss chronologisch monoton nicht-fallend mit dem Ablesedatum bleiben.
 _Avoid_: Zeitraum, Monat (zu unspezifisch - Ablesedatum trägt ebenfalls einen Monat)
