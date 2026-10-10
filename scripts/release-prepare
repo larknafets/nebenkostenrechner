@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Prepares a release locally (docs/agents/releases.md): moves the entries of
 # .changelog/unreleased.md into CHANGELOG.md, empties unreleased.md, commits
-# that and sets the tag. It never pushes: the user pushes the commit first,
-# then the tag.
+# that and sets the tag. It never pushes: the commit is pushed first, then
+# the tag.
 #
 #   scripts/release-prepare vX.Y.Z               prepare for real
 #   scripts/release-prepare vX.Y.Z --dry-run     only show what would happen
@@ -133,6 +133,6 @@ git tag -a "$tag" -m "$tag"
 
 echo
 echo "Fertig: Commit und Tag $tag liegen lokal, nichts ist gepusht. Nächste Schritte:"
-echo "  1. ! git push              (der Hook prüft vorher)"
+echo "  1. git push origin HEAD:main   (der Hook prüft vorher)"
 echo "  2. CI auf main abwarten"
-echo "  3. ! git push origin $tag"
+echo "  3. git push origin $tag"
