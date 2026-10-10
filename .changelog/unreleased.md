@@ -36,3 +36,5 @@ Keep every section, an empty one included. Do not change the headings.
 ## Fehlerkorrekturen
 
 ## Wartung
+
+- Go-Version auf 1.27.2 angehoben, behebt Sicherheitslücken in der Go-Standardbibliothek (net/http, net/textproto, crypto/tls)
