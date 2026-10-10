@@ -6,7 +6,8 @@
 - **Developer changes** (`docs`, `chore`, `ci`, `test`, `style`, `build`) need no PR and no release. Commit on `main` after `scripts/check` is green, push with exactly `git push origin HEAD:main` (the global guard allows only that form on `main`). Branch protection lets the admin push to `main` (`enforce_admins` is off, GitHub prints "Bypassed rule violations"). They get no line in the changelog either, except a `build` change an operator must know about (`changelog.md`).
 - `style` means formatting only (whitespace, indentation, `gofmt`), behavior stays identical. A CSS or layout change users can see is a `fix` or `feat`, a rename without behavior change is a `refactor`. If unsure, do not use `style`.
 - Exception to "`docs` goes straight to `main`": the changelog line of a change is not a separate `docs` commit. It belongs to the commit of the change (`feat`, `fix`, or the `build` commit of a Wartung entry) and travels with its PR. `CHANGELOG.md` itself changes only at a release and when old entries are revised, both as a `docs` commit on `main`.
-- A change under `.github/workflows/` is the one risky developer change: `actionlint` catches syntax, not behavior. If the diff does not show how it behaves, use a PR so CI runs before it lands.
+- A change under `.github/workflows/` is a risky developer change: `actionlint` catches syntax, not behavior. If the diff does not show how it behaves, use a PR so CI runs before it lands.
+- The same goes for the Go version in `go.mod` and the `Dockerfile`: CI has the pinned linter and toolchain, a local run does not (Go 1.27.2 went straight to `main` and broke the pinned golangci-lint). Use a PR, and check the linter pin in `ci.yml` in the same change.
 - After a direct push check that `main` is green (`gh run list --branch main`) before tagging a release.
 
 ## Branches
