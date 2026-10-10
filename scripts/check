@@ -29,6 +29,11 @@ go vet ./...
 
 step "golangci-lint"
 if command -v golangci-lint >/dev/null; then
+  ci_lint=$(sed -n 's/^ *version: v\(2\.[0-9.]*\)$/\1/p' .github/workflows/ci.yml)
+  local_lint=$(golangci-lint --version | sed -n 's/.*has version \([0-9.]*\).*/\1/p')
+  if [ -n "$ci_lint" ] && [ "$ci_lint" != "$local_lint" ]; then
+    echo "warning: golangci-lint $local_lint here, CI pins $ci_lint (.github/workflows/ci.yml): CI may report what this run does not" >&2
+  fi
   golangci-lint run
 else
   echo "golangci-lint not installed (brew install golangci-lint): CI runs it, so this check is incomplete" >&2
