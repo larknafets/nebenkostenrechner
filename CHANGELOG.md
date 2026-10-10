@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.15.1 - 2026-10-10
+
+### Wartung
+
+- Go-Version auf 1.27.2 angehoben, behebt Sicherheitslücken in der Go-Standardbibliothek (net/http, net/textproto, crypto/tls)
+
 ## v0.15.0 - 2026-10-07
 
 ### Neue Funktionen
