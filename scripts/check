@@ -24,6 +24,17 @@ if [ -n "$dashes" ]; then
   exit 1
 fi
 
+step "stray copies"
+# A sync tool or Finder leaves "file 2.go" next to "file.go". They are not
+# ignored on purpose: this step has to see them, and a `git add -A` would
+# commit them.
+strays=$(git ls-files -co --exclude-standard | grep -E ' [0-9]+(\.[^/]*)?$' || true)
+if [ -n "$strays" ]; then
+  echo "Copies with a number suffix in the working tree, delete them (compare with the original first):"
+  echo "$strays"
+  exit 1
+fi
+
 step "go vet"
 go vet ./...
 
