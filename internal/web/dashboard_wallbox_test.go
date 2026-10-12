@@ -172,8 +172,8 @@ func TestPVGutschrift_NegativeZeileBeiWohnung1(t *testing.T) {
 
 func TestSaldo_GutschriftErhoehtGuthabenOhneDeckel(t *testing.T) {
 	monate := []dashboardMonat{
-		{Label: "Nov", HasFixkosten: true, KombiniertGesamt: 20, PVGutschrift: 5},
-		{Label: "Okt", HasFixkosten: true, KombiniertGesamt: 30},
+		{Label: "Nov", HasFixkosten: true, FixkostenGesamt: 25, PVGutschrift: 5},
+		{Label: "Okt", HasFixkosten: true, FixkostenGesamt: 30},
 	}
 	// Brutto Nov = 25 (net 20 + 5 credit): saldo Okt 100-30 = 70, Nov 70 + 100 - 20 = 150.
 	accumulateAbschlagSaldo(monate, []float64{100, 100})
