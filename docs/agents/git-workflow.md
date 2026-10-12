@@ -37,3 +37,4 @@
 - Merge a multi-commit PR with `gh pr merge --auto --rebase` so every commit reaches `main` with its own message. Squash-merge only a single-commit PR.
 - After the user agreed to the PR, switch on auto-merge with `--auto` (ask first, a classifier blocks it otherwise), then it merges as soon as the `test` check is green. The branch must be up to date with `main` (strict check): if it falls behind, `gh pr update-branch <nr> --rebase`.
 - Before pushing to an existing branch, check `gh pr view`: a commit pushed after the merge misses `main`.
+- `gh pr create` can answer `HTTP 504` and still have created the PR. Run `gh pr list --head <branch>` before trying again, or a second PR appears.
