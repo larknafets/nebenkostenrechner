@@ -1336,6 +1336,9 @@ func TestEnsurePeriodsNullablePriceColumns(t *testing.T) {
 		if err := ensurePeriodsWallboxKomplettW1Column(db); err != nil {
 			t.Fatalf("ensurePeriodsWallboxKomplettW1Column: %v", err)
 		}
+		if err := ensurePeriodsPVGutschriftW1Column(db); err != nil {
+			t.Fatalf("ensurePeriodsPVGutschriftW1Column: %v", err)
+		}
 
 		if columnNotNull(t, db, "periods", "strompreis") {
 			t.Error("periods.strompreis still NOT NULL after migration")

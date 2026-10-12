@@ -238,8 +238,8 @@ func TestAblesungDetail_PlausibilitaetsHinweis(t *testing.T) {
 }
 
 func TestCSV_SchalterAlsLetzteSpalte(t *testing.T) {
-	if got := csvHeader[len(csvHeader)-1]; got != "wallbox_komplett_wohnung1" {
-		t.Fatalf("letzte CSV-Spalte = %q, want wallbox_komplett_wohnung1", got)
+	if got := csvHeader[len(csvHeader)-2]; got != "wallbox_komplett_wohnung1" {
+		t.Fatalf("vorletzte CSV-Spalte = %q, want wallbox_komplett_wohnung1", got)
 	}
 
 	db := openTestDB(t)
@@ -258,14 +258,14 @@ func TestCSV_SchalterAlsLetzteSpalte(t *testing.T) {
 	if len(lines) != 3 {
 		t.Fatalf("CSV hat %d Zeilen, want 3", len(lines))
 	}
-	if !strings.HasSuffix(strings.TrimSpace(lines[1]), ";;;1") || !strings.HasSuffix(strings.TrimSpace(lines[2]), ";;;0") {
+	if !strings.HasSuffix(strings.TrimSpace(lines[1]), ";;;1;0") || !strings.HasSuffix(strings.TrimSpace(lines[2]), ";;;0;0") {
 		t.Errorf("Schalter-Spalte soll 1 und 0 enden: %q / %q", lines[1], lines[2])
 	}
 }
 
 func TestCSV_ImportSchalter(t *testing.T) {
 	row := func(schalter string) string {
-		return strings.TrimSuffix(csvRow("2026-06-01", "100"), ";0") + ";" + schalter
+		return strings.TrimSuffix(csvRow("2026-06-01", "100"), ";0;0") + ";" + schalter + ";0"
 	}
 	header := strings.Join(csvHeader, ";")
 
@@ -286,8 +286,8 @@ func TestCSV_ImportSchalter(t *testing.T) {
 	})
 
 	t.Run("alte Datei ohne die Spalte", func(t *testing.T) {
-		oldHeader := strings.TrimSuffix(header, ";wallbox_komplett_wohnung1")
-		rows, err := parseImportCSV(strings.NewReader(oldHeader + "\n" + strings.TrimSuffix(csvRow("2026-06-01", "100"), ";0") + "\n"))
+		oldHeader := strings.TrimSuffix(header, ";wallbox_komplett_wohnung1;pv_gutschrift_wohnung1")
+		rows, err := parseImportCSV(strings.NewReader(oldHeader + "\n" + strings.TrimSuffix(csvRow("2026-06-01", "100"), ";0;0") + "\n"))
 		if err != nil {
 			t.Fatalf("parseImportCSV (alte Datei): %v", err)
 		}

@@ -16,6 +16,7 @@
   <p><strong>Zeitraum:</strong> {{if .ZeitraumStart}}{{deDatum .ZeitraumStart}} – {{deDatum .Period.ReadingDate}}{{else}}bis {{deDatum .Period.ReadingDate}} (keine Vorperiode){{end}}</p>
   <p><strong>Abrechnungsmonat:</strong> {{if .MonatErfasst}}{{.MonatLabel}}{{else}}<span class="text-warning">noch offen</span>{{end}}</p>
   <p><strong>Wallboxen vollständig Wohnung 1:</strong> {{if .Period.WallboxKomplettW1}}Ja{{else}}Nein{{end}}</p>
+  <p><strong>PV-Gutschrift Wohnung 1:</strong> {{if .Period.PVGutschriftW1}}Ja{{else}}Nein{{end}}</p>
   <p><strong>Preise:</strong>
     Strom {{if .StrompreisErfasst}}{{deEUR (orZero .Period.Strompreis)}}&nbsp;EUR/kWh{{else}}<span class="text-warning">noch offen</span>{{end}} ·
     Frischwasser {{if .FrischwasserErfasst}}{{deEUR (orZero .Period.FrischwasserPreis)}}&nbsp;EUR/m³{{else}}<span class="text-warning">noch offen</span>{{end}} ·
@@ -113,6 +114,7 @@
     <tbody>
       <tr><td>Einspeisung</td><td>{{de2 .Einspeisung.EinspeisungKWh}}&nbsp;kWh</td></tr>
       <tr><td><strong>Ertrag</strong></td><td><strong>{{deEUR .Einspeisung.Ertrag}}&nbsp;EUR</strong></td></tr>
+      {{if .Period.PVGutschriftW1}}<tr><td>Davon PV-Gutschrift Wohnung 1</td><td>{{deEUR .Einspeisung.Ertrag}}&nbsp;EUR</td></tr>{{end}}
     </tbody>
   </table>
   {{end}}

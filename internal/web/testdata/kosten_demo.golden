@@ -5488,6 +5488,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 247.50
           Ertrag: 19.80
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -5547,6 +5548,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 448.50
           Ertrag: 35.88
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -5606,6 +5608,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 649.50
           Ertrag: 51.96
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -5665,6 +5668,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 750.00
           Ertrag: 60.00
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -5724,6 +5728,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 750.00
           Ertrag: 60.00
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -5783,6 +5788,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 649.50
           Ertrag: 51.96
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -5842,6 +5848,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 448.50
           Ertrag: 35.88
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -5901,6 +5908,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 247.50
           Ertrag: 19.80
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -5960,6 +5968,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 133.60
           Ertrag: 10.69
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -6019,6 +6028,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 100.10
           Ertrag: 8.01
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 1
@@ -6078,6 +6088,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 100.10
           Ertrag: 8.01
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 1
@@ -6137,6 +6148,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 133.60
           Ertrag: 10.69
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 1
@@ -6196,6 +6208,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 247.50
           Ertrag: 19.80
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -6255,6 +6268,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 448.50
           Ertrag: 35.88
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -6314,6 +6328,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 649.50
           Ertrag: 51.96
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -6373,6 +6388,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 750.00
           Ertrag: 60.00
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -6432,6 +6448,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 750.00
           Ertrag: 60.00
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -6491,6 +6508,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 649.50
           Ertrag: 51.96
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -6550,6 +6568,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 448.50
           Ertrag: 35.88
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -6609,6 +6628,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 247.50
           Ertrag: 19.80
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -6668,6 +6688,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 133.60
           Ertrag: 10.69
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -6727,6 +6748,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 100.10
           Ertrag: 8.01
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -6786,6 +6808,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 100.10
           Ertrag: 8.01
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -6845,6 +6868,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 133.60
           Ertrag: 10.69
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -6904,6 +6928,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 247.50
           Ertrag: 19.80
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 1
@@ -6963,6 +6988,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 448.50
           Ertrag: 35.88
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 1
@@ -7022,6 +7048,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 649.50
           Ertrag: 51.96
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 1
@@ -7081,6 +7108,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 750.00
           Ertrag: 60.00
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 1
@@ -7140,6 +7168,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 750.00
           Ertrag: 60.00
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 1
@@ -7199,6 +7228,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 649.50
           Ertrag: 51.96
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -7258,6 +7288,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 448.50
           Ertrag: 35.88
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -7317,6 +7348,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 247.50
           Ertrag: 19.80
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -7376,6 +7408,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 133.60
           Ertrag: 10.69
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -7435,6 +7468,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 100.10
           Ertrag: 8.01
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -7494,6 +7528,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 100.10
           Ertrag: 8.01
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -7553,6 +7588,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 133.60
           Ertrag: 10.69
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -7612,6 +7648,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 247.50
           Ertrag: 19.80
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2
@@ -7671,6 +7708,7 @@ Dashboard:
         Einspeisung:
           EinspeisungKWh: 448.50
           Ertrag: 35.88
+        PVGutschriftW1: 0.00
       Personen: {2}
         1: 2
         2: 2

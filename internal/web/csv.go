@@ -24,19 +24,23 @@ import (
 // empty means "nicht erfasst". An import also accepts older files without
 // them: csvImportHeader lists only the required columns.
 //
-// The very last column is the switch "Wallboxen vollständig Wohnung 1"
-// (#225), 1 or 0. It is optional on import too (empty or missing = 0).
+// After them come the two per-Ablesung switches "Wallboxen vollständig
+// Wohnung 1" (#225) and "PV-Gutschrift Wohnung 1" (#226), 1 or 0 each. They
+// are optional on import too (empty or missing = 0).
 var csvHeader = append(append(append(append([]string{"reading_date", "monat"}, store.MeterKeys...),
 	"strompreis", "frischwasser_preis", "abwasser_preis", "einspeisung_preis",
 	"personen_1", "personen_2",
-), store.OptionalMeterKeys...), csvColWallboxKomplett)
+), store.OptionalMeterKeys...), csvColWallboxKomplett, csvColPVGutschrift)
 
 // csvColWallboxKomplett is the CSV column of Period.WallboxKomplettW1.
 const csvColWallboxKomplett = "wallbox_komplett_wohnung1"
 
+// csvColPVGutschrift is the CSV column of Period.PVGutschriftW1.
+const csvColPVGutschrift = "pv_gutschrift_wohnung1"
+
 // csvImportHeader is csvHeader without the optional columns, the columns an
 // import insists on.
-var csvImportHeader = csvHeader[:len(csvHeader)-len(store.OptionalMeterKeys)-1]
+var csvImportHeader = csvHeader[:len(csvHeader)-len(store.OptionalMeterKeys)-2]
 
 // handleExportCSV streams every reading as CSV (Ticket #53).
 func handleExportCSV() http.HandlerFunc {
@@ -75,12 +79,31 @@ func formatPeriodCSVRow(p *store.LatestPeriod) []string {
 			row = append(row, "")
 		}
 	}
-	if p.WallboxKomplettW1 {
-		row = append(row, "1")
-	} else {
-		row = append(row, "0")
-	}
+	row = append(row, formatSwitchCSV(p.WallboxKomplettW1), formatSwitchCSV(p.PVGutschriftW1))
 	return row
+}
+
+func formatSwitchCSV(on bool) string {
+	if on {
+		return "1"
+	}
+	return "0"
+}
+
+// parseSwitchCSV reads an optional 0/1 switch column: a missing column or an
+// empty cell means off.
+func parseSwitchCSV(record []string, colIdx map[string]int, col string, line int) (bool, error) {
+	idx, ok := colIdx[col]
+	if !ok || idx >= len(record) {
+		return false, nil
+	}
+	switch strings.TrimSpace(record[idx]) {
+	case "", "0":
+		return false, nil
+	case "1":
+		return true, nil
+	}
+	return false, fmt.Errorf("Zeile %d: ungültiger Wert für %s: %q (erlaubt: 0 oder 1)", line, col, record[idx])
 }
 
 // importRow pairs a parsed PeriodInput with its original CSV line number,
@@ -183,16 +206,13 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 		readings[key] = v
 	}
 
-	// Optional switch column: missing or empty means off.
-	komplettW1 := false
-	if idx, ok := colIdx[csvColWallboxKomplett]; ok && idx < len(record) {
-		switch strings.TrimSpace(record[idx]) {
-		case "", "0":
-		case "1":
-			komplettW1 = true
-		default:
-			return importRow{}, fmt.Errorf("Zeile %d: ungültiger Wert für %s: %q (erlaubt: 0 oder 1)", line, csvColWallboxKomplett, record[idx])
-		}
+	komplettW1, err := parseSwitchCSV(record, colIdx, csvColWallboxKomplett, line)
+	if err != nil {
+		return importRow{}, err
+	}
+	pvGutschriftW1, err := parseSwitchCSV(record, colIdx, csvColPVGutschrift, line)
+	if err != nil {
+		return importRow{}, err
 	}
 
 	strompreis, err1 := parseDecimalDE(cell("strompreis"))
@@ -222,6 +242,7 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 			AbwasserPreis:     store.Float64(abwasserPreis),
 			EinspeisungPreis:  store.Float64(einspeisungPreis),
 			WallboxKomplettW1: komplettW1,
+			PVGutschriftW1:    pvGutschriftW1,
 			Readings:          readings,
 			Personen:          personen,
 		},

@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS periods (
     abwasser_preis             REAL,
     einspeisung_preis          REAL,
     monat                      TEXT NOT NULL DEFAULT '',
-    wallbox_komplett_w1        INTEGER NOT NULL DEFAULT 0
+    wallbox_komplett_w1        INTEGER NOT NULL DEFAULT 0,
+    pv_gutschrift_w1           INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS meter_readings (

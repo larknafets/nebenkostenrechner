@@ -56,7 +56,9 @@ Unter den Wallboxen lassen sich zwei **optionale Einzelzähler** erfassen: `stro
 
 Je Ablesung gibt es außerdem den Schalter **"Wallboxen vollständig Wohnung 1"** (Formular, Schritt 1, direkt unter den Wallbox-Feldern; die Ablesungsseite zeigt ihn als Ja/Nein). Eine neue Ablesung belegt ihn aus der chronologisch letzten Ablesung vor, beim Korrigieren gilt der Wert der Ablesung. Bestehende Ablesungen bekommen beim Update den Wert "Nein", ihre Kosten ändern sich nicht.
 
-Im CSV-Export stehen die zwei Einzelzähler und der Schalter als letzte drei Spalten (`strom_wallbox_wohnung1`, `strom_wallbox_wohnung2`, leer = nicht erfasst, und `wallbox_komplett_wohnung1`, 1 oder 0). Der Import akzeptiert sie als optional (fehlende oder leere Schalter-Zelle = 0), ältere Dateien ohne diese Spalten lassen sich weiter importieren.
+Ebenso gibt es je Ablesung den Schalter **"PV-Gutschrift Wohnung 1"** (Formular, Schritt 4, beim Einspeisepreis; die Ablesungsseite zeigt ihn als Ja/Nein), gleich vorbelegt und für bestehende Ablesungen auf "Nein". Was er bewirkt, steht unter "Einspeisevergütung (PV)".
+
+Im CSV-Export stehen die zwei Einzelzähler und die zwei Schalter als letzte vier Spalten (`strom_wallbox_wohnung1`, `strom_wallbox_wohnung2`, leer = nicht erfasst, sowie `wallbox_komplett_wohnung1` und `pv_gutschrift_wohnung1`, je 1 oder 0). Der Import akzeptiert sie als optional (fehlende oder leere Schalter-Zelle = 0), ältere Dateien ohne diese Spalten lassen sich weiter importieren.
 
 `strom_wallbox` fließt als dritte Zuteilungsstufe in die Strom-Netzbezug-Zuteilung ein (siehe unten) - sie wird vom nach Wohnung 2/Wärmepumpe verbleibenden Netzbezug abgezogen, bevor der Rest implizit Wohnung 1 zufällt. Kein eigener Wallbox-Tarif. Wie die Wallbox-Kosten auf die Wohnungen verteilt werden, steht unter "Strom" (Verteilung der Wallbox-Kosten).
 
@@ -137,7 +139,7 @@ Kosten_Abwasser_X     = Abwasser_X * Abwasserpreis
 
 ### Einspeisevergütung (PV)
 
-Rein informativ, unabhängig von der Kostenverteilung oben - keine Wohnungszuteilung, da der Einspeisezähler hausweit misst.
+Haus-weit und informativ, unabhängig von der Kostenverteilung oben, da der Einspeisezähler hausweit misst. Nur mit dem Schalter **"PV-Gutschrift Wohnung 1"** der Ablesung wird der Ertrag dieser Ablesung als **PV-Gutschrift** Wohnung 1 gutgeschrieben: Sie erhöht deren Guthaben im fortlaufenden Saldo ohne Deckel, mindert aber nicht die Verbrauchskosten. Wohnung 2 bekommt nie eine Gutschrift, die haus-weite Tabelle bleibt unverändert. Mehrere Ablesungen im selben Abrechnungsmonat haben je ihren eigenen Schalter.
 
 ```
 Einspeisevergütung = Verbrauch(strom_einspeisung) * Einspeisung_Preis
