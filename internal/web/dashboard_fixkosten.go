@@ -272,6 +272,9 @@ type dashboardJahreszeile struct {
 	// PVGutschriftSumme is the year's credit (#227), GesamtSumme is net of it.
 	PVGutschriftSumme float64
 	GesamtSumme       float64
+	// GesamtBruttoSumme is Verbrauch plus Fixkosten without the credit, for
+	// the modes that do not show the PV-Gutschrift.
+	GesamtBruttoSumme float64
 
 	// Endstand (closing balance): the accumulated balance at year end (or
 	// at the latest recorded month, for a running year) - not a sum,
@@ -594,7 +597,8 @@ func mitJahreszeilen(monate []dashboardMonat) []dashboardVerlaufEintrag {
 			Jahr: g.Jahr, IstLaufend: g.IstLaufend,
 			VerbrauchSumme: calc.Round2(vSumme), FixkostenSumme: calc.Round2(fSumme),
 			PVGutschriftSumme: calc.Round2(gSumme), GesamtSumme: calc.Round2(vSumme + fSumme - gSumme),
-			Endstand: endstand,
+			GesamtBruttoSumme: calc.Round2(vSumme + fSumme),
+			Endstand:          endstand,
 		}})
 	}
 	return out
