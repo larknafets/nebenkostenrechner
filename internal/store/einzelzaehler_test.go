@@ -50,7 +50,7 @@ func TestEinzelzaehler_RoundtripAlsOptionaleStaende(t *testing.T) {
 		t.Errorf("Readings[%s] vorhanden, want nicht erfasst (nur Wohnung 2 eingetragen)", keyWallboxW1)
 	}
 
-	// Ergänzen per Update, ohne den vorhandenen Stand zu verlieren.
+	// Add via update without losing the existing reading.
 	in := vollePeriode("2026-06-01", map[string]float64{keyWallboxW1: 33})
 	delete(in.Readings, keyWallboxW2)
 	if err := UpdatePeriod(db, id, in); err != nil {

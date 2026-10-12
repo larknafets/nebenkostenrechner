@@ -9,7 +9,7 @@ import (
 )
 
 // wallboxKosten computes the Verbrauchskosten of a second Ablesung with a
-// Netzbezug of 100 kWh, Wohnung 2 30 kWh, Waermepumpe 50 kWh and Wallboxen
+// Netzbezug of 100 kWh, Wohnung 2 30 kWh, Wärmepumpe 50 kWh and Wallboxen
 // 40 kWh: the Netzbezug-Anteil Wallboxen is 20 kWh (the rest is PV). prev
 // and cur add the optional Einzelzaehler readings.
 func wallboxKosten(t *testing.T, preis float64, komplettW1 bool, prev, cur map[string]float64) calc.Ablesung {
@@ -116,7 +116,7 @@ func TestWallbox_OhneEinzelzaehlerBleibtInformativ(t *testing.T) {
 
 func TestWallbox_Plausibilitaet(t *testing.T) {
 	both := map[string]float64{store.MeterKeyWallboxWohnung1: 0, store.MeterKeyWallboxWohnung2: 0}
-	// Zwischenzaehler verbraucht 40 kWh: Schwelle ist max(5 % = 2, 2 kWh) = 2.
+	// Zwischenzähler verbraucht 40 kWh: Schwelle ist max(5 % = 2, 2 kWh) = 2.
 	cases := []struct {
 		name         string
 		w1, w2       float64
@@ -139,7 +139,7 @@ func TestWallbox_Plausibilitaet(t *testing.T) {
 	}
 
 	t.Run("Prozentschwelle bei grossem Verbrauch", func(t *testing.T) {
-		// 1000 kWh Zwischenzaehler: 5 % = 50 kWh > 2 kWh.
+		// 1000 kWh Zwischenzähler: 5 % = 50 kWh > 2 kWh.
 		a := wallboxKosten(t, 0.30, false, both, map[string]float64{
 			"strom_wallbox": 1000, store.MeterKeyWallboxWohnung1: 600, store.MeterKeyWallboxWohnung2: 451,
 		})

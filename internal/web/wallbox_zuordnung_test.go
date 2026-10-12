@@ -196,7 +196,7 @@ func TestAblesungDetail_WallboxKostenJeWohnung(t *testing.T) {
 }
 
 func TestAblesungDetail_PlausibilitaetsHinweis(t *testing.T) {
-	// Zwischenzaehler: 40 kWh, Schwelle 2 kWh.
+	// Zwischenzähler: 40 kWh, Schwelle 2 kWh.
 	cases := []struct {
 		name    string
 		w1, w2  float64
