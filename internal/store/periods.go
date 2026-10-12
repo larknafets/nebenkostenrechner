@@ -6,47 +6,6 @@ import (
 	"fmt"
 )
 
-// MeterKeys is the stable, ordered list of the meter keys every period must
-// have a reading for. See Issue #6 / seed() for the full definitions.
-var MeterKeys = []string{
-	"strom_gesamt",
-	"strom_wohnung2",
-	"strom_waermepumpe",
-	"strom_wallbox",
-	"wasser_gesamt",
-	"wasser_wohnung2",
-	"wasser_warmwasseraufbereitung",
-	"waerme_wohnung1",
-	"waerme_wohnung2",
-	"strom_einspeisung",
-}
-
-// Keys of the optional Wallbox-Einzelzähler behind the Zwischenzähler
-// "Wallboxen" (#224).
-const (
-	MeterKeyWallboxWohnung1 = "strom_wallbox_wohnung1"
-	MeterKeyWallboxWohnung2 = "strom_wallbox_wohnung2"
-)
-
-// OptionalMeterKeys are the meters a period may leave out without becoming
-// a Teilstand (#224). A missing reading means "nicht erfasst", never 0. They
-// are persisted and exported like MeterKeys, but completeness checks, cost
-// calculation and the Anlage only read MeterKeys.
-var OptionalMeterKeys = []string{
-	MeterKeyWallboxWohnung1,
-	MeterKeyWallboxWohnung2,
-}
-
-// IsOptionalMeter reports whether key is one of OptionalMeterKeys.
-func IsOptionalMeter(key string) bool {
-	for _, k := range OptionalMeterKeys {
-		if k == key {
-			return true
-		}
-	}
-	return false
-}
-
 // VerbrauchOptional is the consumption of an optional meter: current minus
 // previous reading. ok is false if either reading is missing ("nicht
 // berechenbar", never computed against 0).
@@ -57,46 +16,6 @@ func VerbrauchOptional(current, previous map[string]float64, key string) (verbra
 		return 0, false
 	}
 	return cur - prev, true
-}
-
-// allMeterKeys is MeterKeys followed by OptionalMeterKeys, the meters that
-// are persisted and exported.
-func allMeterKeys() []string {
-	return append(append([]string{}, MeterKeys...), OptionalMeterKeys...)
-}
-
-// Meter is one fixed meter (Zähler) with its display label and unit.
-type Meter struct {
-	Key   string
-	Label string
-	Unit  string
-	// ApartmentID is the apartment a meter belongs to, 0 for a house-wide
-	// meter.
-	ApartmentID int64
-}
-
-// Meters returns the required meters (MeterKeys) ordered by id, the Anhang's
-// source for the meter labels and units. The optional Einzelzähler are left
-// out on purpose, the Anlage does not list them yet.
-func Meters(db *sql.DB) ([]Meter, error) {
-	rows, err := db.Query(`SELECT key, label, unit, COALESCE(apartment_id, 0) FROM meters ORDER BY id`)
-	if err != nil {
-		return nil, fmt.Errorf("query meters: %w", err)
-	}
-	defer rows.Close()
-
-	var out []Meter
-	for rows.Next() {
-		var m Meter
-		if err := rows.Scan(&m.Key, &m.Label, &m.Unit, &m.ApartmentID); err != nil {
-			return nil, fmt.Errorf("scan meter: %w", err)
-		}
-		if IsOptionalMeter(m.Key) {
-			continue
-		}
-		out = append(out, m)
-	}
-	return out, rows.Err()
 }
 
 // inTx runs fn in one transaction, committing only if fn succeeds.
@@ -793,8 +712,8 @@ func PeriodComplete(db *sql.DB, periodID int64) (bool, error) {
 	// no part of completeness, and must not stand in for a missing one.
 	if err := db.QueryRow(
 		`SELECT COUNT(*) FROM meter_readings r JOIN meters m ON m.id = r.meter_id
-		 WHERE r.period_id = ? AND m.key NOT IN (?, ?)`,
-		periodID, OptionalMeterKeys[0], OptionalMeterKeys[1],
+		 WHERE r.period_id = ? AND m.key IN (`+placeholders(len(MeterKeys))+`)`,
+		append([]any{periodID}, keysAsArgs(MeterKeys)...)...,
 	).Scan(&readingCount); err != nil {
 		return false, fmt.Errorf("count readings for period %d: %w", periodID, err)
 	}

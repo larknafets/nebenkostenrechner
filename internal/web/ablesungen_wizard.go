@@ -66,7 +66,7 @@ type wizardData struct {
 
 	// EinzelzaehlerFelder are the optional Wallbox-Einzelzähler inputs
 	// (#224), shown below the Wallboxen field.
-	EinzelzaehlerFelder []einzelzaehlerFeld
+	EinzelzaehlerFelder []store.Meter
 
 	// WallboxKomplettW1 is the switch "Wallboxen vollständig Wohnung 1"
 	// (#225): prefilled from the newest Ablesung on a new one, from the
@@ -83,17 +83,17 @@ type wizardData struct {
 	NoPeriods bool
 }
 
-// einzelzaehlerFeld is one optional Wallbox-Einzelzähler input of the form.
-type einzelzaehlerFeld struct {
-	Key   string
-	Label string
-}
-
-// einzelzaehlerFelder lists the optional Einzelzähler in form order.
-var einzelzaehlerFelder = []einzelzaehlerFeld{
-	{store.MeterKeyWallboxWohnung1, "Wallbox Wohnung 1"},
-	{store.MeterKeyWallboxWohnung2, "Wallbox Wohnung 2"},
-}
+// einzelzaehlerFelder lists the optional Einzelzähler in form order, taken
+// from the store's meter descriptor.
+var einzelzaehlerFelder = func() []store.Meter {
+	var out []store.Meter
+	for _, m := range store.MeterDefs() {
+		if m.Optional {
+			out = append(out, m)
+		}
+	}
+	return out
+}()
 
 // openTeilstandID returns the id of the chronologically newest period, if
 // it's a Teilstand (partial reading) - 0/false if there's no period yet

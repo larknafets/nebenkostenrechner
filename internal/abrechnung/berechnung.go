@@ -697,28 +697,25 @@ func zaehlerstaende(periods []*store.LatestPeriod, apartments []store.Apartment,
 		zeile := ZaehlerstandZeile{Ablesedatum: p.ReadingDate, Monat: p.Monat, Ausgangsstand: i == von}
 		for _, m := range meters {
 			wert, vorhanden := p.Readings[m.Key]
-			zeile.Staende = append(zeile.Staende, Zaehlerstand{Wert: wert, Eigen: m.ApartmentID == apartmentID, Fehlt: !vorhanden && store.IsOptionalMeter(m.Key)})
+			zeile.Staende = append(zeile.Staende, Zaehlerstand{Wert: wert, Eigen: m.ApartmentID == apartmentID, Fehlt: !vorhanden && m.Optional})
 		}
 		z.Zeilen = append(z.Zeilen, zeile)
 	}
 	return z
 }
 
-// einzelzaehler are the optional Wallbox meters (#224) behind the
-// Zwischenzähler "Wallboxen", in the order the Anlagen list them.
-var einzelzaehler = []store.Meter{
-	{Key: store.MeterKeyWallboxWohnung1, Label: "Wallbox Wohnung 1", Unit: "kWh", ApartmentID: 1},
-	{Key: store.MeterKeyWallboxWohnung2, Label: "Wallbox Wohnung 2", Unit: "kWh", ApartmentID: 2},
-}
-
-// mitEinzelzaehlern inserts the optional Einzelzähler directly after the
-// Zwischenzähler "Wallboxen" (#228). An Einzelzähler without a single
-// reading in rows (the period's Ablesungen) is left out, a missing reading
-// in some of them stays visible as such. rows without any Einzelzähler, or
-// meters without the Zwischenzähler, give meters back unchanged.
+// mitEinzelzaehlern lists the required meters and inserts the optional
+// Einzelzähler (#224) directly after the Zwischenzähler "Wallboxen" (#228).
+// meters holds both kinds (store.Meters), the Anlage filters here. An
+// Einzelzähler without a single reading in rows (the period's Ablesungen) is
+// left out, a missing reading in some of them stays visible as such. Without
+// the Zwischenzähler no Einzelzähler is listed.
 func mitEinzelzaehlern(meters []store.Meter, rows []*store.LatestPeriod) []store.Meter {
 	var vorhanden []store.Meter
-	for _, m := range einzelzaehler {
+	for _, m := range meters {
+		if !m.Optional {
+			continue
+		}
 		for _, p := range rows {
 			if _, ok := p.Readings[m.Key]; ok {
 				vorhanden = append(vorhanden, m)
@@ -726,11 +723,11 @@ func mitEinzelzaehlern(meters []store.Meter, rows []*store.LatestPeriod) []store
 			}
 		}
 	}
-	if len(vorhanden) == 0 {
-		return meters
-	}
-	out := make([]store.Meter, 0, len(meters)+len(vorhanden))
+	out := make([]store.Meter, 0, len(meters))
 	for _, m := range meters {
+		if m.Optional {
+			continue
+		}
 		out = append(out, m)
 		if m.Key == "strom_wallbox" {
 			out = append(out, vorhanden...)
@@ -739,26 +736,10 @@ func mitEinzelzaehlern(meters []store.Meter, rows []*store.LatestPeriod) []store
 	return out
 }
 
-// zaehlerKurznamen are the short column headings of the Zählerstände table,
-// 10 columns plus the dates have to fit on a landscape page.
-var zaehlerKurznamen = map[string]string{
-	"strom_gesamt":                  "Strom gesamt",
-	"strom_wohnung2":                "Strom Whg 2",
-	"strom_waermepumpe":             "Strom WP",
-	"strom_wallbox":                 "Wallboxen",
-	"wasser_gesamt":                 "Wasser gesamt",
-	"wasser_wohnung2":               "Wasser Whg 2",
-	"wasser_warmwasseraufbereitung": "Warmwasser",
-	"waerme_wohnung1":               "Wärme Whg 1",
-	"waerme_wohnung2":               "Wärme Whg 2",
-	"strom_einspeisung":             "Einspeisung (PV)",
-	store.MeterKeyWallboxWohnung1:   "Wallbox Whg 1",
-	store.MeterKeyWallboxWohnung2:   "Wallbox Whg 2",
-}
-
+// zaehlerKurzname is the short column heading of the Zählerstände table.
 func zaehlerKurzname(m store.Meter) string {
-	if n, ok := zaehlerKurznamen[m.Key]; ok {
-		return n
+	if m.Kurzname != "" {
+		return m.Kurzname
 	}
 	return m.Label
 }
@@ -788,7 +769,7 @@ func verbrauchUebersicht(periods []*store.LatestPeriod, apartments []store.Apart
 	for _, m := range meters {
 		b, okB := beginn.Readings[m.Key]
 		e, okE := ende.Readings[m.Key]
-		optional := store.IsOptionalMeter(m.Key)
+		optional := m.Optional
 		unit := m.Unit
 		if unit == "m3" {
 			unit = "m³"

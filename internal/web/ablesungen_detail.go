@@ -8,33 +8,39 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// meterDisplay describes how one meter's reading is labelled on the
-// Ablesung detail view. Order matches the wizard's step grouping.
-type meterDisplay struct {
-	Key   string
-	Label string
-	Unit  string
-	// Optional marks a meter a period may leave out (#224): shown as "nicht
-	// erfasst" instead of "noch offen", consumption only with both readings.
-	Optional bool
-	// Eingerueckt indents the row below its parent meter (Wallboxen).
-	Eingerueckt bool
+// meterDisplayOrder is the order of the meters on the Ablesung detail view,
+// it matches the wizard's step grouping. Label, unit, Optional and
+// Eingerueckt come from the store's meter descriptor.
+var meterDisplayOrder = []string{
+	"strom_gesamt",
+	"strom_einspeisung",
+	"strom_wohnung2",
+	"strom_waermepumpe",
+	"strom_wallbox",
+	store.MeterKeyWallboxWohnung1,
+	store.MeterKeyWallboxWohnung2,
+	"waerme_wohnung1",
+	"waerme_wohnung2",
+	"wasser_gesamt",
+	"wasser_wohnung2",
+	"wasser_warmwasseraufbereitung",
 }
 
-var meterDisplays = []meterDisplay{
-	{Key: "strom_gesamt", Label: "Strom Netzbezug (1.8.0)", Unit: "kWh"},
-	{Key: "strom_einspeisung", Label: "Strom Einspeisung (2.8.0)", Unit: "kWh"},
-	{Key: "strom_wohnung2", Label: "Strom Wohnung 2", Unit: "kWh"},
-	{Key: "strom_waermepumpe", Label: "Strom Wärmepumpe", Unit: "kWh"},
-	{Key: "strom_wallbox", Label: "Strom Wallboxen", Unit: "kWh"},
-	{Key: store.MeterKeyWallboxWohnung1, Label: "Wallbox Wohnung 1", Unit: "kWh", Optional: true, Eingerueckt: true},
-	{Key: store.MeterKeyWallboxWohnung2, Label: "Wallbox Wohnung 2", Unit: "kWh", Optional: true, Eingerueckt: true},
-	{Key: "waerme_wohnung1", Label: "Wärme Wohnung 1", Unit: "MWh"},
-	{Key: "waerme_wohnung2", Label: "Wärme Wohnung 2", Unit: "MWh"},
-	{Key: "wasser_gesamt", Label: "Wasser Gesamt", Unit: "m³"},
-	{Key: "wasser_wohnung2", Label: "Wasser Wohnung 2", Unit: "m³"},
-	{Key: "wasser_warmwasseraufbereitung", Label: "Wasser Warmwasseraufbereitung", Unit: "m³"},
-}
+// meterDisplays resolves meterDisplayOrder against the meter descriptor.
+var meterDisplays = func() []store.Meter {
+	out := make([]store.Meter, 0, len(meterDisplayOrder))
+	for _, key := range meterDisplayOrder {
+		m, ok := store.MeterByKey(key)
+		if !ok {
+			panic("unknown meter key " + key)
+		}
+		if m.Unit == "m3" {
+			m.Unit = "m³"
+		}
+		out = append(out, m)
+	}
+	return out
+}()
 
 // meterZeile is one row of the Zähler table on the Ablesung detail view.
 type meterZeile struct {
@@ -125,7 +131,7 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 		// access has no "missing" distinction).
 		var meters []meterZeile
 		for _, m := range meterDisplays {
-			entry := meterZeile{Label: m.Label, Value: period.Readings[m.Key], Unit: m.Unit, Erfasst: status.MeterErfasst[m.Key], Optional: m.Optional, Eingerueckt: m.Eingerueckt}
+			entry := meterZeile{Label: m.AblesungLabel, Value: period.Readings[m.Key], Unit: m.Unit, Erfasst: status.MeterErfasst[m.Key], Optional: m.Optional, Eingerueckt: m.Eingerueckt}
 			if len(vorperiode) > 0 {
 				if m.Optional {
 					// Optional Einzelzähler (#224): no consumption unless both
