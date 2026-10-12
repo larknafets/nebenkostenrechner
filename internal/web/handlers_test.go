@@ -545,9 +545,9 @@ func TestAccumulateAbschlagSaldo(t *testing.T) {
 	// monate is newest-first (Mär, Feb, Jan); Feb has no Fixkosten-Eingabe
 	// and must be skipped, not treated as Abschlag=0 (#94).
 	monate := []dashboardMonat{
-		{Label: "Mär", HasFixkosten: true, KombiniertGesamt: 30},
-		{Label: "Feb", HasFixkosten: false, KombiniertGesamt: 20},
-		{Label: "Jan", HasFixkosten: true, KombiniertGesamt: 20},
+		{Label: "Mär", HasFixkosten: true, FixkostenGesamt: 30},
+		{Label: "Feb", HasFixkosten: false, FixkostenGesamt: 20},
+		{Label: "Jan", HasFixkosten: true, FixkostenGesamt: 20},
 	}
 	abschlagWerte := []float64{100, 0, 100} // Feb's 0 must never be used
 

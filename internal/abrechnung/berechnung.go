@@ -353,17 +353,19 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	}
 	ab.Betriebskosten = calc.Round2(ab.Betriebskosten)
 	ab.Vorauszahlungen = calc.Round2(ab.Vorauszahlungen)
-	saldo := ab.Vorauszahlungen - ab.Betriebskosten
+	// The Jahressaldo is one period of the same fold the Monatsverlauf uses.
+	periode := calc.SaldoMonat{Abschlag: ab.Vorauszahlungen, Kosten: ab.Betriebskosten}
 	if ab.StromW2 != nil {
-		saldo -= ab.StromW2.Kosten
+		periode.Kosten += ab.StromW2.Kosten
 	}
 	if ab.Wallbox != nil {
-		saldo -= ab.Wallbox.Kosten
+		periode.Kosten += ab.Wallbox.Kosten
 	}
 	if ab.PVGutschrift != nil {
-		saldo += ab.PVGutschrift.Betrag
+		periode.Gutschrift = ab.PVGutschrift.Betrag
 	}
-	ab.Saldo = calc.NewAbschlagSaldo(calc.Round2(saldo))
+	_, jahressaldo := calc.Saldoverlauf(0, []calc.SaldoMonat{periode})
+	ab.Saldo = calc.NewAbschlagSaldo(jahressaldo)
 
 	uebertrag := berechneUebertrag(d, z, apartment, p)
 	ab.Monatsverlauf = f.verlauf(kostenpositionen, apartmentID, uebertrag.Betrag)

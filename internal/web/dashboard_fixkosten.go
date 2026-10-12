@@ -238,15 +238,16 @@ type dashboardMonat struct {
 
 	HasKombiniert      bool
 	KombiniertSegmente []dashboardSegment
-	// KombiniertGesamt is net of PVGutschrift (#227): Verbrauch + Fixkosten
-	// minus the credit. The credit is a negative line next to the bar, not a
+	// KombiniertGesamt is display only and net of PVGutschrift (#227):
+	// Verbrauch + Fixkosten minus the credit. The Saldo is not derived from
+	// it, but from the parts (VerbrauchGesamt, FixkostenGesamt, PVGutschrift). The credit is a negative line next to the bar, not a
 	// segment (a bar cannot have a negative width).
 	KombiniertGesamt float64
 	PVGutschrift     float64
 
 	// Nebenkostenabschlag-Saldo (utility advance payment balance, 5th mode
 	// "abschlag"): continuously accumulated balance up to and including
-	// this month - abschlag(m) - KombiniertGesamt(m) summed per month
+	// this month - abschlag(m) + PVGutschrift(m) - costs(m) summed per month
 	// since the very first recorded month, no yearly reset. nil if the
 	// month is not HasKombiniert (missing months leave the balance
 	// unchanged, see buildDashboardVerlauf).
@@ -344,7 +345,8 @@ func groupKostenByMonat(apartmentID int64, periodenKosten []periodKosten) map[st
 // AbschlagProzent directly into monate (index-aligned with abschlagWerte).
 // Continuously accumulated from oldest to newest month (monate is sorted
 // newest-first, hence the backward iteration) - saldo(m) = abschlag(m) -
-// KombiniertGesamt(m). The gate is HasFixkosten, not HasKombiniert:
+// (Verbrauch(m) + Fixkosten(m)) + PVGutschrift(m), fed from the monthly parts,
+// not from the displayed KombiniertGesamt. The gate is HasFixkosten, not HasKombiniert:
 // abschlagWert comes exclusively from a fixed-costs entry (see
 // buildDashboardVerlauf's fixErg==nil condition) - a month with only a
 // reading but (still) no fixed-costs entry has no recorded advance-payment
@@ -361,7 +363,7 @@ func accumulateAbschlagSaldo(monate []dashboardMonat, abschlagWerte []float64) {
 		}
 		idx = append(idx, i)
 		reihe = append(reihe, calc.SaldoMonat{
-			Abschlag: abschlagWerte[i], Kosten: calc.Round2(monate[i].KombiniertGesamt + monate[i].PVGutschrift), Gutschrift: monate[i].PVGutschrift,
+			Abschlag: abschlagWerte[i], Kosten: monate[i].VerbrauchGesamt + monate[i].FixkostenGesamt, Gutschrift: monate[i].PVGutschrift,
 		})
 	}
 	verlauf, _ := calc.Saldoverlauf(0, reihe)
@@ -495,7 +497,7 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 			maxFixkosten = m.FixkostenGesamt
 		}
 		// Scale by the costs before the credit, so the segments fit the track.
-		if brutto := m.KombiniertGesamt + m.PVGutschrift; m.HasKombiniert && brutto > maxKombiniert {
+		if brutto := m.VerbrauchGesamt + m.FixkostenGesamt; m.HasKombiniert && brutto > maxKombiniert {
 			maxKombiniert = brutto
 		}
 	}
