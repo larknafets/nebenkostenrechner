@@ -75,14 +75,9 @@ func Open(path string) (*sql.DB, error) {
 	}
 
 	// After the periods rebuild above, which would drop the column again.
-	if err := ensurePeriodsWallboxKomplettW1Column(db); err != nil {
+	if err := ensurePeriodSwitchColumns(db); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("migrate wallbox_komplett_w1 column: %w", err)
-	}
-
-	if err := ensurePeriodsPVGutschriftW1Column(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("migrate pv_gutschrift_w1 column: %w", err)
+		return nil, err
 	}
 
 	if err := ensureKostenpositionenUmlagefaehigColumn(db); err != nil {
@@ -214,30 +209,6 @@ func ensurePeriodsEinspeisungPreisColumn(db *sql.DB) error {
 	}
 
 	_, err = db.Exec(`ALTER TABLE periods ADD COLUMN einspeisung_preis REAL NOT NULL DEFAULT 0`)
-	return err
-}
-
-// ensurePeriodsWallboxKomplettW1Column adds the switch "Wallboxen vollständig
-// Wohnung 1" (#225) to a periods table that predates it. Existing Ablesungen
-// get 0 (off), so their costs and balances stay as they were.
-func ensurePeriodsWallboxKomplettW1Column(db *sql.DB) error {
-	has, err := hasColumn(db, "periods", "wallbox_komplett_w1")
-	if err != nil || has {
-		return err
-	}
-	_, err = db.Exec(`ALTER TABLE periods ADD COLUMN wallbox_komplett_w1 INTEGER NOT NULL DEFAULT 0`)
-	return err
-}
-
-// ensurePeriodsPVGutschriftW1Column adds the switch "PV-Gutschrift Wohnung 1"
-// (#226) to a periods table that predates it. Existing Ablesungen get 0 (off),
-// so their costs and balances stay as they were.
-func ensurePeriodsPVGutschriftW1Column(db *sql.DB) error {
-	has, err := hasColumn(db, "periods", "pv_gutschrift_w1")
-	if err != nil || has {
-		return err
-	}
-	_, err = db.Exec(`ALTER TABLE periods ADD COLUMN pv_gutschrift_w1 INTEGER NOT NULL DEFAULT 0`)
 	return err
 }
 
