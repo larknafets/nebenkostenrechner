@@ -177,6 +177,10 @@ Die monatliche Vorauszahlung je Wohnung, an der jeweiligen Fixkosteneingabe erfa
 Saldo(Monat) = Saldo(Vormonat) + Abschlag(Monat) - (Fixkosten(Monat) + Verbrauch(Monat))
 ```
 
+Der Verbrauch enthält die **Wallbox**-Kosten der Wohnung (siehe Strom). Bei Wohnung 1 kommt die **PV-Gutschrift** des Monats als Gutschrift dazu: `Saldo(Monat) = Saldo(Vormonat) + Abschlag + PV-Gutschrift - (Fixkosten + Verbrauch)`, ohne Deckel.
+
+**Dashboard und Widgets:** Die Jahreskarte und der Monatsverlauf beider Wohnungen zeigen die Kategorie **Wallbox** immer (auch mit 0 EUR); "Strom" bleibt der Haushaltsstrom von Wohnung 2, "Verbrauchswerte" zeigen die zugeordneten Netzbezug-kWh. Wohnung 1 bekommt in der Jahreskarte die negative Zeile **PV-Gutschrift**: Sie senkt die Gesamtkosten, aber nicht die Verbrauchskosten und ist kein Balkensegment. Im Monatsverlauf steht sie nur in "Kombiniert" (Gesamt abzüglich Gutschrift) und fließt in den Saldo ein, nicht in "Verbrauch" und "Verbrauchswerte". Die haus-weiten Karten "Wallboxen" und "PV-Anlage" bleiben unverändert. Die Widget-Routen zeigen dieselben Posten, ohne neue Routen.
+
 Fortlaufend seit Erfassungsbeginn kumuliert, kein Reset zum Jahreswechsel. Positiv heißt Guthaben, negativ Nachzahlung, exakt 0 Ausgeglichen. Ein Monat ohne Fixkosteneingabe lässt den Saldo unverändert, statt ihn verschwinden zu lassen.
 
 ### Jahresabrechnung (`/abrechnung`)

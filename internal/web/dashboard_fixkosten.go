@@ -120,11 +120,16 @@ type dashboardJahresCard struct {
 	PersonenSchnitt     float64
 	FixkostenEUR        float64
 	StromEUR            float64
+	WallboxEUR          float64
 	HeizungEUR          float64
 	WasserEUR           float64
 	VerbrauchEUR        float64
-	GesamtEUR           float64
-	Segmente            []dashboardSegment
+	// PVGutschriftEUR is the yearly PV-Gutschrift (#227), a positive amount
+	// shown as a negative line, only ever set for apartment 1. It lowers
+	// GesamtEUR but not VerbrauchEUR and is no bar segment.
+	PVGutschriftEUR float64
+	GesamtEUR       float64
+	Segmente        []dashboardSegment
 
 	// PVAnteilKWh is the yearly total of StromErgebnis.PVAnteilW2KWh ("not
 	// allocated to grid draw (PV)", GLOSSARY.md) - only set for apartment 2
@@ -146,7 +151,7 @@ type dashboardJahresCard struct {
 // averages the apartment's occupant count over jahr's readings (1 decimal
 // place, 0 if the year has no reading yet).
 func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apartmentFlurstueck float64, jahr int, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten) dashboardJahresCard {
-	var strom, heizung, wasser, fix float64
+	var strom, wallbox, heizung, wasser, fix, gutschrift float64
 	var pvAnteilKWh float64
 	var personenSumme float64
 	var personenAnzahl int
@@ -159,12 +164,15 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 			switch kat.Kind {
 			case kategorieKindStrom:
 				strom += kat.Kosten
+			case kategorieKindWallbox:
+				wallbox += kat.Kosten
 			case kategorieKindHeizung:
 				heizung += kat.Kosten
 			case kategorieKindWasser:
 				wasser += kat.Kosten
 			}
 		}
+		gutschrift += pk.K.Anteil(apartmentID).PVGutschrift
 		if apartmentID == 2 && pk.K.Strom != nil {
 			pvAnteilKWh += pk.K.Strom.PVAnteilW2KWh
 		}
@@ -184,25 +192,28 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 		}
 		fix += fk.Erg.KostenFor(apartmentID)
 	}
-	strom, heizung, wasser, fix = calc.Round2(strom), calc.Round2(heizung), calc.Round2(wasser), calc.Round2(fix)
-	verbrauch := calc.Round2(strom + heizung + wasser)
-	gesamt := calc.Round2(verbrauch + fix)
+	strom, wallbox, heizung, wasser, fix, gutschrift = calc.Round2(strom), calc.Round2(wallbox), calc.Round2(heizung), calc.Round2(wasser), calc.Round2(fix), calc.Round2(gutschrift)
+	verbrauch := calc.Round2(strom + wallbox + heizung + wasser)
+	brutto := calc.Round2(verbrauch + fix)
+	gesamt := calc.Round2(brutto - gutschrift)
 
 	segs := []dashboardSegment{{Farbe: "fix", Label: "Fixkosten", Kosten: fix}}
 	if apartmentID == 2 {
 		segs = append(segs, dashboardSegment{Farbe: "strom", Label: "Strom", Kosten: strom})
 	}
 	segs = append(segs,
+		dashboardSegment{Farbe: "wallbox", Label: "Wallbox", Kosten: wallbox},
 		dashboardSegment{Farbe: "heizung", Label: "Heizung/Ww", Kosten: heizung},
 		dashboardSegment{Farbe: "wasser", Label: "Wasser", Kosten: wasser},
 	)
-	setSegmentPct(segs, gesamt)
+	// The bar shows the costs before the credit, so its segments add up to 100%.
+	setSegmentPct(segs, brutto)
 
 	return dashboardJahresCard{
 		ApartmentID: apartmentID, ApartmentName: apartmentName, ApartmentQM: apartmentQM,
 		ApartmentFlurstueck: apartmentFlurstueck, PersonenSchnitt: personenSchnitt,
-		FixkostenEUR: fix, StromEUR: strom, HeizungEUR: heizung, WasserEUR: wasser,
-		VerbrauchEUR: verbrauch, GesamtEUR: gesamt, Segmente: segs,
+		FixkostenEUR: fix, StromEUR: strom, WallboxEUR: wallbox, HeizungEUR: heizung, WasserEUR: wasser,
+		VerbrauchEUR: verbrauch, PVGutschriftEUR: gutschrift, GesamtEUR: gesamt, Segmente: segs,
 		PVAnteilKWh: pvAnteilKWh,
 	}
 }
@@ -227,7 +238,11 @@ type dashboardMonat struct {
 
 	HasKombiniert      bool
 	KombiniertSegmente []dashboardSegment
-	KombiniertGesamt   float64
+	// KombiniertGesamt is net of PVGutschrift (#227): Verbrauch + Fixkosten
+	// minus the credit. The credit is a negative line next to the bar, not a
+	// segment (a bar cannot have a negative width).
+	KombiniertGesamt float64
+	PVGutschrift     float64
 
 	// Nebenkostenabschlag-Saldo (utility advance payment balance, 5th mode
 	// "abschlag"): continuously accumulated balance up to and including
@@ -254,7 +269,9 @@ type dashboardJahreszeile struct {
 	IstLaufend     bool
 	VerbrauchSumme float64
 	FixkostenSumme float64
-	GesamtSumme    float64
+	// PVGutschriftSumme is the year's credit (#227), GesamtSumme is net of it.
+	PVGutschriftSumme float64
+	GesamtSumme       float64
 
 	// Endstand (closing balance): the accumulated balance at year end (or
 	// at the latest recorded month, for a running year) - not a sum,
@@ -340,7 +357,9 @@ func accumulateAbschlagSaldo(monate []dashboardMonat, abschlagWerte []float64) {
 			continue
 		}
 		idx = append(idx, i)
-		reihe = append(reihe, calc.SaldoMonat{Abschlag: abschlagWerte[i], Kosten: monate[i].KombiniertGesamt})
+		reihe = append(reihe, calc.SaldoMonat{
+			Abschlag: abschlagWerte[i], Kosten: calc.Round2(monate[i].KombiniertGesamt + monate[i].PVGutschrift), Gutschrift: monate[i].PVGutschrift,
+		})
 	}
 	verlauf, _ := calc.Saldoverlauf(0, reihe)
 	saldi := make([]float64, len(monate))
@@ -377,6 +396,7 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 		verbrauchKats []kategorie
 		fixErg        *calc.FixkostenErgebnis
 		abschlagWert  float64 // 0 if no value recorded (see #92: a missing value counts as 0)
+		pvGutschrift  float64
 	}
 	buckets := map[string]*bucket{}
 	var order []string
@@ -398,6 +418,11 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 	for monat, kats := range groupKostenByMonat(apartmentID, periodenKosten) {
 		if b := ensure(monat); b != nil {
 			b.verbrauchKats = kats
+		}
+	}
+	for _, pk := range periodenKosten {
+		if b := ensure(pk.Monat); b != nil {
+			b.pvGutschrift += pk.K.Anteil(apartmentID).PVGutschrift
 		}
 	}
 	for _, fk := range fixkostenListe {
@@ -439,13 +464,14 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 
 		if dm.HasVerbrauch || dm.HasFixkosten {
 			dm.HasKombiniert = true
+			dm.PVGutschrift = calc.Round2(b.pvGutschrift)
 			if dm.HasVerbrauch {
 				dm.KombiniertSegmente = append(dm.KombiniertSegmente, dashboardSegment{Farbe: "verbrauch-gesamt", Label: "Verbrauch", Kosten: dm.VerbrauchGesamt})
 			}
 			if dm.HasFixkosten {
 				dm.KombiniertSegmente = append(dm.KombiniertSegmente, dashboardSegment{Farbe: "fix", Label: "Fixkosten", Kosten: dm.FixkostenGesamt})
 			}
-			dm.KombiniertGesamt = calc.Round2(dm.VerbrauchGesamt + dm.FixkostenGesamt)
+			dm.KombiniertGesamt = calc.Round2(dm.VerbrauchGesamt + dm.FixkostenGesamt - dm.PVGutschrift)
 		}
 
 		monate = append(monate, dm)
@@ -465,8 +491,9 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 		if m.HasFixkosten && m.FixkostenGesamt > maxFixkosten {
 			maxFixkosten = m.FixkostenGesamt
 		}
-		if m.HasKombiniert && m.KombiniertGesamt > maxKombiniert {
-			maxKombiniert = m.KombiniertGesamt
+		// Scale by the costs before the credit, so the segments fit the track.
+		if brutto := m.KombiniertGesamt + m.PVGutschrift; m.HasKombiniert && brutto > maxKombiniert {
+			maxKombiniert = brutto
 		}
 	}
 	for i := range monate {
@@ -549,11 +576,12 @@ func mitJahreszeilen(monate []dashboardMonat) []dashboardVerlaufEintrag {
 	}
 	out := make([]dashboardVerlaufEintrag, 0, len(monate)+4)
 	for _, g := range gruppiereNachJahr(monate, func(m dashboardMonat) int { return m.Jahr }) {
-		var vSumme, fSumme float64
+		var vSumme, fSumme, gSumme float64
 		var endstand *calc.AbschlagSaldo
 		for _, m := range g.Items {
 			vSumme += m.VerbrauchGesamt
 			fSumme += m.FixkostenGesamt
+			gSumme += m.PVGutschrift
 			// Endstand = the balance of this year's newest month that has
 			// a balance - since g.Items is newest-first, that's the
 			// first match.
@@ -564,7 +592,8 @@ func mitJahreszeilen(monate []dashboardMonat) []dashboardVerlaufEintrag {
 		}
 		out = append(out, dashboardVerlaufEintrag{Jahreszeile: &dashboardJahreszeile{
 			Jahr: g.Jahr, IstLaufend: g.IstLaufend,
-			VerbrauchSumme: calc.Round2(vSumme), FixkostenSumme: calc.Round2(fSumme), GesamtSumme: calc.Round2(vSumme + fSumme),
+			VerbrauchSumme: calc.Round2(vSumme), FixkostenSumme: calc.Round2(fSumme),
+			PVGutschriftSumme: calc.Round2(gSumme), GesamtSumme: calc.Round2(vSumme + fSumme - gSumme),
 			Endstand: endstand,
 		}})
 	}
