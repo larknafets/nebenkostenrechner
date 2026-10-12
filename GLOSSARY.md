@@ -75,10 +75,17 @@ Die ins Netz eingespeiste PV-Überschussmenge (Zähler `strom_einspeisung`) und 
 ## Fixkosten
 
 **Stammdaten** (`/stammdaten`):
-Die Seite für Werte, die sich selten ändern und nicht Teil einer monatlichen Erfassung sind: Wohnungsgröße/Flurstücksgröße je Wohnung, Wohnungsstatus, Mieter- und Vermieter-Angaben, das Umlagefähig-Flag je Kostenposition und das Flag "Stromverbrauch weiterberechnen" (aktuelle Einzelwerte). Mieter-/Bewohnername, Zustellanschrift, Vermieter, Objektanschrift und IBAN sind personenbezogen: sie sind nur für angemeldete Nutzer sichtbar und änderbar (ohne gesetztes `LOGIN_PASSWORD` ist jeder angemeldet). Änderungen wirken sofort auf alle Monate, nicht eingefroren wie ein Ablesungs- oder Fixkosten-Eingabe-Wert.
+Die Seite für Werte, die sich selten ändern und nicht Teil einer monatlichen Erfassung sind: Wohnungsgröße/Flurstücksgröße je Wohnung, Wohnungsstatus, Mieter- und Vermieter-Angaben, das Umlagefähig-Flag je Kostenposition und die Flags "Stromverbrauch weiterberechnen" und "Wallbox weiterberechnen" (aktuelle Einzelwerte). Mieter-/Bewohnername, Zustellanschrift, Vermieter, Objektanschrift und IBAN sind personenbezogen: sie sind nur für angemeldete Nutzer sichtbar und änderbar (ohne gesetztes `LOGIN_PASSWORD` ist jeder angemeldet). Änderungen wirken sofort auf alle Monate, nicht eingefroren wie ein Ablesungs- oder Fixkosten-Eingabe-Wert.
 
 **Wohnungsstatus**:
-Je Wohnung "Vermietung" oder "Eigennutzung" (Stammdaten, Startwert Wohnung 1 Eigennutzung, Wohnung 2 Vermietung). Steuert nur, wie die Jahresabrechnung dargestellt wird (Mieter-Block, Rechtshinweise, Pflichtfelder) und nie die Berechnung oder die Heizungs-Gewichtung. Kein Personenbezug, deshalb auch ohne Anmeldung sichtbar (nicht änderbar).
+Je Wohnung "Vermietung" oder "Eigennutzung" (Stammdaten, Startwert Wohnung 1 Eigennutzung, Wohnung 2 Vermietung). Steuert nur die Jahresabrechnung (Mieter-Block, Rechtshinweise, Pflichtfelder und welche Posten darin stehen), nie das Dashboard, den fortlaufenden Saldo, die Kostenberechnung oder die Heizungs-Gewichtung. Welche Posten in der Abrechnung einer Wohnung stehen:
+
+| Status der Wohnung | Block "Wallbox" (ihr Anteil) | Block "PV-Gutschrift" (nur Wohnung 1, wenn der Schalter der Ablesung an ist) |
+|---|---|---|
+| Eigennutzung | immer (das Flag "Wallbox weiterberechnen" gilt nicht) | immer |
+| Vermietung | nur mit gesetztem Flag "Wallbox weiterberechnen" | nie |
+
+Sind beide Wohnungen vermietet und das Flag ist aus, steht die Wallbox in keiner Abrechnung und die PV-Gutschrift nirgends. Die PV-Gutschrift folgt ihrer Zuordnung zu Wohnung 1, auch wenn Wohnung 1 vermietet und Wohnung 2 Eigennutzung ist. Kein Personenbezug, deshalb auch ohne Anmeldung sichtbar (nicht änderbar).
 _Avoid_: Vermietungsstatus, Nutzungsart
 
 **Mieter seit**:
@@ -90,7 +97,10 @@ Ein Ja/Nein-Flag je Kostenposition in den Stammdaten: Nur umlagefähige Position
 _Avoid_: umlegbar, abrechenbar (das ist die Vollständigkeit eines Abrechnungsjahres)
 
 **Stromverbrauch weiterberechnen**:
-Ein haus-weites Ja/Nein-Flag in den Stammdaten, ob der Stromverbrauch von Wohnung 2 (Haushaltsstrom, Zwischenzähler) in der Jahresabrechnung weiterberechnet wird. Der Haushaltsstrom ist keine Betriebskostenart, deshalb ein eigenes Flag statt des Umlagefähig-Flags einer Kostenposition.
+Ein haus-weites Ja/Nein-Flag in den Stammdaten, ob der Stromverbrauch von Wohnung 2 (Haushaltsstrom, Zwischenzähler, ohne Wallbox) in der Jahresabrechnung weiterberechnet wird. Der Haushaltsstrom ist keine Betriebskostenart, deshalb ein eigenes Flag statt des Umlagefähig-Flags einer Kostenposition.
+
+**Wallbox weiterberechnen**:
+Ein haus-weites Ja/Nein-Flag in den Stammdaten (Startwert Ja, auch für bestehende Datenbanken), ob der Wallbox-Anteil einer vermieteten Wohnung in deren Jahresabrechnung steht. Unabhängig von "Stromverbrauch weiterberechnen" (Haushaltsstrom). Bei Eigennutzung gilt das Flag nicht, dort steht die Wallbox immer in der Abrechnung. Die Tabelle steht unter **Wohnungsstatus**.
 
 **Fixkosten-Eingabe**:
 Eine monatliche Erfassung, analog zur Ablesung, aber **genau eine je Monat** (beim Anlegen, beim Ändern des Monats und beim CSV-Import erzwungen, per UNIQUE-Index abgesichert; anders als bei Ablesungen gibt es keine untermonatigen Zusatzeingaben): Personenzahl je Wohnung (eigenständig, nicht die der Ablesung) und für jede der 16 Kostenpositionen ihre Berechnungslogik, ihr Typ und ihr Wert. Anders als die Ablesung hängt sie nicht von einer Vorperiode ab (kein Verbrauch, keine Zählerstand-Differenz); Logik/Typ/Wert sind, wie Personen und der Nebenkostenabschlag, je Eingabe unabhängig gespeichert und von der letzten Eingabe vorbelegt, nicht jahresweise zentral gepflegt.
@@ -139,7 +149,7 @@ _Avoid_: Vortrag, Saldovortrag
 Ein nummerierter Teil des Anhangs der Jahresabrechnung (1 Monatsverlauf und Saldo bis 7 Zählerstände), aufgelistet auf Seite 1 und im Druck nicht umbrechend. Anlage 7 steht allein im Querformat auf der letzten Seite.
 
 **Jahressaldo**:
-Vorauszahlungen (Nebenkostenabschläge des Abrechnungszeitraums, ein fehlender zählt als 0) minus die Betriebskosten der Jahresabrechnung minus den weiterberechneten Strom. Positiv Guthaben, negativ Nachzahlung, null Ausgeglichen. Nicht der fortlaufend kumulierte Saldo des Dashboards, aber bei lückenlosen Daten und lauter umlagefähigen Positionen gleich dessen Änderung über das Jahr.
+Vorauszahlungen (Nebenkostenabschläge des Abrechnungszeitraums, ein fehlender zählt als 0) minus die Betriebskosten der Jahresabrechnung minus den weiterberechneten Strom minus die Wallbox plus die PV-Gutschrift, jeweils nur, wenn der Posten laut Tabelle unter **Wohnungsstatus** in der Abrechnung steht. Der Übertrag Vorjahre zählt dieselben Posten. Positiv Guthaben, negativ Nachzahlung, null Ausgeglichen. Nicht der fortlaufend kumulierte Saldo des Dashboards, aber bei lückenlosen Daten und lauter umlagefähigen Positionen gleich dessen Änderung über das Jahr.
 _Avoid_: Jahresergebnis
 
 **Guthaben / Nachzahlung**:

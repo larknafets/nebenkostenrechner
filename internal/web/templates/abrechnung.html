@@ -221,6 +221,26 @@
         </tr></tbody>
       </table>
       {{end}}
+
+      {{if $ab.Wallbox}}
+      <h3>Wallbox Wohnung {{$.ApartmentID}}{{if not .Eigennutzung}} <span class="muted">(laut Vereinbarung weiterberechnet)</span>{{end}}</h3>
+      <table>
+        <tbody><tr>
+          <td data-l="Verbrauch">{{de0 $ab.Wallbox.VerbrauchKWh}}&nbsp;kWh</td>
+          <td class="r b" data-l="Betrag">{{deEUR $ab.Wallbox.Kosten}}&nbsp;€</td>
+        </tr></tbody>
+      </table>
+      {{end}}
+
+      {{if $ab.PVGutschrift}}
+      <h3>PV-Gutschrift</h3>
+      <table>
+        <tbody><tr>
+          <td data-l="Einspeisevergütung">Einspeisevergütung der PV-Anlage</td>
+          <td class="r b" data-l="Betrag">{{deEUR $ab.PVGutschrift.Betrag}}&nbsp;€</td>
+        </tr></tbody>
+      </table>
+      {{end}}
     </div>
 
     <aside class="abr-seite">
@@ -229,6 +249,8 @@
         <tbody>
           <tr><td data-l="Betriebskosten">Betriebskosten</td><td class="r">{{deEUR $ab.Betriebskosten}}&nbsp;€</td></tr>
           {{if $ab.StromW2}}<tr><td data-l="Strom Wohnung 2">Strom Wohnung 2</td><td class="r">{{deEUR $ab.StromW2.Kosten}}&nbsp;€</td></tr>{{end}}
+          {{if $ab.Wallbox}}<tr><td data-l="Wallbox">Wallbox</td><td class="r">{{deEUR $ab.Wallbox.Kosten}}&nbsp;€</td></tr>{{end}}
+          {{if $ab.PVGutschrift}}<tr><td data-l="PV-Gutschrift">PV-Gutschrift</td><td class="r">- {{deEUR $ab.PVGutschrift.Betrag}}&nbsp;€</td></tr>{{end}}
           <tr><td data-l="Vorauszahlungen">Vorauszahlungen</td><td class="r">- {{deEUR $ab.Vorauszahlungen}}&nbsp;€</td></tr>
           <tr class="summe"><td data-l="Ergebnis">{{$ab.Saldo.Label}}</td><td class="r {{$ab.Saldo.CSSClass}}">{{.SaldoText}}</td></tr>
         </tbody>
@@ -255,12 +277,12 @@
     <section class="anlage" id="anlage-monatsverlauf">
     <h3>{{anlage "monatsverlauf"}}</h3>
     <table>
-      <thead><tr><th>Monat</th><th class="r">Fixkosten</th><th class="r">Verbrauchskosten<sup>1</sup></th><th class="r">Abschlag</th><th class="r">Saldo kumuliert</th></tr></thead>
+      <thead><tr><th>Monat</th><th class="r">Fixkosten</th><th class="r">Verbrauchskosten<sup>1</sup></th><th class="r">Abschlag</th>{{if $ab.PVGutschrift}}<th class="r">PV-Gutschrift</th>{{end}}<th class="r">Saldo kumuliert</th></tr></thead>
       <tbody>
         {{if $ab.Monatsverlauf.Uebertrag.Vorhanden}}
         <tr>
           <td data-l="Monat"><em>Übertrag Vorjahre</em></td>
-          <td></td><td></td><td></td>
+          <td></td><td></td><td></td>{{if $ab.PVGutschrift}}<td></td>{{end}}
           <td class="r b" data-l="Saldo kumuliert">{{deEUR $ab.Monatsverlauf.Uebertrag.Betrag}}&nbsp;€</td>
         </tr>
         {{end}}
@@ -270,6 +292,7 @@
           <td class="r" data-l="Fixkosten">{{deEUR .Fixkosten}}&nbsp;€</td>
           <td class="r" data-l="Verbrauchskosten">{{deEUR .Verbrauch}}&nbsp;€</td>
           <td class="r" data-l="Abschlag">{{deEUR .Abschlag}}&nbsp;€</td>
+          {{if $ab.PVGutschrift}}<td class="r" data-l="PV-Gutschrift">{{deEUR .Gutschrift}}&nbsp;€</td>{{end}}
           <td class="r b" data-l="Saldo kumuliert">{{deEUR .Saldo}}&nbsp;€</td>
         </tr>
         {{end}}
@@ -278,16 +301,18 @@
           <td class="r" data-l="Fixkosten">{{deEUR $ab.Monatsverlauf.Fixkosten}}&nbsp;€</td>
           <td class="r" data-l="Verbrauchskosten">{{deEUR $ab.Monatsverlauf.Verbrauch}}&nbsp;€</td>
           <td class="r" data-l="Abschlag">{{deEUR $ab.Monatsverlauf.Abschlag}}&nbsp;€</td>
+          {{if $ab.PVGutschrift}}<td class="r" data-l="PV-Gutschrift">{{deEUR $ab.Monatsverlauf.Gutschrift}}&nbsp;€</td>{{end}}
           <td class="r" data-l="Saldo kumuliert">{{deEUR $ab.Monatsverlauf.Endsaldo}}&nbsp;€</td>
         </tr>
         <tr>
           <td data-l="Monat">davon Jahressaldo (siehe Saldoberechnung)</td>
           <td></td><td></td><td></td>
+          {{if $ab.PVGutschrift}}<td></td>{{end}}
           <td class="r" data-l="Jahressaldo">{{.SaldoText}}</td>
         </tr>
       </tbody>
     </table>
-    <p class="muted klein"><sup>1</sup> Heizung, Wasser und Abwasser{{if $ab.StromW2}} sowie der laut Vereinbarung weiterberechnete Strom Wohnung 2{{end}}. Fixkosten: nur umlagefähige Kostenpositionen, jeweils der Anteil der abgerechneten Wohnung.{{with $ab.Monatsverlauf.Uebertrag}}{{if .Vorhanden}} Übertrag Vorjahre: Saldo aus Nebenkostenabschlag minus Kosten der Monate {{monat .Von}} bis {{monat .Bis}}.{{end}}{{end}}</p>
+    <p class="muted klein"><sup>1</sup> Heizung, Wasser und Abwasser{{if $ab.StromW2}} sowie der laut Vereinbarung weiterberechnete Strom Wohnung 2{{end}}{{if $ab.Wallbox}}{{if $ab.StromW2}} und{{else}} sowie{{end}} die Wallbox{{end}}. {{if $ab.PVGutschrift}}Die PV-Gutschrift erhöht den Saldo. {{end}}Fixkosten: nur umlagefähige Kostenpositionen, jeweils der Anteil der abgerechneten Wohnung.{{with $ab.Monatsverlauf.Uebertrag}}{{if .Vorhanden}} Übertrag Vorjahre: Saldo aus Nebenkostenabschlag minus Kosten der Monate {{monat .Von}} bis {{monat .Bis}}.{{end}}{{end}}</p>
     {{with $ab.Monatsverlauf.Uebertrag.Hinweis}}<p class="klein"><strong>{{.}}</strong></p>{{end}}
     </section>
 
@@ -371,9 +396,9 @@
         {{range $ab.Verbrauch}}
         <tr {{if .Eigen}}class="b"{{end}}>
           <td data-l="Zähler">{{.Zaehler}}</td>
-          <td class="r" data-l="Beginn">{{de3 .Beginn}}&nbsp;{{.Einheit}}</td>
-          <td class="r" data-l="Ende">{{de3 .Ende}}&nbsp;{{.Einheit}}</td>
-          <td class="r" data-l="Verbrauch">{{de3 .Verbrauch}}&nbsp;{{.Einheit}}</td>
+          <td class="r" data-l="Beginn">{{if .BeginnFehlt}}-{{else}}{{de3 .Beginn}}&nbsp;{{.Einheit}}{{end}}</td>
+          <td class="r" data-l="Ende">{{if .EndeFehlt}}-{{else}}{{de3 .Ende}}&nbsp;{{.Einheit}}{{end}}</td>
+          <td class="r" data-l="Verbrauch">{{if or .BeginnFehlt .EndeFehlt}}-{{else}}{{de3 .Verbrauch}}&nbsp;{{.Einheit}}{{end}}</td>
         </tr>
         {{end}}
       </tbody>
@@ -394,7 +419,7 @@
             <tr>
               <td>{{deDatum .Ablesedatum}}</td>
               <td>{{monat .Monat}}{{if .Ausgangsstand}}<br><span class="muted klein">Ausgangsstand</span>{{end}}</td>
-              {{range .Staende}}<td class="r{{if .Eigen}} b{{end}}">{{de3 .Wert}}</td>{{end}}
+              {{range .Staende}}<td class="r{{if .Eigen}} b{{end}}">{{if .Fehlt}}-{{else}}{{de3 .Wert}}{{end}}</td>{{end}}
             </tr>
             {{end}}
           </tbody>

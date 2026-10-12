@@ -45,7 +45,7 @@ func seedDemoStammdaten(db *sql.DB) error {
 			1: {QM: 116.23, FlurstueckGroesse: 460},
 			2: {QM: 86, FlurstueckGroesse: 340},
 		},
-		Flags:                   StammdatenFlags{StromWeiterberechnen: true},
+		Flags:                   StammdatenFlags{StromWeiterberechnen: true, WallboxWeiterberechnen: true},
 		HeizungWaermeGewichtung: 0.7,
 		Wohnungen: map[int64]WohnungDetails{
 			1: {MieterName: "Max Mustermann", MieterAnschrift: "Beispielweg 1\n12345 Musterstadt", Status: StatusEigennutzung},

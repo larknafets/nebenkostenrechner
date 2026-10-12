@@ -40,11 +40,26 @@ type Strom struct {
 	VerbrauchKWh, Kosten float64
 }
 
+// Wallbox is the Wallbox cost of the settled apartment (#228): its share of
+// the Zwischenzähler "Wallboxen", a block of its own next to the Strom block.
+type Wallbox struct {
+	VerbrauchKWh, Kosten float64
+}
+
+// PVGutschrift is the credit of the PV system for Wohnung 1 (#228).
+type PVGutschrift struct {
+	Betrag float64
+}
+
 // VerbrauchZeile is one meter in the Anhang: the Zählerstand at
 // the start and the end of the period and the consumption in between.
 type VerbrauchZeile struct {
 	Zaehler, Einheit        string
 	Beginn, Ende, Verbrauch float64
+	// BeginnFehlt/EndeFehlt are true for an optional Einzelzähler without a
+	// reading at that end ("nicht erfasst", shown as "-"); the consumption is
+	// then not calculable and shown as "-" too.
+	BeginnFehlt, EndeFehlt bool
 	// Eigen is true for a meter of the settled apartment, shown in bold.
 	Eigen bool
 }
@@ -72,6 +87,9 @@ type ZaehlerstandZeile struct {
 type Zaehlerstand struct {
 	Wert  float64
 	Eigen bool
+	// Fehlt is true for an optional Einzelzähler without a reading in this
+	// Ablesung, shown as "-".
+	Fehlt bool
 }
 
 // Zaehlerstaende is the Zählerstände table (Anlage 7).
@@ -115,8 +133,12 @@ type MonatZeile struct {
 	// Fixkosten are the umlagefähige Kostenpositionen, Verbrauch is
 	// Heizung plus Wasser and, if passed on, the electricity of Wohnung 2.
 	Fixkosten, Verbrauch, Abschlag float64
-	// Saldo is the running balance (Abschlag minus costs) from the first
-	// month of the period; positive Guthaben, negative Nachzahlung.
+	// Gutschrift is the PV-Gutschrift of the month (#228), 0 if it is not
+	// part of this Abrechnung.
+	Gutschrift float64
+	// Saldo is the running balance (Abschlag plus Gutschrift minus costs)
+	// from the first month of the period; positive Guthaben, negative
+	// Nachzahlung.
 	Saldo float64
 }
 
@@ -128,7 +150,7 @@ type Monatsverlauf struct {
 	Uebertrag Uebertrag
 	// Fixkosten, Verbrauch and Abschlag are the column sums of the period,
 	// Endsaldo the balance of the last month (including the Übertrag).
-	Fixkosten, Verbrauch, Abschlag, Endsaldo float64
+	Fixkosten, Verbrauch, Abschlag, Gutschrift, Endsaldo float64
 }
 
 // Uebertrag is the "Übertrag Vorjahre" of the Monatsverlauf: the
@@ -167,12 +189,21 @@ type Jahresabrechnung struct {
 	// StromW2 is nil unless Wohnung 2 is settled and the Stammdaten flag
 	// "Stromverbrauch weiterberechnen" is on.
 	StromW2 *Strom
+	// Wallbox is the apartment's Wallbox share (#228). It is nil unless the
+	// Wohnungsstatus table shows it (Eigennutzung always, Vermietung only
+	// with the flag "Wallbox weiterberechnen") and the costs are assigned to
+	// the apartments in the period.
+	Wallbox *Wallbox
+	// PVGutschrift is nil unless Wohnung 1 is settled, in Eigennutzung, and
+	// the period has a PV-Gutschrift.
+	PVGutschrift *PVGutschrift
 	// Vorauszahlungen is the sum of the Nebenkostenabschläge of the period
 	// (a month without a recorded Abschlag counts as 0).
 	Vorauszahlungen float64
 	// Saldo is Vorauszahlungen minus Betriebskosten minus the passed-on
-	// electricity: positive Guthaben, negative Nachzahlung. Not the
-	// cumulative balance of the Dashboard.
+	// electricity minus Wallbox plus PV-Gutschrift, exactly the items shown:
+	// positive Guthaben, negative Nachzahlung. Not the cumulative balance of
+	// the Dashboard.
 	Saldo *calc.AbschlagSaldo
 
 	// Anhang data.
@@ -233,9 +264,9 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	}
 
 	z := *pruefung.Zeitraum
-	stromWeiterberechnet := apartmentID == 2 && haus.StromWeiterberechnen
+	p := postenFuer(apartment, haus)
 	// The months of the period, oldest first.
-	f := faltMonate(d, z.ErsterMonat, z.LetzterMonat, apartmentID, stromWeiterberechnet)
+	f := faltMonate(d, z.ErsterMonat, z.LetzterMonat, apartmentID, p)
 
 	ab := &Jahresabrechnung{Jahr: jahr, Apartment: apartment, Zeitraum: z, Gewichtung: haus.HeizungWaermeGewichtung, Apartments: apartments}
 
@@ -262,28 +293,35 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	var heizungMonate []HeizungMonat
 	heizungIdx := map[string]int{}
 	var strom Strom
+	var wallbox Wallbox
+	var wallboxVerteilt bool
+	var pvGutschrift float64
 	ab.Heizung = Zeile{Position: "Heizung und Warmwasser (Wärmepumpe)", Schluessel: heizungSchluessel(haus.HeizungWaermeGewichtung)}
 	ab.Wasser = Zeile{Position: "Wasser und Abwasser (Verbrauch)", Schluessel: "Gemessener Verbrauch"}
 	for _, a := range f.ablesungen {
-		p := a.Period
+		period := a.Period
 
 		anteil := a.Kosten.Anteil(apartmentID)
 		heizungGesamt, heizungAnteil := anteil.HeizungGesamt, anteil.HeizungKosten
 		wasserGesamt, wasserAnteil := anteil.WasserGesamt, anteil.WasserKosten
 		strom.VerbrauchKWh += anteil.StromKWh
 		strom.Kosten += anteil.StromKosten
+		wallbox.VerbrauchKWh += anteil.WallboxKWh
+		wallbox.Kosten += anteil.WallboxKosten
+		wallboxVerteilt = wallboxVerteilt || a.Kosten.Strom.WallboxVerteilt
+		pvGutschrift += anteil.PVGutschrift
 		ab.Heizung.Gesamt += heizungGesamt
 		ab.Heizung.Betrag += heizungAnteil
 		ab.Wasser.Gesamt += wasserGesamt
 		ab.Wasser.Betrag += wasserAnteil
-		ab.Heizung.Von, ab.Heizung.Bis = vonBis(ab.Heizung.Von, ab.Heizung.Bis, p.Monat)
-		ab.Wasser.Von, ab.Wasser.Bis = vonBis(ab.Wasser.Von, ab.Wasser.Bis, p.Monat)
+		ab.Heizung.Von, ab.Heizung.Bis = vonBis(ab.Heizung.Von, ab.Heizung.Bis, period.Monat)
+		ab.Wasser.Von, ab.Wasser.Bis = vonBis(ab.Wasser.Von, ab.Wasser.Bis, period.Monat)
 
-		i, ok := heizungIdx[p.Monat]
+		i, ok := heizungIdx[period.Monat]
 		if !ok {
 			i = len(heizungMonate)
-			heizungIdx[p.Monat] = i
-			heizungMonate = append(heizungMonate, HeizungMonat{Monat: p.Monat})
+			heizungIdx[period.Monat] = i
+			heizungMonate = append(heizungMonate, HeizungMonat{Monat: period.Monat})
 		}
 		heizungMonate[i].WPStromKWh += a.Kosten.Heizung.WPVerbrauchW1KWh + a.Kosten.Heizung.WPVerbrauchW2KWh
 		heizungMonate[i].WaermeW1MWh += a.Kosten.Heizung.WaermeW1MWh
@@ -299,8 +337,14 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 		zeile.Prozent = prozent(zeile.Betrag, zeile.Gesamt)
 	}
 
-	if stromWeiterberechnet {
+	if p.strom {
 		ab.StromW2 = &Strom{VerbrauchKWh: strom.VerbrauchKWh, Kosten: calc.Round2(strom.Kosten)}
+	}
+	if p.wallbox && wallboxVerteilt {
+		ab.Wallbox = &Wallbox{VerbrauchKWh: wallbox.VerbrauchKWh, Kosten: calc.Round2(wallbox.Kosten)}
+	}
+	if p.pvGutschrift && pvGutschrift != 0 {
+		ab.PVGutschrift = &PVGutschrift{Betrag: calc.Round2(pvGutschrift)}
 	}
 
 	ab.Betriebskosten = ab.Heizung.Betrag + ab.Wasser.Betrag
@@ -313,9 +357,15 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	if ab.StromW2 != nil {
 		saldo -= ab.StromW2.Kosten
 	}
+	if ab.Wallbox != nil {
+		saldo -= ab.Wallbox.Kosten
+	}
+	if ab.PVGutschrift != nil {
+		saldo += ab.PVGutschrift.Betrag
+	}
 	ab.Saldo = calc.NewAbschlagSaldo(calc.Round2(saldo))
 
-	uebertrag := berechneUebertrag(d, z, apartment, stromWeiterberechnet)
+	uebertrag := berechneUebertrag(d, z, apartment, p)
 	ab.Monatsverlauf = f.verlauf(kostenpositionen, apartmentID, uebertrag.Betrag)
 	ab.Monatsverlauf.Uebertrag = uebertrag
 	ab.Verbrauch = verbrauchUebersicht(periods, apartments, meters, f.imBereich, apartmentID)
@@ -344,12 +394,37 @@ type monatsfaltung struct {
 	// (see monatsVerbrauch), a month without such an Ablesung is missing.
 	ablesungen       []calc.Ablesung
 	verbrauchJeMonat map[string]float64
+	// gutschriftJeMonat is the PV-Gutschrift per month, only filled if it
+	// is part of the Abrechnung (posten.pvGutschrift).
+	gutschriftJeMonat map[string]float64
+}
+
+// posten says which optional items count for the settled apartment: the
+// passed-on electricity of Wohnung 2, the Wallbox block and the PV-Gutschrift
+// of Wohnung 1. The Jahressaldo, the Monatsverlauf and the Übertrag Vorjahre
+// all read the same posten, so they count exactly the items the Abrechnung
+// shows (#228).
+type posten struct {
+	strom, wallbox, pvGutschrift bool
+}
+
+// postenFuer applies the table of the Wohnungsstatus. Eigennutzung: Wallbox
+// always (the flag does not apply) and the PV-Gutschrift (Wohnung 1 only,
+// the Gutschrift follows its assignment to Wohnung 1). Vermietung: Wallbox
+// only with the flag "Wallbox weiterberechnen", never the PV-Gutschrift.
+func postenFuer(apartment store.Apartment, haus store.Haus) posten {
+	vermietet := apartment.Status == store.StatusVermietet
+	return posten{
+		strom:        apartment.ID == 2 && haus.StromWeiterberechnen,
+		wallbox:      !vermietet || haus.WallboxWeiterberechnen,
+		pvGutschrift: apartment.ID == 1 && !vermietet,
+	}
 }
 
 // faltMonate folds the months von to bis (first of month, both included) for
 // apartmentID.
-func faltMonate(d BerechnungsDaten, von, bis time.Time, apartmentID int64, stromWeiterberechnet bool) monatsfaltung {
-	f := monatsfaltung{imBereich: map[string]bool{}, verbrauchJeMonat: map[string]float64{}}
+func faltMonate(d BerechnungsDaten, von, bis time.Time, apartmentID int64, p posten) monatsfaltung {
+	f := monatsfaltung{imBereich: map[string]bool{}, verbrauchJeMonat: map[string]float64{}, gutschriftJeMonat: map[string]float64{}}
 	for m := von; !m.After(bis); m = m.AddDate(0, 1, 0) {
 		key := m.Format("2006-01-02")
 		f.monate = append(f.monate, key)
@@ -361,7 +436,11 @@ func faltMonate(d BerechnungsDaten, von, bis time.Time, apartmentID int64, strom
 			continue
 		}
 		f.ablesungen = append(f.ablesungen, a)
-		f.verbrauchJeMonat[a.Period.Monat] += monatsVerbrauch(a.Kosten.Anteil(apartmentID), stromWeiterberechnet)
+		anteil := a.Kosten.Anteil(apartmentID)
+		f.verbrauchJeMonat[a.Period.Monat] += monatsVerbrauch(anteil, p)
+		if p.pvGutschrift {
+			f.gutschriftJeMonat[a.Period.Monat] += anteil.PVGutschrift
+		}
 	}
 	return f
 }
@@ -380,11 +459,15 @@ func fixkostenJeMonat(reihe *calc.Fixkostenreihe, monate []string) map[string]ca
 }
 
 // monatsVerbrauch is the consumption cost of one Ablesung for the Monats-
-// verlauf: Heizung plus Wasser, plus the passed-on electricity of Wohnung 2.
-func monatsVerbrauch(anteil calc.Wohnungsanteil, stromWeiterberechnet bool) float64 {
+// verlauf: Heizung plus Wasser, plus the passed-on electricity of Wohnung 2
+// and the Wallbox costs if they are part of the Abrechnung.
+func monatsVerbrauch(anteil calc.Wohnungsanteil, p posten) float64 {
 	v := anteil.HeizungKosten + anteil.WasserKosten
-	if stromWeiterberechnet {
+	if p.strom {
 		v += anteil.StromKosten
+	}
+	if p.wallbox {
+		v += anteil.WallboxKosten
 	}
 	return v
 }
@@ -398,7 +481,7 @@ func monatsVerbrauch(anteil calc.Wohnungsanteil, stromWeiterberechnet bool) floa
 // why instead of a wrong number. The month range and the first month needing
 // a Fixkosten-Eingabe follow the same rules as the Zeitraum of the Prüfung
 // (Zeitraum.Vormonat, fixkostenBeginn).
-func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment, stromWeiterberechnet bool) Uebertrag {
+func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment, p posten) Uebertrag {
 	periods := d.Pruef.Periods
 	if len(periods) == 0 {
 		return Uebertrag{}
@@ -435,7 +518,7 @@ func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment
 		return Uebertrag{Hinweis: "Übertrag nicht berechenbar: " + erster.Text}
 	}
 
-	v := faltMonate(d, start, letzter, apartment.ID, stromWeiterberechnet).verlauf(d.Kostenpositionen, apartment.ID, 0)
+	v := faltMonate(d, start, letzter, apartment.ID, p).verlauf(d.Kostenpositionen, apartment.ID, 0)
 	if len(v.Zeilen) == 0 {
 		return Uebertrag{} // only the month of the Ausgangsstand, no costs yet
 	}
@@ -455,7 +538,7 @@ func (f monatsfaltung) verlauf(kostenpositionen []store.Kostenposition, apartmen
 		if !hatFix && !hatVerbrauch {
 			continue
 		}
-		z := MonatZeile{Monat: m, Verbrauch: calc.Round2(verbrauch)}
+		z := MonatZeile{Monat: m, Verbrauch: calc.Round2(verbrauch), Gutschrift: calc.Round2(f.gutschriftJeMonat[m])}
 		if hatFix {
 			z.Abschlag = calc.Round2(fm.Eingabe.Abschlag[apartmentID])
 		}
@@ -475,18 +558,19 @@ func (f monatsfaltung) verlauf(kostenpositionen []store.Kostenposition, apartmen
 		v.Fixkosten += z.Fixkosten
 		v.Verbrauch += z.Verbrauch
 		v.Abschlag += z.Abschlag
+		v.Gutschrift += z.Gutschrift
 		v.Zeilen = append(v.Zeilen, z)
 	}
 	reihe := make([]calc.SaldoMonat, len(v.Zeilen))
 	for i, z := range v.Zeilen {
-		reihe[i] = calc.SaldoMonat{Abschlag: z.Abschlag, Kosten: z.Fixkosten + z.Verbrauch}
+		reihe[i] = calc.SaldoMonat{Abschlag: z.Abschlag, Kosten: z.Fixkosten + z.Verbrauch, Gutschrift: z.Gutschrift}
 	}
 	saldi, endsaldo := calc.Saldoverlauf(uebertrag, reihe)
 	for i := range v.Zeilen {
 		v.Zeilen[i].Saldo = saldi[i]
 	}
 	v.Endsaldo = endsaldo
-	v.Fixkosten, v.Verbrauch, v.Abschlag = calc.Round2(v.Fixkosten), calc.Round2(v.Verbrauch), calc.Round2(v.Abschlag)
+	v.Fixkosten, v.Verbrauch, v.Abschlag, v.Gutschrift = calc.Round2(v.Fixkosten), calc.Round2(v.Verbrauch), calc.Round2(v.Abschlag), calc.Round2(v.Gutschrift)
 	return v
 }
 
@@ -600,6 +684,7 @@ func zaehlerstaende(periods []*store.LatestPeriod, apartments []store.Apartment,
 		von = first - 1
 	}
 	var z Zaehlerstaende
+	meters = mitEinzelzaehlern(meters, complete[von:last+1])
 	for _, m := range meters {
 		unit := m.Unit
 		if unit == "m3" {
@@ -611,11 +696,47 @@ func zaehlerstaende(periods []*store.LatestPeriod, apartments []store.Apartment,
 		p := complete[i]
 		zeile := ZaehlerstandZeile{Ablesedatum: p.ReadingDate, Monat: p.Monat, Ausgangsstand: i == von}
 		for _, m := range meters {
-			zeile.Staende = append(zeile.Staende, Zaehlerstand{Wert: p.Readings[m.Key], Eigen: m.ApartmentID == apartmentID})
+			wert, vorhanden := p.Readings[m.Key]
+			zeile.Staende = append(zeile.Staende, Zaehlerstand{Wert: wert, Eigen: m.ApartmentID == apartmentID, Fehlt: !vorhanden && store.IsOptionalMeter(m.Key)})
 		}
 		z.Zeilen = append(z.Zeilen, zeile)
 	}
 	return z
+}
+
+// einzelzaehler are the optional Wallbox meters (#224) behind the
+// Zwischenzähler "Wallboxen", in the order the Anlagen list them.
+var einzelzaehler = []store.Meter{
+	{Key: store.MeterKeyWallboxWohnung1, Label: "Wallbox Wohnung 1", Unit: "kWh", ApartmentID: 1},
+	{Key: store.MeterKeyWallboxWohnung2, Label: "Wallbox Wohnung 2", Unit: "kWh", ApartmentID: 2},
+}
+
+// mitEinzelzaehlern inserts the optional Einzelzähler directly after the
+// Zwischenzähler "Wallboxen" (#228). An Einzelzähler without a single
+// reading in rows (the period's Ablesungen) is left out, a missing reading
+// in some of them stays visible as such. rows without any Einzelzähler, or
+// meters without the Zwischenzähler, give meters back unchanged.
+func mitEinzelzaehlern(meters []store.Meter, rows []*store.LatestPeriod) []store.Meter {
+	var vorhanden []store.Meter
+	for _, m := range einzelzaehler {
+		for _, p := range rows {
+			if _, ok := p.Readings[m.Key]; ok {
+				vorhanden = append(vorhanden, m)
+				break
+			}
+		}
+	}
+	if len(vorhanden) == 0 {
+		return meters
+	}
+	out := make([]store.Meter, 0, len(meters)+len(vorhanden))
+	for _, m := range meters {
+		out = append(out, m)
+		if m.Key == "strom_wallbox" {
+			out = append(out, vorhanden...)
+		}
+	}
+	return out
 }
 
 // zaehlerKurznamen are the short column headings of the Zählerstände table,
@@ -631,6 +752,8 @@ var zaehlerKurznamen = map[string]string{
 	"waerme_wohnung1":               "Wärme Whg 1",
 	"waerme_wohnung2":               "Wärme Whg 2",
 	"strom_einspeisung":             "Einspeisung (PV)",
+	store.MeterKeyWallboxWohnung1:   "Wallbox Whg 1",
+	store.MeterKeyWallboxWohnung2:   "Wallbox Whg 2",
 }
 
 func zaehlerKurzname(m store.Meter) string {
@@ -656,14 +779,25 @@ func verbrauchUebersicht(periods []*store.LatestPeriod, apartments []store.Apart
 	}
 	ende := complete[last]
 
+	von := first
+	if first > 0 {
+		von = first - 1
+	}
+	meters = mitEinzelzaehlern(meters, complete[von:last+1])
 	out := make([]VerbrauchZeile, 0, len(meters))
 	for _, m := range meters {
-		b, e := beginn.Readings[m.Key], ende.Readings[m.Key]
+		b, okB := beginn.Readings[m.Key]
+		e, okE := ende.Readings[m.Key]
+		optional := store.IsOptionalMeter(m.Key)
 		unit := m.Unit
 		if unit == "m3" {
 			unit = "m³"
 		}
-		out = append(out, VerbrauchZeile{Zaehler: m.Label, Einheit: unit, Beginn: b, Ende: e, Verbrauch: e - b, Eigen: m.ApartmentID == apartmentID})
+		out = append(out, VerbrauchZeile{
+			Zaehler: m.Label, Einheit: unit, Beginn: b, Ende: e, Verbrauch: e - b,
+			BeginnFehlt: optional && !okB, EndeFehlt: optional && !okE,
+			Eigen: m.ApartmentID == apartmentID,
+		})
 	}
 	return out
 }

@@ -190,6 +190,8 @@ Abrechnung 2023 Wohnung 1:
       Geteilt: false
     Betriebskosten: 1068.50
     StromW2: nil
+    Wallbox: nil
+    PVGutschrift: nil
     Vorauszahlungen: 1300.00
     Saldo:
       wert: 231.50
@@ -200,30 +202,35 @@ Abrechnung 2023 Wohnung 1:
           Fixkosten: 105.17
           Verbrauch: 0.00
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 154.83
         [1]:
           Monat: "2023-09-01"
           Fixkosten: 105.17
           Verbrauch: 103.35
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 206.31
         [2]:
           Monat: "2023-10-01"
           Fixkosten: 105.17
           Verbrauch: 118.24
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 242.90
         [3]:
           Monat: "2023-11-01"
           Fixkosten: 105.17
           Verbrauch: 140.61
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 257.12
         [4]:
           Monat: "2023-12-01"
           Fixkosten: 105.17
           Verbrauch: 180.45
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 231.50
       Uebertrag:
         Vorhanden: false
@@ -234,6 +241,7 @@ Abrechnung 2023 Wohnung 1:
       Fixkosten: 525.85
       Verbrauch: 542.65
       Abschlag: 1300.00
+      Gutschrift: 0.00
       Endsaldo: 231.50
     Zaehlerstaende:
       Spalten: [10]
@@ -286,33 +294,43 @@ Abrechnung 2023 Wohnung 1:
             [0]:
               Wert: 39300.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 9365.00
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 14850.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5215.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 628.55
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 172.20
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 96.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 52.40
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 38.10
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 11849.50
               Eigen: false
+              Fehlt: false
         [1]:
           Ablesedatum: "2023-09-01"
           Monat: "2023-09-01"
@@ -321,33 +339,43 @@ Abrechnung 2023 Wohnung 1:
             [0]:
               Wert: 40350.75
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 9533.75
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 15235.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5333.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 644.20
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 176.40
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 99.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 52.59
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 38.23
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 12298.00
               Eigen: false
+              Fehlt: false
         [2]:
           Ablesedatum: "2023-10-01"
           Monat: "2023-10-01"
@@ -356,33 +384,43 @@ Abrechnung 2023 Wohnung 1:
             [0]:
               Wert: 41602.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 9707.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 15800.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5455.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 658.95
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 180.60
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 101.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 53.02
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 38.55
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 12545.50
               Eigen: false
+              Fehlt: false
         [3]:
           Ablesedatum: "2023-11-01"
           Monat: "2023-11-01"
@@ -391,33 +429,43 @@ Abrechnung 2023 Wohnung 1:
             [0]:
               Wert: 43105.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 9887.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 16590.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5582.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 673.19
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 184.80
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 104.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 53.77
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 39.09
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 12679.10
               Eigen: false
+              Fehlt: false
         [4]:
           Ablesedatum: "2023-12-01"
           Monat: "2023-12-01"
@@ -426,33 +474,43 @@ Abrechnung 2023 Wohnung 1:
             [0]:
               Wert: 45010.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 10077.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 17740.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5717.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 687.28
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 189.00
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 106.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 55.02
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 39.99
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 12779.20
               Eigen: false
+              Fehlt: false
     Verbrauch: [10]
       [0]:
         Zaehler: "Stromzähler Gesamt"
@@ -460,6 +518,8 @@ Abrechnung 2023 Wohnung 1:
         Beginn: 39300.00
         Ende: 45010.50
         Verbrauch: 5710.50
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [1]:
         Zaehler: "Zwischenstromzähler Wohnung 2"
@@ -467,6 +527,8 @@ Abrechnung 2023 Wohnung 1:
         Beginn: 9365.00
         Ende: 10077.50
         Verbrauch: 712.50
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [2]:
         Zaehler: "Zwischenstromzähler Wärmepumpe"
@@ -474,6 +536,8 @@ Abrechnung 2023 Wohnung 1:
         Beginn: 14850.00
         Ende: 17740.00
         Verbrauch: 2890.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [3]:
         Zaehler: "Zwischenzähler Wallboxen"
@@ -481,6 +545,8 @@ Abrechnung 2023 Wohnung 1:
         Beginn: 5215.00
         Ende: 5717.00
         Verbrauch: 502.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [4]:
         Zaehler: "Wasserzähler Gesamt"
@@ -488,6 +554,8 @@ Abrechnung 2023 Wohnung 1:
         Beginn: 628.55
         Ende: 687.28
         Verbrauch: 58.73
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [5]:
         Zaehler: "Zwischenwasserzähler Wohnung 2"
@@ -495,6 +563,8 @@ Abrechnung 2023 Wohnung 1:
         Beginn: 172.20
         Ende: 189.00
         Verbrauch: 16.80
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [6]:
         Zaehler: "Zwischenwasserzähler Warmwasseraufbereitung"
@@ -502,6 +572,8 @@ Abrechnung 2023 Wohnung 1:
         Beginn: 96.50
         Ende: 106.50
         Verbrauch: 10.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [7]:
         Zaehler: "Wärmemengenzähler Wohnung 1"
@@ -509,6 +581,8 @@ Abrechnung 2023 Wohnung 1:
         Beginn: 52.40
         Ende: 55.02
         Verbrauch: 2.62
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: true
       [8]:
         Zaehler: "Wärmemengenzähler Wohnung 2"
@@ -516,6 +590,8 @@ Abrechnung 2023 Wohnung 1:
         Beginn: 38.10
         Ende: 39.99
         Verbrauch: 1.89
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [9]:
         Zaehler: "Einspeisezähler (PV)"
@@ -523,6 +599,8 @@ Abrechnung 2023 Wohnung 1:
         Beginn: 11849.50
         Ende: 12779.20
         Verbrauch: 929.70
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
     HeizungMonate: [4]
       [0]:
@@ -793,6 +871,8 @@ Abrechnung 2023 Wohnung 2:
     StromW2:
       VerbrauchKWh: 712.50
       Kosten: 136.82
+    Wallbox: nil
+    PVGutschrift: nil
     Vorauszahlungen: 950.00
     Saldo:
       wert: 2.21
@@ -803,30 +883,35 @@ Abrechnung 2023 Wohnung 2:
           Fixkosten: 89.39
           Verbrauch: 0.00
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: 100.61
         [1]:
           Monat: "2023-09-01"
           Fixkosten: 89.39
           Verbrauch: 95.57
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: 105.65
         [2]:
           Monat: "2023-10-01"
           Fixkosten: 89.39
           Verbrauch: 111.36
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: 94.90
         [3]:
           Monat: "2023-11-01"
           Fixkosten: 89.39
           Verbrauch: 131.14
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: 64.37
         [4]:
           Monat: "2023-12-01"
           Fixkosten: 89.39
           Verbrauch: 162.77
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: 2.21
       Uebertrag:
         Vorhanden: false
@@ -837,6 +922,7 @@ Abrechnung 2023 Wohnung 2:
       Fixkosten: 446.95
       Verbrauch: 500.84
       Abschlag: 950.00
+      Gutschrift: 0.00
       Endsaldo: 2.21
     Zaehlerstaende:
       Spalten: [10]
@@ -889,33 +975,43 @@ Abrechnung 2023 Wohnung 2:
             [0]:
               Wert: 39300.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 9365.00
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 14850.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5215.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 628.55
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 172.20
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 96.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 52.40
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 38.10
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 11849.50
               Eigen: false
+              Fehlt: false
         [1]:
           Ablesedatum: "2023-09-01"
           Monat: "2023-09-01"
@@ -924,33 +1020,43 @@ Abrechnung 2023 Wohnung 2:
             [0]:
               Wert: 40350.75
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 9533.75
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 15235.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5333.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 644.20
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 176.40
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 99.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 52.59
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 38.23
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 12298.00
               Eigen: false
+              Fehlt: false
         [2]:
           Ablesedatum: "2023-10-01"
           Monat: "2023-10-01"
@@ -959,33 +1065,43 @@ Abrechnung 2023 Wohnung 2:
             [0]:
               Wert: 41602.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 9707.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 15800.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5455.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 658.95
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 180.60
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 101.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 53.02
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 38.55
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 12545.50
               Eigen: false
+              Fehlt: false
         [3]:
           Ablesedatum: "2023-11-01"
           Monat: "2023-11-01"
@@ -994,33 +1110,43 @@ Abrechnung 2023 Wohnung 2:
             [0]:
               Wert: 43105.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 9887.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 16590.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5582.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 673.19
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 184.80
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 104.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 53.77
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 39.09
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 12679.10
               Eigen: false
+              Fehlt: false
         [4]:
           Ablesedatum: "2023-12-01"
           Monat: "2023-12-01"
@@ -1029,33 +1155,43 @@ Abrechnung 2023 Wohnung 2:
             [0]:
               Wert: 45010.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 10077.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 17740.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5717.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 687.28
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 189.00
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 106.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 55.02
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 39.99
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 12779.20
               Eigen: false
+              Fehlt: false
     Verbrauch: [10]
       [0]:
         Zaehler: "Stromzähler Gesamt"
@@ -1063,6 +1199,8 @@ Abrechnung 2023 Wohnung 2:
         Beginn: 39300.00
         Ende: 45010.50
         Verbrauch: 5710.50
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [1]:
         Zaehler: "Zwischenstromzähler Wohnung 2"
@@ -1070,6 +1208,8 @@ Abrechnung 2023 Wohnung 2:
         Beginn: 9365.00
         Ende: 10077.50
         Verbrauch: 712.50
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: true
       [2]:
         Zaehler: "Zwischenstromzähler Wärmepumpe"
@@ -1077,6 +1217,8 @@ Abrechnung 2023 Wohnung 2:
         Beginn: 14850.00
         Ende: 17740.00
         Verbrauch: 2890.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [3]:
         Zaehler: "Zwischenzähler Wallboxen"
@@ -1084,6 +1226,8 @@ Abrechnung 2023 Wohnung 2:
         Beginn: 5215.00
         Ende: 5717.00
         Verbrauch: 502.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [4]:
         Zaehler: "Wasserzähler Gesamt"
@@ -1091,6 +1235,8 @@ Abrechnung 2023 Wohnung 2:
         Beginn: 628.55
         Ende: 687.28
         Verbrauch: 58.73
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [5]:
         Zaehler: "Zwischenwasserzähler Wohnung 2"
@@ -1098,6 +1244,8 @@ Abrechnung 2023 Wohnung 2:
         Beginn: 172.20
         Ende: 189.00
         Verbrauch: 16.80
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: true
       [6]:
         Zaehler: "Zwischenwasserzähler Warmwasseraufbereitung"
@@ -1105,6 +1253,8 @@ Abrechnung 2023 Wohnung 2:
         Beginn: 96.50
         Ende: 106.50
         Verbrauch: 10.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [7]:
         Zaehler: "Wärmemengenzähler Wohnung 1"
@@ -1112,6 +1262,8 @@ Abrechnung 2023 Wohnung 2:
         Beginn: 52.40
         Ende: 55.02
         Verbrauch: 2.62
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [8]:
         Zaehler: "Wärmemengenzähler Wohnung 2"
@@ -1119,6 +1271,8 @@ Abrechnung 2023 Wohnung 2:
         Beginn: 38.10
         Ende: 39.99
         Verbrauch: 1.89
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: true
       [9]:
         Zaehler: "Einspeisezähler (PV)"
@@ -1126,6 +1280,8 @@ Abrechnung 2023 Wohnung 2:
         Beginn: 11849.50
         Ende: 12779.20
         Verbrauch: 929.70
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
     HeizungMonate: [4]
       [0]:
@@ -1394,6 +1550,8 @@ Abrechnung 2024 Wohnung 1:
       Geteilt: false
     Betriebskosten: 2868.67
     StromW2: nil
+    Wallbox: nil
+    PVGutschrift: nil
     Vorauszahlungen: 3120.00
     Saldo:
       wert: 251.33
@@ -1404,72 +1562,84 @@ Abrechnung 2024 Wohnung 1:
           Fixkosten: 105.17
           Verbrauch: 181.07
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 205.26
         [1]:
           Monat: "2024-02-01"
           Fixkosten: 105.17
           Verbrauch: 182.58
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 177.51
         [2]:
           Monat: "2024-03-01"
           Fixkosten: 105.17
           Verbrauch: 145.48
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 186.86
         [3]:
           Monat: "2024-04-01"
           Fixkosten: 105.17
           Verbrauch: 125.78
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 215.91
         [4]:
           Monat: "2024-05-01"
           Fixkosten: 105.17
           Verbrauch: 111.01
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 259.73
         [5]:
           Monat: "2024-06-01"
           Fixkosten: 105.17
           Verbrauch: 98.25
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 316.31
         [6]:
           Monat: "2024-07-01"
           Fixkosten: 105.17
           Verbrauch: 98.47
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 372.67
         [7]:
           Monat: "2024-08-01"
           Fixkosten: 105.17
           Verbrauch: 95.96
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 431.54
         [8]:
           Monat: "2024-09-01"
           Fixkosten: 105.17
           Verbrauch: 109.22
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 477.15
         [9]:
           Monat: "2024-10-01"
           Fixkosten: 105.17
           Verbrauch: 124.99
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 506.99
         [10]:
           Monat: "2024-11-01"
           Fixkosten: 105.17
           Verbrauch: 146.01
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 515.81
         [11]:
           Monat: "2024-12-01"
           Fixkosten: 105.17
           Verbrauch: 187.81
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 482.83
       Uebertrag:
         Vorhanden: true
@@ -1480,6 +1650,7 @@ Abrechnung 2024 Wohnung 1:
       Fixkosten: 1262.04
       Verbrauch: 1606.63
       Abschlag: 3120.00
+      Gutschrift: 0.00
       Endsaldo: 482.83
     Zaehlerstaende:
       Spalten: [10]
@@ -1532,33 +1703,43 @@ Abrechnung 2024 Wohnung 1:
             [0]:
               Wert: 45010.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 10077.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 17740.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5717.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 687.28
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 189.00
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 106.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 55.02
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 39.99
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 12779.20
               Eigen: false
+              Fehlt: false
         [1]:
           Ablesedatum: "2024-01-01"
           Monat: "2024-01-01"
@@ -1567,33 +1748,43 @@ Abrechnung 2024 Wohnung 1:
             [0]:
               Wert: 46915.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 10267.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 18890.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5852.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 701.37
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 193.20
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 109.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 56.27
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 40.89
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 12879.30
               Eigen: false
+              Fehlt: false
         [2]:
           Ablesedatum: "2024-02-01"
           Monat: "2024-02-01"
@@ -1602,33 +1793,43 @@ Abrechnung 2024 Wohnung 1:
             [0]:
               Wert: 48820.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 10457.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 20040.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5987.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 715.61
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 197.40
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 111.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 57.52
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 41.79
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 13012.90
               Eigen: false
+              Fehlt: false
         [3]:
           Ablesedatum: "2024-03-01"
           Monat: "2024-03-01"
@@ -1637,33 +1838,43 @@ Abrechnung 2024 Wohnung 1:
             [0]:
               Wert: 50323.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 10637.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 20830.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6114.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 730.36
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 201.60
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 114.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 58.27
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 42.33
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 13260.40
               Eigen: false
+              Fehlt: false
         [4]:
           Ablesedatum: "2024-04-01"
           Monat: "2024-04-01"
@@ -1672,33 +1883,43 @@ Abrechnung 2024 Wohnung 1:
             [0]:
               Wert: 51575.25
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 10811.25
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 21395.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6236.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 746.01
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 205.80
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 116.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 58.71
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 42.64
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 13708.90
               Eigen: false
+              Fehlt: false
         [5]:
           Ablesedatum: "2024-05-01"
           Monat: "2024-05-01"
@@ -1707,33 +1928,43 @@ Abrechnung 2024 Wohnung 1:
             [0]:
               Wert: 52626.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 10980.00
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 21780.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6354.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 762.56
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 210.00
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 119.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 58.90
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 42.78
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 14358.40
               Eigen: false
+              Fehlt: false
         [6]:
           Ablesedatum: "2024-06-01"
           Monat: "2024-06-01"
@@ -1742,33 +1973,43 @@ Abrechnung 2024 Wohnung 1:
             [0]:
               Wert: 53526.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 11145.00
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 22030.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6469.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 779.56
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 214.20
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 121.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 58.90
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 42.78
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 15108.40
               Eigen: false
+              Fehlt: false
         [7]:
           Ablesedatum: "2024-07-01"
           Monat: "2024-07-01"
@@ -1777,33 +2018,43 @@ Abrechnung 2024 Wohnung 1:
             [0]:
               Wert: 54426.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 11310.00
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 22280.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6584.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 796.56
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 218.40
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 124.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 58.90
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 42.78
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 15858.40
               Eigen: false
+              Fehlt: false
         [8]:
           Ablesedatum: "2024-08-01"
           Monat: "2024-08-01"
@@ -1812,33 +2063,43 @@ Abrechnung 2024 Wohnung 1:
             [0]:
               Wert: 55326.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 11475.00
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 22530.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6699.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 813.11
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 222.60
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 126.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 58.90
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 42.78
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 16507.90
               Eigen: false
+              Fehlt: false
         [9]:
           Ablesedatum: "2024-09-01"
           Monat: "2024-09-01"
@@ -1847,33 +2108,43 @@ Abrechnung 2024 Wohnung 1:
             [0]:
               Wert: 56376.75
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 11643.75
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 22915.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6817.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 828.76
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 226.80
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 129.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 59.09
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 42.91
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 16956.40
               Eigen: false
+              Fehlt: false
         [10]:
           Ablesedatum: "2024-10-01"
           Monat: "2024-10-01"
@@ -1882,33 +2153,43 @@ Abrechnung 2024 Wohnung 1:
             [0]:
               Wert: 57628.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 11817.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 23480.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6939.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 843.51
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 231.00
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 131.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 59.52
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 43.23
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 17203.90
               Eigen: false
+              Fehlt: false
         [11]:
           Ablesedatum: "2024-11-01"
           Monat: "2024-11-01"
@@ -1917,33 +2198,43 @@ Abrechnung 2024 Wohnung 1:
             [0]:
               Wert: 59131.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 11997.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 24270.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7066.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 857.75
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 235.20
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 134.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 60.27
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 43.77
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 17337.50
               Eigen: false
+              Fehlt: false
         [12]:
           Ablesedatum: "2024-12-01"
           Monat: "2024-12-01"
@@ -1952,33 +2243,43 @@ Abrechnung 2024 Wohnung 1:
             [0]:
               Wert: 61036.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 12187.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 25420.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7201.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 871.84
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 239.40
               Eigen: false
+              Fehlt: false
             [6]:
               Wert: 136.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 61.52
               Eigen: true
+              Fehlt: false
             [8]:
               Wert: 44.67
               Eigen: false
+              Fehlt: false
             [9]:
               Wert: 17437.60
               Eigen: false
+              Fehlt: false
     Verbrauch: [10]
       [0]:
         Zaehler: "Stromzähler Gesamt"
@@ -1986,6 +2287,8 @@ Abrechnung 2024 Wohnung 1:
         Beginn: 45010.50
         Ende: 61036.50
         Verbrauch: 16026.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [1]:
         Zaehler: "Zwischenstromzähler Wohnung 2"
@@ -1993,6 +2296,8 @@ Abrechnung 2024 Wohnung 1:
         Beginn: 10077.50
         Ende: 12187.50
         Verbrauch: 2110.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [2]:
         Zaehler: "Zwischenstromzähler Wärmepumpe"
@@ -2000,6 +2305,8 @@ Abrechnung 2024 Wohnung 1:
         Beginn: 17740.00
         Ende: 25420.00
         Verbrauch: 7680.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [3]:
         Zaehler: "Zwischenzähler Wallboxen"
@@ -2007,6 +2314,8 @@ Abrechnung 2024 Wohnung 1:
         Beginn: 5717.00
         Ende: 7201.00
         Verbrauch: 1484.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [4]:
         Zaehler: "Wasserzähler Gesamt"
@@ -2014,6 +2323,8 @@ Abrechnung 2024 Wohnung 1:
         Beginn: 687.28
         Ende: 871.84
         Verbrauch: 184.56
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [5]:
         Zaehler: "Zwischenwasserzähler Wohnung 2"
@@ -2021,6 +2332,8 @@ Abrechnung 2024 Wohnung 1:
         Beginn: 189.00
         Ende: 239.40
         Verbrauch: 50.40
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [6]:
         Zaehler: "Zwischenwasserzähler Warmwasseraufbereitung"
@@ -2028,6 +2341,8 @@ Abrechnung 2024 Wohnung 1:
         Beginn: 106.50
         Ende: 136.50
         Verbrauch: 30.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [7]:
         Zaehler: "Wärmemengenzähler Wohnung 1"
@@ -2035,6 +2350,8 @@ Abrechnung 2024 Wohnung 1:
         Beginn: 55.02
         Ende: 61.52
         Verbrauch: 6.50
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: true
       [8]:
         Zaehler: "Wärmemengenzähler Wohnung 2"
@@ -2042,6 +2359,8 @@ Abrechnung 2024 Wohnung 1:
         Beginn: 39.99
         Ende: 44.67
         Verbrauch: 4.68
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [9]:
         Zaehler: "Einspeisezähler (PV)"
@@ -2049,6 +2368,8 @@ Abrechnung 2024 Wohnung 1:
         Beginn: 12779.20
         Ende: 17437.60
         Verbrauch: 4658.40
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
     HeizungMonate: [12]
       [0]:
@@ -2423,6 +2744,8 @@ Abrechnung 2024 Wohnung 2:
     StromW2:
       VerbrauchKWh: 2110.00
       Kosten: 418.30
+    Wallbox: nil
+    PVGutschrift: nil
     Vorauszahlungen: 2280.00
     Saldo:
       wert: -242.32
@@ -2433,72 +2756,84 @@ Abrechnung 2024 Wohnung 2:
           Fixkosten: 89.39
           Verbrauch: 163.36
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -60.54
         [1]:
           Monat: "2024-02-01"
           Fixkosten: 89.39
           Verbrauch: 163.94
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -123.87
         [2]:
           Monat: "2024-03-01"
           Fixkosten: 89.39
           Verbrauch: 132.97
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -156.23
         [3]:
           Monat: "2024-04-01"
           Fixkosten: 89.39
           Verbrauch: 113.62
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -169.24
         [4]:
           Monat: "2024-05-01"
           Fixkosten: 89.39
           Verbrauch: 98.10
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -166.73
         [5]:
           Monat: "2024-06-01"
           Fixkosten: 89.39
           Verbrauch: 86.73
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -152.85
         [6]:
           Monat: "2024-07-01"
           Fixkosten: 89.39
           Verbrauch: 87.01
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -139.25
         [7]:
           Monat: "2024-08-01"
           Fixkosten: 89.39
           Verbrauch: 87.28
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -125.92
         [8]:
           Monat: "2024-09-01"
           Fixkosten: 89.39
           Verbrauch: 96.82
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -122.13
         [9]:
           Monat: "2024-10-01"
           Fixkosten: 89.39
           Verbrauch: 113.36
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -134.88
         [10]:
           Monat: "2024-11-01"
           Fixkosten: 89.39
           Verbrauch: 136.64
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -170.91
         [11]:
           Monat: "2024-12-01"
           Fixkosten: 89.39
           Verbrauch: 169.81
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -240.11
       Uebertrag:
         Vorhanden: true
@@ -2509,6 +2844,7 @@ Abrechnung 2024 Wohnung 2:
       Fixkosten: 1072.68
       Verbrauch: 1449.64
       Abschlag: 2280.00
+      Gutschrift: 0.00
       Endsaldo: -240.11
     Zaehlerstaende:
       Spalten: [10]
@@ -2561,33 +2897,43 @@ Abrechnung 2024 Wohnung 2:
             [0]:
               Wert: 45010.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 10077.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 17740.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5717.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 687.28
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 189.00
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 106.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 55.02
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 39.99
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 12779.20
               Eigen: false
+              Fehlt: false
         [1]:
           Ablesedatum: "2024-01-01"
           Monat: "2024-01-01"
@@ -2596,33 +2942,43 @@ Abrechnung 2024 Wohnung 2:
             [0]:
               Wert: 46915.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 10267.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 18890.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5852.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 701.37
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 193.20
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 109.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 56.27
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 40.89
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 12879.30
               Eigen: false
+              Fehlt: false
         [2]:
           Ablesedatum: "2024-02-01"
           Monat: "2024-02-01"
@@ -2631,33 +2987,43 @@ Abrechnung 2024 Wohnung 2:
             [0]:
               Wert: 48820.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 10457.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 20040.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 5987.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 715.61
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 197.40
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 111.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 57.52
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 41.79
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 13012.90
               Eigen: false
+              Fehlt: false
         [3]:
           Ablesedatum: "2024-03-01"
           Monat: "2024-03-01"
@@ -2666,33 +3032,43 @@ Abrechnung 2024 Wohnung 2:
             [0]:
               Wert: 50323.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 10637.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 20830.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6114.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 730.36
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 201.60
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 114.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 58.27
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 42.33
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 13260.40
               Eigen: false
+              Fehlt: false
         [4]:
           Ablesedatum: "2024-04-01"
           Monat: "2024-04-01"
@@ -2701,33 +3077,43 @@ Abrechnung 2024 Wohnung 2:
             [0]:
               Wert: 51575.25
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 10811.25
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 21395.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6236.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 746.01
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 205.80
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 116.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 58.71
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 42.64
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 13708.90
               Eigen: false
+              Fehlt: false
         [5]:
           Ablesedatum: "2024-05-01"
           Monat: "2024-05-01"
@@ -2736,33 +3122,43 @@ Abrechnung 2024 Wohnung 2:
             [0]:
               Wert: 52626.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 10980.00
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 21780.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6354.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 762.56
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 210.00
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 119.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 58.90
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 42.78
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 14358.40
               Eigen: false
+              Fehlt: false
         [6]:
           Ablesedatum: "2024-06-01"
           Monat: "2024-06-01"
@@ -2771,33 +3167,43 @@ Abrechnung 2024 Wohnung 2:
             [0]:
               Wert: 53526.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 11145.00
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 22030.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6469.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 779.56
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 214.20
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 121.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 58.90
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 42.78
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 15108.40
               Eigen: false
+              Fehlt: false
         [7]:
           Ablesedatum: "2024-07-01"
           Monat: "2024-07-01"
@@ -2806,33 +3212,43 @@ Abrechnung 2024 Wohnung 2:
             [0]:
               Wert: 54426.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 11310.00
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 22280.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6584.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 796.56
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 218.40
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 124.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 58.90
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 42.78
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 15858.40
               Eigen: false
+              Fehlt: false
         [8]:
           Ablesedatum: "2024-08-01"
           Monat: "2024-08-01"
@@ -2841,33 +3257,43 @@ Abrechnung 2024 Wohnung 2:
             [0]:
               Wert: 55326.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 11475.00
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 22530.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6699.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 813.11
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 222.60
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 126.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 58.90
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 42.78
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 16507.90
               Eigen: false
+              Fehlt: false
         [9]:
           Ablesedatum: "2024-09-01"
           Monat: "2024-09-01"
@@ -2876,33 +3302,43 @@ Abrechnung 2024 Wohnung 2:
             [0]:
               Wert: 56376.75
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 11643.75
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 22915.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6817.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 828.76
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 226.80
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 129.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 59.09
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 42.91
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 16956.40
               Eigen: false
+              Fehlt: false
         [10]:
           Ablesedatum: "2024-10-01"
           Monat: "2024-10-01"
@@ -2911,33 +3347,43 @@ Abrechnung 2024 Wohnung 2:
             [0]:
               Wert: 57628.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 11817.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 23480.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 6939.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 843.51
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 231.00
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 131.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 59.52
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 43.23
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 17203.90
               Eigen: false
+              Fehlt: false
         [11]:
           Ablesedatum: "2024-11-01"
           Monat: "2024-11-01"
@@ -2946,33 +3392,43 @@ Abrechnung 2024 Wohnung 2:
             [0]:
               Wert: 59131.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 11997.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 24270.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7066.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 857.75
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 235.20
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 134.00
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 60.27
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 43.77
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 17337.50
               Eigen: false
+              Fehlt: false
         [12]:
           Ablesedatum: "2024-12-01"
           Monat: "2024-12-01"
@@ -2981,33 +3437,43 @@ Abrechnung 2024 Wohnung 2:
             [0]:
               Wert: 61036.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 12187.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 25420.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7201.00
               Eigen: false
+              Fehlt: false
             [4]:
               Wert: 871.84
               Eigen: false
+              Fehlt: false
             [5]:
               Wert: 239.40
               Eigen: true
+              Fehlt: false
             [6]:
               Wert: 136.50
               Eigen: false
+              Fehlt: false
             [7]:
               Wert: 61.52
               Eigen: false
+              Fehlt: false
             [8]:
               Wert: 44.67
               Eigen: true
+              Fehlt: false
             [9]:
               Wert: 17437.60
               Eigen: false
+              Fehlt: false
     Verbrauch: [10]
       [0]:
         Zaehler: "Stromzähler Gesamt"
@@ -3015,6 +3481,8 @@ Abrechnung 2024 Wohnung 2:
         Beginn: 45010.50
         Ende: 61036.50
         Verbrauch: 16026.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [1]:
         Zaehler: "Zwischenstromzähler Wohnung 2"
@@ -3022,6 +3490,8 @@ Abrechnung 2024 Wohnung 2:
         Beginn: 10077.50
         Ende: 12187.50
         Verbrauch: 2110.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: true
       [2]:
         Zaehler: "Zwischenstromzähler Wärmepumpe"
@@ -3029,6 +3499,8 @@ Abrechnung 2024 Wohnung 2:
         Beginn: 17740.00
         Ende: 25420.00
         Verbrauch: 7680.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [3]:
         Zaehler: "Zwischenzähler Wallboxen"
@@ -3036,6 +3508,8 @@ Abrechnung 2024 Wohnung 2:
         Beginn: 5717.00
         Ende: 7201.00
         Verbrauch: 1484.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [4]:
         Zaehler: "Wasserzähler Gesamt"
@@ -3043,6 +3517,8 @@ Abrechnung 2024 Wohnung 2:
         Beginn: 687.28
         Ende: 871.84
         Verbrauch: 184.56
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [5]:
         Zaehler: "Zwischenwasserzähler Wohnung 2"
@@ -3050,6 +3526,8 @@ Abrechnung 2024 Wohnung 2:
         Beginn: 189.00
         Ende: 239.40
         Verbrauch: 50.40
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: true
       [6]:
         Zaehler: "Zwischenwasserzähler Warmwasseraufbereitung"
@@ -3057,6 +3535,8 @@ Abrechnung 2024 Wohnung 2:
         Beginn: 106.50
         Ende: 136.50
         Verbrauch: 30.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [7]:
         Zaehler: "Wärmemengenzähler Wohnung 1"
@@ -3064,6 +3544,8 @@ Abrechnung 2024 Wohnung 2:
         Beginn: 55.02
         Ende: 61.52
         Verbrauch: 6.50
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [8]:
         Zaehler: "Wärmemengenzähler Wohnung 2"
@@ -3071,6 +3553,8 @@ Abrechnung 2024 Wohnung 2:
         Beginn: 39.99
         Ende: 44.67
         Verbrauch: 4.68
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: true
       [9]:
         Zaehler: "Einspeisezähler (PV)"
@@ -3078,6 +3562,8 @@ Abrechnung 2024 Wohnung 2:
         Beginn: 12779.20
         Ende: 17437.60
         Verbrauch: 4658.40
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
     HeizungMonate: [12]
       [0]:
@@ -3450,9 +3936,13 @@ Abrechnung 2025 Wohnung 1:
       Geteilt: false
     Betriebskosten: 2917.27
     StromW2: nil
+    Wallbox:
+      VerbrauchKWh: 81.00
+      Kosten: 17.18
+    PVGutschrift: nil
     Vorauszahlungen: 3120.00
     Saldo:
-      wert: 202.73
+      wert: 185.55
     Monatsverlauf:
       Zeilen: [12]
         [0]:
@@ -3460,73 +3950,85 @@ Abrechnung 2025 Wohnung 1:
           Fixkosten: 105.17
           Verbrauch: 188.42
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 449.24
         [1]:
           Monat: "2025-02-01"
           Fixkosten: 105.17
           Verbrauch: 189.95
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 414.12
         [2]:
           Monat: "2025-03-01"
           Fixkosten: 105.17
           Verbrauch: 150.94
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 418.01
         [3]:
           Monat: "2025-04-01"
           Fixkosten: 105.17
           Verbrauch: 130.10
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 442.74
         [4]:
           Monat: "2025-05-01"
           Fixkosten: 105.17
           Verbrauch: 114.46
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 483.11
         [5]:
           Monat: "2025-06-01"
           Fixkosten: 105.17
           Verbrauch: 98.35
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 539.59
         [6]:
           Monat: "2025-07-01"
           Fixkosten: 105.17
           Verbrauch: 98.57
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 595.85
         [7]:
           Monat: "2025-08-01"
           Fixkosten: 105.17
           Verbrauch: 96.00
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 654.68
         [8]:
           Monat: "2025-09-01"
           Fixkosten: 105.17
           Verbrauch: 110.03
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 699.48
         [9]:
           Monat: "2025-10-01"
           Fixkosten: 105.17
           Verbrauch: 126.67
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 727.64
         [10]:
           Monat: "2025-11-01"
           Fixkosten: 105.17
           Verbrauch: 153.99
           Abschlag: 260.00
+          Gutschrift: 0.00
           Saldo: 728.48
         [11]:
           Monat: "2025-12-01"
           Fixkosten: 105.17
-          Verbrauch: 197.75
+          Verbrauch: 214.93
           Abschlag: 260.00
-          Saldo: 685.56
+          Gutschrift: 0.00
+          Saldo: 668.38
       Uebertrag:
         Vorhanden: true
         Betrag: 482.83
@@ -3534,11 +4036,12 @@ Abrechnung 2025 Wohnung 1:
         Bis: "2024-12-01"
         Hinweis: ""
       Fixkosten: 1262.04
-      Verbrauch: 1655.23
+      Verbrauch: 1672.41
       Abschlag: 3120.00
-      Endsaldo: 685.56
+      Gutschrift: 0.00
+      Endsaldo: 668.38
     Zaehlerstaende:
-      Spalten: [10]
+      Spalten: [12]
         [0]:
           Zaehler: "Strom gesamt"
           Einheit: "kWh"
@@ -3556,26 +4059,34 @@ Abrechnung 2025 Wohnung 1:
           Einheit: "kWh"
           Eigen: false
         [4]:
+          Zaehler: "Wallbox Whg 1"
+          Einheit: "kWh"
+          Eigen: true
+        [5]:
+          Zaehler: "Wallbox Whg 2"
+          Einheit: "kWh"
+          Eigen: false
+        [6]:
           Zaehler: "Wasser gesamt"
           Einheit: "m³"
           Eigen: false
-        [5]:
+        [7]:
           Zaehler: "Wasser Whg 2"
           Einheit: "m³"
           Eigen: false
-        [6]:
+        [8]:
           Zaehler: "Warmwasser"
           Einheit: "m³"
           Eigen: false
-        [7]:
+        [9]:
           Zaehler: "Wärme Whg 1"
           Einheit: "MWh"
           Eigen: true
-        [8]:
+        [10]:
           Zaehler: "Wärme Whg 2"
           Einheit: "MWh"
           Eigen: false
-        [9]:
+        [11]:
           Zaehler: "Einspeisung (PV)"
           Einheit: "kWh"
           Eigen: false
@@ -3584,464 +4095,700 @@ Abrechnung 2025 Wohnung 1:
           Ablesedatum: "2024-12-01"
           Monat: "2024-12-01"
           Ausgangsstand: true
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 61036.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 12187.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 25420.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7201.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [6]:
               Wert: 871.84
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 239.40
               Eigen: false
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 136.50
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 61.52
               Eigen: true
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 44.67
               Eigen: false
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 17437.60
               Eigen: false
+              Fehlt: false
         [1]:
           Ablesedatum: "2025-01-01"
           Monat: "2025-01-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 62941.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 12377.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 26570.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7336.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [6]:
               Wert: 885.93
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 243.60
               Eigen: false
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 139.00
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 62.77
               Eigen: true
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 45.57
               Eigen: false
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 17537.70
               Eigen: false
+              Fehlt: false
         [2]:
           Ablesedatum: "2025-02-01"
           Monat: "2025-02-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 64846.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 12567.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 27720.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7471.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [6]:
               Wert: 900.17
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 247.80
               Eigen: false
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 141.50
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 64.03
               Eigen: true
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 46.47
               Eigen: false
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 17671.30
               Eigen: false
+              Fehlt: false
         [3]:
           Ablesedatum: "2025-03-01"
           Monat: "2025-03-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 66349.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 12747.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 28510.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7598.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [6]:
               Wert: 914.92
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 252.00
               Eigen: false
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 144.00
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 64.78
               Eigen: true
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.01
               Eigen: false
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 17918.80
               Eigen: false
+              Fehlt: false
         [4]:
           Ablesedatum: "2025-04-01"
           Monat: "2025-04-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 67601.25
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 12921.25
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 29075.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7720.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [6]:
               Wert: 930.57
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 256.20
               Eigen: false
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 146.50
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 65.21
               Eigen: true
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.32
               Eigen: false
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 18367.30
               Eigen: false
+              Fehlt: false
         [5]:
           Ablesedatum: "2025-05-01"
           Monat: "2025-05-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 68652.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 13090.00
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 29460.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7838.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [6]:
               Wert: 947.12
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 260.40
               Eigen: false
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 149.00
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 65.40
               Eigen: true
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.46
               Eigen: false
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 19016.80
               Eigen: false
+              Fehlt: false
         [6]:
           Ablesedatum: "2025-06-01"
           Monat: "2025-06-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 69552.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 13255.00
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 29710.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7953.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [6]:
               Wert: 964.12
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 264.60
               Eigen: false
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 151.50
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 65.40
               Eigen: true
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.46
               Eigen: false
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 19766.80
               Eigen: false
+              Fehlt: false
         [7]:
           Ablesedatum: "2025-07-01"
           Monat: "2025-07-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 70452.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 13420.00
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 29960.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 8068.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [6]:
               Wert: 981.12
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 268.80
               Eigen: false
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 154.00
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 65.40
               Eigen: true
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.46
               Eigen: false
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 20516.80
               Eigen: false
+              Fehlt: false
         [8]:
           Ablesedatum: "2025-08-01"
           Monat: "2025-08-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 71352.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 13585.00
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 30210.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 8183.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [6]:
               Wert: 997.67
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 273.00
               Eigen: false
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 156.50
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 65.40
               Eigen: true
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.46
               Eigen: false
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 21166.30
               Eigen: false
+              Fehlt: false
         [9]:
           Ablesedatum: "2025-09-01"
           Monat: "2025-09-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 72402.75
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 13753.75
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 30595.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 8301.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [6]:
               Wert: 1013.32
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 277.20
               Eigen: false
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 159.00
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 65.59
               Eigen: true
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.59
               Eigen: false
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 21614.80
               Eigen: false
+              Fehlt: false
         [10]:
           Ablesedatum: "2025-10-01"
           Monat: "2025-10-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 73654.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 13927.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 31160.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 8423.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [6]:
               Wert: 1028.07
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 281.40
               Eigen: false
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 161.50
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 66.03
               Eigen: true
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.91
               Eigen: false
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 21862.30
               Eigen: false
+              Fehlt: false
         [11]:
           Ablesedatum: "2025-11-01"
           Monat: "2025-11-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 75157.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 14107.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 31950.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 8550.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 876.20
+              Eigen: true
+              Fehlt: false
+            [5]:
+              Wert: 350.80
+              Eigen: false
+              Fehlt: false
+            [6]:
               Wert: 1042.31
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 285.60
               Eigen: false
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 164.00
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 66.78
               Eigen: true
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 48.45
               Eigen: false
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 21995.90
               Eigen: false
+              Fehlt: false
         [12]:
           Ablesedatum: "2025-12-01"
           Monat: "2025-12-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 77062.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 14297.50
               Eigen: false
+              Fehlt: false
             [2]:
               Wert: 33100.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 8685.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 957.20
+              Eigen: true
+              Fehlt: false
+            [5]:
+              Wert: 404.80
+              Eigen: false
+              Fehlt: false
+            [6]:
               Wert: 1056.40
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 289.80
               Eigen: false
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 166.50
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 68.03
               Eigen: true
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 49.35
               Eigen: false
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 22096.00
               Eigen: false
-    Verbrauch: [10]
+              Fehlt: false
+    Verbrauch: [12]
       [0]:
         Zaehler: "Stromzähler Gesamt"
         Einheit: "kWh"
         Beginn: 61036.50
         Ende: 77062.50
         Verbrauch: 16026.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [1]:
         Zaehler: "Zwischenstromzähler Wohnung 2"
@@ -4049,6 +4796,8 @@ Abrechnung 2025 Wohnung 1:
         Beginn: 12187.50
         Ende: 14297.50
         Verbrauch: 2110.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [2]:
         Zaehler: "Zwischenstromzähler Wärmepumpe"
@@ -4056,6 +4805,8 @@ Abrechnung 2025 Wohnung 1:
         Beginn: 25420.00
         Ende: 33100.00
         Verbrauch: 7680.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [3]:
         Zaehler: "Zwischenzähler Wallboxen"
@@ -4063,48 +4814,80 @@ Abrechnung 2025 Wohnung 1:
         Beginn: 7201.00
         Ende: 8685.00
         Verbrauch: 1484.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [4]:
+        Zaehler: "Wallbox Wohnung 1"
+        Einheit: "kWh"
+        Beginn: 0.00
+        Ende: 957.20
+        Verbrauch: 957.20
+        BeginnFehlt: true
+        EndeFehlt: false
+        Eigen: true
+      [5]:
+        Zaehler: "Wallbox Wohnung 2"
+        Einheit: "kWh"
+        Beginn: 0.00
+        Ende: 404.80
+        Verbrauch: 404.80
+        BeginnFehlt: true
+        EndeFehlt: false
+        Eigen: false
+      [6]:
         Zaehler: "Wasserzähler Gesamt"
         Einheit: "m³"
         Beginn: 871.84
         Ende: 1056.40
         Verbrauch: 184.56
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
-      [5]:
+      [7]:
         Zaehler: "Zwischenwasserzähler Wohnung 2"
         Einheit: "m³"
         Beginn: 239.40
         Ende: 289.80
         Verbrauch: 50.40
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
-      [6]:
+      [8]:
         Zaehler: "Zwischenwasserzähler Warmwasseraufbereitung"
         Einheit: "m³"
         Beginn: 136.50
         Ende: 166.50
         Verbrauch: 30.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
-      [7]:
+      [9]:
         Zaehler: "Wärmemengenzähler Wohnung 1"
         Einheit: "MWh"
         Beginn: 61.52
         Ende: 68.03
         Verbrauch: 6.50
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: true
-      [8]:
+      [10]:
         Zaehler: "Wärmemengenzähler Wohnung 2"
         Einheit: "MWh"
         Beginn: 44.67
         Ende: 49.35
         Verbrauch: 4.68
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
-      [9]:
+      [11]:
         Zaehler: "Einspeisezähler (PV)"
         Einheit: "kWh"
         Beginn: 17437.60
         Ende: 22096.00
         Verbrauch: 4658.40
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
     HeizungMonate: [12]
       [0]:
@@ -4479,9 +5262,13 @@ Abrechnung 2025 Wohnung 2:
     StromW2:
       VerbrauchKWh: 2110.00
       Kosten: 438.33
+    Wallbox:
+      VerbrauchKWh: 54.00
+      Kosten: 11.45
+    PVGutschrift: nil
     Vorauszahlungen: 2280.00
     Saldo:
-      wert: -308.65
+      wert: -320.10
     Monatsverlauf:
       Zeilen: [12]
         [0]:
@@ -4489,73 +5276,85 @@ Abrechnung 2025 Wohnung 2:
           Fixkosten: 89.39
           Verbrauch: 170.40
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -309.90
         [1]:
           Monat: "2025-02-01"
           Fixkosten: 89.39
           Verbrauch: 170.98
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -380.27
         [2]:
           Monat: "2025-03-01"
           Fixkosten: 89.39
           Verbrauch: 138.49
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -418.15
         [3]:
           Monat: "2025-04-01"
           Fixkosten: 89.39
           Verbrauch: 118.17
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -435.71
         [4]:
           Monat: "2025-05-01"
           Fixkosten: 89.39
           Verbrauch: 101.88
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -436.98
         [5]:
           Monat: "2025-06-01"
           Fixkosten: 89.39
           Verbrauch: 92.60
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -428.97
         [6]:
           Monat: "2025-07-01"
           Fixkosten: 89.39
           Verbrauch: 92.88
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -421.24
         [7]:
           Monat: "2025-08-01"
           Fixkosten: 89.39
           Verbrauch: 93.17
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -413.80
         [8]:
           Monat: "2025-09-01"
           Fixkosten: 89.39
           Verbrauch: 103.14
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -416.33
         [9]:
           Monat: "2025-10-01"
           Fixkosten: 89.39
           Verbrauch: 120.46
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -436.18
         [10]:
           Monat: "2025-11-01"
           Fixkosten: 89.39
           Verbrauch: 139.56
           Abschlag: 190.00
+          Gutschrift: 0.00
           Saldo: -475.13
         [11]:
           Monat: "2025-12-01"
           Fixkosten: 89.39
-          Verbrauch: 174.24
+          Verbrauch: 185.69
           Abschlag: 190.00
-          Saldo: -548.76
+          Gutschrift: 0.00
+          Saldo: -560.21
       Uebertrag:
         Vorhanden: true
         Betrag: -240.11
@@ -4563,11 +5362,12 @@ Abrechnung 2025 Wohnung 2:
         Bis: "2024-12-01"
         Hinweis: ""
       Fixkosten: 1072.68
-      Verbrauch: 1515.97
+      Verbrauch: 1527.42
       Abschlag: 2280.00
-      Endsaldo: -548.76
+      Gutschrift: 0.00
+      Endsaldo: -560.21
     Zaehlerstaende:
-      Spalten: [10]
+      Spalten: [12]
         [0]:
           Zaehler: "Strom gesamt"
           Einheit: "kWh"
@@ -4585,26 +5385,34 @@ Abrechnung 2025 Wohnung 2:
           Einheit: "kWh"
           Eigen: false
         [4]:
+          Zaehler: "Wallbox Whg 1"
+          Einheit: "kWh"
+          Eigen: false
+        [5]:
+          Zaehler: "Wallbox Whg 2"
+          Einheit: "kWh"
+          Eigen: true
+        [6]:
           Zaehler: "Wasser gesamt"
           Einheit: "m³"
           Eigen: false
-        [5]:
+        [7]:
           Zaehler: "Wasser Whg 2"
           Einheit: "m³"
           Eigen: true
-        [6]:
+        [8]:
           Zaehler: "Warmwasser"
           Einheit: "m³"
           Eigen: false
-        [7]:
+        [9]:
           Zaehler: "Wärme Whg 1"
           Einheit: "MWh"
           Eigen: false
-        [8]:
+        [10]:
           Zaehler: "Wärme Whg 2"
           Einheit: "MWh"
           Eigen: true
-        [9]:
+        [11]:
           Zaehler: "Einspeisung (PV)"
           Einheit: "kWh"
           Eigen: false
@@ -4613,464 +5421,700 @@ Abrechnung 2025 Wohnung 2:
           Ablesedatum: "2024-12-01"
           Monat: "2024-12-01"
           Ausgangsstand: true
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 61036.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 12187.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 25420.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7201.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [6]:
               Wert: 871.84
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 239.40
               Eigen: true
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 136.50
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 61.52
               Eigen: false
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 44.67
               Eigen: true
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 17437.60
               Eigen: false
+              Fehlt: false
         [1]:
           Ablesedatum: "2025-01-01"
           Monat: "2025-01-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 62941.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 12377.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 26570.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7336.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [6]:
               Wert: 885.93
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 243.60
               Eigen: true
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 139.00
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 62.77
               Eigen: false
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 45.57
               Eigen: true
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 17537.70
               Eigen: false
+              Fehlt: false
         [2]:
           Ablesedatum: "2025-02-01"
           Monat: "2025-02-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 64846.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 12567.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 27720.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7471.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [6]:
               Wert: 900.17
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 247.80
               Eigen: true
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 141.50
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 64.03
               Eigen: false
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 46.47
               Eigen: true
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 17671.30
               Eigen: false
+              Fehlt: false
         [3]:
           Ablesedatum: "2025-03-01"
           Monat: "2025-03-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 66349.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 12747.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 28510.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7598.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [6]:
               Wert: 914.92
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 252.00
               Eigen: true
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 144.00
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 64.78
               Eigen: false
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.01
               Eigen: true
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 17918.80
               Eigen: false
+              Fehlt: false
         [4]:
           Ablesedatum: "2025-04-01"
           Monat: "2025-04-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 67601.25
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 12921.25
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 29075.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7720.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [6]:
               Wert: 930.57
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 256.20
               Eigen: true
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 146.50
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 65.21
               Eigen: false
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.32
               Eigen: true
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 18367.30
               Eigen: false
+              Fehlt: false
         [5]:
           Ablesedatum: "2025-05-01"
           Monat: "2025-05-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 68652.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 13090.00
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 29460.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7838.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [6]:
               Wert: 947.12
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 260.40
               Eigen: true
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 149.00
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 65.40
               Eigen: false
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.46
               Eigen: true
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 19016.80
               Eigen: false
+              Fehlt: false
         [6]:
           Ablesedatum: "2025-06-01"
           Monat: "2025-06-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 69552.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 13255.00
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 29710.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 7953.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [6]:
               Wert: 964.12
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 264.60
               Eigen: true
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 151.50
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 65.40
               Eigen: false
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.46
               Eigen: true
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 19766.80
               Eigen: false
+              Fehlt: false
         [7]:
           Ablesedatum: "2025-07-01"
           Monat: "2025-07-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 70452.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 13420.00
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 29960.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 8068.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [6]:
               Wert: 981.12
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 268.80
               Eigen: true
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 154.00
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 65.40
               Eigen: false
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.46
               Eigen: true
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 20516.80
               Eigen: false
+              Fehlt: false
         [8]:
           Ablesedatum: "2025-08-01"
           Monat: "2025-08-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 71352.00
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 13585.00
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 30210.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 8183.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [6]:
               Wert: 997.67
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 273.00
               Eigen: true
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 156.50
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 65.40
               Eigen: false
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.46
               Eigen: true
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 21166.30
               Eigen: false
+              Fehlt: false
         [9]:
           Ablesedatum: "2025-09-01"
           Monat: "2025-09-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 72402.75
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 13753.75
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 30595.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 8301.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [6]:
               Wert: 1013.32
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 277.20
               Eigen: true
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 159.00
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 65.59
               Eigen: false
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.59
               Eigen: true
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 21614.80
               Eigen: false
+              Fehlt: false
         [10]:
           Ablesedatum: "2025-10-01"
           Monat: "2025-10-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 73654.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 13927.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 31160.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 8423.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 0.00
+              Eigen: false
+              Fehlt: true
+            [5]:
+              Wert: 0.00
+              Eigen: true
+              Fehlt: true
+            [6]:
               Wert: 1028.07
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 281.40
               Eigen: true
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 161.50
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 66.03
               Eigen: false
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 47.91
               Eigen: true
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 21862.30
               Eigen: false
+              Fehlt: false
         [11]:
           Ablesedatum: "2025-11-01"
           Monat: "2025-11-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 75157.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 14107.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 31950.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 8550.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 876.20
+              Eigen: false
+              Fehlt: false
+            [5]:
+              Wert: 350.80
+              Eigen: true
+              Fehlt: false
+            [6]:
               Wert: 1042.31
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 285.60
               Eigen: true
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 164.00
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 66.78
               Eigen: false
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 48.45
               Eigen: true
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 21995.90
               Eigen: false
+              Fehlt: false
         [12]:
           Ablesedatum: "2025-12-01"
           Monat: "2025-12-01"
           Ausgangsstand: false
-          Staende: [10]
+          Staende: [12]
             [0]:
               Wert: 77062.50
               Eigen: false
+              Fehlt: false
             [1]:
               Wert: 14297.50
               Eigen: true
+              Fehlt: false
             [2]:
               Wert: 33100.00
               Eigen: false
+              Fehlt: false
             [3]:
               Wert: 8685.00
               Eigen: false
+              Fehlt: false
             [4]:
+              Wert: 957.20
+              Eigen: false
+              Fehlt: false
+            [5]:
+              Wert: 404.80
+              Eigen: true
+              Fehlt: false
+            [6]:
               Wert: 1056.40
               Eigen: false
-            [5]:
+              Fehlt: false
+            [7]:
               Wert: 289.80
               Eigen: true
-            [6]:
+              Fehlt: false
+            [8]:
               Wert: 166.50
               Eigen: false
-            [7]:
+              Fehlt: false
+            [9]:
               Wert: 68.03
               Eigen: false
-            [8]:
+              Fehlt: false
+            [10]:
               Wert: 49.35
               Eigen: true
-            [9]:
+              Fehlt: false
+            [11]:
               Wert: 22096.00
               Eigen: false
-    Verbrauch: [10]
+              Fehlt: false
+    Verbrauch: [12]
       [0]:
         Zaehler: "Stromzähler Gesamt"
         Einheit: "kWh"
         Beginn: 61036.50
         Ende: 77062.50
         Verbrauch: 16026.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [1]:
         Zaehler: "Zwischenstromzähler Wohnung 2"
@@ -5078,6 +6122,8 @@ Abrechnung 2025 Wohnung 2:
         Beginn: 12187.50
         Ende: 14297.50
         Verbrauch: 2110.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: true
       [2]:
         Zaehler: "Zwischenstromzähler Wärmepumpe"
@@ -5085,6 +6131,8 @@ Abrechnung 2025 Wohnung 2:
         Beginn: 25420.00
         Ende: 33100.00
         Verbrauch: 7680.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [3]:
         Zaehler: "Zwischenzähler Wallboxen"
@@ -5092,48 +6140,80 @@ Abrechnung 2025 Wohnung 2:
         Beginn: 7201.00
         Ende: 8685.00
         Verbrauch: 1484.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
       [4]:
+        Zaehler: "Wallbox Wohnung 1"
+        Einheit: "kWh"
+        Beginn: 0.00
+        Ende: 957.20
+        Verbrauch: 957.20
+        BeginnFehlt: true
+        EndeFehlt: false
+        Eigen: false
+      [5]:
+        Zaehler: "Wallbox Wohnung 2"
+        Einheit: "kWh"
+        Beginn: 0.00
+        Ende: 404.80
+        Verbrauch: 404.80
+        BeginnFehlt: true
+        EndeFehlt: false
+        Eigen: true
+      [6]:
         Zaehler: "Wasserzähler Gesamt"
         Einheit: "m³"
         Beginn: 871.84
         Ende: 1056.40
         Verbrauch: 184.56
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
-      [5]:
+      [7]:
         Zaehler: "Zwischenwasserzähler Wohnung 2"
         Einheit: "m³"
         Beginn: 239.40
         Ende: 289.80
         Verbrauch: 50.40
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: true
-      [6]:
+      [8]:
         Zaehler: "Zwischenwasserzähler Warmwasseraufbereitung"
         Einheit: "m³"
         Beginn: 136.50
         Ende: 166.50
         Verbrauch: 30.00
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
-      [7]:
+      [9]:
         Zaehler: "Wärmemengenzähler Wohnung 1"
         Einheit: "MWh"
         Beginn: 61.52
         Ende: 68.03
         Verbrauch: 6.50
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
-      [8]:
+      [10]:
         Zaehler: "Wärmemengenzähler Wohnung 2"
         Einheit: "MWh"
         Beginn: 44.67
         Ende: 49.35
         Verbrauch: 4.68
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: true
-      [9]:
+      [11]:
         Zaehler: "Einspeisezähler (PV)"
         Einheit: "kWh"
         Beginn: 17437.60
         Ende: 22096.00
         Verbrauch: 4658.40
+        BeginnFehlt: false
+        EndeFehlt: false
         Eigen: false
     HeizungMonate: [12]
       [0]:
