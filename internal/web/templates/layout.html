@@ -163,7 +163,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
     --bg: #f4f5f7; --panel: #ffffff; --border: #e0e2e7; --text: #1c1e21;
     --muted: #6b7280; --accent: #2563eb; --accent-soft: #eef2ff; --success: #16a34a;
     --danger: #b91c1c; --warning: #b45309;
-    --cat-strom: #f59e0b; --cat-heizung: #ef4444; --cat-wasser: #3b82f6; --cat-fix: #8b5cf6;
+    --cat-wallbox: #14b8a6; --cat-strom: #f59e0b; --cat-heizung: #ef4444; --cat-wasser: #3b82f6; --cat-fix: #8b5cf6;
     --logik-wohneinheit: #8b5cf6; --logik-flurstueck: #22c55e; --logik-qm: #ec4899; --logik-personen: #06b6d4;
     --logik-wohnung1: #f59e0b; --logik-wohnung2: #6366f1;
     --tooltip-bg: #1c1e21; --tooltip-text: #ffffff;
@@ -174,7 +174,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
       --bg: #14161a; --panel: #1c1f26; --border: #2e323c; --text: #e8eaed;
       --muted: #9aa1ac; --accent: #5b9bf5; --accent-soft: #1e2a3f; --success: #16a34a;
       --danger: #f87171; --warning: #fbbf24;
-      --cat-strom: #fbbf24; --cat-heizung: #f87171; --cat-wasser: #60a5fa; --cat-fix: #a78bfa;
+      --cat-wallbox: #2dd4bf; --cat-strom: #fbbf24; --cat-heizung: #f87171; --cat-wasser: #60a5fa; --cat-fix: #a78bfa;
       --logik-wohneinheit: #a78bfa; --logik-flurstueck: #4ade80; --logik-qm: #f472b6; --logik-personen: #22d3ee;
       --logik-wohnung1: #fbbf24; --logik-wohnung2: #818cf8;
       --tooltip-bg: #e8eaed; --tooltip-text: #14161a;
@@ -185,7 +185,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
     --bg: #14161a; --panel: #1c1f26; --border: #2e323c; --text: #e8eaed;
     --muted: #9aa1ac; --accent: #5b9bf5; --accent-soft: #1e2a3f; --success: #16a34a;
     --danger: #f87171; --warning: #fbbf24;
-    --cat-strom: #fbbf24; --cat-heizung: #f87171; --cat-wasser: #60a5fa; --cat-fix: #a78bfa;
+    --cat-wallbox: #2dd4bf; --cat-strom: #fbbf24; --cat-heizung: #f87171; --cat-wasser: #60a5fa; --cat-fix: #a78bfa;
     --logik-wohneinheit: #a78bfa; --logik-flurstueck: #4ade80; --logik-qm: #f472b6; --logik-personen: #22d3ee;
     --logik-wohnung1: #fbbf24; --logik-wohnung2: #818cf8;
     --tooltip-bg: #e8eaed; --tooltip-text: #14161a;
@@ -243,6 +243,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   .stat-bar-track { display: flex; height: .5rem; border-radius: 999px; overflow: hidden; background: var(--border); margin-top: .5rem; }
   .stat-bar-seg { height: 100%; }
   .cat-strom { background: var(--cat-strom); }
+  .cat-wallbox { background: var(--cat-wallbox); }
   .cat-heizung { background: var(--cat-heizung); }
   .cat-wasser { background: var(--cat-wasser); }
   .cat-fix { background: var(--cat-fix); }
@@ -273,6 +274,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   .legend-item { display: inline-flex; align-items: center; }
   .verbrauch-liste { display: block; font-size: .72rem; color: var(--muted); }
   .v-strom { color: var(--cat-strom); font-weight: 600; }
+  .v-wallbox { color: var(--cat-wallbox); font-weight: 600; }
   .v-heizung { color: var(--cat-heizung); font-weight: 600; }
   .v-wasser { color: var(--cat-wasser); font-weight: 600; }
   .v-fix { color: var(--cat-fix); font-weight: 600; }

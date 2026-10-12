@@ -9,9 +9,11 @@
 <div class="panel verlauf-panel">
   <div class="verlauf-legend">
     <span class="legend-item" data-modus="verbrauch"><i class="cat-strom"></i>Strom</span>
+    <span class="legend-item" data-modus="verbrauch"><i class="cat-wallbox"></i>Wallbox</span>
     <span class="legend-item" data-modus="verbrauch"><i class="cat-heizung"></i>Heizung/Warmwasser</span>
     <span class="legend-item" data-modus="verbrauch"><i class="cat-wasser"></i>Wasser</span>
     <span class="legend-item" data-modus="verbrauchswerte"><i class="cat-strom"></i>Strom</span>
+    <span class="legend-item" data-modus="verbrauchswerte"><i class="cat-wallbox"></i>Wallbox</span>
     <span class="legend-item" data-modus="verbrauchswerte"><i class="cat-heizung"></i>Heizung/Warmwasser</span>
     <span class="legend-item" data-modus="verbrauchswerte"><i class="cat-wasser"></i>Wasser</span>
     {{range logikOptions}}<span class="legend-item" data-modus="fixkosten"><i class="logik-{{.Value}}"></i>{{.Label}}</span>{{end}}
@@ -32,10 +34,10 @@
   {{if .Jahreszeile}}
   {{$jz := .Jahreszeile}}
   <div class="verlauf-year-row"><span>Jahr {{$jz.Jahr}}{{if $jz.IstLaufend}} (laufend){{end}}</span>
-    <span data-modus="verbrauch">Verbrauch {{deEUR $jz.VerbrauchSumme}}&nbsp;€ · Fixkosten {{deEUR $jz.FixkostenSumme}}&nbsp;€ · Gesamt {{deEUR $jz.GesamtSumme}}&nbsp;€</span>
-    <span data-modus="verbrauchswerte">Verbrauch {{deEUR $jz.VerbrauchSumme}}&nbsp;€ · Fixkosten {{deEUR $jz.FixkostenSumme}}&nbsp;€ · Gesamt {{deEUR $jz.GesamtSumme}}&nbsp;€</span>
-    <span data-modus="fixkosten">Verbrauch {{deEUR $jz.VerbrauchSumme}}&nbsp;€ · Fixkosten {{deEUR $jz.FixkostenSumme}}&nbsp;€ · Gesamt {{deEUR $jz.GesamtSumme}}&nbsp;€</span>
-    <span data-modus="kombiniert">Verbrauch {{deEUR $jz.VerbrauchSumme}}&nbsp;€ · Fixkosten {{deEUR $jz.FixkostenSumme}}&nbsp;€ · Gesamt {{deEUR $jz.GesamtSumme}}&nbsp;€</span>
+    <span data-modus="verbrauch">Verbrauch {{deEUR $jz.VerbrauchSumme}}&nbsp;€ · Fixkosten {{deEUR $jz.FixkostenSumme}}&nbsp;€{{if $jz.PVGutschriftSumme}} · PV-Gutschrift &minus;{{deEUR $jz.PVGutschriftSumme}}&nbsp;€{{end}} · Gesamt {{deEUR $jz.GesamtSumme}}&nbsp;€</span>
+    <span data-modus="verbrauchswerte">Verbrauch {{deEUR $jz.VerbrauchSumme}}&nbsp;€ · Fixkosten {{deEUR $jz.FixkostenSumme}}&nbsp;€{{if $jz.PVGutschriftSumme}} · PV-Gutschrift &minus;{{deEUR $jz.PVGutschriftSumme}}&nbsp;€{{end}} · Gesamt {{deEUR $jz.GesamtSumme}}&nbsp;€</span>
+    <span data-modus="fixkosten">Verbrauch {{deEUR $jz.VerbrauchSumme}}&nbsp;€ · Fixkosten {{deEUR $jz.FixkostenSumme}}&nbsp;€{{if $jz.PVGutschriftSumme}} · PV-Gutschrift &minus;{{deEUR $jz.PVGutschriftSumme}}&nbsp;€{{end}} · Gesamt {{deEUR $jz.GesamtSumme}}&nbsp;€</span>
+    <span data-modus="kombiniert">Verbrauch {{deEUR $jz.VerbrauchSumme}}&nbsp;€ · Fixkosten {{deEUR $jz.FixkostenSumme}}&nbsp;€{{if $jz.PVGutschriftSumme}} · PV-Gutschrift &minus;{{deEUR $jz.PVGutschriftSumme}}&nbsp;€{{end}} · Gesamt {{deEUR $jz.GesamtSumme}}&nbsp;€</span>
     <span data-modus="abschlag">{{with $jz.Endstand}}{{.Label}} {{deEUR .Betrag}}&nbsp;€{{else}}–{{end}}</span>
   </div>
   {{else}}
@@ -62,7 +64,7 @@
 
     <span class="value-label" data-modus="verbrauch">{{if $m.HasVerbrauch}}{{deEUR $m.VerbrauchGesamt}}&nbsp;€{{end}}</span>
     <span class="value-label" data-modus="fixkosten">{{if $m.HasFixkosten}}{{deEUR $m.FixkostenGesamt}}&nbsp;€{{end}}</span>
-    <span class="value-label" data-modus="kombiniert">{{if $m.HasKombiniert}}{{deEUR $m.KombiniertGesamt}}&nbsp;€{{end}}</span>
+    <span class="value-label" data-modus="kombiniert">{{if $m.HasKombiniert}}{{deEUR $m.KombiniertGesamt}}&nbsp;€{{if $m.PVGutschrift}} <small class="muted" title="PV-Gutschrift">(PV-Gutschrift &minus;{{deEUR $m.PVGutschrift}}&nbsp;€)</small>{{end}}{{end}}</span>
     <span class="value-label {{with $m.Saldo}}{{.CSSClass}}{{end}}" data-modus="abschlag">{{with $m.Saldo}}{{if .Guthaben}}+{{else if .Nachzahlung}}&minus;{{end}}{{deEUR .Betrag}}&nbsp;€{{end}}</span>
   </div>
   {{end}}

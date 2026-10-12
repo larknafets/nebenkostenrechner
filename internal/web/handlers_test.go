@@ -76,8 +76,8 @@ func TestKategorien(t *testing.T) {
 				t.Fatalf("Wohnung 1 sollte keine Strom-Kategorie haben, got %+v", kat)
 			}
 		}
-		if len(kats) != 2 {
-			t.Fatalf("want 2 Kategorien (Heizung, Wasser), got %d: %+v", len(kats), kats)
+		if len(kats) != 3 {
+			t.Fatalf("want 3 Kategorien (Wallbox, Heizung, Wasser), got %d: %+v", len(kats), kats)
 		}
 	})
 
@@ -102,8 +102,8 @@ func TestKategorien(t *testing.T) {
 
 	t.Run("Wohnung 2 kombiniert Frischwasser+Abwasser zu einer Wasser-Kategorie", func(t *testing.T) {
 		kats := kategorien(2, k)
-		if len(kats) != 3 {
-			t.Fatalf("want 3 Kategorien, got %d: %+v", len(kats), kats)
+		if len(kats) != 4 {
+			t.Fatalf("want 4 Kategorien, got %d: %+v", len(kats), kats)
 		}
 		var wasser *kategorie
 		for i := range kats {
@@ -123,7 +123,7 @@ func TestKategorien(t *testing.T) {
 	})
 
 	t.Run("Kind identifiziert jede Kategorie unabhängig vom Label (Architecture Review)", func(t *testing.T) {
-		want := map[string]kategorieKind{"Strom": kategorieKindStrom, "Heizung/Warmwasser": kategorieKindHeizung, "Wasser": kategorieKindWasser}
+		want := map[string]kategorieKind{"Strom": kategorieKindStrom, "Wallbox": kategorieKindWallbox, "Heizung/Warmwasser": kategorieKindHeizung, "Wasser": kategorieKindWasser}
 		for _, kat := range kategorien(2, k) {
 			if kat.Kind != want[kat.Label] {
 				t.Errorf("Kategorie %q: Kind = %v, want %v", kat.Label, kat.Kind, want[kat.Label])

@@ -22,6 +22,7 @@ type kategorieKind int
 
 const (
 	kategorieKindStrom kategorieKind = iota
+	kategorieKindWallbox
 	kategorieKindHeizung
 	kategorieKindWasser
 )
@@ -62,7 +63,10 @@ func kategorien(apartmentID int64, k calc.Kosten) []kategorie {
 	if a.HatStrom {
 		list = append(list, kategorie{Kind: kategorieKindStrom, Label: "Strom", Kosten: a.StromKosten, Verbrauch: a.StromKWh, Einheit: "kWh", Farbe: "strom"})
 	}
+	// Wallbox is always listed, also with 0 EUR (#227). The PV-Gutschrift is
+	// not a category: it is a credit without kWh, shown as its own line.
 	list = append(list,
+		kategorie{Kind: kategorieKindWallbox, Label: "Wallbox", Kosten: a.WallboxKosten, Verbrauch: a.WallboxKWh, Einheit: "kWh", Farbe: "wallbox"},
 		kategorie{Kind: kategorieKindHeizung, Label: "Heizung/Warmwasser", Kosten: a.HeizungKosten, Verbrauch: a.HeizungWPKWh, Einheit: "kWh", Farbe: "heizung", Verbrauch2: a.HeizungMWh, Einheit2: "MWh"},
 		kategorie{Kind: kategorieKindWasser, Label: "Wasser", Kosten: a.WasserKosten, Verbrauch: a.WasserM3, Einheit: "m³", Farbe: "wasser"},
 	)
