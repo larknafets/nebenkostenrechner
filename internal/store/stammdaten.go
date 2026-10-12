@@ -85,6 +85,12 @@ type Haus struct {
 	// Betriebskostenart, only passed on by agreement.
 	StromWeiterberechnen bool
 
+	// WallboxWeiterberechnen says whether the Wallbox costs of a rented
+	// apartment are passed on in its Jahresabrechnung (#228). Independent of
+	// StromWeiterberechnen (the Haushaltsstrom). An apartment in
+	// Eigennutzung shows its Wallbox costs regardless of the flag.
+	WallboxWeiterberechnen bool
+
 	// HeizungWaermeGewichtung is the share of the heat pump electricity cost
 	// split by heat consumption, the rest by Wohnungsgröße (Issue #162):
 	// one of HeizungGewichtungOptions. The contract fixes it for the whole
@@ -106,8 +112,8 @@ type Haus struct {
 func GetHaus(db *sql.DB) (Haus, error) {
 	var h Haus
 	if err := db.QueryRow(
-		`SELECT strom_weiterberechnen, heizung_waerme_gewichtung, vermieter_name, vermieter_anschrift, objekt_anschrift, iban, kontoinhaber FROM haus WHERE id = 1`,
-	).Scan(&h.StromWeiterberechnen, &h.HeizungWaermeGewichtung, &h.VermieterName, &h.VermieterAnschrift, &h.ObjektAnschrift, &h.IBAN, &h.Kontoinhaber); err != nil {
+		`SELECT strom_weiterberechnen, wallbox_weiterberechnen, heizung_waerme_gewichtung, vermieter_name, vermieter_anschrift, objekt_anschrift, iban, kontoinhaber FROM haus WHERE id = 1`,
+	).Scan(&h.StromWeiterberechnen, &h.WallboxWeiterberechnen, &h.HeizungWaermeGewichtung, &h.VermieterName, &h.VermieterAnschrift, &h.ObjektAnschrift, &h.IBAN, &h.Kontoinhaber); err != nil {
 		return Haus{}, fmt.Errorf("query haus: %w", err)
 	}
 	return h, nil
@@ -135,8 +141,9 @@ func ValidHeizungGewichtung(v float64) bool {
 type StammdatenFlags struct {
 	// Umlagefaehig maps a kostenposition id to its flag. Only the given
 	// positions are touched.
-	Umlagefaehig         map[int64]bool
-	StromWeiterberechnen bool
+	Umlagefaehig           map[int64]bool
+	StromWeiterberechnen   bool
+	WallboxWeiterberechnen bool
 }
 
 func updateFlagsTx(tx *sql.Tx, in StammdatenFlags) error {
@@ -148,8 +155,8 @@ func updateFlagsTx(tx *sql.Tx, in StammdatenFlags) error {
 			return fmt.Errorf("update umlagefaehig for kostenposition %d: %w", kostenpositionID, err)
 		}
 	}
-	if _, err := tx.Exec(`UPDATE haus SET strom_weiterberechnen = ? WHERE id = 1`, boolToInt(in.StromWeiterberechnen)); err != nil {
-		return fmt.Errorf("update strom_weiterberechnen: %w", err)
+	if _, err := tx.Exec(`UPDATE haus SET strom_weiterberechnen = ?, wallbox_weiterberechnen = ? WHERE id = 1`, boolToInt(in.StromWeiterberechnen), boolToInt(in.WallboxWeiterberechnen)); err != nil {
+		return fmt.Errorf("update weiterberechnen flags: %w", err)
 	}
 	return nil
 }

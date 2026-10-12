@@ -687,7 +687,6 @@ func TestBerechneAbrechnung_NichtAbrechenbar(t *testing.T) {
 // balance over that year (the Dashboard's year-end balance is continuous,
 // no reset), for both apartments.
 func TestBerechneAbrechnung_StimmtMitDemDashboardUeberein(t *testing.T) {
-	t.Skip("Dashboard-Saldo enthält jetzt die Wallbox (#227), die Jahresabrechnung erst mit #228")
 	db := openTestDB(t)
 	if err := store.SeedDemoData(db, time.Date(2026, time.October, 15, 0, 0, 0, 0, time.UTC)); err != nil {
 		t.Fatalf("SeedDemoData: %v", err)
@@ -697,8 +696,11 @@ func TestBerechneAbrechnung_StimmtMitDemDashboardUeberein(t *testing.T) {
 	for _, kp := range kps {
 		all[kp.ID] = true
 	}
+	// The Dashboard counts every item, so the Jahressaldo equals its change
+	// only if the Wohnungsstatus table shows every item: Wohnung 2 is rented,
+	// so "Wallbox weiterberechnen" must be on (Wohnung 1 is Eigennutzung).
 	saveStammdaten(t, db, func(s *store.StammdatenSave) {
-		s.Flags = store.StammdatenFlags{Umlagefaehig: all, StromWeiterberechnen: true}
+		s.Flags = store.StammdatenFlags{Umlagefaehig: all, StromWeiterberechnen: true, WallboxWeiterberechnen: true}
 	})
 
 	dd, err := loadDashboardData(db)
@@ -732,7 +734,6 @@ func TestBerechneAbrechnung_StimmtMitDemDashboardUeberein(t *testing.T) {
 // positions give exactly the Dashboard's change over the year, to the cent
 // (the test above allows half a cent).
 func TestJahressaldo_GleichtDashboardSaldoAufDenCent(t *testing.T) {
-	t.Skip("Dashboard-Saldo enthält jetzt die Wallbox (#227), die Jahresabrechnung erst mit #228")
 	db := openTestDB(t)
 	if err := store.SeedDemoData(db, time.Date(2026, time.October, 15, 0, 0, 0, 0, time.UTC)); err != nil {
 		t.Fatalf("SeedDemoData: %v", err)
@@ -742,8 +743,11 @@ func TestJahressaldo_GleichtDashboardSaldoAufDenCent(t *testing.T) {
 	for _, kp := range kps {
 		all[kp.ID] = true
 	}
+	// The Dashboard counts every item, so the Jahressaldo equals its change
+	// only if the Wohnungsstatus table shows every item: Wohnung 2 is rented,
+	// so "Wallbox weiterberechnen" must be on (Wohnung 1 is Eigennutzung).
 	saveStammdaten(t, db, func(s *store.StammdatenSave) {
-		s.Flags = store.StammdatenFlags{Umlagefaehig: all, StromWeiterberechnen: true}
+		s.Flags = store.StammdatenFlags{Umlagefaehig: all, StromWeiterberechnen: true, WallboxWeiterberechnen: true}
 	})
 	dd, err := loadDashboardData(db)
 	if err != nil {
@@ -785,7 +789,7 @@ func saveStammdaten(t *testing.T, db *sql.DB, mutate func(s *store.StammdatenSav
 		t.Fatalf("GetHaus: %v", err)
 	}
 	s := store.StammdatenSave{
-		Flags:                   store.StammdatenFlags{StromWeiterberechnen: haus.StromWeiterberechnen},
+		Flags:                   store.StammdatenFlags{StromWeiterberechnen: haus.StromWeiterberechnen, WallboxWeiterberechnen: haus.WallboxWeiterberechnen},
 		HeizungWaermeGewichtung: haus.HeizungWaermeGewichtung,
 		Haus: store.HausDetails{
 			VermieterName: haus.VermieterName, VermieterAnschrift: haus.VermieterAnschrift,

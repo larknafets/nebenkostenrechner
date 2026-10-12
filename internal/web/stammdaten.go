@@ -184,8 +184,9 @@ func handleUpdateStammdaten() http.HandlerFunc {
 		// An unchecked checkbox is simply absent from the form, so a
 		// missing field means "No".
 		flags := store.StammdatenFlags{
-			Umlagefaehig:         make(map[int64]bool, len(kostenpositionen)),
-			StromWeiterberechnen: r.FormValue("strom_weiterberechnen") == "1",
+			Umlagefaehig:           make(map[int64]bool, len(kostenpositionen)),
+			StromWeiterberechnen:   r.FormValue("strom_weiterberechnen") == "1",
+			WallboxWeiterberechnen: r.FormValue("wallbox_weiterberechnen") == "1",
 		}
 		for _, kp := range kostenpositionen {
 			flags.Umlagefaehig[kp.ID] = r.FormValue("umlagefaehig_"+strconv.FormatInt(kp.ID, 10)) == "1"

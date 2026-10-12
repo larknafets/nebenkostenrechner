@@ -105,6 +105,11 @@ func Open(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("migrate haus details columns: %w", err)
 	}
 
+	if err := ensureHausWallboxWeiterberechnenColumn(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("migrate haus wallbox_weiterberechnen column: %w", err)
+	}
+
 	if err := seed(db); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("seed master data: %w", err)
@@ -419,6 +424,19 @@ func ensureHausDetailsColumns(db *sql.DB) error {
 		}
 	}
 	return nil
+}
+
+// ensureHausWallboxWeiterberechnenColumn adds the flag "Wallbox
+// weiterberechnen" (#228) to a haus table that predates it. Existing
+// databases get 1 (on), so a rented apartment keeps seeing the Wallbox costs
+// once they are assigned.
+func ensureHausWallboxWeiterberechnenColumn(db *sql.DB) error {
+	has, err := hasColumn(db, "haus", "wallbox_weiterberechnen")
+	if err != nil || has {
+		return err
+	}
+	_, err = db.Exec(`ALTER TABLE haus ADD COLUMN wallbox_weiterberechnen INTEGER NOT NULL DEFAULT 1`)
+	return err
 }
 
 // migrateHeizungGewichtungToHaus moves the Heizungs-Gewichtung from every

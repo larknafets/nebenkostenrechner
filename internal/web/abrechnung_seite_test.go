@@ -259,17 +259,18 @@ func TestAbrechnungSeite_GewaehlteWohnungFett(t *testing.T) {
 		`class="r b" data-l="Wohnung 2"`, `class="r" data-l="Wohnung 1"`,
 		`class="r b" data-l="Fixkosten Wohnung 2"`, `class="r" data-l="Fixkosten Wohnung 1"`,
 		`<th class="r sel">Anteil Wohnung 2</th>`)
-	// Its own meters: Strom, Wasser and Wärme of Wohnung 2, nothing of Wohnung 1.
-	if got := strings.Count(w2, `<tr class="b">`); got != 3 {
-		t.Errorf("bold meter rows for Wohnung 2 = %d, want 3 (Strom, Wasser, Wärme)", got)
+	// Its own meters: Strom, Wasser, Wärme and the Wallbox-Einzelzähler of
+	// Wohnung 2 (the demo has readings for it in 2025), nothing of Wohnung 1.
+	if got := strings.Count(w2, `<tr class="b">`); got != 4 {
+		t.Errorf("bold meter rows for Wohnung 2 = %d, want 4 (Strom, Wasser, Wärme, Wallbox)", got)
 	}
 
 	_, w1 := getAbrechnung(t, mux, "?jahr=2025&wohnung=1", nil)
 	mustContain(t, w1,
 		`class="r b" data-l="Wärme Wohnung 1 (MWh)"`, `class="r" data-l="Wärme Wohnung 2 (MWh)"`,
 		`class="r b" data-l="Wohnung 1"`, `<th class="r sel">Anteil Wohnung 1</th>`)
-	if got := strings.Count(w1, `<tr class="b">`); got != 1 {
-		t.Errorf("bold meter rows for Wohnung 1 = %d, want 1 (only its heat meter)", got)
+	if got := strings.Count(w1, `<tr class="b">`); got != 2 {
+		t.Errorf("bold meter rows for Wohnung 1 = %d, want 2 (its heat meter and its Wallbox-Einzelzähler)", got)
 	}
 }
 
@@ -399,8 +400,9 @@ func TestAbrechnungSeite_Monatsverlauf(t *testing.T) {
 	}
 	// The last cumulative balance is the Jahressaldo of the Saldoberechnung
 	// (no carry-over yet), so the page shows it twice in the table.
-	if got := strings.Count(body, "- 308,65"); got < 2 {
-		t.Errorf("Jahressaldo - 308,65 € erscheint %d Mal, want at least 2 (Saldoberechnung and Monatsverlauf)", got)
+	// 320,10 = 308,65 (without the Wallbox) + 11,45 (Wallbox Wohnung 2, 2025).
+	if got := strings.Count(body, "- 320,10"); got < 2 {
+		t.Errorf("Jahressaldo - 320,10 € erscheint %d Mal, want at least 2 (Saldoberechnung and Monatsverlauf)", got)
 	}
 }
 
