@@ -38,8 +38,10 @@ Preise (aktuell, werden pro Monat neu erfasst statt zentral versioniert):
 | `strom_gesamt` | Stromzähler Netzbezug (1.8.0) | kWh |
 | `strom_einspeisung` | Einspeisezähler (2.8.0, PV) | kWh |
 | `strom_wohnung2` | Zwischenstromzähler Wohnung 2 | kWh |
-| `strom_wallbox` | Zwischenzähler Wallboxen | kWh |
 | `strom_waermepumpe` | Zwischenstromzähler Wärmepumpe | kWh |
+| `strom_wallbox` | Zwischenzähler Wallboxen | kWh |
+| `strom_wallbox_wohnung1` | Wallbox Wohnung 1 (optional) | kWh |
+| `strom_wallbox_wohnung2` | Wallbox Wohnung 2 (optional) | kWh |
 | `waerme_wohnung1` | Wärmemengenzähler Wohnung 1 | **MWh** |
 | `waerme_wohnung2` | Wärmemengenzähler Wohnung 2 | **MWh** |
 | `wasser_gesamt` | Wasserzähler Gesamt | m³ |
@@ -49,6 +51,10 @@ Preise (aktuell, werden pro Monat neu erfasst statt zentral versioniert):
 Ableserhythmus: 1x/Monat. Verbrauch = aktueller Zählerstand minus Stand der chronologisch nächstälteren Ablesung (einfache Differenz, funktioniert automatisch auch über Lücken hinweg).
 
 Eine Ablesung darf auch nur teilweise ausgefüllt gespeichert werden (**Teilstand**) - einzelne Zählerstände, Preise, Personenzahl oder der Abrechnungsmonat können fehlen und später nachgetragen werden (nur das Ablesedatum ist immer zwingend). Ein Teilstand fließt nicht in die Berechnung ein (Dashboard, Verbrauch) und ist in der Ablesungen-Liste/-Detailansicht als "unvollständig" markiert. Nur die jeweils neueste Ablesung darf ein Teilstand sein - solange sie es ist, führt "Neue Ablesung" stattdessen zu ihrer Vervollständigung. Anlegen und Vervollständigen sind beide auch ohne Login möglich, siehe `LOGIN_PASSWORD` unten.
+
+Unter den Wallboxen lassen sich zwei **optionale Einzelzähler** erfassen: `strom_wallbox_wohnung1` (Wallbox Wohnung 1) und `strom_wallbox_wohnung2` (Wallbox Wohnung 2), jeweils in kWh und nur nachrichtlich vom Wallbox-Display abzulesen. Beide Felder dürfen leer bleiben, auch nur eines von beiden: Die Ablesung bleibt vollständig (kein Teilstand) und der Zähler gilt als "nicht erfasst". Der Verbrauch eines Einzelzählers entsteht nur, wenn der Stand in der Ablesung und in der direkten Vorperiode vorliegt, sonst ist er "nicht berechenbar" (er wird nie gegen 0 gerechnet, und eine Lücke wird nicht über mehrere Monate überbrückt). Die Warnungen "negativer Verbrauch" und "Ausreißer" gelten auch für die Einzelzähler und entfallen, sobald ein beteiligter Stand fehlt. Eingerechnet in die Kosten werden die Einzelzähler noch nicht.
+
+Im CSV-Export stehen die zwei Einzelzähler als letzte Spalten (`strom_wallbox_wohnung1`, `strom_wallbox_wohnung2`, leer = nicht erfasst). Der Import akzeptiert sie als optional, ältere Dateien ohne diese Spalten lassen sich weiter importieren.
 
 `strom_wallbox` fließt als dritte Zuteilungsstufe in die Strom-Netzbezug-Zuteilung ein (siehe unten) - sie wird vom nach Wohnung 2/Wärmepumpe verbleibenden Netzbezug abgezogen, bevor der Rest implizit Wohnung 1 zufällt. Keine eigene Wohnungszuteilung, kein eigener Wallbox-Tarif.
 

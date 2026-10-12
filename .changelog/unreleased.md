@@ -31,8 +31,12 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
+- Ablesung: Unter "Wallboxen" lassen sich die Zählerstände von Wallbox Wohnung 1 und Wallbox Wohnung 2 optional eintragen (nur nachrichtlich, auch nur einer von beiden). Leere Felder gelten als "nicht erfasst" und machen die Ablesung nicht unvollständig; die Ablesungsseite zeigt sie mit Verbrauch, CSV-Export und -Import führen sie als zwei neue letzte Spalten (ältere Dateien bleiben importierbar). Im Formular steht die Wärmepumpe jetzt vor den Wallboxen (#224)
+
 ## Verbesserungen
 
 ## Fehlerkorrekturen
 
 ## Wartung
+
+- Beim ersten Start nach dem Update legt die Datenbank automatisch zwei neue Zähler für die Wallbox-Einzelzähler an; bestehende Ablesungen, Kosten und Salden bleiben unverändert (#224)

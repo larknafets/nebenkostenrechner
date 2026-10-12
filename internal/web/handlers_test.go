@@ -920,9 +920,10 @@ func TestCSVHeader_NoQMColumns(t *testing.T) {
 			t.Errorf("csvHeader contains %q, want no qm_1/qm_2 columns (Issue #61 moved Wohnungsgröße to /stammdaten)", col)
 		}
 	}
-	last := csvHeader[len(csvHeader)-1]
+	// The optional Wallbox-Einzelzähler (#224) are appended after personen_2.
+	last := csvHeader[len(csvHeader)-len(store.OptionalMeterKeys)-1]
 	if last != "personen_2" {
-		t.Errorf("csvHeader last column = %q, want personen_2", last)
+		t.Errorf("csvHeader last required column = %q, want personen_2", last)
 	}
 }
 
@@ -971,6 +972,7 @@ func csvRow(readingDate string, stromGesamt string) string {
 		readingDate, readingDate[:7] + "-01", stromGesamt, "0", "0", "0", "0", "0", "0", "0", "0", "0",
 		"0,22", "1,46", "4,87", "0,08",
 		"2", "1",
+		"", "", // optional Wallbox-Einzelzähler (#224), not recorded
 	}, ";")
 }
 
