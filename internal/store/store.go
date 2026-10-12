@@ -920,15 +920,6 @@ type apartmentSeed struct {
 	status string
 }
 
-type meterSeed struct {
-	id          int64
-	key         string
-	meterType   string
-	unit        string
-	apartmentID *int64
-	label       string
-}
-
 func apartmentID(id int64) *int64 { return &id }
 
 // KostenpositionDefault is one of the 16 fixed Kostenpositionen (Issue #60)
@@ -968,7 +959,7 @@ var KostenpositionDefaults = []KostenpositionDefault{
 	{ID: 16, Key: "sonstige", Label: "Sonstige Kosten", Logik: LogikWohneinheit, Typ: TypMonatlich, Umlagefaehig: false},
 }
 
-// seed inserts the fixed master data for the 2 apartments and 12 meters (10 required, 2 optional) if
+// seed inserts the fixed master data for the 2 apartments and the meters (meterDefs) if
 // they're not already present. Keyed on `apartments.id` / `meters.key` so
 // it's safe to run on every startup.
 func seed(db *sql.DB) error {
@@ -993,28 +984,8 @@ func seed(db *sql.DB) error {
 		}
 	}
 
-	meters := []meterSeed{
-		{id: 1, key: "strom_gesamt", meterType: "strom", unit: "kWh", apartmentID: nil, label: "Stromzähler Gesamt"},
-		{id: 2, key: "strom_wohnung2", meterType: "strom", unit: "kWh", apartmentID: apartmentID(2), label: "Zwischenstromzähler Wohnung 2"},
-		{id: 3, key: "strom_waermepumpe", meterType: "strom", unit: "kWh", apartmentID: nil, label: "Zwischenstromzähler Wärmepumpe"},
-		{id: 4, key: "strom_wallbox", meterType: "strom", unit: "kWh", apartmentID: nil, label: "Zwischenzähler Wallboxen"},
-		{id: 5, key: "wasser_gesamt", meterType: "wasser", unit: "m3", apartmentID: nil, label: "Wasserzähler Gesamt"},
-		{id: 6, key: "wasser_wohnung2", meterType: "wasser", unit: "m3", apartmentID: apartmentID(2), label: "Zwischenwasserzähler Wohnung 2"},
-		{id: 7, key: "wasser_warmwasseraufbereitung", meterType: "wasser", unit: "m3", apartmentID: nil, label: "Zwischenwasserzähler Warmwasseraufbereitung"},
-		{id: 8, key: "waerme_wohnung1", meterType: "waerme", unit: "MWh", apartmentID: apartmentID(1), label: "Wärmemengenzähler Wohnung 1"},
-		{id: 9, key: "waerme_wohnung2", meterType: "waerme", unit: "MWh", apartmentID: apartmentID(2), label: "Wärmemengenzähler Wohnung 2"},
-		{id: 10, key: "strom_einspeisung", meterType: "strom", unit: "kWh", apartmentID: nil, label: "Einspeisezähler (PV)"},
-		{id: 11, key: MeterKeyWallboxWohnung1, meterType: "strom", unit: "kWh", apartmentID: apartmentID(1), label: "Wallbox Wohnung 1"},
-		{id: 12, key: MeterKeyWallboxWohnung2, meterType: "strom", unit: "kWh", apartmentID: apartmentID(2), label: "Wallbox Wohnung 2"},
-	}
-	for _, m := range meters {
-		if _, err := db.Exec(
-			`INSERT INTO meters (id, key, type, unit, apartment_id, label) VALUES (?, ?, ?, ?, ?, ?)
-			 ON CONFLICT(id) DO NOTHING`,
-			m.id, m.key, m.meterType, m.unit, m.apartmentID, m.label,
-		); err != nil {
-			return fmt.Errorf("seed meter %q: %w", m.key, err)
-		}
+	if err := seedMeters(db); err != nil {
+		return err
 	}
 
 	// kostenpositionen (Issue #60) - only id/key/label are fixed structure;

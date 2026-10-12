@@ -116,10 +116,16 @@ func TestBerechne_Statustabelle(t *testing.T) {
 }
 
 // einzelzaehlerMeters are the required meters of the Anlagen in these tests.
-var einzelzaehlerMeters = []store.Meter{
-	{Key: "strom_gesamt", Label: "Stromzähler Gesamt", Unit: "kWh"},
-	{Key: "strom_wallbox", Label: "Zwischenzähler Wallboxen", Unit: "kWh"},
-	{Key: "wasser_gesamt", Label: "Wasserzähler Gesamt", Unit: "m3"},
+var einzelzaehlerMeters = meterDefs("strom_gesamt", "strom_wallbox", "wasser_gesamt")
+
+// meterDefs returns the store's descriptors of the given meter keys.
+func meterDefs(keys ...string) []store.Meter {
+	var out []store.Meter
+	for _, key := range keys {
+		m, _ := store.MeterByKey(key)
+		out = append(out, m)
+	}
+	return out
 }
 
 func spaltenNamen(z Zaehlerstaende) []string {
@@ -133,7 +139,8 @@ func spaltenNamen(z Zaehlerstaende) []string {
 func TestBerechne_EinzelzaehlerInDenAnlagen(t *testing.T) {
 	berechne := func(t *testing.T, d BerechnungsDaten) *Jahresabrechnung {
 		t.Helper()
-		d.Meters = einzelzaehlerMeters
+		// store.Meters lists the optional Einzelzähler too, after the required ones.
+		d.Meters = append(append([]store.Meter{}, einzelzaehlerMeters...), meterDefs(store.OptionalMeterKeys...)...)
 		erg, err := Berechne(d, 2027, GanzesJahr, 2)
 		if err != nil || erg.Abrechnung == nil {
 			t.Fatalf("Berechne: err %v, Maengel %v (Einzelzähler dürfen nie ein Mangel sein)", err, maengelTexte(erg.Pruefung))

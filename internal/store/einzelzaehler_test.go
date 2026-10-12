@@ -201,7 +201,13 @@ func TestEinzelzaehler_BestehendeDatenbankBleibtUnveraendert(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Meters: %v", err)
 	}
-	if len(meters) != len(MeterKeys) {
-		t.Errorf("len(Meters) = %d, want %d (Anlage listet weiter nur die Pflichtzähler)", len(meters), len(MeterKeys))
+	required := 0
+	for _, m := range meters {
+		if !m.Optional {
+			required++
+		}
+	}
+	if required != len(MeterKeys) || len(meters) != len(MeterKeys)+len(OptionalMeterKeys) {
+		t.Errorf("Meters = %d, davon Pflicht %d, want %d und %d (alle Zähler, Anlage filtert selbst)", len(meters), required, len(MeterKeys)+len(OptionalMeterKeys), len(MeterKeys))
 	}
 }
