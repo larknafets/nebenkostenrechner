@@ -68,6 +68,11 @@ type wizardData struct {
 	// (#224), shown below the Wallboxen field.
 	EinzelzaehlerFelder []einzelzaehlerFeld
 
+	// WallboxKomplettW1 is the switch "Wallboxen vollständig Wohnung 1"
+	// (#225): prefilled from the newest Ablesung on a new one, from the
+	// edited Ablesung itself when correcting.
+	WallboxKomplettW1 bool
+
 	// NoPeriods gates the CSV import button (Ticket #54) - only offered
 	// as a bootstrap path into a genuinely empty database, never set in
 	// edit mode (handleEditWizardForm leaves it at its zero value,
@@ -195,6 +200,7 @@ func handleWizardForm(a auth) http.HandlerFunc {
 			data.PreviousAbwasserPreisErfasst = status.AbwasserErfasst
 			data.PreviousEinspeisungPreisErfasst = status.EinspeisungPreisErfasst
 			data.PreviousPersonen = previousPeriod.PersonenByApartment
+			data.WallboxKomplettW1 = previousPeriod.WallboxKomplettW1
 		}
 		data.OutlierAvg, data.HasOutlierBaseline = outlierAvg(recent)
 
@@ -290,6 +296,7 @@ func handleEditWizardForm(a auth) http.HandlerFunc {
 			Apartments:                       apartments,
 			EditReadings:                     target.Readings,
 			EinzelzaehlerFelder:              einzelzaehlerFelder,
+			WallboxKomplettW1:                target.WallboxKomplettW1,
 			PreviousStrompreis:               store.OrZero(target.Strompreis),
 			PreviousFrischwasserPreis:        store.OrZero(target.FrischwasserPreis),
 			PreviousAbwasserPreis:            store.OrZero(target.AbwasserPreis),
@@ -406,6 +413,7 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 		FrischwasserPreis: frischwasserPreis,
 		AbwasserPreis:     abwasserPreis,
 		EinspeisungPreis:  einspeisungPreis,
+		WallboxKomplettW1: r.FormValue("wallbox_komplett_w1") != "",
 		Readings:          readings,
 		Personen:          personen,
 	}, nil

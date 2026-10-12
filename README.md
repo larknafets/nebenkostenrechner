@@ -52,11 +52,13 @@ Ableserhythmus: 1x/Monat. Verbrauch = aktueller Zählerstand minus Stand der chr
 
 Eine Ablesung darf auch nur teilweise ausgefüllt gespeichert werden (**Teilstand**) - einzelne Zählerstände, Preise, Personenzahl oder der Abrechnungsmonat können fehlen und später nachgetragen werden (nur das Ablesedatum ist immer zwingend). Ein Teilstand fließt nicht in die Berechnung ein (Dashboard, Verbrauch) und ist in der Ablesungen-Liste/-Detailansicht als "unvollständig" markiert. Nur die jeweils neueste Ablesung darf ein Teilstand sein - solange sie es ist, führt "Neue Ablesung" stattdessen zu ihrer Vervollständigung. Anlegen und Vervollständigen sind beide auch ohne Login möglich, siehe `LOGIN_PASSWORD` unten.
 
-Unter den Wallboxen lassen sich zwei **optionale Einzelzähler** erfassen: `strom_wallbox_wohnung1` (Wallbox Wohnung 1) und `strom_wallbox_wohnung2` (Wallbox Wohnung 2), jeweils in kWh und nur nachrichtlich vom Wallbox-Display abzulesen. Beide Felder dürfen leer bleiben, auch nur eines von beiden: Die Ablesung bleibt vollständig (kein Teilstand) und der Zähler gilt als "nicht erfasst". Der Verbrauch eines Einzelzählers entsteht nur, wenn der Stand in der Ablesung und in der direkten Vorperiode vorliegt, sonst ist er "nicht berechenbar" (er wird nie gegen 0 gerechnet, und eine Lücke wird nicht über mehrere Monate überbrückt). Die Warnungen "negativer Verbrauch" und "Ausreißer" gelten auch für die Einzelzähler und entfallen, sobald ein beteiligter Stand fehlt. Eingerechnet in die Kosten werden die Einzelzähler noch nicht.
+Unter den Wallboxen lassen sich zwei **optionale Einzelzähler** erfassen: `strom_wallbox_wohnung1` (Wallbox Wohnung 1) und `strom_wallbox_wohnung2` (Wallbox Wohnung 2), jeweils in kWh und nur nachrichtlich vom Wallbox-Display abzulesen. Beide Felder dürfen leer bleiben, auch nur eines von beiden: Die Ablesung bleibt vollständig (kein Teilstand) und der Zähler gilt als "nicht erfasst". Der Verbrauch eines Einzelzählers entsteht nur, wenn der Stand in der Ablesung und in der direkten Vorperiode vorliegt, sonst ist er "nicht berechenbar" (er wird nie gegen 0 gerechnet, und eine Lücke wird nicht über mehrere Monate überbrückt). Die Warnungen "negativer Verbrauch" und "Ausreißer" gelten auch für die Einzelzähler und entfallen, sobald ein beteiligter Stand fehlt. Wofür die Einzelzähler in die Kosten eingehen, steht unter "Strom".
 
-Im CSV-Export stehen die zwei Einzelzähler als letzte Spalten (`strom_wallbox_wohnung1`, `strom_wallbox_wohnung2`, leer = nicht erfasst). Der Import akzeptiert sie als optional, ältere Dateien ohne diese Spalten lassen sich weiter importieren.
+Je Ablesung gibt es außerdem den Schalter **"Wallboxen vollständig Wohnung 1"** (Formular, Schritt 1, direkt unter den Wallbox-Feldern; die Ablesungsseite zeigt ihn als Ja/Nein). Eine neue Ablesung belegt ihn aus der chronologisch letzten Ablesung vor, beim Korrigieren gilt der Wert der Ablesung. Bestehende Ablesungen bekommen beim Update den Wert "Nein", ihre Kosten ändern sich nicht.
 
-`strom_wallbox` fließt als dritte Zuteilungsstufe in die Strom-Netzbezug-Zuteilung ein (siehe unten) - sie wird vom nach Wohnung 2/Wärmepumpe verbleibenden Netzbezug abgezogen, bevor der Rest implizit Wohnung 1 zufällt. Keine eigene Wohnungszuteilung, kein eigener Wallbox-Tarif.
+Im CSV-Export stehen die zwei Einzelzähler und der Schalter als letzte drei Spalten (`strom_wallbox_wohnung1`, `strom_wallbox_wohnung2`, leer = nicht erfasst, und `wallbox_komplett_wohnung1`, 1 oder 0). Der Import akzeptiert sie als optional (fehlende oder leere Schalter-Zelle = 0), ältere Dateien ohne diese Spalten lassen sich weiter importieren.
+
+`strom_wallbox` fließt als dritte Zuteilungsstufe in die Strom-Netzbezug-Zuteilung ein (siehe unten) - sie wird vom nach Wohnung 2/Wärmepumpe verbleibenden Netzbezug abgezogen, bevor der Rest implizit Wohnung 1 zufällt. Kein eigener Wallbox-Tarif. Wie die Wallbox-Kosten auf die Wohnungen verteilt werden, steht unter "Strom" (Verteilung der Wallbox-Kosten).
 
 Visuelle Übersicht der Zählerverschachtelung (und der PV-Verrechnungskaskade): [docs/pv-verrechnung.md](docs/pv-verrechnung.md).
 
@@ -81,6 +83,23 @@ Kosten_Wallbox   = Wallbox_Anteil_kWh * Strompreis
 ```
 
 Bei PV-Überschuss (`Netzbezug_Gesamt = 0`) sind alle 3 Kosten 0. Alle Anteile über `min()` gedeckelt, nie negativ.
+
+**Verteilung der Wallbox-Kosten auf die Wohnungen.** `Kosten_Wallbox` sind die Kosten des Zwischenzählers (auf den Cent gerundet). Auf der Ablesungsseite werden sie so auf Wohnung 1 und Wohnung 2 verteilt:
+
+```
+Schalter "Wallboxen vollständig Wohnung 1" an:
+    Wohnung 1 = alle Wallbox-Kosten und -kWh (inkl. Solarzuteilung), Wohnung 2 = 0, die Einzelzähler sind egal
+
+Schalter aus, Wallbox Wohnung 2 hat einen Verbrauch (Stand in der Ablesung und der Vorperiode):
+    kWh_W2    = min(Verbrauch(strom_wallbox_wohnung2), Wallbox_Anteil_kWh)
+    Kosten_W2 = Round2(kWh_W2 * Strompreis)
+    Kosten_W1 = Kosten_Wallbox - Kosten_W2      (Rest, inkl. Solarzuteilung)
+
+sonst (Schalter aus, Wallbox Wohnung 2 oder deren Vorperiode fehlt):
+    keine Zuordnung, die Wallbox-Kosten bleiben informativ
+```
+
+Der Schalter schlägt die Einzelzähler. Wallbox Wohnung 1 darf fehlen, die Summe von Wohnung 1 und 2 ist immer cent-genau `Kosten_Wallbox`. Liegen beide Einzelzähler samt Vorperiode vor, vergleicht die Ablesungsseite deren Summe mit dem Verbrauch des Zwischenzählers und zeigt einen nicht blockierenden Plausibilitätshinweis, wenn sie um mehr als 5 % des Zwischenzähler-Verbrauchs oder 2 kWh (je nachdem, was größer ist) abweichen. Die Hinweis- und Kostenanzeige erscheint auch direkt nach dem Speichern, weil das Speichern auf die Ablesungsseite weiterleitet. Dashboard und Jahresabrechnung übernehmen die Zuordnung in späteren Schritten.
 
 Visuelle Übersicht der Zählerverschachtelung und der PV-Verrechnungskaskade: [docs/pv-verrechnung.md](docs/pv-verrechnung.md).
 

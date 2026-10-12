@@ -51,6 +51,8 @@
       <div class="field"><label>{{.Label}} (kWh)</label><input type="number" step="any" name="{{$key}}" data-optional {{if hasReading $.EditReadings $key}}value="{{index $.EditReadings $key}}"{{end}} {{if hasReading $.PreviousReadings $key}}data-prev="{{index $.PreviousReadings $key}}"{{end}} {{if hasReading $.OutlierAvg $key}}data-outlier-avg="{{index $.OutlierAvg $key}}"{{end}}><div class="warning" id="warn-{{$key}}"></div></div>
       {{end}}
     </div>
+    {{/* Switch #225: all Wallbox costs to Wohnung 1, overrides the Einzelzähler. */}}
+    <div class="field" style="margin-left:1.5rem"><label><input type="checkbox" name="wallbox_komplett_w1" value="1" {{if .WallboxKomplettW1}}checked{{end}}> Wallboxen vollständig Wohnung 1</label><div class="muted">Alle Wallbox-Kosten (kWh und EUR) gehen an Wohnung 1, die Einzelzähler werden dann nicht verwendet.</div></div>
   </div>
 
   <div class="c-pane" data-step="2">
@@ -187,7 +189,7 @@
   // wird statt eines zweiten "Vollständig speichern"-Buttons.
   (function () {
     // data-optional (Wallbox-Einzelzähler, #224): may stay empty, no Teilstand.
-    const optionalInputs = Array.from(document.querySelectorAll('.c-pane input:not([type="radio"]):not([data-optional])'));
+    const optionalInputs = Array.from(document.querySelectorAll('.c-pane input:not([type="radio"]):not([type="checkbox"]):not([data-optional])'));
     if (monatInput) optionalInputs.push(monatInput);
 
     const progressLabel = document.getElementById('teilstand-progress-label');

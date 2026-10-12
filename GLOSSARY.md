@@ -17,8 +17,15 @@ Der am Ablesedatum abgelesene Wert eines Zählers - ein kumulativer Punktwert, k
 _Avoid_: Messwert, Reading
 
 **Wallbox Wohnung 1 / Wallbox Wohnung 2**:
-Die zwei optionalen Einzelzähler (kWh) hinter dem Zwischenzähler "Wallboxen", nur nachrichtlich vom Wallbox-Display abgelesen (`strom_wallbox_wohnung1`, `strom_wallbox_wohnung2`). Fehlt ein Stand, ist er "nicht erfasst" (nie 0) und die Ablesung bleibt vollständig, also kein Teilstand. Ihr Verbrauch ist nur mit Stand in der Ablesung und in der direkten Vorperiode berechenbar, sonst "nicht berechenbar". Die Kostenverteilung auf die Wohnungen folgt in einem eigenen Schritt.
+Die zwei optionalen Einzelzähler (kWh) hinter dem Zwischenzähler "Wallboxen", nur nachrichtlich vom Wallbox-Display abgelesen (`strom_wallbox_wohnung1`, `strom_wallbox_wohnung2`). Fehlt ein Stand, ist er "nicht erfasst" (nie 0) und die Ablesung bleibt vollständig, also kein Teilstand. Ihr Verbrauch ist nur mit Stand in der Ablesung und in der direkten Vorperiode berechenbar, sonst "nicht berechenbar". Wallbox Wohnung 2 bestimmt (samt Vorperiode) die Kosten von Wohnung 2, Wallbox Wohnung 1 dient nur der Plausibilität.
 _Avoid_: Wallbox-Zähler (unklar gegenüber dem Zwischenzähler "Wallboxen")
+
+**Wallboxen vollständig Wohnung 1**:
+Der Schalter je Ablesung, der alle Wallbox-Kosten (kWh und EUR, inkl. Solarzuteilung) auf Wohnung 1 legt und die Einzelzähler überstimmt. Neue Ablesungen belegen ihn aus der letzten vor, bestehende Ablesungen haben ihn aus.
+_Avoid_: Wallbox-Schalter
+
+**Wallbox (Kostenposition)**:
+Die Kosten des Zwischenzählers "Wallboxen" (Netzbezug-Anteil mal Strompreis), je Ablesung auf Wohnung 1 und Wohnung 2 verteilt: mit Schalter alles Wohnung 1, sonst zahlt Wohnung 2 `min(Verbrauch Wallbox Wohnung 2, Netzbezug-Anteil)` mal Strompreis (gerundet) und Wohnung 1 den Rest. Ohne Schalter und ohne Verbrauch von Wallbox Wohnung 2 bleibt sie informativ und keiner Wohnung zugeordnet.
 
 **Verbrauch**:
 Die Differenz zwischen dem Zählerstand einer Ablesung und dem der chronologisch nächst-älteren Ablesung desselben Zählers.

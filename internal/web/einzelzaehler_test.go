@@ -278,8 +278,8 @@ func TestAblesungDetail_ZaehlerReihenfolge(t *testing.T) {
 }
 
 func TestCSV_ExportHatEinzelzaehlerAmEnde(t *testing.T) {
-	if n := len(csvHeader); n < 2 || csvHeader[n-2] != wbW1 || csvHeader[n-1] != wbW2 {
-		t.Fatalf("csvHeader endet mit %v, want %s und %s als letzte Spalten", csvHeader[len(csvHeader)-2:], wbW1, wbW2)
+	if n := len(csvHeader); n < 3 || csvHeader[n-3] != wbW1 || csvHeader[n-2] != wbW2 {
+		t.Fatalf("csvHeader endet mit %v, want %s und %s vor dem Schalter", csvHeader[len(csvHeader)-3:], wbW1, wbW2)
 	}
 
 	db := openTestDB(t)
@@ -296,17 +296,17 @@ func TestCSV_ExportHatEinzelzaehlerAmEnde(t *testing.T) {
 	if len(lines) != 2 {
 		t.Fatalf("CSV hat %d Zeilen, want 2", len(lines))
 	}
-	if !strings.HasSuffix(strings.TrimSpace(lines[0]), ";"+wbW1+";"+wbW2) {
-		t.Errorf("Kopfzeile endet nicht mit den Einzelzählern: %s", lines[0])
+	if !strings.HasSuffix(strings.TrimSpace(lines[0]), ";"+wbW1+";"+wbW2+";wallbox_komplett_wohnung1") {
+		t.Errorf("Kopfzeile endet nicht mit den Einzelzählern und dem Schalter: %s", lines[0])
 	}
-	if !strings.HasSuffix(strings.TrimSpace(lines[1]), ";2;1;;12,5") {
+	if !strings.HasSuffix(strings.TrimSpace(lines[1]), ";2;1;;12,5;0") {
 		t.Errorf("Datenzeile soll leer (nicht erfasst) für Wohnung 1 und 12,5 für Wohnung 2 enden: %s", lines[1])
 	}
 }
 
 func TestCSV_ImportMitUndOhneEinzelzaehlerSpalten(t *testing.T) {
 	t.Run("neue Datei mit Wert und leerer Zelle", func(t *testing.T) {
-		row := strings.TrimSuffix(csvRow("2026-06-01", "100"), ";;") + ";7,5;"
+		row := strings.TrimSuffix(csvRow("2026-06-01", "100"), ";;;0") + ";7,5;;0"
 		rows, err := parseImportCSV(strings.NewReader(strings.Join(csvHeader, ";") + "\n" + row + "\n"))
 		if err != nil {
 			t.Fatalf("parseImportCSV: %v", err)
@@ -321,8 +321,8 @@ func TestCSV_ImportMitUndOhneEinzelzaehlerSpalten(t *testing.T) {
 	})
 
 	t.Run("alte Datei ohne die Spalten", func(t *testing.T) {
-		header := strings.TrimSuffix(strings.Join(csvHeader, ";"), ";"+wbW1+";"+wbW2)
-		row := strings.TrimSuffix(csvRow("2026-06-01", "100"), ";;")
+		header := strings.TrimSuffix(strings.Join(csvHeader, ";"), ";"+wbW1+";"+wbW2+";wallbox_komplett_wohnung1")
+		row := strings.TrimSuffix(csvRow("2026-06-01", "100"), ";;;0")
 		rows, err := parseImportCSV(strings.NewReader(header + "\n" + row + "\n"))
 		if err != nil {
 			t.Fatalf("parseImportCSV (alte Datei): %v", err)
@@ -340,7 +340,7 @@ func TestCSV_ImportMitUndOhneEinzelzaehlerSpalten(t *testing.T) {
 	})
 
 	t.Run("ungültiger Wert", func(t *testing.T) {
-		row := strings.TrimSuffix(csvRow("2026-06-01", "100"), ";;") + ";abc;"
+		row := strings.TrimSuffix(csvRow("2026-06-01", "100"), ";;;0") + ";abc;;0"
 		if _, err := parseImportCSV(strings.NewReader(strings.Join(csvHeader, ";") + "\n" + row + "\n")); err == nil {
 			t.Error("ungültiger Wert in Einzelzähler-Spalte ohne Fehler")
 		}

@@ -15,6 +15,7 @@
   <p><strong>Ablesedatum:</strong> {{deDatum .Period.ReadingDate}}</p>
   <p><strong>Zeitraum:</strong> {{if .ZeitraumStart}}{{deDatum .ZeitraumStart}} – {{deDatum .Period.ReadingDate}}{{else}}bis {{deDatum .Period.ReadingDate}} (keine Vorperiode){{end}}</p>
   <p><strong>Abrechnungsmonat:</strong> {{if .MonatErfasst}}{{.MonatLabel}}{{else}}<span class="text-warning">noch offen</span>{{end}}</p>
+  <p><strong>Wallboxen vollständig Wohnung 1:</strong> {{if .Period.WallboxKomplettW1}}Ja{{else}}Nein{{end}}</p>
   <p><strong>Preise:</strong>
     Strom {{if .StrompreisErfasst}}{{deEUR (orZero .Period.Strompreis)}}&nbsp;EUR/kWh{{else}}<span class="text-warning">noch offen</span>{{end}} ·
     Frischwasser {{if .FrischwasserErfasst}}{{deEUR (orZero .Period.FrischwasserPreis)}}&nbsp;EUR/m³{{else}}<span class="text-warning">noch offen</span>{{end}} ·
@@ -56,8 +57,20 @@
       <tr><td>Wallbox Anteil</td><td>{{de2 .Strom.WallboxAnteilKWh}}&nbsp;kWh</td></tr>
       <tr><td>Nicht dem Netzbezug zugeordnet (PV)</td><td>{{de2 .Strom.PVAnteilWallboxKWh}}&nbsp;kWh</td></tr>
       <tr><td><strong>Kosten Wallbox</strong></td><td><strong>{{deEUR .Strom.KostenWallbox}}&nbsp;EUR</strong></td></tr>
+      {{if .Strom.WallboxVerteilt}}
+      <tr><td>Wallbox Anteil Wohnung 1</td><td>{{de2 .Strom.WallboxW1KWh}}&nbsp;kWh</td></tr>
+      <tr><td><strong>Kosten Wallbox Wohnung 1</strong></td><td><strong>{{deEUR .Strom.KostenWallboxW1}}&nbsp;EUR</strong></td></tr>
+      <tr><td>Wallbox Anteil Wohnung 2</td><td>{{de2 .Strom.WallboxW2KWh}}&nbsp;kWh</td></tr>
+      <tr><td><strong>Kosten Wallbox Wohnung 2</strong></td><td><strong>{{deEUR .Strom.KostenWallboxW2}}&nbsp;EUR</strong></td></tr>
+      {{end}}
     </tbody>
   </table>
+  {{if not .Strom.WallboxVerteilt}}
+  <p class="muted">Die Wallbox-Kosten sind keiner Wohnung zugeordnet (weder Schalter "Wallboxen vollständig Wohnung 1" noch Einzelzähler Wallbox Wohnung 2 mit Verbrauch), sie bleiben informativ.</p>
+  {{end}}
+  {{if .Strom.WallboxEinzelAuffaellig}}
+  <p class="text-warning">Plausibilität Wallbox-Einzelzähler: Die Summe der Einzelzähler ({{de2 .Strom.WallboxEinzelSumme}}&nbsp;kWh) weicht um mehr als 5&nbsp;% oder 2&nbsp;kWh vom Verbrauch des Zwischenzählers Wallboxen ab. Bitte die Zählerstände prüfen, die Berechnung bleibt davon unberührt.</p>
+  {{end}}
   {{end}}
 
   <h3 style="margin-top:1.25rem">Wasserkosten</h3>
