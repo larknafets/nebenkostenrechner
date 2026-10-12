@@ -184,27 +184,12 @@ func handleWizardForm(a auth) http.HandlerFunc {
 			data.PreviousReadingDate = recent[0].ReadingDate
 		}
 		if previousPeriod != nil {
-			// store.OrZero: previousPeriod is Teilstand-capable (partial-
-			// reading-capable, Ticket #128) - but always complete here,
-			// since a new reading can't be created while the previous
-			// one is still a Teilstand (openTeilstandID/
-			// redirectIfOpenTeilstand, Ticket #129). The Erfasst
-			// (recorded) flags below are therefore always true,
-			// computed directly from the same source instead of
-			// hardcoded to true, so they stay correct if this invariant
-			// ever changes.
-			status := previousPeriod.Teilstand(apartments)
-			data.PreviousStrompreis = store.OrZero(previousPeriod.Strompreis)
-			data.PreviousFrischwasserPreis = store.OrZero(previousPeriod.FrischwasserPreis)
-			data.PreviousAbwasserPreis = store.OrZero(previousPeriod.AbwasserPreis)
-			data.PreviousEinspeisungPreis = store.OrZero(previousPeriod.EinspeisungPreis)
-			data.PreviousStrompreisErfasst = status.StrompreisErfasst
-			data.PreviousFrischwasserPreisErfasst = status.FrischwasserErfasst
-			data.PreviousAbwasserPreisErfasst = status.AbwasserErfasst
-			data.PreviousEinspeisungPreisErfasst = status.EinspeisungPreisErfasst
-			data.PreviousPersonen = previousPeriod.PersonenByApartment
-			data.WallboxKomplettW1 = previousPeriod.WallboxKomplettW1
-			data.PVGutschriftW1 = previousPeriod.PVGutschriftW1
+			// The Erfasst flags are always true here: a new reading can't
+			// be created while the previous one is still a Teilstand
+			// (redirectIfOpenTeilstand, Ticket #129). prefill computes them
+			// from the same source anyway, so they stay correct if that
+			// invariant ever changes.
+			data.prefill(previousPeriod, apartments)
 		}
 		data.OutlierAvg, data.HasOutlierBaseline = outlierAvg(recent)
 
@@ -212,6 +197,27 @@ func handleWizardForm(a auth) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
+}
+
+// prefill sets the editable starting values of the form (prices, occupants,
+// Erfasst flags, switches) from src: the previous period when recording,
+// the edited reading itself when correcting. The only thing the two
+// handlers differ in is which period they pass here. src can be a
+// Teilstand (Ticket #131), so prices go through store.OrZero and the
+// Erfasst flags carry the "missing" vs "0" distinction.
+func (d *wizardData) prefill(src *store.LatestPeriod, apartments []store.Apartment) {
+	status := src.Teilstand(apartments)
+	d.PreviousStrompreis = store.OrZero(src.Strompreis)
+	d.PreviousFrischwasserPreis = store.OrZero(src.FrischwasserPreis)
+	d.PreviousAbwasserPreis = store.OrZero(src.AbwasserPreis)
+	d.PreviousEinspeisungPreis = store.OrZero(src.EinspeisungPreis)
+	d.PreviousStrompreisErfasst = status.StrompreisErfasst
+	d.PreviousFrischwasserPreisErfasst = status.FrischwasserErfasst
+	d.PreviousAbwasserPreisErfasst = status.AbwasserErfasst
+	d.PreviousEinspeisungPreisErfasst = status.EinspeisungPreisErfasst
+	d.PreviousPersonen = src.PersonenByApartment
+	d.WallboxKomplettW1 = src.WallboxKomplettW1
+	d.PVGutschriftW1 = src.PVGutschriftW1
 }
 
 // requireLoginUnlessTeilstand wraps next with a's login gate, except when
@@ -286,32 +292,20 @@ func handleEditWizardForm(a auth) http.HandlerFunc {
 			return
 		}
 
-		// Ticket #131: target can be a Teilstand (partial reading) - these
-		// flags let the wizard distinguish "missing" from "0".
-		status := target.Teilstand(apartments)
-
 		data := wizardData{
-			navData:                          a.NavData(r),
-			Aktuell:                          "ablesungen",
-			FormAction:                       fmt.Sprintf("%s/ablesungen/%d", requestBase(r), target.ID),
-			IsEdit:                           true,
-			ReadingDate:                      target.ReadingDate,
-			Monat:                            string(monatInputFromStored(target.Monat)),
-			Apartments:                       apartments,
-			EditReadings:                     target.Readings,
-			EinzelzaehlerFelder:              einzelzaehlerFelder,
-			WallboxKomplettW1:                target.WallboxKomplettW1,
-			PVGutschriftW1:                   target.PVGutschriftW1,
-			PreviousStrompreis:               store.OrZero(target.Strompreis),
-			PreviousFrischwasserPreis:        store.OrZero(target.FrischwasserPreis),
-			PreviousAbwasserPreis:            store.OrZero(target.AbwasserPreis),
-			PreviousEinspeisungPreis:         store.OrZero(target.EinspeisungPreis),
-			PreviousPersonen:                 target.PersonenByApartment,
-			PreviousStrompreisErfasst:        status.StrompreisErfasst,
-			PreviousFrischwasserPreisErfasst: status.FrischwasserErfasst,
-			PreviousAbwasserPreisErfasst:     status.AbwasserErfasst,
-			PreviousEinspeisungPreisErfasst:  status.EinspeisungPreisErfasst,
+			navData:             a.NavData(r),
+			Aktuell:             "ablesungen",
+			FormAction:          fmt.Sprintf("%s/ablesungen/%d", requestBase(r), target.ID),
+			IsEdit:              true,
+			ReadingDate:         target.ReadingDate,
+			Monat:               string(monatInputFromStored(target.Monat)),
+			Apartments:          apartments,
+			EditReadings:        target.Readings,
+			EinzelzaehlerFelder: einzelzaehlerFelder,
 		}
+		// Ticket #131: target can be a Teilstand (partial reading), prefill
+		// derives the Erfasst flags that distinguish "missing" from "0".
+		data.prefill(target, apartments)
 		if len(recent) > 0 {
 			data.HasPrevious = true
 			data.PreviousReadings = recent[0].Readings
