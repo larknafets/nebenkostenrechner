@@ -24,23 +24,25 @@ import (
 // empty means "nicht erfasst". An import also accepts older files without
 // them: csvImportHeader lists only the required columns.
 //
-// After them come the two per-Ablesung switches "Wallboxen vollständig
-// Wohnung 1" (#225) and "PV-Gutschrift Wohnung 1" (#226), 1 or 0 each. They
-// are optional on import too (empty or missing = 0).
+// After them come the per-Ablesung switches (store.Switches: "Wallboxen
+// vollständig Wohnung 1" #225, "PV-Gutschrift Wohnung 1" #226), 1 or 0 each.
+// They are optional on import too (empty or missing = the switch's default).
 var csvHeader = append(append(append(append([]string{"reading_date", "monat"}, store.MeterKeys...),
 	"strompreis", "frischwasser_preis", "abwasser_preis", "einspeisung_preis",
 	"personen_1", "personen_2",
-), store.OptionalMeterKeys...), csvColWallboxKomplett, csvColPVGutschrift)
+), store.OptionalMeterKeys...), csvSwitchColumns()...)
 
-// csvColWallboxKomplett is the CSV column of Period.WallboxKomplettW1.
-const csvColWallboxKomplett = "wallbox_komplett_wohnung1"
-
-// csvColPVGutschrift is the CSV column of Period.PVGutschriftW1.
-const csvColPVGutschrift = "pv_gutschrift_wohnung1"
+func csvSwitchColumns() []string {
+	cols := make([]string, len(store.Switches))
+	for i, s := range store.Switches {
+		cols[i] = s.CSVColumn
+	}
+	return cols
+}
 
 // csvImportHeader is csvHeader without the optional columns, the columns an
 // import insists on.
-var csvImportHeader = csvHeader[:len(csvHeader)-len(store.OptionalMeterKeys)-2]
+var csvImportHeader = csvHeader[:len(csvHeader)-len(store.OptionalMeterKeys)-len(store.Switches)]
 
 // handleExportCSV streams every reading as CSV (Ticket #53).
 func handleExportCSV() http.HandlerFunc {
@@ -79,7 +81,9 @@ func formatPeriodCSVRow(p *store.LatestPeriod) []string {
 			row = append(row, "")
 		}
 	}
-	row = append(row, formatSwitchCSV(p.WallboxKomplettW1), formatSwitchCSV(p.PVGutschriftW1))
+	for _, s := range store.Switches {
+		row = append(row, formatSwitchCSV(*s.Detail(p)))
+	}
 	return row
 }
 
@@ -91,19 +95,21 @@ func formatSwitchCSV(on bool) string {
 }
 
 // parseSwitchCSV reads an optional 0/1 switch column: a missing column or an
-// empty cell means off.
-func parseSwitchCSV(record []string, colIdx map[string]int, col string, line int) (bool, error) {
-	idx, ok := colIdx[col]
+// empty cell means the switch's default.
+func parseSwitchCSV(record []string, colIdx map[string]int, s store.Switch, line int) (bool, error) {
+	idx, ok := colIdx[s.CSVColumn]
 	if !ok || idx >= len(record) {
-		return false, nil
+		return s.Default, nil
 	}
 	switch strings.TrimSpace(record[idx]) {
-	case "", "0":
+	case "":
+		return s.Default, nil
+	case "0":
 		return false, nil
 	case "1":
 		return true, nil
 	}
-	return false, fmt.Errorf("Zeile %d: ungültiger Wert für %s: %q (erlaubt: 0 oder 1)", line, col, record[idx])
+	return false, fmt.Errorf("Zeile %d: ungültiger Wert für %s: %q (erlaubt: 0 oder 1)", line, s.CSVColumn, record[idx])
 }
 
 // importRow pairs a parsed PeriodInput with its original CSV line number,
@@ -206,13 +212,13 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 		readings[key] = v
 	}
 
-	komplettW1, err := parseSwitchCSV(record, colIdx, csvColWallboxKomplett, line)
-	if err != nil {
-		return importRow{}, err
-	}
-	pvGutschriftW1, err := parseSwitchCSV(record, colIdx, csvColPVGutschrift, line)
-	if err != nil {
-		return importRow{}, err
+	switches := make([]bool, len(store.Switches))
+	for i, s := range store.Switches {
+		on, err := parseSwitchCSV(record, colIdx, s, line)
+		if err != nil {
+			return importRow{}, err
+		}
+		switches[i] = on
 	}
 
 	strompreis, err1 := parseDecimalDE(cell("strompreis"))
@@ -233,21 +239,20 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 		personen[id] = int64(p)
 	}
 
-	return importRow{
-		input: store.PeriodInput{
-			ReadingDate:       readingDate,
-			Monat:             monat,
-			Strompreis:        store.Float64(strompreis),
-			FrischwasserPreis: store.Float64(frischwasserPreis),
-			AbwasserPreis:     store.Float64(abwasserPreis),
-			EinspeisungPreis:  store.Float64(einspeisungPreis),
-			WallboxKomplettW1: komplettW1,
-			PVGutschriftW1:    pvGutschriftW1,
-			Readings:          readings,
-			Personen:          personen,
-		},
-		line: line,
-	}, nil
+	input := store.PeriodInput{
+		ReadingDate:       readingDate,
+		Monat:             monat,
+		Strompreis:        store.Float64(strompreis),
+		FrischwasserPreis: store.Float64(frischwasserPreis),
+		AbwasserPreis:     store.Float64(abwasserPreis),
+		EinspeisungPreis:  store.Float64(einspeisungPreis),
+		Readings:          readings,
+		Personen:          personen,
+	}
+	for i, s := range store.Switches {
+		*s.Input(&input) = switches[i]
+	}
+	return importRow{input: input, line: line}, nil
 }
 
 // warnedMeterKeys are the meters the negative-consumption/outlier warnings

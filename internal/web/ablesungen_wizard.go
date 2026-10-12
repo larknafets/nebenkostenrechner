@@ -411,18 +411,21 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 		personen[a.ID] = p
 	}
 
-	return store.PeriodInput{
+	in := store.PeriodInput{
 		ReadingDate:       r.FormValue("reading_date"),
 		Monat:             monatInput(r.FormValue("monat")).toStored(),
 		Strompreis:        strompreis,
 		FrischwasserPreis: frischwasserPreis,
 		AbwasserPreis:     abwasserPreis,
 		EinspeisungPreis:  einspeisungPreis,
-		WallboxKomplettW1: r.FormValue("wallbox_komplett_w1") != "",
-		PVGutschriftW1:    r.FormValue("pv_gutschrift_w1") != "",
 		Readings:          readings,
 		Personen:          personen,
-	}, nil
+	}
+	// An unchecked checkbox sends no field: absent means off.
+	for _, s := range store.Switches {
+		*s.Input(&in) = r.FormValue(s.FormName) != ""
+	}
+	return in, nil
 }
 
 func handleCreateAblesung() http.HandlerFunc {

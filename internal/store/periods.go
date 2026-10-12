@@ -83,9 +83,8 @@ func OrZero(p *float64) float64 {
 // transaction - Ticket #54).
 func insertPeriodTx(tx *sql.Tx, in PeriodInput) (periodID int64, err error) {
 	res, err := tx.Exec(
-		`INSERT INTO periods (reading_date, monat, strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis, wallbox_komplett_w1, pv_gutschrift_w1)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		in.ReadingDate, in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.EinspeisungPreis, boolToInt(in.WallboxKomplettW1), boolToInt(in.PVGutschriftW1),
+		insertPeriodSQL(),
+		append([]any{in.ReadingDate, in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.EinspeisungPreis}, switchArgs(in)...)...,
 	)
 	if err != nil {
 		return 0, fmt.Errorf("insert period: %w", err)
@@ -343,18 +342,10 @@ func UpdatePeriod(db *sql.DB, periodID int64, in PeriodInput) error {
 		// previously-entered value. The same "only touch what was given"
 		// rule now applies to Readings below (previously an error on a
 		// missing meter) and already applied to Personen before (never a
-		// mandatory coverage check).
-		`UPDATE periods SET
-		   reading_date = ?,
-		   monat = COALESCE(NULLIF(?, ''), monat),
-		   strompreis = COALESCE(?, strompreis),
-		   frischwasser_preis = COALESCE(?, frischwasser_preis),
-		   abwasser_preis = COALESCE(?, abwasser_preis),
-		   einspeisung_preis = COALESCE(?, einspeisung_preis),
-		   wallbox_komplett_w1 = ?,
-		   pv_gutschrift_w1 = ?
-		 WHERE id = ?`,
-		in.ReadingDate, in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.EinspeisungPreis, boolToInt(in.WallboxKomplettW1), boolToInt(in.PVGutschriftW1), periodID,
+		// mandatory coverage check). The switches are the exception: they
+		// always overwrite, see Switch.
+		updatePeriodSQL(),
+		append(append([]any{in.ReadingDate, in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.EinspeisungPreis}, switchArgs(in)...), periodID)...,
 	)
 	if err != nil {
 		return fmt.Errorf("update period: %w", err)
@@ -506,10 +497,18 @@ func AllPeriods(db *sql.DB) ([]PeriodSummary, error) {
 // occupancy, oldest first - the CSV export's data source (Ticket #53). 3
 // batched queries total (periods, readings, occupancy), not one per period.
 func AllPeriodDetails(db *sql.DB) ([]*LatestPeriod, error) {
-	rows, err := db.Query(
-		`SELECT id, reading_date, monat, strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis, wallbox_komplett_w1, pv_gutschrift_w1
-		 FROM periods ORDER BY reading_date ASC, id ASC`,
-	)
+	return loadPeriodDetails(db, 0)
+}
+
+// loadPeriodDetails is the single hydration path of AllPeriodDetails (id 0)
+// and GetPeriodDetails (one id): the same three queries, the latter filtered
+// to the one period.
+func loadPeriodDetails(db *sql.DB, id int64) ([]*LatestPeriod, error) {
+	periodWhere, childWhere, args := "", "", []any{}
+	if id != 0 {
+		periodWhere, childWhere, args = "WHERE id = ?", "WHERE r.period_id = ?", []any{id}
+	}
+	rows, err := db.Query(selectPeriodSQL(periodWhere), args...)
 	if err != nil {
 		return nil, fmt.Errorf("query periods: %w", err)
 	}
@@ -518,16 +517,10 @@ func AllPeriodDetails(db *sql.DB) ([]*LatestPeriod, error) {
 	byID := map[int64]*LatestPeriod{}
 	var out []*LatestPeriod
 	for rows.Next() {
-		p := &LatestPeriod{
-			Readings:            map[string]float64{},
-			PersonenByApartment: map[int64]int64{},
-		}
-		var komplettW1, pvW1 int
-		if err := rows.Scan(&p.ID, &p.ReadingDate, &p.Monat, &p.Strompreis, &p.FrischwasserPreis, &p.AbwasserPreis, &p.EinspeisungPreis, &komplettW1, &pvW1); err != nil {
+		p, err := scanPeriodRow(rows)
+		if err != nil {
 			return nil, fmt.Errorf("scan period: %w", err)
 		}
-		p.WallboxKomplettW1 = komplettW1 != 0
-		p.PVGutschriftW1 = pvW1 != 0
 		byID[p.ID] = p
 		out = append(out, p)
 	}
@@ -536,7 +529,7 @@ func AllPeriodDetails(db *sql.DB) ([]*LatestPeriod, error) {
 	}
 
 	readingRows, err := db.Query(
-		`SELECT r.period_id, m.key, r.zaehlerstand FROM meter_readings r JOIN meters m ON m.id = r.meter_id`,
+		`SELECT r.period_id, m.key, r.zaehlerstand FROM meter_readings r JOIN meters m ON m.id = r.meter_id `+childWhere, args...,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("query readings: %w", err)
@@ -557,7 +550,7 @@ func AllPeriodDetails(db *sql.DB) ([]*LatestPeriod, error) {
 		return nil, err
 	}
 
-	occRows, err := db.Query(`SELECT period_id, apartment_id, personen FROM period_occupancy`)
+	occRows, err := db.Query(`SELECT r.period_id, r.apartment_id, r.personen FROM period_occupancy r `+childWhere, args...)
 	if err != nil {
 		return nil, fmt.Errorf("query occupancy: %w", err)
 	}
@@ -595,20 +588,14 @@ func GetLatestPeriod(db *sql.DB) (*LatestPeriod, error) {
 // GetPeriodDetails returns the given period together with its readings and
 // occupancy, or nil if it doesn't exist - the per-id generalization of
 // GetLatestPeriod (Ticket #43/#44: viewing/editing an Ablesung isn't limited
-// to the latest period anymore). Reuses AllPeriodDetails' single hydration
-// path rather than its own queries - data volume here is tens to low
-// hundreds of rows, so a full fetch-then-filter costs nothing measurable.
+// to the latest period anymore). Uses AllPeriodDetails' hydration path,
+// filtered to this one period.
 func GetPeriodDetails(db *sql.DB, id int64) (*LatestPeriod, error) {
-	periods, err := AllPeriodDetails(db)
-	if err != nil {
+	periods, err := loadPeriodDetails(db, id)
+	if err != nil || len(periods) == 0 {
 		return nil, err
 	}
-	for _, p := range periods {
-		if p.ID == id {
-			return p, nil
-		}
-	}
-	return nil, nil
+	return periods[0], nil
 }
 
 // PeriodReadingsBefore returns up to `limit` periods chronologically before
