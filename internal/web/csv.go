@@ -19,10 +19,18 @@ import (
 // per apartment (fixed ids 1/2, see store's seed()). No qm_1/qm_2 columns
 // (Issue #61 moved apartment size off the reading onto /stammdaten - hard
 // cut, no backward compatibility with the old format).
-var csvHeader = append(append([]string{"reading_date", "monat"}, store.MeterKeys...),
+//
+// The optional Wallbox-Einzelzähler (#224) are the last columns. A cell left
+// empty means "nicht erfasst". An import also accepts older files without
+// them: csvImportHeader lists only the required columns.
+var csvHeader = append(append(append([]string{"reading_date", "monat"}, store.MeterKeys...),
 	"strompreis", "frischwasser_preis", "abwasser_preis", "einspeisung_preis",
 	"personen_1", "personen_2",
-)
+), store.OptionalMeterKeys...)
+
+// csvImportHeader is csvHeader without the optional columns, the columns an
+// import insists on.
+var csvImportHeader = csvHeader[:len(csvHeader)-len(store.OptionalMeterKeys)]
 
 // handleExportCSV streams every reading as CSV (Ticket #53).
 func handleExportCSV() http.HandlerFunc {
@@ -54,6 +62,13 @@ func formatPeriodCSVRow(p *store.LatestPeriod) []string {
 		formatDecimalDE(float64(p.PersonenByApartment[1])),
 		formatDecimalDE(float64(p.PersonenByApartment[2])),
 	)
+	for _, key := range store.OptionalMeterKeys {
+		if v, ok := p.Readings[key]; ok {
+			row = append(row, formatDecimalDE(v))
+		} else {
+			row = append(row, "")
+		}
+	}
 	return row
 }
 
@@ -76,7 +91,7 @@ func handleImportCSV() http.HandlerFunc {
 		db := dbFromContext(r.Context())
 
 		cfg := ImportConfig[importRow]{
-			Header: csvHeader,
+			Header: csvImportHeader,
 			CheckExisting: func(db *sql.DB) (bool, error) {
 				existing, err := store.AllPeriods(db)
 				return len(existing) > 0, err
@@ -114,7 +129,7 @@ func handleImportCSV() http.HandlerFunc {
 // point so row-parsing tests don't need a *http.Request/*sql.DB.
 func parseImportCSV(file io.Reader) ([]importRow, error) {
 	return parseImportCSVRows(file, ImportConfig[importRow]{
-		Header:      csvHeader,
+		Header:      csvImportHeader,
 		ParseRow:    parseImportRow,
 		EmptyErrMsg: "CSV enthält keine Ablesungen",
 	})
@@ -140,6 +155,19 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 		v, err := parseDecimalDE(cell(key))
 		if err != nil {
 			return importRow{}, fmt.Errorf("Zeile %d: ungültiger Wert für %s: %q", line, key, cell(key))
+		}
+		readings[key] = v
+	}
+	// Optional Einzelzähler: the column may be missing (older file) or the
+	// cell empty, both mean "nicht erfasst".
+	for _, key := range store.OptionalMeterKeys {
+		idx, ok := colIdx[key]
+		if !ok || idx >= len(record) || strings.TrimSpace(record[idx]) == "" {
+			continue
+		}
+		v, err := parseDecimalDE(record[idx])
+		if err != nil {
+			return importRow{}, fmt.Errorf("Zeile %d: ungültiger Wert für %s: %q", line, key, record[idx])
 		}
 		readings[key] = v
 	}
@@ -177,6 +205,10 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 	}, nil
 }
 
+// warnedMeterKeys are the meters the negative-consumption/outlier warnings
+// look at: the required ones, then the optional Einzelzähler.
+var warnedMeterKeys = append(append([]string{}, store.MeterKeys...), store.OptionalMeterKeys...)
+
 // importWarnings reproduces the wizard's client-side negative-consumption/
 // outlier checks server-side (Ticket #54) - the bulk import has no
 // per-field JS to run them, but a bulk import of historical data is exactly
@@ -189,17 +221,25 @@ func importWarnings(rows []importRow, ids []int64) []string {
 	for i, row := range rows {
 		if i > 0 {
 			prev := history[0]
-			for _, key := range store.MeterKeys {
+			for _, key := range warnedMeterKeys {
 				newVal, prevVal := row.input.Readings[key], prev.Readings[key]
+				// An optional Einzelzähler without both readings has no
+				// consumption, so there is nothing to warn about (#224).
+				if _, ok := store.VerbrauchOptional(row.input.Readings, prev.Readings, key); store.IsOptionalMeter(key) && !ok {
+					continue
+				}
 				if newVal < prevVal {
 					warnings = append(warnings, fmt.Sprintf("Zeile %d (%s): negativer Verbrauch bei %s (%s < Vorstand %s)",
 						row.line, row.input.ReadingDate, key, formatDecimalDE(newVal), formatDecimalDE(prevVal)))
 				}
 			}
 			if avg, ok := outlierAvg(history); ok {
-				for _, key := range store.MeterKeys {
-					a := avg[key]
+				for _, key := range warnedMeterKeys {
+					a := avg[key] // absent (no baseline) reads as 0 and is skipped
 					if a == 0 {
+						continue
+					}
+					if _, ok := store.VerbrauchOptional(row.input.Readings, prev.Readings, key); store.IsOptionalMeter(key) && !ok {
 						continue
 					}
 					consumption := row.input.Readings[key] - prev.Readings[key]

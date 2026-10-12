@@ -915,7 +915,7 @@ var KostenpositionDefaults = []KostenpositionDefault{
 	{ID: 16, Key: "sonstige", Label: "Sonstige Kosten", Logik: LogikWohneinheit, Typ: TypMonatlich, Umlagefaehig: false},
 }
 
-// seed inserts the fixed master data for the 2 apartments and 9 meters if
+// seed inserts the fixed master data for the 2 apartments and 12 meters (10 required, 2 optional) if
 // they're not already present. Keyed on `apartments.id` / `meters.key` so
 // it's safe to run on every startup.
 func seed(db *sql.DB) error {
@@ -951,6 +951,8 @@ func seed(db *sql.DB) error {
 		{id: 8, key: "waerme_wohnung1", meterType: "waerme", unit: "MWh", apartmentID: apartmentID(1), label: "Wärmemengenzähler Wohnung 1"},
 		{id: 9, key: "waerme_wohnung2", meterType: "waerme", unit: "MWh", apartmentID: apartmentID(2), label: "Wärmemengenzähler Wohnung 2"},
 		{id: 10, key: "strom_einspeisung", meterType: "strom", unit: "kWh", apartmentID: nil, label: "Einspeisezähler (PV)"},
+		{id: 11, key: MeterKeyWallboxWohnung1, meterType: "strom", unit: "kWh", apartmentID: apartmentID(1), label: "Wallbox Wohnung 1"},
+		{id: 12, key: MeterKeyWallboxWohnung2, meterType: "strom", unit: "kWh", apartmentID: apartmentID(2), label: "Wallbox Wohnung 2"},
 	}
 	for _, m := range meters {
 		if _, err := db.Exec(

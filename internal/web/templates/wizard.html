@@ -42,8 +42,14 @@
       <div class="field"><label>Netzbezug 1.8.0 (kWh)</label><input type="number" step="any" name="strom_gesamt" {{if hasReading $.EditReadings "strom_gesamt"}}value="{{index $.EditReadings "strom_gesamt"}}"{{end}} {{if $.HasPrevious}}data-prev="{{index $.PreviousReadings "strom_gesamt"}}"{{end}} {{if $.HasOutlierBaseline}}data-outlier-avg="{{index $.OutlierAvg "strom_gesamt"}}"{{end}}><div class="warning" id="warn-strom_gesamt"></div></div>
       <div class="field"><label>Einspeisung 2.8.0 (kWh)</label><input type="number" step="any" name="strom_einspeisung" {{if hasReading $.EditReadings "strom_einspeisung"}}value="{{index $.EditReadings "strom_einspeisung"}}"{{end}} {{if $.HasPrevious}}data-prev="{{index $.PreviousReadings "strom_einspeisung"}}"{{end}} {{if $.HasOutlierBaseline}}data-outlier-avg="{{index $.OutlierAvg "strom_einspeisung"}}"{{end}}><div class="warning" id="warn-strom_einspeisung"></div></div>
       <div class="field"><label>Wohnung 2 (kWh)</label><input type="number" step="any" name="strom_wohnung2" {{if hasReading $.EditReadings "strom_wohnung2"}}value="{{index $.EditReadings "strom_wohnung2"}}"{{end}} {{if $.HasPrevious}}data-prev="{{index $.PreviousReadings "strom_wohnung2"}}"{{end}} {{if $.HasOutlierBaseline}}data-outlier-avg="{{index $.OutlierAvg "strom_wohnung2"}}"{{end}}><div class="warning" id="warn-strom_wohnung2"></div></div>
-      <div class="field"><label>Wallboxen (kWh)</label><input type="number" step="any" name="strom_wallbox" {{if hasReading $.EditReadings "strom_wallbox"}}value="{{index $.EditReadings "strom_wallbox"}}"{{end}} {{if $.HasPrevious}}data-prev="{{index $.PreviousReadings "strom_wallbox"}}"{{end}} {{if $.HasOutlierBaseline}}data-outlier-avg="{{index $.OutlierAvg "strom_wallbox"}}"{{end}}><div class="warning" id="warn-strom_wallbox"></div></div>
       <div class="field"><label>Wärmepumpe (kWh)</label><input type="number" step="any" name="strom_waermepumpe" {{if hasReading $.EditReadings "strom_waermepumpe"}}value="{{index $.EditReadings "strom_waermepumpe"}}"{{end}} {{if $.HasPrevious}}data-prev="{{index $.PreviousReadings "strom_waermepumpe"}}"{{end}} {{if $.HasOutlierBaseline}}data-outlier-avg="{{index $.OutlierAvg "strom_waermepumpe"}}"{{end}}><div class="warning" id="warn-strom_waermepumpe"></div></div>
+      <div class="field"><label>Wallboxen (kWh)</label><input type="number" step="any" name="strom_wallbox" {{if hasReading $.EditReadings "strom_wallbox"}}value="{{index $.EditReadings "strom_wallbox"}}"{{end}} {{if $.HasPrevious}}data-prev="{{index $.PreviousReadings "strom_wallbox"}}"{{end}} {{if $.HasOutlierBaseline}}data-outlier-avg="{{index $.OutlierAvg "strom_wallbox"}}"{{end}}><div class="warning" id="warn-strom_wallbox"></div></div>
+    </div>
+    {{/* Optional Wallbox-Einzelzähler (#224): data-optional keeps them out of the Teilstand progress; data-prev only with a previous reading, never a comparison against 0. */}}
+    <div class="grid grid-2" style="margin-left:1.5rem">
+      {{range .EinzelzaehlerFelder}}{{$key := .Key}}
+      <div class="field"><label>{{.Label}} (kWh)</label><input type="number" step="any" name="{{$key}}" data-optional {{if hasReading $.EditReadings $key}}value="{{index $.EditReadings $key}}"{{end}} {{if hasReading $.PreviousReadings $key}}data-prev="{{index $.PreviousReadings $key}}"{{end}} {{if hasReading $.OutlierAvg $key}}data-outlier-avg="{{index $.OutlierAvg $key}}"{{end}}><div class="warning" id="warn-{{$key}}"></div></div>
+      {{end}}
     </div>
   </div>
 
@@ -180,7 +186,8 @@
   // einziger Speichern-Button, dessen Beschriftung live daraus abgeleitet
   // wird statt eines zweiten "Vollständig speichern"-Buttons.
   (function () {
-    const optionalInputs = Array.from(document.querySelectorAll('.c-pane input:not([type="radio"])'));
+    // data-optional (Wallbox-Einzelzähler, #224): may stay empty, no Teilstand.
+    const optionalInputs = Array.from(document.querySelectorAll('.c-pane input:not([type="radio"]):not([data-optional])'));
     if (monatInput) optionalInputs.push(monatInput);
 
     const progressLabel = document.getElementById('teilstand-progress-label');

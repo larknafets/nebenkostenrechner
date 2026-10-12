@@ -16,6 +16,10 @@ _Avoid_: unvollständige Ablesung (funktioniert, aber "Teilstand" ist der feste 
 Der am Ablesedatum abgelesene Wert eines Zählers - ein kumulativer Punktwert, kein Verbrauch.
 _Avoid_: Messwert, Reading
 
+**Wallbox Wohnung 1 / Wallbox Wohnung 2**:
+Die zwei optionalen Einzelzähler (kWh) hinter dem Zwischenzähler "Wallboxen", nur nachrichtlich vom Wallbox-Display abgelesen (`strom_wallbox_wohnung1`, `strom_wallbox_wohnung2`). Fehlt ein Stand, ist er "nicht erfasst" (nie 0) und die Ablesung bleibt vollständig, also kein Teilstand. Ihr Verbrauch ist nur mit Stand in der Ablesung und in der direkten Vorperiode berechenbar, sonst "nicht berechenbar". Die Kostenverteilung auf die Wohnungen folgt in einem eigenen Schritt.
+_Avoid_: Wallbox-Zähler (unklar gegenüber dem Zwischenzähler "Wallboxen")
+
 **Verbrauch**:
 Die Differenz zwischen dem Zählerstand einer Ablesung und dem der chronologisch nächst-älteren Ablesung desselben Zählers.
 

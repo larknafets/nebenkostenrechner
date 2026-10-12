@@ -43,6 +43,11 @@ func (p *LatestPeriod) Teilstand(apartments []Apartment) TeilstandStatus {
 		s.MeterErfasst[key] = erfasst
 		complete = complete && erfasst
 	}
+	// The optional Einzelzähler (#224) only report whether they were
+	// entered, they never make a Teilstand.
+	for _, key := range OptionalMeterKeys {
+		_, s.MeterErfasst[key] = p.Readings[key]
+	}
 	for _, ap := range apartments {
 		_, erfasst := p.PersonenByApartment[ap.ID]
 		s.PersonenErfasst[ap.ID] = erfasst

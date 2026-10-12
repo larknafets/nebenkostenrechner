@@ -135,6 +135,9 @@ func seedDemoPeriods(db *sql.DB, now time.Time) error {
 	}
 
 	const monthCount = 39
+	// einzelzaehlerMonate is how many of the youngest months carry the
+	// Wallbox-Einzelzähler.
+	const einzelzaehlerMonate = 12
 	for i := 0; i < monthCount; i++ {
 		date := demoMonth(now, i)
 		hf := heizfaktor(date.Month())
@@ -148,6 +151,18 @@ func seedDemoPeriods(db *sql.DB, now time.Time) error {
 		readings["strom_wohnung2"] += wohnung2Delta
 		readings["strom_waermepumpe"] += wpDelta
 		readings["strom_wallbox"] += wallboxDelta
+		// The Wallbox-Einzelzähler (#224) exist only in the younger months,
+		// as if introduced then: Wohnung 2 takes 40 % of the Zwischenzähler,
+		// Wohnung 1 the rest. The first of those months has no Vorperiode
+		// for them yet, so nothing is distributed there.
+		if i >= monthCount-einzelzaehlerMonate {
+			if i == monthCount-einzelzaehlerMonate {
+				readings[MeterKeyWallboxWohnung1] = 800
+				readings[MeterKeyWallboxWohnung2] = 300
+			}
+			readings[MeterKeyWallboxWohnung2] += 0.4 * wallboxDelta
+			readings[MeterKeyWallboxWohnung1] += 0.6 * wallboxDelta
+		}
 		readings["strom_gesamt"] += wohnung2Delta + wpDelta + wallboxDelta + wohnung1EigenerAnteil
 		readings["strom_einspeisung"] += 80 + 670*pf
 

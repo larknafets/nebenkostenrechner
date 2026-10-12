@@ -64,11 +64,27 @@ type wizardData struct {
 	PreviousAbwasserPreisErfasst     bool
 	PreviousEinspeisungPreisErfasst  bool
 
+	// EinzelzaehlerFelder are the optional Wallbox-Einzelzähler inputs
+	// (#224), shown below the Wallboxen field.
+	EinzelzaehlerFelder []einzelzaehlerFeld
+
 	// NoPeriods gates the CSV import button (Ticket #54) - only offered
 	// as a bootstrap path into a genuinely empty database, never set in
 	// edit mode (handleEditWizardForm leaves it at its zero value,
 	// false).
 	NoPeriods bool
+}
+
+// einzelzaehlerFeld is one optional Wallbox-Einzelzähler input of the form.
+type einzelzaehlerFeld struct {
+	Key   string
+	Label string
+}
+
+// einzelzaehlerFelder lists the optional Einzelzähler in form order.
+var einzelzaehlerFelder = []einzelzaehlerFeld{
+	{store.MeterKeyWallboxWohnung1, "Wallbox Wohnung 1"},
+	{store.MeterKeyWallboxWohnung2, "Wallbox Wohnung 2"},
 }
 
 // openTeilstandID returns the id of the chronologically newest period, if
@@ -151,6 +167,8 @@ func handleWizardForm(a auth) http.HandlerFunc {
 			Monat:       time.Now().Format("2006-01"),
 			Apartments:  apartments,
 			NoPeriods:   previousPeriod == nil,
+
+			EinzelzaehlerFelder: einzelzaehlerFelder,
 		}
 		if len(recent) > 0 {
 			data.HasPrevious = true
@@ -271,6 +289,7 @@ func handleEditWizardForm(a auth) http.HandlerFunc {
 			Monat:                            string(monatInputFromStored(target.Monat)),
 			Apartments:                       apartments,
 			EditReadings:                     target.Readings,
+			EinzelzaehlerFelder:              einzelzaehlerFelder,
 			PreviousStrompreis:               store.OrZero(target.Strompreis),
 			PreviousFrischwasserPreis:        store.OrZero(target.FrischwasserPreis),
 			PreviousAbwasserPreis:            store.OrZero(target.AbwasserPreis),
@@ -343,11 +362,13 @@ func parseOptionalFloat(raw string) (*float64, error) {
 }
 
 func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.PeriodInput, error) {
-	readings := make(map[string]float64, len(store.MeterKeys))
-	for _, key := range store.MeterKeys {
+	readings := make(map[string]float64, len(warnedMeterKeys))
+	for _, key := range warnedMeterKeys {
 		raw := r.FormValue(key)
 		if raw == "" {
-			continue // Teilstand (Ticket #129): deliberately left blank
+			// Teilstand (Ticket #129): deliberately left blank. For an
+			// optional Einzelzähler (#224) it simply means "nicht erfasst".
+			continue
 		}
 		v, err := strconv.ParseFloat(raw, 64)
 		if err != nil {
