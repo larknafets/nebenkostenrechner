@@ -1,5 +1,11 @@
 package calc
 
+import (
+	"math"
+
+	"github.com/larknafets/nebenkostenrechner/internal/store"
+)
+
 // StromErgebnis is the PV grid-draw allocation result for one period. See
 // https://github.com/larknafets/nebenkostenrechner/issues/2 for the
 // formula: grid draw is allocated to apartment 2 first (capped at its own
@@ -37,11 +43,36 @@ type StromErgebnis struct {
 	// splits 70/30 between the two apartments.
 	KostenWPGesamtUnrounded float64
 
-	// KostenWallbox is purely informational (Ticket #67) - wallbox usage
-	// doesn't get its own apartment allocation, it still implicitly runs
-	// through apartment 1's remainder. Rounded to the cent using commercial
-	// rounding (Issue #8).
+	// KostenWallbox is the cost of the whole Zwischenzähler "Wallboxen"
+	// (Ticket #67), rounded to the cent using commercial rounding (Issue
+	// #8). Whether and how it is split between the apartments is decided by
+	// the KostenWallboxW1/W2 fields below; unassigned, it stays purely
+	// informational.
 	KostenWallbox float64
+
+	// WallboxVerteilt reports whether the Wallbox costs are assigned to the
+	// apartments (#225): the switch "Wallboxen vollständig Wohnung 1" is on,
+	// or Wohnung 2's Einzelzähler has a consumption. Otherwise the fields
+	// below are all 0 and KostenWallbox stays informational.
+	WallboxVerteilt bool
+	// KostenWallboxW1/W2 always add up to KostenWallbox (to the cent) when
+	// WallboxVerteilt. Wohnung 1 is the remainder, including the share not
+	// attributed to grid draw.
+	KostenWallboxW1 float64
+	KostenWallboxW2 float64
+	// WallboxW1KWh/W2KWh split WallboxAnteilKWh the same way.
+	WallboxW1KWh float64
+	WallboxW2KWh float64
+
+	// WallboxEinzelPruefbar is true when both Einzelzähler have a
+	// consumption, only then the plausibility check against the
+	// Zwischenzähler is made. WallboxEinzelSumme is the sum of both
+	// consumptions, WallboxEinzelAuffaellig says it deviates from the
+	// Zwischenzähler by more than 5 % or 2 kWh, whichever is larger. Never
+	// blocks anything (#225).
+	WallboxEinzelPruefbar   bool
+	WallboxEinzelSumme      float64
+	WallboxEinzelAuffaellig bool
 }
 
 // stromEingabe is everything the electricity allocation reads: the
@@ -49,7 +80,20 @@ type StromErgebnis struct {
 type stromEingabe struct {
 	Strompreis float64
 	Verbrauch  map[string]float64
+	// EinzelVerbrauch holds the consumption of each optional Einzelzähler
+	// that is calculable (reading in the Ablesung and the Vorperiode); a
+	// missing key means "nicht berechenbar".
+	EinzelVerbrauch map[string]float64
+	// WallboxKomplettW1 is the period's switch "Wallboxen vollständig
+	// Wohnung 1".
+	WallboxKomplettW1 bool
 }
+
+// Plausibility thresholds for the Wallbox Einzelzähler (#225).
+const (
+	wallboxAbweichungProzent = 0.05
+	wallboxAbweichungMinKWh  = 2.0
+)
 
 // berechneStrom is the allocation itself, a pure function of its input.
 func berechneStrom(in stromEingabe) *StromErgebnis {
@@ -62,7 +106,7 @@ func berechneStrom(in stromEingabe) *StromErgebnis {
 	rest2 := rest1 - wpAnteil
 	wallboxAnteil := min(rest2, verbrauch["strom_wallbox"])
 
-	return &StromErgebnis{
+	e := &StromErgebnis{
 		NetzbezugGesamtKWh:      netzbezugGesamt,
 		W2AnteilKWh:             w2Anteil,
 		WPAnteilKWh:             wpAnteil,
@@ -74,5 +118,37 @@ func berechneStrom(in stromEingabe) *StromErgebnis {
 		KostenW2:                Round2(w2Anteil * in.Strompreis),
 		KostenWPGesamtUnrounded: wpAnteil * in.Strompreis,
 		KostenWallbox:           Round2(wallboxAnteil * in.Strompreis),
+	}
+	verteileWallbox(e, in)
+	return e
+}
+
+// verteileWallbox splits the Wallbox costs between the apartments (#225,
+// decision in #219): the switch puts everything on apartment 1; otherwise
+// apartment 2 pays its own consumption capped at the grid-draw share, and
+// apartment 1 carries the rest (so the sum stays cent-exact). Without the
+// switch and without Wohnung 2's consumption nothing is assigned.
+func verteileWallbox(e *StromErgebnis, in stromEingabe) {
+	w1, ok1 := in.EinzelVerbrauch[store.MeterKeyWallboxWohnung1]
+	w2, ok2 := in.EinzelVerbrauch[store.MeterKeyWallboxWohnung2]
+
+	if ok1 && ok2 {
+		zwischen := in.Verbrauch["strom_wallbox"]
+		e.WallboxEinzelPruefbar = true
+		e.WallboxEinzelSumme = w1 + w2
+		schwelle := max(wallboxAbweichungProzent*math.Abs(zwischen), wallboxAbweichungMinKWh)
+		e.WallboxEinzelAuffaellig = math.Abs(e.WallboxEinzelSumme-zwischen) > schwelle
+	}
+
+	switch {
+	case in.WallboxKomplettW1:
+		e.WallboxVerteilt = true
+		e.KostenWallboxW1, e.WallboxW1KWh = e.KostenWallbox, e.WallboxAnteilKWh
+	case ok2:
+		e.WallboxVerteilt = true
+		e.WallboxW2KWh = min(max(w2, 0), e.WallboxAnteilKWh)
+		e.WallboxW1KWh = e.WallboxAnteilKWh - e.WallboxW2KWh
+		e.KostenWallboxW2 = Round2(e.WallboxW2KWh * in.Strompreis)
+		e.KostenWallboxW1 = Round2(e.KostenWallbox - e.KostenWallboxW2)
 	}
 }

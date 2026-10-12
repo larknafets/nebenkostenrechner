@@ -36,6 +36,12 @@ type Wohnungsanteil struct {
 	WasserKosten  float64
 	WasserGesamt  float64 // both apartments
 	WasserM3      float64
+
+	// WallboxKosten/WallboxKWh are this apartment's share of the Zwischenzähler
+	// "Wallboxen" (#225), both 0 while the Wallbox costs are not assigned to
+	// the apartments (StromErgebnis.WallboxVerteilt).
+	WallboxKosten float64
+	WallboxKWh    float64
 }
 
 // Anteil returns apartmentID's share of these Kosten.
@@ -48,8 +54,10 @@ func (k Kosten) Anteil(apartmentID int64) Wohnungsanteil {
 		a.HatStrom, a.StromKosten, a.StromKWh = true, k.Strom.KostenW2, k.Strom.W2VerbrauchKWh
 		a.HeizungKosten, a.HeizungWPKWh, a.HeizungMWh = k.Heizung.KostenHeizungW2, k.Heizung.WPVerbrauchW2KWh, k.Heizung.WaermeW2MWh
 		a.WasserKosten, a.WasserM3 = Round2(k.Wasser.KostenFrischwasserW2+k.Wasser.KostenAbwasserW2), k.Wasser.FrischwasserW2
+		a.WallboxKosten, a.WallboxKWh = k.Strom.KostenWallboxW2, k.Strom.WallboxW2KWh
 		return a
 	}
+	a.WallboxKosten, a.WallboxKWh = k.Strom.KostenWallboxW1, k.Strom.WallboxW1KWh
 	a.HeizungKosten, a.HeizungWPKWh, a.HeizungMWh = k.Heizung.KostenHeizungW1, k.Heizung.WPVerbrauchW1KWh, k.Heizung.WaermeW1MWh
 	a.WasserKosten, a.WasserM3 = Round2(k.Wasser.KostenFrischwasserW1+k.Wasser.KostenAbwasserW1), k.Wasser.FrischwasserW1
 	return a
@@ -134,7 +142,13 @@ func New(d Daten) *Verbrauchskosten {
 		for _, key := range store.MeterKeys {
 			verbrauch[key] = p.Readings[key] - d.Periods[i-1].Readings[key]
 		}
-		strom := berechneStrom(stromEingabe{Strompreis: *p.Strompreis, Verbrauch: verbrauch})
+		einzel := make(map[string]float64, len(store.OptionalMeterKeys))
+		for _, key := range store.OptionalMeterKeys {
+			if v, ok := store.VerbrauchOptional(p.Readings, d.Periods[i-1].Readings, key); ok {
+				einzel[key] = v
+			}
+		}
+		strom := berechneStrom(stromEingabe{Strompreis: *p.Strompreis, Verbrauch: verbrauch, EinzelVerbrauch: einzel, WallboxKomplettW1: p.WallboxKomplettW1})
 		v.alle[i].Kosten = Kosten{
 			Strom: strom,
 			Wasser: berechneWasser(wasserEingabe{

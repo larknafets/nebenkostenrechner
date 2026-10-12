@@ -23,14 +23,20 @@ import (
 // The optional Wallbox-Einzelzähler (#224) are the last columns. A cell left
 // empty means "nicht erfasst". An import also accepts older files without
 // them: csvImportHeader lists only the required columns.
-var csvHeader = append(append(append([]string{"reading_date", "monat"}, store.MeterKeys...),
+//
+// The very last column is the switch "Wallboxen vollständig Wohnung 1"
+// (#225), 1 or 0. It is optional on import too (empty or missing = 0).
+var csvHeader = append(append(append(append([]string{"reading_date", "monat"}, store.MeterKeys...),
 	"strompreis", "frischwasser_preis", "abwasser_preis", "einspeisung_preis",
 	"personen_1", "personen_2",
-), store.OptionalMeterKeys...)
+), store.OptionalMeterKeys...), csvColWallboxKomplett)
+
+// csvColWallboxKomplett is the CSV column of Period.WallboxKomplettW1.
+const csvColWallboxKomplett = "wallbox_komplett_wohnung1"
 
 // csvImportHeader is csvHeader without the optional columns, the columns an
 // import insists on.
-var csvImportHeader = csvHeader[:len(csvHeader)-len(store.OptionalMeterKeys)]
+var csvImportHeader = csvHeader[:len(csvHeader)-len(store.OptionalMeterKeys)-1]
 
 // handleExportCSV streams every reading as CSV (Ticket #53).
 func handleExportCSV() http.HandlerFunc {
@@ -68,6 +74,11 @@ func formatPeriodCSVRow(p *store.LatestPeriod) []string {
 		} else {
 			row = append(row, "")
 		}
+	}
+	if p.WallboxKomplettW1 {
+		row = append(row, "1")
+	} else {
+		row = append(row, "0")
 	}
 	return row
 }
@@ -172,6 +183,18 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 		readings[key] = v
 	}
 
+	// Optional switch column: missing or empty means off.
+	komplettW1 := false
+	if idx, ok := colIdx[csvColWallboxKomplett]; ok && idx < len(record) {
+		switch strings.TrimSpace(record[idx]) {
+		case "", "0":
+		case "1":
+			komplettW1 = true
+		default:
+			return importRow{}, fmt.Errorf("Zeile %d: ungültiger Wert für %s: %q (erlaubt: 0 oder 1)", line, csvColWallboxKomplett, record[idx])
+		}
+	}
+
 	strompreis, err1 := parseDecimalDE(cell("strompreis"))
 	frischwasserPreis, err2 := parseDecimalDE(cell("frischwasser_preis"))
 	abwasserPreis, err3 := parseDecimalDE(cell("abwasser_preis"))
@@ -198,6 +221,7 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 			FrischwasserPreis: store.Float64(frischwasserPreis),
 			AbwasserPreis:     store.Float64(abwasserPreis),
 			EinspeisungPreis:  store.Float64(einspeisungPreis),
+			WallboxKomplettW1: komplettW1,
 			Readings:          readings,
 			Personen:          personen,
 		},

@@ -1332,6 +1332,10 @@ func TestEnsurePeriodsNullablePriceColumns(t *testing.T) {
 		if err := ensurePeriodsNullablePriceColumns(db); err != nil {
 			t.Fatalf("ensurePeriodsNullablePriceColumns: %v", err)
 		}
+		// Open runs this right after the rebuild, which drops the column.
+		if err := ensurePeriodsWallboxKomplettW1Column(db); err != nil {
+			t.Fatalf("ensurePeriodsWallboxKomplettW1Column: %v", err)
+		}
 
 		if columnNotNull(t, db, "periods", "strompreis") {
 			t.Error("periods.strompreis still NOT NULL after migration")
