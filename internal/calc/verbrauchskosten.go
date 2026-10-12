@@ -14,6 +14,11 @@ type Kosten struct {
 	Wasser      *WasserErgebnis
 	Heizung     *HeizungErgebnis
 	Einspeisung *EinspeisungErgebnis
+
+	// PVGutschriftW1 is the Ertrag of this Ablesung when its switch "PV-Gutschrift
+	// Wohnung 1" is on (#226), else 0. Not a cost position, only apartment 1
+	// ever gets it.
+	PVGutschriftW1 float64
 }
 
 // Wohnungsanteil is one apartment's share of an Ablesung's Verbrauchskosten
@@ -42,6 +47,11 @@ type Wohnungsanteil struct {
 	// the apartments (StromErgebnis.WallboxVerteilt).
 	WallboxKosten float64
 	WallboxKWh    float64
+
+	// PVGutschrift is a credit in EUR (#226), only ever set for apartment 1 and
+	// only with the switch on. Kept apart from the costs: it lowers the balance,
+	// not the consumption costs.
+	PVGutschrift float64
 }
 
 // Anteil returns apartmentID's share of these Kosten.
@@ -58,6 +68,7 @@ func (k Kosten) Anteil(apartmentID int64) Wohnungsanteil {
 		return a
 	}
 	a.WallboxKosten, a.WallboxKWh = k.Strom.KostenWallboxW1, k.Strom.WallboxW1KWh
+	a.PVGutschrift = k.PVGutschriftW1
 	a.HeizungKosten, a.HeizungWPKWh, a.HeizungMWh = k.Heizung.KostenHeizungW1, k.Heizung.WPVerbrauchW1KWh, k.Heizung.WaermeW1MWh
 	a.WasserKosten, a.WasserM3 = Round2(k.Wasser.KostenFrischwasserW1+k.Wasser.KostenAbwasserW1), k.Wasser.FrischwasserW1
 	return a
@@ -157,6 +168,9 @@ func New(d Daten) *Verbrauchskosten {
 			}),
 			Heizung:     berechneHeizung(heizungEingabe{Strom: strom, WaermeGewichtung: d.Haus.HeizungWaermeGewichtung, Verbrauch: verbrauch, QMW1: qmW1, QMW2: qmW2}),
 			Einspeisung: berechneEinspeisung(einspeisungEingabe{EinspeisungPreis: *p.EinspeisungPreis, Verbrauch: verbrauch}),
+		}
+		if p.PVGutschriftW1 {
+			v.alle[i].Kosten.PVGutschriftW1 = v.alle[i].Kosten.Einspeisung.Ertrag
 		}
 	}
 	return v

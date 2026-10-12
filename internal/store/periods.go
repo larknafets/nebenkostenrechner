@@ -132,6 +132,9 @@ type PeriodInput struct {
 	// WallboxKomplettW1 is the per-Ablesung switch "Wallboxen vollständig
 	// Wohnung 1" (#225): all Wallbox costs go to apartment 1.
 	WallboxKomplettW1 bool
+	// PVGutschriftW1 is the per-Ablesung switch "PV-Gutschrift Wohnung 1" (#226):
+	// the Einspeisevergütung of this Ablesung is credited to apartment 1.
+	PVGutschriftW1 bool
 	// Readings/Personen: a missing key means "nicht erfasst" (Teilstand,
 	// Ticket #128) - CreatePeriod/UpdatePeriod simply don't write a row for
 	// it, rather than requiring every MeterKeys/apartment id to be present.
@@ -161,9 +164,9 @@ func OrZero(p *float64) float64 {
 // transaction - Ticket #54).
 func insertPeriodTx(tx *sql.Tx, in PeriodInput) (periodID int64, err error) {
 	res, err := tx.Exec(
-		`INSERT INTO periods (reading_date, monat, strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis, wallbox_komplett_w1)
-		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		in.ReadingDate, in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.EinspeisungPreis, boolToInt(in.WallboxKomplettW1),
+		`INSERT INTO periods (reading_date, monat, strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis, wallbox_komplett_w1, pv_gutschrift_w1)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		in.ReadingDate, in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.EinspeisungPreis, boolToInt(in.WallboxKomplettW1), boolToInt(in.PVGutschriftW1),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("insert period: %w", err)
@@ -429,9 +432,10 @@ func UpdatePeriod(db *sql.DB, periodID int64, in PeriodInput) error {
 		   frischwasser_preis = COALESCE(?, frischwasser_preis),
 		   abwasser_preis = COALESCE(?, abwasser_preis),
 		   einspeisung_preis = COALESCE(?, einspeisung_preis),
-		   wallbox_komplett_w1 = ?
+		   wallbox_komplett_w1 = ?,
+		   pv_gutschrift_w1 = ?
 		 WHERE id = ?`,
-		in.ReadingDate, in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.EinspeisungPreis, boolToInt(in.WallboxKomplettW1), periodID,
+		in.ReadingDate, in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.EinspeisungPreis, boolToInt(in.WallboxKomplettW1), boolToInt(in.PVGutschriftW1), periodID,
 	)
 	if err != nil {
 		return fmt.Errorf("update period: %w", err)
@@ -488,7 +492,9 @@ type LatestPeriod struct {
 	AbwasserPreis     *float64
 	EinspeisungPreis  *float64
 	// WallboxKomplettW1: see PeriodInput.WallboxKomplettW1.
-	WallboxKomplettW1   bool
+	WallboxKomplettW1 bool
+	// PVGutschriftW1: see PeriodInput.PVGutschriftW1.
+	PVGutschriftW1      bool
 	Readings            map[string]float64
 	PersonenByApartment map[int64]int64
 }
@@ -582,7 +588,7 @@ func AllPeriods(db *sql.DB) ([]PeriodSummary, error) {
 // batched queries total (periods, readings, occupancy), not one per period.
 func AllPeriodDetails(db *sql.DB) ([]*LatestPeriod, error) {
 	rows, err := db.Query(
-		`SELECT id, reading_date, monat, strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis, wallbox_komplett_w1
+		`SELECT id, reading_date, monat, strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis, wallbox_komplett_w1, pv_gutschrift_w1
 		 FROM periods ORDER BY reading_date ASC, id ASC`,
 	)
 	if err != nil {
@@ -597,11 +603,12 @@ func AllPeriodDetails(db *sql.DB) ([]*LatestPeriod, error) {
 			Readings:            map[string]float64{},
 			PersonenByApartment: map[int64]int64{},
 		}
-		var komplettW1 int
-		if err := rows.Scan(&p.ID, &p.ReadingDate, &p.Monat, &p.Strompreis, &p.FrischwasserPreis, &p.AbwasserPreis, &p.EinspeisungPreis, &komplettW1); err != nil {
+		var komplettW1, pvW1 int
+		if err := rows.Scan(&p.ID, &p.ReadingDate, &p.Monat, &p.Strompreis, &p.FrischwasserPreis, &p.AbwasserPreis, &p.EinspeisungPreis, &komplettW1, &pvW1); err != nil {
 			return nil, fmt.Errorf("scan period: %w", err)
 		}
 		p.WallboxKomplettW1 = komplettW1 != 0
+		p.PVGutschriftW1 = pvW1 != 0
 		byID[p.ID] = p
 		out = append(out, p)
 	}

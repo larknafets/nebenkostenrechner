@@ -25,6 +25,10 @@ Der Schalter je Ablesung, der alle Wallbox-Kosten (kWh und EUR, inkl. Solarzutei
 _Avoid_: Wallbox-Schalter
 
 **Wallbox (Kostenposition)**:
+
+**PV-Gutschrift**:
+Die Einspeisevergütung einer Ablesung (`Einspeisung.Ertrag`), per Schalter "PV-Gutschrift Wohnung 1" der Ablesung Wohnung 1 zugeordnet. Sie erhöht deren Guthaben im Saldo ohne Deckel, ist aber keine Kostenposition (kein Umlagefähig-Flag, keine Berechnungslogik) und mindert nicht die Verbrauchskosten. Ohne Schalter gibt es sie nicht, die Einspeisung bleibt haus-weit und informativ. Wohnung 2 hat nie eine.
+_Avoid_: Einspeisevergütung (das ist der haus-weite Ertrag, nicht die Zuordnung)
 Die Kosten des Zwischenzählers "Wallboxen" (Netzbezug-Anteil mal Strompreis), je Ablesung auf Wohnung 1 und Wohnung 2 verteilt: mit Schalter alles Wohnung 1, sonst zahlt Wohnung 2 `min(Verbrauch Wallbox Wohnung 2, Netzbezug-Anteil)` mal Strompreis (gerundet) und Wohnung 1 den Rest. Ohne Schalter und ohne Verbrauch von Wallbox Wohnung 2 bleibt sie informativ und keiner Wohnung zugeordnet.
 
 **Verbrauch**:

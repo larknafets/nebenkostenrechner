@@ -80,6 +80,11 @@ func Open(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("migrate wallbox_komplett_w1 column: %w", err)
 	}
 
+	if err := ensurePeriodsPVGutschriftW1Column(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("migrate pv_gutschrift_w1 column: %w", err)
+	}
+
 	if err := ensureKostenpositionenUmlagefaehigColumn(db); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("migrate kostenpositionen umlagefaehig column: %w", err)
@@ -216,6 +221,18 @@ func ensurePeriodsWallboxKomplettW1Column(db *sql.DB) error {
 		return err
 	}
 	_, err = db.Exec(`ALTER TABLE periods ADD COLUMN wallbox_komplett_w1 INTEGER NOT NULL DEFAULT 0`)
+	return err
+}
+
+// ensurePeriodsPVGutschriftW1Column adds the switch "PV-Gutschrift Wohnung 1"
+// (#226) to a periods table that predates it. Existing Ablesungen get 0 (off),
+// so their costs and balances stay as they were.
+func ensurePeriodsPVGutschriftW1Column(db *sql.DB) error {
+	has, err := hasColumn(db, "periods", "pv_gutschrift_w1")
+	if err != nil || has {
+		return err
+	}
+	_, err = db.Exec(`ALTER TABLE periods ADD COLUMN pv_gutschrift_w1 INTEGER NOT NULL DEFAULT 0`)
 	return err
 }
 

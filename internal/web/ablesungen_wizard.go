@@ -72,6 +72,9 @@ type wizardData struct {
 	// (#225): prefilled from the newest Ablesung on a new one, from the
 	// edited Ablesung itself when correcting.
 	WallboxKomplettW1 bool
+	// PVGutschriftW1 is the switch "PV-Gutschrift Wohnung 1" (#226), prefilled
+	// and edited like WallboxKomplettW1.
+	PVGutschriftW1 bool
 
 	// NoPeriods gates the CSV import button (Ticket #54) - only offered
 	// as a bootstrap path into a genuinely empty database, never set in
@@ -201,6 +204,7 @@ func handleWizardForm(a auth) http.HandlerFunc {
 			data.PreviousEinspeisungPreisErfasst = status.EinspeisungPreisErfasst
 			data.PreviousPersonen = previousPeriod.PersonenByApartment
 			data.WallboxKomplettW1 = previousPeriod.WallboxKomplettW1
+			data.PVGutschriftW1 = previousPeriod.PVGutschriftW1
 		}
 		data.OutlierAvg, data.HasOutlierBaseline = outlierAvg(recent)
 
@@ -297,6 +301,7 @@ func handleEditWizardForm(a auth) http.HandlerFunc {
 			EditReadings:                     target.Readings,
 			EinzelzaehlerFelder:              einzelzaehlerFelder,
 			WallboxKomplettW1:                target.WallboxKomplettW1,
+			PVGutschriftW1:                   target.PVGutschriftW1,
 			PreviousStrompreis:               store.OrZero(target.Strompreis),
 			PreviousFrischwasserPreis:        store.OrZero(target.FrischwasserPreis),
 			PreviousAbwasserPreis:            store.OrZero(target.AbwasserPreis),
@@ -414,6 +419,7 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 		AbwasserPreis:     abwasserPreis,
 		EinspeisungPreis:  einspeisungPreis,
 		WallboxKomplettW1: r.FormValue("wallbox_komplett_w1") != "",
+		PVGutschriftW1:    r.FormValue("pv_gutschrift_w1") != "",
 		Readings:          readings,
 		Personen:          personen,
 	}, nil

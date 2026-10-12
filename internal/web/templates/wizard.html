@@ -84,6 +84,7 @@
       <div class="field"><label>Abwasser (EUR/m³)</label><input type="number" step="any" name="abwasser_preis" {{if .PreviousAbwasserPreisErfasst}}value="{{.PreviousAbwasserPreis}}"{{end}}></div>
       <div class="field"><label>Einspeisung (EUR/kWh)</label><input type="number" step="any" name="einspeisung_preis" {{if .PreviousEinspeisungPreisErfasst}}value="{{.PreviousEinspeisungPreis}}"{{end}}></div>
     </div>
+    <div class="field"><label><input type="checkbox" name="pv_gutschrift_w1" value="1" {{if .PVGutschriftW1}}checked{{end}}> PV-Gutschrift Wohnung 1</label><div class="muted">Die Einspeisevergütung dieser Ablesung wird Wohnung 1 gutgeschrieben und erhöht deren Guthaben.</div></div>
   </div>
 
   <div class="wizard-actions">
