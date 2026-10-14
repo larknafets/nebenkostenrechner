@@ -39,6 +39,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Verbesserungen
 
+- Ablesung und Fixkosten-Eingabe: Die Personenzahl lässt sich mit bis zu 2 Nachkommastellen eintragen (z. B. 1,25), sie fließt in die Warmwasser-Aufteilung und den Schlüssel "Personen" ein; negative Werte und mehr als 2 Nachkommastellen lehnt das Formular ab. Angezeigt wird sie überall ohne Auffüllen ("2", "1,25"), auch im Personen-Schnitt des Dashboards (#242)
+
 ## Fehlerkorrekturen
 
 ## Wartung

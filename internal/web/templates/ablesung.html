@@ -37,7 +37,7 @@
     <thead><tr><th>Wohnung</th><th>Personen</th><th>Wohnungsgröße</th></tr></thead>
     <tbody>
       {{range .Apartments}}
-      <tr><td>{{.Name}}</td><td>{{if index $.PersonenErfasst .ID}}{{index $.Personen .ID}}{{else}}<span class="text-warning">noch offen</span>{{end}}</td><td>{{de .QM}}&nbsp;m²</td></tr>
+      <tr><td>{{.Name}}</td><td>{{if index $.PersonenErfasst .ID}}{{de (index $.Personen .ID)}}{{else}}<span class="text-warning">noch offen</span>{{end}}</td><td>{{de .QM}}&nbsp;m²</td></tr>
       {{end}}
     </tbody>
   </table>
@@ -81,7 +81,7 @@
   <table class="letzte">
     <thead><tr><th></th><th>Wohnung 1</th><th>Wohnung 2</th></tr></thead>
     <tbody>
-      <tr><td>Personen</td><td>{{.Wasser.PersonenW1}}</td><td>{{.Wasser.PersonenW2}}</td></tr>
+      <tr><td>Personen</td><td>{{de .Wasser.PersonenW1}}</td><td>{{de .Wasser.PersonenW2}}</td></tr>
       <tr><td>Warmwasseraufbereitung-Anteil</td><td>{{de2 .Wasser.WWAnteilW1}}&nbsp;m³</td><td>{{de2 .Wasser.WWAnteilW2}}&nbsp;m³</td></tr>
       <tr><td>Frischwasser</td><td>{{de2 .Wasser.FrischwasserW1}}&nbsp;m³</td><td>{{de2 .Wasser.FrischwasserW2}}&nbsp;m³</td></tr>
       <tr><td>Abwasser</td><td>{{de2 .Wasser.AbwasserW1}}&nbsp;m³</td><td>{{de2 .Wasser.AbwasserW2}}&nbsp;m³</td></tr>

@@ -398,11 +398,11 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 		if raw == "" {
 			continue // Teilstand (Ticket #129): deliberately left blank
 		}
-		p, err := strconv.ParseInt(raw, 10, 64)
+		p, err := parsePersonenzahl(raw)
 		if err != nil {
-			return store.PeriodInput{}, fmt.Errorf("invalid Personenzahl for apartment %s", idStr)
+			return store.PeriodInput{}, fmt.Errorf("ungültige Personenzahl für %s: %w", a.Name, err)
 		}
-		personen[a.ID] = float64(p)
+		personen[a.ID] = p
 	}
 
 	in := store.PeriodInput{
