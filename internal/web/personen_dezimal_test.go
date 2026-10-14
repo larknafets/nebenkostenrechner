@@ -25,6 +25,22 @@ func TestValidatePersonenzahl(t *testing.T) {
 	}
 }
 
+func TestParseImportPersonenzahl(t *testing.T) {
+	for _, c := range []struct{ raw, want string }{
+		{"abc", "ungültige Personenzahl für Wohnung 2"},
+		{"-1", "darf nicht negativ sein"},
+		{"1,255", "höchstens 2 Nachkommastellen"},
+	} {
+		_, err := parseImportPersonenzahl(c.raw, 7, 2)
+		if err == nil || !strings.Contains(err.Error(), c.want) || !strings.Contains(err.Error(), "Zeile 7") {
+			t.Errorf("parseImportPersonenzahl(%q) = %v, want Fehler mit %q", c.raw, err, c.want)
+		}
+	}
+	if p, err := parseImportPersonenzahl("1,25", 7, 1); err != nil || p != 1.25 {
+		t.Errorf("parseImportPersonenzahl(1,25) = %v, %v", p, err)
+	}
+}
+
 func TestAblesung_PersonenDezimal_Formular(t *testing.T) {
 	apartments := []store.Apartment{{ID: 1}, {ID: 2}}
 	cases := []struct {
