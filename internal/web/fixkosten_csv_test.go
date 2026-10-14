@@ -141,3 +141,55 @@ func TestHandleImportFixkostenCSV_BadRowRejectedWithoutPersisting(t *testing.T) 
 		t.Errorf("len(eingaben) = %d, want 0 (bad row must abort whole import)", len(eingaben))
 	}
 }
+
+func fixkostenCSVRowMitPersonen(monat, p1, p2 string) string {
+	return strings.TrimSuffix(fixkostenCSVRow(monat, "100"), "2;1;150;90") + p1 + ";" + p2 + ";150;90"
+}
+
+func TestHandleImportFixkostenCSV_PersonenzahlDezimal(t *testing.T) {
+	db := openTestDB(t)
+	csvText := strings.Join(fixkostenCsvHeader, ";") + "\n" + fixkostenCSVRowMitPersonen("2026-06-01", "1,25", "0,5") + "\n"
+
+	w := httptest.NewRecorder()
+	handleImportFixkostenCSV()(w, requestWithDB(fixkostenCSVUploadRequest(t, csvText), db))
+	if w.Code != http.StatusFound {
+		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())
+	}
+
+	ex := httptest.NewRecorder()
+	handleExportFixkostenCSV()(ex, requestWithDB(httptest.NewRequest(http.MethodGet, "/fixkosten/export.csv", nil), db))
+	db2 := openTestDB(t)
+	w2 := httptest.NewRecorder()
+	handleImportFixkostenCSV()(w2, requestWithDB(fixkostenCSVUploadRequest(t, ex.Body.String()), db2))
+	if w2.Code != http.StatusFound {
+		t.Fatalf("re-import status = %d, want %d (body: %s)", w2.Code, http.StatusFound, w2.Body.String())
+	}
+	eingaben, err := store.AllFixkostenEingabenDetails(db2)
+	if err != nil || len(eingaben) != 1 {
+		t.Fatalf("AllFixkostenEingaben = %v, %v, want 1", eingaben, err)
+	}
+	if got := eingaben[0].Personen; got[1] != 1.25 || got[2] != 0.5 {
+		t.Errorf("Personen = %v, want 1: 1.25, 2: 0.5", got)
+	}
+}
+
+func TestHandleImportFixkostenCSV_PersonenzahlUngueltigBrichtAb(t *testing.T) {
+	for _, bad := range []string{"-1", "1,255"} {
+		db := openTestDB(t)
+		csvText := strings.Join(fixkostenCsvHeader, ";") + "\n" + fixkostenCSVRow("2026-05-01", "100") + "\n" +
+			fixkostenCSVRowMitPersonen("2026-06-01", bad, "1") + "\n"
+
+		w := httptest.NewRecorder()
+		handleImportFixkostenCSV()(w, requestWithDB(fixkostenCSVUploadRequest(t, csvText), db))
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("%q: status = %d, want %d", bad, w.Code, http.StatusBadRequest)
+		}
+		if !strings.Contains(w.Body.String(), "Zeile 3") {
+			t.Errorf("%q: body = %q, want line number", bad, w.Body.String())
+		}
+		eingaben, _ := store.AllFixkostenEingaben(db)
+		if len(eingaben) != 0 {
+			t.Errorf("%q: %d imported, want 0", bad, len(eingaben))
+		}
+	}
+}
