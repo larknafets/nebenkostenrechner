@@ -45,7 +45,7 @@ func uebertragDaten(ablesungVon, eingabeVon time.Time, ohneAblesung, ohneEingabe
 		}
 		details = append(details, &store.FixkostenEingabeDetails{
 			ID: id, Monat: key,
-			Personen: map[int64]int64{1: 2, 2: 1},
+			Personen: map[int64]float64{1: 2, 2: 1},
 			Werte:    map[int64]store.FixkostenPositionWert{1: {Logik: store.LogikWohnung2, Typ: store.TypMonatlich, Wert: uebertragKosten}},
 			Abschlag: map[int64]float64{1: 0, 2: uebertragAbschlag},
 		})

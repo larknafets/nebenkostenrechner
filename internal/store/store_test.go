@@ -36,7 +36,7 @@ func mustCreatePeriod(t *testing.T, db *sql.DB, date string, readings map[string
 		FrischwasserPreis: Float64(1.46),
 		AbwasserPreis:     Float64(4.87),
 		Readings:          readings,
-		Personen:          map[int64]int64{1: 2, 2: 1},
+		Personen:          map[int64]float64{1: 2, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("create period %s: %v", date, err)
@@ -97,7 +97,7 @@ func TestPeriod_Monat_Roundtrip(t *testing.T) {
 		FrischwasserPreis: Float64(1.46),
 		AbwasserPreis:     Float64(4.87),
 		Readings:          baseReadings(nil),
-		Personen:          map[int64]int64{1: 2, 2: 1},
+		Personen:          map[int64]float64{1: 2, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
@@ -249,7 +249,7 @@ func TestUpdatePeriod_Roundtrip(t *testing.T) {
 		FrischwasserPreis: Float64(1.50),
 		AbwasserPreis:     Float64(5.00),
 		Readings:          baseReadings(map[string]float64{"strom_gesamt": 210}),
-		Personen:          map[int64]int64{1: 3, 2: 1},
+		Personen:          map[int64]float64{1: 3, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("UpdatePeriod: %v", err)
@@ -302,7 +302,7 @@ func TestImportPeriods_AllOrNothing(t *testing.T) {
 			// longer an error - but a nonexistent apartment_id still
 			// violates the FK constraint on period_occupancy, so it stays
 			// a genuine error trigger.
-			Personen: map[int64]int64{999: 1},
+			Personen: map[int64]float64{999: 1},
 		},
 	})
 	if err == nil {
@@ -327,12 +327,12 @@ func TestImportPeriods_Success(t *testing.T) {
 		{
 			ReadingDate: "2026-06-01",
 			Readings:    baseReadings(map[string]float64{"strom_gesamt": 100}),
-			Personen:    map[int64]int64{1: 2, 2: 1},
+			Personen:    map[int64]float64{1: 2, 2: 1},
 		},
 		{
 			ReadingDate: "2026-07-01",
 			Readings:    baseReadings(map[string]float64{"strom_gesamt": 200}),
-			Personen:    map[int64]int64{1: 2, 2: 1},
+			Personen:    map[int64]float64{1: 2, 2: 1},
 		},
 	})
 	if err != nil {
@@ -420,7 +420,7 @@ func TestUpdatePeriod_AddsMissingOccupancy(t *testing.T) {
 	if err := UpdatePeriod(db, p1, PeriodInput{
 		ReadingDate: "2026-06-01",
 		Readings:    baseReadings(nil),
-		Personen:    map[int64]int64{1: 2, 2: 3},
+		Personen:    map[int64]float64{1: 2, 2: 3},
 	}); err != nil {
 		t.Fatalf("UpdatePeriod: %v", err)
 	}
@@ -953,7 +953,7 @@ func TestEinspeisungPreis_Roundtrip(t *testing.T) {
 		AbwasserPreis:     Float64(4.87),
 		EinspeisungPreis:  Float64(0.082),
 		Readings:          baseReadings(nil),
-		Personen:          map[int64]int64{1: 2, 2: 1},
+		Personen:          map[int64]float64{1: 2, 2: 1},
 	}); err != nil {
 		t.Fatalf("UpdatePeriod: %v", err)
 	}
@@ -1294,7 +1294,7 @@ func TestEnsurePeriodsNullablePriceColumns(t *testing.T) {
 			AbwasserPreis:     Float64(4.87),
 			EinspeisungPreis:  Float64(0.08),
 			Readings:          baseReadings(map[string]float64{"strom_gesamt": 123}),
-			Personen:          map[int64]int64{1: 2, 2: 1},
+			Personen:          map[int64]float64{1: 2, 2: 1},
 		})
 		if err != nil {
 			t.Fatalf("CreatePeriod: %v", err)
@@ -1384,7 +1384,7 @@ func TestCreatePeriod_Teilstand(t *testing.T) {
 		AbwasserPreis:     nil,
 		EinspeisungPreis:  nil,
 		Readings:          map[string]float64{"strom_gesamt": 100}, // nur 1 von 10 Metern
-		Personen:          map[int64]int64{1: 2},                   // nur 1 von 2 Wohnungen
+		Personen:          map[int64]float64{1: 2},                 // nur 1 von 2 Wohnungen
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod mit Teilstand-Daten: %v", err)
@@ -1442,7 +1442,7 @@ func TestUpdatePeriod_Teilstand_PreservesUnspecifiedFields(t *testing.T) {
 		AbwasserPreis:     Float64(4.87),
 		EinspeisungPreis:  Float64(0.08),
 		Readings:          baseReadings(map[string]float64{"strom_gesamt": 100}),
-		Personen:          map[int64]int64{1: 2, 2: 1},
+		Personen:          map[int64]float64{1: 2, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
@@ -1459,7 +1459,7 @@ func TestUpdatePeriod_Teilstand_PreservesUnspecifiedFields(t *testing.T) {
 		AbwasserPreis:     nil,
 		EinspeisungPreis:  nil,
 		Readings:          map[string]float64{},
-		Personen:          map[int64]int64{},
+		Personen:          map[int64]float64{},
 	}); err != nil {
 		t.Fatalf("UpdatePeriod: %v", err)
 	}
@@ -1509,7 +1509,7 @@ func TestUpdatePeriod_EmptyMonat_NoNeighborConflict(t *testing.T) {
 		FrischwasserPreis: Float64(1.46),
 		AbwasserPreis:     Float64(4.87),
 		Readings:          baseReadings(nil),
-		Personen:          map[int64]int64{1: 2, 2: 1},
+		Personen:          map[int64]float64{1: 2, 2: 1},
 	}); err != nil {
 		t.Fatalf("UpdatePeriod mit leerem Monat: %v, want kein Fehler (Nachbar-Prüfung übersprungen)", err)
 	}
@@ -1555,7 +1555,7 @@ func TestPeriodComplete(t *testing.T) {
 			AbwasserPreis:     Float64(4.87),
 			EinspeisungPreis:  Float64(0.08),
 			Readings:          baseReadings(nil),
-			Personen:          map[int64]int64{1: 2, 2: 1},
+			Personen:          map[int64]float64{1: 2, 2: 1},
 		}
 	}
 

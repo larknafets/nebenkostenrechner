@@ -15,12 +15,12 @@ import (
 
 // personenZelle renders one occupant count for the Anhang: "-" if the source
 // has no value for the apartment that month.
-func personenZelle(m map[int64]int64, apartmentID int64) string {
+func personenZelle(m map[int64]float64, apartmentID int64) string {
 	n, ok := m[apartmentID]
 	if !ok {
 		return "-"
 	}
-	return strconv.FormatInt(n, 10)
+	return strconv.FormatFloat(n, 'f', -1, 64)
 }
 
 // abrechnungJahre lists the years there is data for - from the Ablesungen

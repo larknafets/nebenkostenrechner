@@ -88,7 +88,7 @@ func TestSeedDemoData(t *testing.T) {
 			t.Fatalf("GetPeriodDetails: %v", err)
 		}
 		if details.PersonenByApartment[1] != 2 {
-			t.Errorf("period %s: Personen Wohnung 1 = %d, want 2", p.Monat, details.PersonenByApartment[1])
+			t.Errorf("period %s: Personen Wohnung 1 = %v, want 2", p.Monat, details.PersonenByApartment[1])
 		}
 		switch details.PersonenByApartment[2] {
 		case 1:
@@ -121,14 +121,14 @@ func TestResetDemoData(t *testing.T) {
 	if _, err := CreatePeriod(db, PeriodInput{
 		ReadingDate: "2099-01-01",
 		Monat:       "2099-01-01",
-		Personen:    map[int64]int64{1: 2, 2: 2},
+		Personen:    map[int64]float64{1: 2, 2: 2},
 		Readings:    readings,
 	}); err != nil {
 		t.Fatalf("CreatePeriod (simulierte Demo-Änderung): %v", err)
 	}
 	if _, err := CreateFixkostenEingabe(db, FixkostenInput{
 		Monat:    "2099-01-01",
-		Personen: map[int64]int64{1: 2, 2: 2},
+		Personen: map[int64]float64{1: 2, 2: 2},
 		Werte:    map[int64]FixkostenPositionWert{},
 		Abschlag: map[int64]float64{1: 0, 2: 0},
 	}); err != nil {

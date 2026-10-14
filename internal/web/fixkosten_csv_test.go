@@ -22,7 +22,7 @@ func seedFixkostenInput(monat string) store.FixkostenInput {
 	}
 	return store.FixkostenInput{
 		Monat:    monat,
-		Personen: map[int64]int64{1: 2, 2: 1},
+		Personen: map[int64]float64{1: 2, 2: 1},
 		Werte:    werte,
 		Abschlag: map[int64]float64{1: 150, 2: 90},
 	}

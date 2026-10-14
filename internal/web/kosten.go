@@ -96,5 +96,5 @@ type periodKosten struct {
 	// distinct from ReadingDate which stays the exact reading date.
 	Monat    string
 	K        calc.Kosten
-	Personen map[int64]int64
+	Personen map[int64]float64
 }

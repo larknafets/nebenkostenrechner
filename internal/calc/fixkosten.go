@@ -149,8 +149,8 @@ type fixkostenEingabe struct {
 func berechneFixkosten(in fixkostenEingabe) *FixkostenErgebnis {
 	eingabe, kostenpositionen := in.Eingabe, in.Kostenpositionen
 	qmW1, qmW2, flurstueckW1, flurstueckW2 := in.QMW1, in.QMW2, in.FlurstueckW1, in.FlurstueckW2
-	personenW1 := float64(eingabe.Personen[1])
-	personenW2 := float64(eingabe.Personen[2])
+	personenW1 := eingabe.Personen[1]
+	personenW2 := eingabe.Personen[2]
 
 	ergebnis := FixkostenErgebnis{Positionen: make([]FixkostenPosition, 0, len(kostenpositionen))}
 

@@ -52,7 +52,7 @@ type wizardData struct {
 	PreviousFrischwasserPreis float64
 	PreviousAbwasserPreis     float64
 	PreviousEinspeisungPreis  float64
-	PreviousPersonen          map[int64]int64
+	PreviousPersonen          map[int64]float64
 	// PreviousXErfasst (Ticket #131): whether the respective price was
 	// even already set in a completed Teilstand (partial reading) -
 	// Previous* above is always a plain float64 (store.OrZero-coalesced),
@@ -391,7 +391,7 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 		return store.PeriodInput{}, fmt.Errorf("invalid price value")
 	}
 
-	personen := make(map[int64]int64, len(apartments))
+	personen := make(map[int64]float64, len(apartments))
 	for _, a := range apartments {
 		idStr := strconv.FormatInt(a.ID, 10)
 		raw := r.FormValue("personen_" + idStr)
@@ -402,7 +402,7 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 		if err != nil {
 			return store.PeriodInput{}, fmt.Errorf("invalid Personenzahl for apartment %s", idStr)
 		}
-		personen[a.ID] = p
+		personen[a.ID] = float64(p)
 	}
 
 	in := store.PeriodInput{

@@ -13,7 +13,7 @@ func vollePeriode(id int64, date string, readings map[string]float64) *store.Lat
 		Strompreis: store.Float64(0.22), FrischwasserPreis: store.Float64(1.46),
 		AbwasserPreis: store.Float64(4.87), EinspeisungPreis: store.Float64(0.08),
 		Readings:            baseReadings(readings),
-		PersonenByApartment: map[int64]int64{1: 2, 2: 1},
+		PersonenByApartment: map[int64]float64{1: 2, 2: 1},
 	}
 }
 
@@ -58,7 +58,7 @@ func TestLoad_NurBerechenbareAblesungenInReihenfolge(t *testing.T) {
 			Strompreis: store.Float64(0.22), FrischwasserPreis: store.Float64(1.46),
 			AbwasserPreis: store.Float64(4.87), EinspeisungPreis: store.Float64(0.08),
 			Readings: baseReadings(map[string]float64{"strom_gesamt": 1000 * n, "strom_einspeisung": 500 * n}),
-			Personen: map[int64]int64{1: 2, 2: 1},
+			Personen: map[int64]float64{1: 2, 2: 1},
 		})
 		if err != nil {
 			t.Fatalf("CreatePeriod: %v", err)

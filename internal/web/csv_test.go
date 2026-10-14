@@ -27,7 +27,7 @@ func seedPeriodInput() store.PeriodInput {
 		AbwasserPreis:     store.Float64(4.87),
 		EinspeisungPreis:  store.Float64(0.08),
 		Readings:          readings,
-		Personen:          map[int64]int64{1: 2, 2: 1},
+		Personen:          map[int64]float64{1: 2, 2: 1},
 	}
 }
 

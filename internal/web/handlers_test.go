@@ -700,9 +700,9 @@ func TestBuildJahresCard(t *testing.T) {
 		Heizung: &calc.HeizungErgebnis{},
 	}
 	periods := []periodKosten{
-		{ReadingDate: "2026-09-01", Monat: "2026-09-01", K: verbrauch2026, Personen: map[int64]int64{1: 3, 2: 2}},
-		{ReadingDate: "2026-08-01", Monat: "2026-08-01", K: verbrauch2026, Personen: map[int64]int64{1: 3, 2: 1}},
-		{ReadingDate: "2025-09-01", Monat: "2025-09-01", K: verbrauch2025, Personen: map[int64]int64{1: 3, 2: 99}}, // anderes Jahr, muss ausgeschlossen werden
+		{ReadingDate: "2026-09-01", Monat: "2026-09-01", K: verbrauch2026, Personen: map[int64]float64{1: 3, 2: 2}},
+		{ReadingDate: "2026-08-01", Monat: "2026-08-01", K: verbrauch2026, Personen: map[int64]float64{1: 3, 2: 1}},
+		{ReadingDate: "2025-09-01", Monat: "2025-09-01", K: verbrauch2025, Personen: map[int64]float64{1: 3, 2: 99}}, // anderes Jahr, muss ausgeschlossen werden
 	}
 	fixkostenListe := []fixkostenKosten{
 		{Monat: "2026-09-01", Erg: &calc.FixkostenErgebnis{KostenW1: 15, KostenW2: 25}},
@@ -1353,7 +1353,7 @@ func seedPeriodInputAt(date string) store.PeriodInput {
 		AbwasserPreis:     store.Float64(4.87),
 		EinspeisungPreis:  store.Float64(0.08),
 		Readings:          readings,
-		Personen:          map[int64]int64{1: 2, 2: 1},
+		Personen:          map[int64]float64{1: 2, 2: 1},
 	}
 }
 
@@ -1950,7 +1950,7 @@ func TestHandleEditWizardForm_TeilstandBlankNotZero(t *testing.T) {
 		ReadingDate: "2026-11-01",
 		Strompreis:  store.Float64(0.22),
 		Readings:    map[string]float64{"strom_gesamt": 100},
-		Personen:    map[int64]int64{1: 2},
+		Personen:    map[int64]float64{1: 2},
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod (Teilstand): %v", err)

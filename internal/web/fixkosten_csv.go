@@ -47,8 +47,8 @@ func formatFixkostenCSVRow(f *store.FixkostenEingabeDetails) []string {
 		row = append(row, w.Logik, w.Typ, formatDecimalDE(w.Wert))
 	}
 	row = append(row,
-		formatDecimalDE(float64(f.Personen[1])),
-		formatDecimalDE(float64(f.Personen[2])),
+		formatDecimalDE(f.Personen[1]),
+		formatDecimalDE(f.Personen[2]),
 		formatDecimalDE(f.Abschlag[1]),
 		formatDecimalDE(f.Abschlag[2]),
 	)
@@ -137,7 +137,7 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 		werte[kd.ID] = store.FixkostenPositionWert{Logik: logik, Typ: typ, Wert: wert}
 	}
 
-	personen := make(map[int64]int64, 2)
+	personen := make(map[int64]float64, 2)
 	abschlag := make(map[int64]float64, 2)
 	for _, id := range [2]int64{1, 2} {
 		personenCol := fmt.Sprintf("personen_%d", id)
@@ -145,7 +145,7 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 		if err != nil {
 			return store.FixkostenInput{}, fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q", line, id, cell(personenCol))
 		}
-		personen[id] = int64(p)
+		personen[id] = p
 
 		abschlagCol := fmt.Sprintf("abschlag_%d", id)
 		a, err := parseDecimalDE(cell(abschlagCol))

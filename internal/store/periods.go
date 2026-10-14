@@ -58,7 +58,7 @@ type PeriodInput struct {
 	// Ticket #128) - CreatePeriod/UpdatePeriod simply don't write a row for
 	// it, rather than requiring every MeterKeys/apartment id to be present.
 	Readings map[string]float64 // meter key -> Zählerstand
-	Personen map[int64]int64    // apartment id -> Personenzahl
+	Personen map[int64]float64  // apartment id -> Personenzahl
 }
 
 // Float64 returns a pointer to v - a constructor for PeriodInput/
@@ -406,7 +406,7 @@ type LatestPeriod struct {
 	// PVGutschriftW1: see PeriodInput.PVGutschriftW1.
 	PVGutschriftW1      bool
 	Readings            map[string]float64
-	PersonenByApartment map[int64]int64
+	PersonenByApartment map[int64]float64
 }
 
 // PeriodReadings is one period's per-meter Zählerstand, as used for the
@@ -556,7 +556,8 @@ func loadPeriodDetails(db *sql.DB, id int64) ([]*LatestPeriod, error) {
 	}
 	defer occRows.Close()
 	for occRows.Next() {
-		var periodID, apartmentID, personen int64
+		var periodID, apartmentID int64
+		var personen float64
 		if err := occRows.Scan(&periodID, &apartmentID, &personen); err != nil {
 			return nil, fmt.Errorf("scan occupancy: %w", err)
 		}
@@ -721,7 +722,7 @@ func PeriodComplete(db *sql.DB, periodID int64) (bool, error) {
 
 // PersonenByApartment returns the given period's occupancy (apartment id ->
 // Personenzahl), as recorded at that period's Ablesung.
-func PersonenByApartment(db *sql.DB, periodID int64) (map[int64]int64, error) {
+func PersonenByApartment(db *sql.DB, periodID int64) (map[int64]float64, error) {
 	rows, err := db.Query(
 		`SELECT apartment_id, personen FROM period_occupancy WHERE period_id = ?`,
 		periodID,
@@ -731,9 +732,10 @@ func PersonenByApartment(db *sql.DB, periodID int64) (map[int64]int64, error) {
 	}
 	defer rows.Close()
 
-	out := map[int64]int64{}
+	out := map[int64]float64{}
 	for rows.Next() {
-		var apartmentID, personen int64
+		var apartmentID int64
+		var personen float64
 		if err := rows.Scan(&apartmentID, &personen); err != nil {
 			return nil, fmt.Errorf("scan occupancy: %w", err)
 		}

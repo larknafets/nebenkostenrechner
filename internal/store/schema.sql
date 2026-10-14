@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS period_occupancy (
     id           INTEGER PRIMARY KEY,
     period_id    INTEGER NOT NULL REFERENCES periods(id),
     apartment_id INTEGER NOT NULL REFERENCES apartments(id),
-    personen     INTEGER NOT NULL,
+    personen     REAL NOT NULL,
     UNIQUE(period_id, apartment_id)
 );
 
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS fixkosten_personen (
     id                    INTEGER PRIMARY KEY,
     fixkosten_eingabe_id  INTEGER NOT NULL REFERENCES fixkosten_eingaben(id),
     apartment_id          INTEGER NOT NULL REFERENCES apartments(id),
-    personen              INTEGER NOT NULL,
+    personen              REAL NOT NULL,
     UNIQUE(fixkosten_eingabe_id, apartment_id)
 );
 

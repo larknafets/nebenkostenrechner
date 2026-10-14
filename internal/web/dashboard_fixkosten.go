@@ -177,7 +177,7 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 			pvAnteilKWh += pk.K.Strom.PVAnteilW2KWh
 		}
 		if p, ok := pk.Personen[apartmentID]; ok {
-			personenSumme += float64(p)
+			personenSumme += p
 			personenAnzahl++
 		}
 	}
