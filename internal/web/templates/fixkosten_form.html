@@ -28,7 +28,7 @@
   <h3>Personen</h3>
   <div class="grid grid-2">
     {{range .Apartments}}
-    <div class="field"><label>Personen {{.Name}}</label><input type="number" name="personen_{{.ID}}" {{if or $.IsEdit $.PreviousPersonen}}value="{{index $.PreviousPersonen .ID}}"{{end}} required></div>
+    <div class="field"><label>Personen {{.Name}}</label><input type="number" step="0.01" min="0" name="personen_{{.ID}}" {{if or $.IsEdit $.PreviousPersonen}}value="{{index $.PreviousPersonen .ID}}"{{end}} required></div>
     {{end}}
   </div>
   <div class="abschlag-divider"></div>

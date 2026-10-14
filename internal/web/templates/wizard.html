@@ -75,7 +75,7 @@
   <div class="c-pane" data-step="4">
     <div class="grid grid-2">
       {{range .Apartments}}
-      <div class="field"><label>Personen {{.Name}}</label><input type="number" name="personen_{{.ID}}" {{if hasPersonen $.PreviousPersonen .ID}}value="{{index $.PreviousPersonen .ID}}"{{end}}></div>
+      <div class="field"><label>Personen {{.Name}}</label><input type="number" step="0.01" min="0" name="personen_{{.ID}}" {{if hasPersonen $.PreviousPersonen .ID}}value="{{index $.PreviousPersonen .ID}}"{{end}}></div>
       {{end}}
     </div>
     <div class="grid grid-4">

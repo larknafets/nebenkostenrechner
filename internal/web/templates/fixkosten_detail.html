@@ -16,7 +16,7 @@
     <thead><tr><th style="width:40%">Wohnung</th><th>Personen</th><th>Nebenkostenabschlag</th></tr></thead>
     <tbody>
       {{range .Apartments}}
-      <tr><td>{{.Name}}</td><td>{{index $.Eingabe.Personen .ID}}</td><td>{{deEUR (index $.Eingabe.Abschlag .ID)}}&nbsp;€</td></tr>
+      <tr><td>{{.Name}}</td><td>{{de (index $.Eingabe.Personen .ID)}}</td><td>{{deEUR (index $.Eingabe.Abschlag .ID)}}&nbsp;€</td></tr>
       {{end}}
     </tbody>
   </table>

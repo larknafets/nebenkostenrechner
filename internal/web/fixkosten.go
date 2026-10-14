@@ -241,11 +241,11 @@ func parseFixkostenInput(r *http.Request, apartments []store.Apartment) (store.F
 	personen := make(map[int64]float64, len(apartments))
 	abschlag := make(map[int64]float64, len(apartments))
 	for _, a := range apartments {
-		p, err := strconv.ParseInt(r.FormValue("personen_"+strconv.FormatInt(a.ID, 10)), 10, 64)
+		p, err := parsePersonenzahl(r.FormValue("personen_" + strconv.FormatInt(a.ID, 10)))
 		if err != nil {
-			return store.FixkostenInput{}, fmt.Errorf("invalid Personenzahl for apartment %d", a.ID)
+			return store.FixkostenInput{}, fmt.Errorf("ungültige Personenzahl für %s: %w", a.Name, err)
 		}
-		personen[a.ID] = float64(p)
+		personen[a.ID] = p
 
 		v, err := strconv.ParseFloat(r.FormValue("abschlag_"+strconv.FormatInt(a.ID, 10)), 64)
 		if err != nil {

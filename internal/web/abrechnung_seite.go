@@ -20,7 +20,7 @@ func personenZelle(m map[int64]float64, apartmentID int64) string {
 	if !ok {
 		return "-"
 	}
-	return strconv.FormatFloat(n, 'f', -1, 64)
+	return formatDecimalDE(n)
 }
 
 // abrechnungJahre lists the years there is data for - from the Ablesungen
