@@ -109,7 +109,7 @@ func pvFaktor(m time.Month) float64 {
 // personenWohnung2 varies 1/2 across the 39 months (autumn/winter months
 // 10-14 and 27-29 have only 1 person - e.g. a temporary single occupancy) -
 // Wohnung 1 always stays at 2, as fixed by the user.
-func personenWohnung2(i int) int64 {
+func personenWohnung2(i int) float64 {
 	if (i >= 10 && i <= 14) || (i >= 27 && i <= 29) {
 		return 1
 	}
@@ -195,7 +195,7 @@ func seedDemoPeriods(db *sql.DB, now time.Time) error {
 			AbwasserPreis:     Float64(abwasserPreis),
 			EinspeisungPreis:  Float64(0.08),
 			Readings:          readingsCopy,
-			Personen:          map[int64]int64{1: 2, 2: personenWohnung2(i)},
+			Personen:          map[int64]float64{1: 2, 2: personenWohnung2(i)},
 		}
 		if _, err := CreatePeriod(db, in); err != nil {
 			return fmt.Errorf("monat %s: %w", monat, err)
@@ -289,7 +289,7 @@ func seedDemoFixkosten(db *sql.DB, now time.Time) error {
 		date := demoMonth(now, i)
 		in := FixkostenInput{
 			Monat:    date.Format("2006-01") + "-01",
-			Personen: map[int64]int64{1: 2, 2: 2},
+			Personen: map[int64]float64{1: 2, 2: 2},
 			Werte:    werte,
 			Abschlag: demoAbschlag,
 		}

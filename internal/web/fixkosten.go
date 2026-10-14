@@ -69,7 +69,7 @@ type fixkostenFormData struct {
 	NoEingaben       bool   // gates the CSV import button (Issue #133), only offered while the DB is empty
 	Monat            string // "YYYY-MM", <input type="month"> value
 	Apartments       []store.Apartment
-	PreviousPersonen map[int64]int64
+	PreviousPersonen map[int64]float64
 	PreviousAbschlag map[int64]float64
 	Positionen       []fixkostenPositionRow
 }
@@ -238,14 +238,14 @@ func parseFixkostenInput(r *http.Request, apartments []store.Apartment) (store.F
 		werte[kp.ID] = store.FixkostenPositionWert{Logik: logik, Typ: typ, Wert: v}
 	}
 
-	personen := make(map[int64]int64, len(apartments))
+	personen := make(map[int64]float64, len(apartments))
 	abschlag := make(map[int64]float64, len(apartments))
 	for _, a := range apartments {
 		p, err := strconv.ParseInt(r.FormValue("personen_"+strconv.FormatInt(a.ID, 10)), 10, 64)
 		if err != nil {
 			return store.FixkostenInput{}, fmt.Errorf("invalid Personenzahl for apartment %d", a.ID)
 		}
-		personen[a.ID] = p
+		personen[a.ID] = float64(p)
 
 		v, err := strconv.ParseFloat(r.FormValue("abschlag_"+strconv.FormatInt(a.ID, 10)), 64)
 		if err != nil {

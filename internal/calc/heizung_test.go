@@ -26,7 +26,7 @@ func TestHeizung_70_30_Verteilung(t *testing.T) {
 			"waerme_wohnung1":   6,
 			"waerme_wohnung2":   4,
 		}),
-		Personen: map[int64]int64{1: 2, 2: 1},
+		Personen: map[int64]float64{1: 2, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("create period: %v", err)
@@ -73,7 +73,7 @@ func TestHeizung_WPVerbrauch_TatsaechlicherWertOhnePVAbzug(t *testing.T) {
 			"waerme_wohnung1":   6,
 			"waerme_wohnung2":   4,
 		}),
-		Personen: map[int64]int64{1: 2, 2: 1},
+		Personen: map[int64]float64{1: 2, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("create period: %v", err)
@@ -106,7 +106,7 @@ func TestHeizung_KeinWaermeVerbrauch_FaelltAufHaelftigeVerteilungZurueck(t *test
 			"strom_gesamt":      1000,
 			"strom_waermepumpe": 500,
 		}),
-		Personen: map[int64]int64{1: 2, 2: 1},
+		Personen: map[int64]float64{1: 2, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("create period: %v", err)
@@ -146,7 +146,7 @@ func TestHeizung_GewichtungAusDenStammdaten(t *testing.T) {
 			"waerme_wohnung1":   6,
 			"waerme_wohnung2":   4,
 		}),
-		Personen: map[int64]int64{1: 2, 2: 1},
+		Personen: map[int64]float64{1: 2, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("create period: %v", err)

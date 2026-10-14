@@ -56,7 +56,7 @@ func mustCreateFixkostenEingabe(t *testing.T, db *sql.DB, monat string, werte ma
 	t.Helper()
 	id, err := CreateFixkostenEingabe(db, FixkostenInput{
 		Monat:    monat,
-		Personen: map[int64]int64{1: 2, 2: 1},
+		Personen: map[int64]float64{1: 2, 2: 1},
 		Werte:    werte,
 	})
 	if err != nil {
@@ -96,7 +96,7 @@ func TestFixkostenEingabe_CRUD_Roundtrip(t *testing.T) {
 	// Update: neuer Monat, geaenderter Wert, neuer Personenstand.
 	if err := UpdateFixkostenEingabe(db, id, FixkostenInput{
 		Monat:    "2026-09-02",
-		Personen: map[int64]int64{1: 3, 2: 1},
+		Personen: map[int64]float64{1: 3, 2: 1},
 		Werte: map[int64]FixkostenPositionWert{
 			10: {Logik: LogikWohneinheit, Typ: TypMonatlich, Wert: 15.00},
 			13: {Logik: LogikWohneinheit, Typ: TypMonatlich, Wert: 39.90},
@@ -226,7 +226,7 @@ func TestFixkostenEingabe_EineJeMonat(t *testing.T) {
 	db := openTestDB(t)
 	mustCreateFixkostenEingabe(t, db, "2026-09-01", nil)
 
-	_, err := CreateFixkostenEingabe(db, FixkostenInput{Monat: "2026-09-01", Personen: map[int64]int64{1: 2, 2: 1}})
+	_, err := CreateFixkostenEingabe(db, FixkostenInput{Monat: "2026-09-01", Personen: map[int64]float64{1: 2, 2: 1}})
 	if !errors.Is(err, ErrFixkostenMonatBelegt) {
 		t.Fatalf("second CreateFixkostenEingabe for 2026-09-01: err = %v, want ErrFixkostenMonatBelegt", err)
 	}
@@ -244,7 +244,7 @@ func TestUpdateFixkostenEingabe_MonatBelegt(t *testing.T) {
 	okt := mustCreateFixkostenEingabe(t, db, "2026-10-01", nil)
 
 	// Moving onto an occupied month is rejected and changes nothing.
-	err := UpdateFixkostenEingabe(db, okt, FixkostenInput{Monat: "2026-09-01", Personen: map[int64]int64{1: 2, 2: 1}})
+	err := UpdateFixkostenEingabe(db, okt, FixkostenInput{Monat: "2026-09-01", Personen: map[int64]float64{1: 2, 2: 1}})
 	if !errors.Is(err, ErrFixkostenMonatBelegt) {
 		t.Fatalf("UpdateFixkostenEingabe onto an occupied month: err = %v, want ErrFixkostenMonatBelegt", err)
 	}
@@ -253,11 +253,11 @@ func TestUpdateFixkostenEingabe_MonatBelegt(t *testing.T) {
 	}
 
 	// Saving an entry under its own month is fine (a plain correction).
-	if err := UpdateFixkostenEingabe(db, sep, FixkostenInput{Monat: "2026-09-01", Personen: map[int64]int64{1: 3, 2: 1}}); err != nil {
+	if err := UpdateFixkostenEingabe(db, sep, FixkostenInput{Monat: "2026-09-01", Personen: map[int64]float64{1: 3, 2: 1}}); err != nil {
 		t.Errorf("UpdateFixkostenEingabe keeping its own month: %v", err)
 	}
 	// Moving to a free month is fine too.
-	if err := UpdateFixkostenEingabe(db, okt, FixkostenInput{Monat: "2026-11-01", Personen: map[int64]int64{1: 2, 2: 1}}); err != nil {
+	if err := UpdateFixkostenEingabe(db, okt, FixkostenInput{Monat: "2026-11-01", Personen: map[int64]float64{1: 2, 2: 1}}); err != nil {
 		t.Errorf("UpdateFixkostenEingabe to a free month: %v", err)
 	}
 }
@@ -265,7 +265,7 @@ func TestUpdateFixkostenEingabe_MonatBelegt(t *testing.T) {
 func TestImportFixkostenEingaben_DoppelterMonatRollback(t *testing.T) {
 	db := openTestDB(t)
 	in := func(monat string) FixkostenInput {
-		return FixkostenInput{Monat: monat, Personen: map[int64]int64{1: 2, 2: 1}}
+		return FixkostenInput{Monat: monat, Personen: map[int64]float64{1: 2, 2: 1}}
 	}
 
 	_, err := ImportFixkostenEingaben(db, []FixkostenInput{in("2026-09-01"), in("2026-10-01"), in("2026-09-01")})
@@ -382,7 +382,7 @@ func TestOpen_MitDoppeltenFixkostenMonaten(t *testing.T) {
 	}
 
 	// A third entry for the month is refused.
-	if _, err := CreateFixkostenEingabe(db, FixkostenInput{Monat: "2026-06-01", Personen: map[int64]int64{1: 2, 2: 1}}); !errors.Is(err, ErrFixkostenMonatBelegt) {
+	if _, err := CreateFixkostenEingabe(db, FixkostenInput{Monat: "2026-06-01", Personen: map[int64]float64{1: 2, 2: 1}}); !errors.Is(err, ErrFixkostenMonatBelegt) {
 		t.Errorf("CreateFixkostenEingabe on a duplicated month: err = %v, want ErrFixkostenMonatBelegt", err)
 	}
 
@@ -391,7 +391,7 @@ func TestOpen_MitDoppeltenFixkostenMonaten(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AllFixkostenEingaben: %v", err)
 	}
-	if err := UpdateFixkostenEingabe(db, eingaben[0].ID, FixkostenInput{Monat: "2026-06-01", Personen: map[int64]int64{1: 3, 2: 1}}); err != nil {
+	if err := UpdateFixkostenEingabe(db, eingaben[0].ID, FixkostenInput{Monat: "2026-06-01", Personen: map[int64]float64{1: 3, 2: 1}}); err != nil {
 		t.Errorf("UpdateFixkostenEingabe keeping the month of a duplicate: %v", err)
 	}
 	// ... and fixed by deleting it.

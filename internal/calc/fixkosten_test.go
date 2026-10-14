@@ -9,7 +9,7 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-func mustCreateFixkostenEingabe(t *testing.T, db *sql.DB, monat string, personen map[int64]int64, werte map[int64]store.FixkostenPositionWert) int64 {
+func mustCreateFixkostenEingabe(t *testing.T, db *sql.DB, monat string, personen map[int64]float64, werte map[int64]store.FixkostenPositionWert) int64 {
 	t.Helper()
 	id, err := store.CreateFixkostenEingabe(db, store.FixkostenInput{Monat: monat, Personen: personen, Werte: werte})
 	if err != nil {
@@ -36,8 +36,8 @@ func TestFixkostenreihe_Lookups(t *testing.T) {
 	werte := map[int64]store.FixkostenPositionWert{6: {Logik: store.LogikWohneinheit, Typ: store.TypMonatlich, Wert: 20}}
 	reihe := calc.NewFixkostenreihe(calc.FixkostenDaten{
 		Eingaben: []*store.FixkostenEingabeDetails{
-			{ID: 7, Monat: "2026-09-01", Personen: map[int64]int64{1: 1, 2: 1}, Werte: werte},
-			{ID: 9, Monat: "2026-10-01", Personen: map[int64]int64{1: 1, 2: 1}, Werte: werte},
+			{ID: 7, Monat: "2026-09-01", Personen: map[int64]float64{1: 1, 2: 1}, Werte: werte},
+			{ID: 9, Monat: "2026-10-01", Personen: map[int64]float64{1: 1, 2: 1}, Werte: werte},
 		},
 		Kostenpositionen: []store.Kostenposition{{ID: 6, Key: "abfall_haushalt"}},
 		Apartments:       []store.Apartment{{ID: 1, QM: 100}, {ID: 2, QM: 100}},
@@ -73,7 +73,7 @@ func findPosition(t *testing.T, erg *calc.FixkostenErgebnis, key string) calc.Fi
 
 func TestFixkosten_LogikWohneinheit_5050(t *testing.T) {
 	db := openTestDB(t)
-	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]int64{1: 2, 2: 1}, map[int64]store.FixkostenPositionWert{
+	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]float64{1: 2, 2: 1}, map[int64]store.FixkostenPositionWert{
 		6: {Logik: store.LogikWohneinheit, Typ: store.TypJaehrlich, Wert: 240}, // abfall_haushalt
 	})
 
@@ -95,7 +95,7 @@ func TestFixkosten_LogikFlurstueck_Ratio(t *testing.T) {
 			2: {QM: 100, FlurstueckGroesse: 400},
 		}
 	})
-	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]int64{1: 1, 2: 1}, map[int64]store.FixkostenPositionWert{
+	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]float64{1: 1, 2: 1}, map[int64]store.FixkostenPositionWert{
 		3: {Logik: store.LogikFlurstueck, Typ: store.TypJaehrlich, Wert: 1200}, // deich_grund
 	})
 
@@ -117,7 +117,7 @@ func TestFixkosten_LogikQM_Ratio(t *testing.T) {
 			2: {QM: 50, FlurstueckGroesse: 0},
 		}
 	})
-	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]int64{1: 1, 2: 1}, map[int64]store.FixkostenPositionWert{
+	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]float64{1: 1, 2: 1}, map[int64]store.FixkostenPositionWert{
 		1: {Logik: store.LogikQM, Typ: store.TypJaehrlich, Wert: 480}, // grundsteuer
 	})
 
@@ -133,7 +133,7 @@ func TestFixkosten_LogikQM_Ratio(t *testing.T) {
 
 func TestFixkosten_LogikPersonen_Ratio(t *testing.T) {
 	db := openTestDB(t)
-	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]int64{1: 3, 2: 1}, map[int64]store.FixkostenPositionWert{
+	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]float64{1: 3, 2: 1}, map[int64]store.FixkostenPositionWert{
 		7: {Logik: store.LogikPersonen, Typ: store.TypJaehrlich, Wert: 360}, // abfall_personen
 	})
 
@@ -152,7 +152,7 @@ func TestFixkosten_LogikPersonen_Ratio(t *testing.T) {
 // occupants must not silently make the position vanish from both bills.
 func TestFixkosten_LogikPersonen_KeinePersonen_FaelltAufHaelftigeVerteilungZurueck(t *testing.T) {
 	db := openTestDB(t)
-	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]int64{1: 0, 2: 0}, map[int64]store.FixkostenPositionWert{
+	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]float64{1: 0, 2: 0}, map[int64]store.FixkostenPositionWert{
 		7: {Logik: store.LogikPersonen, Typ: store.TypJaehrlich, Wert: 240},
 	})
 
@@ -165,7 +165,7 @@ func TestFixkosten_LogikPersonen_KeinePersonen_FaelltAufHaelftigeVerteilungZurue
 
 func TestFixkosten_TypMonatlich_ExpliziterWert(t *testing.T) {
 	db := openTestDB(t)
-	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]int64{1: 1, 2: 1}, map[int64]store.FixkostenPositionWert{
+	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]float64{1: 1, 2: 1}, map[int64]store.FixkostenPositionWert{
 		13: {Logik: store.LogikWohneinheit, Typ: store.TypMonatlich, Wert: 39.90}, // internet
 	})
 
@@ -186,7 +186,7 @@ func TestFixkosten_TypMonatlich_ExpliziterWert(t *testing.T) {
 // guessing a Logik/Typ.
 func TestFixkosten_PositionOhneWert_Uebersprungen(t *testing.T) {
 	db := openTestDB(t)
-	id := mustCreateFixkostenEingabe(t, db, "2026-03-01", map[int64]int64{1: 1, 2: 1}, nil)
+	id := mustCreateFixkostenEingabe(t, db, "2026-03-01", map[int64]float64{1: 1, 2: 1}, nil)
 
 	got := fixkostenOf(t, db, id)
 	if len(got.Positionen) != 0 {
@@ -205,7 +205,7 @@ func TestFixkosten_SummenKonsistenz(t *testing.T) {
 			2: {QM: 80, FlurstueckGroesse: 300},
 		}
 	})
-	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]int64{1: 3, 2: 1}, map[int64]store.FixkostenPositionWert{
+	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]float64{1: 3, 2: 1}, map[int64]store.FixkostenPositionWert{
 		1:  {Logik: store.LogikQM, Typ: store.TypJaehrlich, Wert: 480},
 		3:  {Logik: store.LogikFlurstueck, Typ: store.TypJaehrlich, Wert: 1200},
 		6:  {Logik: store.LogikWohneinheit, Typ: store.TypJaehrlich, Wert: 240},
@@ -232,7 +232,7 @@ func TestFixkosten_SummenKonsistenz(t *testing.T) {
 // filters.
 func TestFixkosten_UnabhaengigVomUmlagefaehigFlag(t *testing.T) {
 	db := openTestDB(t)
-	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]int64{1: 2, 2: 1}, map[int64]store.FixkostenPositionWert{
+	id := mustCreateFixkostenEingabe(t, db, "2026-09-01", map[int64]float64{1: 2, 2: 1}, map[int64]store.FixkostenPositionWert{
 		15: {Logik: store.LogikWohneinheit, Typ: store.TypMonatlich, Wert: 20}, // streaming
 	})
 

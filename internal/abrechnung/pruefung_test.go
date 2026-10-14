@@ -20,13 +20,13 @@ func vollePeriode(id int64, datum, monat string) *store.LatestPeriod {
 		Strompreis: store.Float64(0.22), FrischwasserPreis: store.Float64(1.46),
 		AbwasserPreis: store.Float64(4.87), EinspeisungPreis: store.Float64(0.08),
 		Readings:            readings,
-		PersonenByApartment: map[int64]int64{1: 2, 2: 1},
+		PersonenByApartment: map[int64]float64{1: 2, 2: 1},
 	}
 }
 
 // teilstandPeriode is an Ablesung with only the date and Abrechnungsmonat.
 func teilstandPeriode(id int64, datum, monat string) *store.LatestPeriod {
-	return &store.LatestPeriod{ID: id, ReadingDate: datum, Monat: monat, Readings: map[string]float64{}, PersonenByApartment: map[int64]int64{}}
+	return &store.LatestPeriod{ID: id, ReadingDate: datum, Monat: monat, Readings: map[string]float64{}, PersonenByApartment: map[int64]float64{}}
 }
 
 func monatKey(jahr int, m time.Month) string {

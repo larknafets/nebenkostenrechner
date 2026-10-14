@@ -8,8 +8,8 @@ package calc
 // apartment's fresh water share; waste water is assumed to equal the same
 // amount as fresh water.
 type WasserErgebnis struct {
-	PersonenW1 int64
-	PersonenW2 int64
+	PersonenW1 float64
+	PersonenW2 float64
 
 	WWAnteilW1 float64
 	WWAnteilW2 float64
@@ -32,7 +32,7 @@ type WasserErgebnis struct {
 type wasserEingabe struct {
 	FrischwasserPreis, AbwasserPreis float64
 	Verbrauch                        map[string]float64
-	PersonenW1, PersonenW2           int64
+	PersonenW1, PersonenW2           float64
 }
 
 // berechneWasser is the allocation itself, a pure function of its input.
@@ -41,7 +41,7 @@ func berechneWasser(in wasserEingabe) *WasserErgebnis {
 	p1, p2 := in.PersonenW1, in.PersonenW2
 
 	wwGesamt := verbrauch["wasser_warmwasseraufbereitung"]
-	ratioP1, ratioP2 := Ratio2(float64(p1), float64(p2))
+	ratioP1, ratioP2 := Ratio2(p1, p2)
 	wwAnteilW1 := wwGesamt * ratioP1
 	wwAnteilW2 := wwGesamt * ratioP2
 

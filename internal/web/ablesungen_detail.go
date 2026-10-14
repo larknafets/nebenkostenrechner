@@ -163,7 +163,7 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			Period        *store.LatestPeriod
 			AllPeriods    []periodListItem
 			Apartments    []store.Apartment
-			Personen      map[int64]int64
+			Personen      map[int64]float64
 			ZeitraumStart string
 			Meters        []meterZeile
 			Strom         *calc.StromErgebnis

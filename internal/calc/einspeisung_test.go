@@ -17,7 +17,7 @@ func mustCreatePeriodMitEinspeisung(t *testing.T, db *sql.DB, date string, einsp
 		AbwasserPreis:     store.Float64(4.87),
 		EinspeisungPreis:  store.Float64(einspeisungPreis),
 		Readings:          readings,
-		Personen:          map[int64]int64{1: 2, 2: 1},
+		Personen:          map[int64]float64{1: 2, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("create period %s: %v", date, err)

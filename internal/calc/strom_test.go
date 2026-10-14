@@ -53,7 +53,7 @@ func mustCreatePeriod(t *testing.T, db *sql.DB, date string, strompreis float64,
 		FrischwasserPreis: store.Float64(1.46),
 		AbwasserPreis:     store.Float64(4.87),
 		Readings:          readings,
-		Personen:          map[int64]int64{1: 2, 2: 1},
+		Personen:          map[int64]float64{1: 2, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("create period %s: %v", date, err)
