@@ -135,3 +135,60 @@ func TestHandleImportCSV_BadRowRejectedWithoutPersisting(t *testing.T) {
 		t.Errorf("len(periods) = %d, want 0 (bad row must abort whole import)", len(periods))
 	}
 }
+
+func csvRowMitPersonen(readingDate, p1, p2 string) string {
+	return strings.Replace(csvRow(readingDate, "100"), ";0,08;2;1;", ";0,08;"+p1+";"+p2+";", 1)
+}
+
+func TestHandleImportCSV_PersonenzahlDezimal(t *testing.T) {
+	db := openTestDB(t)
+	csvText := strings.Join(csvHeader, ";") + "\n" + csvRowMitPersonen("2026-06-01", "1,25", "0,5") + "\n"
+
+	w := httptest.NewRecorder()
+	handleImportCSV()(w, requestWithDB(csvUploadRequest(t, csvText), db))
+	if w.Code != http.StatusFound {
+		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())
+	}
+
+	// Export and re-import into a fresh database: values stay unchanged.
+	ex := httptest.NewRecorder()
+	handleExportCSV()(ex, requestWithDB(httptest.NewRequest(http.MethodGet, "/ablesungen/export.csv", nil), db))
+	db2 := openTestDB(t)
+	w2 := httptest.NewRecorder()
+	handleImportCSV()(w2, requestWithDB(csvUploadRequest(t, ex.Body.String()), db2))
+	if w2.Code != http.StatusFound {
+		t.Fatalf("re-import status = %d, want %d (body: %s)", w2.Code, http.StatusFound, w2.Body.String())
+	}
+	periods, err := store.AllPeriods(db2)
+	if err != nil || len(periods) != 1 {
+		t.Fatalf("AllPeriods = %v, %v, want 1 period", periods, err)
+	}
+	got, err := store.PersonenByApartment(db2, periods[0].ID)
+	if err != nil {
+		t.Fatalf("PersonenByApartment: %v", err)
+	}
+	if got[1] != 1.25 || got[2] != 0.5 {
+		t.Errorf("Personen = %v, want 1: 1.25, 2: 0.5", got)
+	}
+}
+
+func TestHandleImportCSV_PersonenzahlUngueltigBrichtAb(t *testing.T) {
+	for _, bad := range []string{"-1", "1,255"} {
+		db := openTestDB(t)
+		csvText := strings.Join(csvHeader, ";") + "\n" + csvRow("2026-05-01", "50") + "\n" +
+			csvRowMitPersonen("2026-06-01", bad, "1") + "\n"
+
+		w := httptest.NewRecorder()
+		handleImportCSV()(w, requestWithDB(csvUploadRequest(t, csvText), db))
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("%q: status = %d, want %d", bad, w.Code, http.StatusBadRequest)
+		}
+		if !strings.Contains(w.Body.String(), "Zeile 3") {
+			t.Errorf("%q: body = %q, want line number", bad, w.Body.String())
+		}
+		periods, _ := store.AllPeriods(db)
+		if len(periods) != 0 {
+			t.Errorf("%q: %d periods imported, want 0", bad, len(periods))
+		}
+	}
+}

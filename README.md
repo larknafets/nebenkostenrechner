@@ -61,6 +61,8 @@ Ebenso gibt es je Ablesung den Schalter **"PV-Gutschrift Wohnung 1"** (Formular,
 
 Im CSV-Export stehen die zwei Einzelzähler und die zwei Schalter als letzte vier Spalten (`strom_wallbox_wohnung1`, `strom_wallbox_wohnung2`, leer = nicht erfasst, sowie `wallbox_komplett_wohnung1` und `pv_gutschrift_wohnung1`, je 1 oder 0). Der Import akzeptiert sie als optional (fehlende oder leere Schalter-Zelle = 0), ältere Dateien ohne diese Spalten lassen sich weiter importieren.
 
+Personenzahlen (`personen_1`, `personen_2`) stehen in beiden CSV-Dateien (Ablesungen und Fixkosten) mit Komma, z. B. `1,25`; ein Punkt wird als Tausenderpunkt gelesen (`1.25` ergibt 125). Erlaubt sind 0 oder mehr mit höchstens 2 Nachkommastellen. Ein negativer Wert oder mehr Nachkommastellen brechen den Import mit der Zeilennummer ab, dabei wird nichts importiert. Alte CSV-Dateien mit ganzen Zahlen bleiben gültig.
+
 `strom_wallbox` fließt als dritte Zuteilungsstufe in die Strom-Netzbezug-Zuteilung ein (siehe unten) - sie wird vom nach Wohnung 2/Wärmepumpe verbleibenden Netzbezug abgezogen, bevor der Rest implizit Wohnung 1 zufällt. Kein eigener Wallbox-Tarif. Wie die Wallbox-Kosten auf die Wohnungen verteilt werden, steht unter "Strom" (Verteilung der Wallbox-Kosten).
 
 Visuelle Übersicht der Zählerverschachtelung (und der PV-Verrechnungskaskade): [docs/pv-verrechnung.md](docs/pv-verrechnung.md).
