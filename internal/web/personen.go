@@ -7,8 +7,8 @@ import (
 )
 
 // validatePersonenzahl is the single check for an occupant count: finite,
-// >= 0 (0 stays allowed) and at most 2 decimal places. The forms use it now,
-// the CSV import can call it later.
+// >= 0 (0 stays allowed) and at most 2 decimal places. The forms and both
+// CSV imports use it.
 func validatePersonenzahl(p float64) error {
 	if math.IsNaN(p) || math.IsInf(p, 0) {
 		return fmt.Errorf("Personenzahl muss eine Zahl sein")
