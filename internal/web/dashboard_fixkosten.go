@@ -148,8 +148,8 @@ type dashboardJahresCard struct {
 
 // buildJahresCard sums the given apartment's consumption and fixed costs
 // over every period/entry whose date falls in jahr, and (Ticket #75)
-// averages the apartment's occupant count over jahr's readings (1 decimal
-// place, 0 if the year has no reading yet).
+// averages the apartment's occupant count over jahr's readings (shown with
+// up to 2 decimal places, 0 if the year has no reading yet).
 func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apartmentFlurstueck float64, jahr int, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten) dashboardJahresCard {
 	var strom, wallbox, heizung, wasser, fix, gutschrift float64
 	var pvAnteilKWh float64
