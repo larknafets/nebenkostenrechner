@@ -71,8 +71,8 @@ func formatPeriodCSVRow(p *store.LatestPeriod) []string {
 		formatDecimalDE(store.OrZero(p.FrischwasserPreis)),
 		formatDecimalDE(store.OrZero(p.AbwasserPreis)),
 		formatDecimalDE(store.OrZero(p.EinspeisungPreis)),
-		formatDecimalDE(float64(p.PersonenByApartment[1])),
-		formatDecimalDE(float64(p.PersonenByApartment[2])),
+		formatDecimalDE(p.PersonenByApartment[1]),
+		formatDecimalDE(p.PersonenByApartment[2]),
 	)
 	for _, key := range store.OptionalMeterKeys {
 		if v, ok := p.Readings[key]; ok {
@@ -229,14 +229,14 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 		return importRow{}, fmt.Errorf("Zeile %d: ungültiger Preiswert", line)
 	}
 
-	personen := make(map[int64]int64, 2)
+	personen := make(map[int64]float64, 2)
 	for _, id := range [2]int64{1, 2} {
 		personenCol := fmt.Sprintf("personen_%d", id)
 		p, err := parseDecimalDE(cell(personenCol))
 		if err != nil {
 			return importRow{}, fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q", line, id, cell(personenCol))
 		}
-		personen[id] = int64(p)
+		personen[id] = p
 	}
 
 	input := store.PeriodInput{

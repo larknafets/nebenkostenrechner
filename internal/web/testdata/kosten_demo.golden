@@ -631,43 +631,43 @@ Abrechnung 2023 Wohnung 1:
       [0]:
         Monat: "2023-08-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [1]:
         Monat: "2023-09-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [2]:
         Monat: "2023-10-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [3]:
         Monat: "2023-11-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [4]:
         Monat: "2023-12-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
     Bezugsgroessen: [2]
       [0]:
         Schluessel: "Wohnfläche (m²)"
@@ -1312,43 +1312,43 @@ Abrechnung 2023 Wohnung 2:
       [0]:
         Monat: "2023-08-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [1]:
         Monat: "2023-09-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [2]:
         Monat: "2023-10-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [3]:
         Monat: "2023-11-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [4]:
         Monat: "2023-12-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
     Bezugsgroessen: [2]
       [0]:
         Schluessel: "Wohnfläche (m²)"
@@ -2448,99 +2448,99 @@ Abrechnung 2024 Wohnung 1:
       [0]:
         Monat: "2024-01-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [1]:
         Monat: "2024-02-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [2]:
         Monat: "2024-03-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [3]:
         Monat: "2024-04-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [4]:
         Monat: "2024-05-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [5]:
         Monat: "2024-06-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 1
+          1: 2.00
+          2: 1.00
       [6]:
         Monat: "2024-07-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 1
+          1: 2.00
+          2: 1.00
       [7]:
         Monat: "2024-08-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 1
+          1: 2.00
+          2: 1.00
       [8]:
         Monat: "2024-09-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 1
+          1: 2.00
+          2: 1.00
       [9]:
         Monat: "2024-10-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 1
+          1: 2.00
+          2: 1.00
       [10]:
         Monat: "2024-11-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [11]:
         Monat: "2024-12-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
     Bezugsgroessen: [2]
       [0]:
         Schluessel: "Wohnfläche (m²)"
@@ -3642,99 +3642,99 @@ Abrechnung 2024 Wohnung 2:
       [0]:
         Monat: "2024-01-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [1]:
         Monat: "2024-02-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [2]:
         Monat: "2024-03-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [3]:
         Monat: "2024-04-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [4]:
         Monat: "2024-05-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [5]:
         Monat: "2024-06-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 1
+          1: 2.00
+          2: 1.00
       [6]:
         Monat: "2024-07-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 1
+          1: 2.00
+          2: 1.00
       [7]:
         Monat: "2024-08-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 1
+          1: 2.00
+          2: 1.00
       [8]:
         Monat: "2024-09-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 1
+          1: 2.00
+          2: 1.00
       [9]:
         Monat: "2024-10-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 1
+          1: 2.00
+          2: 1.00
       [10]:
         Monat: "2024-11-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [11]:
         Monat: "2024-12-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
     Bezugsgroessen: [2]
       [0]:
         Schluessel: "Wohnfläche (m²)"
@@ -4966,99 +4966,99 @@ Abrechnung 2025 Wohnung 1:
       [0]:
         Monat: "2025-01-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [1]:
         Monat: "2025-02-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [2]:
         Monat: "2025-03-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [3]:
         Monat: "2025-04-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [4]:
         Monat: "2025-05-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [5]:
         Monat: "2025-06-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [6]:
         Monat: "2025-07-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [7]:
         Monat: "2025-08-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [8]:
         Monat: "2025-09-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [9]:
         Monat: "2025-10-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [10]:
         Monat: "2025-11-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 1
+          1: 2.00
+          2: 1.00
       [11]:
         Monat: "2025-12-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 1
+          1: 2.00
+          2: 1.00
     Bezugsgroessen: [2]
       [0]:
         Schluessel: "Wohnfläche (m²)"
@@ -6292,99 +6292,99 @@ Abrechnung 2025 Wohnung 2:
       [0]:
         Monat: "2025-01-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [1]:
         Monat: "2025-02-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [2]:
         Monat: "2025-03-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [3]:
         Monat: "2025-04-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [4]:
         Monat: "2025-05-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [5]:
         Monat: "2025-06-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [6]:
         Monat: "2025-07-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [7]:
         Monat: "2025-08-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [8]:
         Monat: "2025-09-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [9]:
         Monat: "2025-10-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
       [10]:
         Monat: "2025-11-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 1
+          1: 2.00
+          2: 1.00
       [11]:
         Monat: "2025-12-01"
         Fixkosten: {2}
-          1: 2
-          2: 2
+          1: 2.00
+          2: 2.00
         Ablesung: {2}
-          1: 2
-          2: 1
+          1: 2.00
+          2: 1.00
     Bezugsgroessen: [2]
       [0]:
         Schluessel: "Wohnfläche (m²)"
@@ -6537,8 +6537,8 @@ Dashboard:
           WallboxEinzelSumme: 122.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 9.30
@@ -6570,8 +6570,8 @@ Dashboard:
           Ertrag: 19.80
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [1]:
       ReadingDate: "2026-09-01"
       Monat: "2026-09-01"
@@ -6597,8 +6597,8 @@ Dashboard:
           WallboxEinzelSumme: 118.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 10.20
@@ -6630,8 +6630,8 @@ Dashboard:
           Ertrag: 35.88
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [2]:
       ReadingDate: "2026-08-01"
       Monat: "2026-08-01"
@@ -6657,8 +6657,8 @@ Dashboard:
           WallboxEinzelSumme: 115.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 11.10
@@ -6690,8 +6690,8 @@ Dashboard:
           Ertrag: 51.96
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [3]:
       ReadingDate: "2026-07-01"
       Monat: "2026-07-01"
@@ -6717,8 +6717,8 @@ Dashboard:
           WallboxEinzelSumme: 115.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 11.55
@@ -6750,8 +6750,8 @@ Dashboard:
           Ertrag: 60.00
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [4]:
       ReadingDate: "2026-06-01"
       Monat: "2026-06-01"
@@ -6777,8 +6777,8 @@ Dashboard:
           WallboxEinzelSumme: 115.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 11.55
@@ -6810,8 +6810,8 @@ Dashboard:
           Ertrag: 60.00
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [5]:
       ReadingDate: "2026-05-01"
       Monat: "2026-05-01"
@@ -6837,8 +6837,8 @@ Dashboard:
           WallboxEinzelSumme: 118.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 11.10
@@ -6870,8 +6870,8 @@ Dashboard:
           Ertrag: 51.96
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [6]:
       ReadingDate: "2026-04-01"
       Monat: "2026-04-01"
@@ -6897,8 +6897,8 @@ Dashboard:
           WallboxEinzelSumme: 122.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 10.20
@@ -6930,8 +6930,8 @@ Dashboard:
           Ertrag: 35.88
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [7]:
       ReadingDate: "2026-03-01"
       Monat: "2026-03-01"
@@ -6957,8 +6957,8 @@ Dashboard:
           WallboxEinzelSumme: 127.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 9.30
@@ -6990,8 +6990,8 @@ Dashboard:
           Ertrag: 19.80
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [8]:
       ReadingDate: "2026-02-01"
       Monat: "2026-02-01"
@@ -7017,8 +7017,8 @@ Dashboard:
           WallboxEinzelSumme: 135.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 8.79
@@ -7050,8 +7050,8 @@ Dashboard:
           Ertrag: 10.69
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [9]:
       ReadingDate: "2026-01-01"
       Monat: "2026-01-01"
@@ -7077,8 +7077,8 @@ Dashboard:
           WallboxEinzelSumme: 135.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 1
+          PersonenW1: 2.00
+          PersonenW2: 1.00
           WWAnteilW1: 1.67
           WWAnteilW2: 0.83
           FrischwasserW1: 9.06
@@ -7110,8 +7110,8 @@ Dashboard:
           Ertrag: 8.01
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 1
+        1: 2.00
+        2: 1.00
     [10]:
       ReadingDate: "2025-12-01"
       Monat: "2025-12-01"
@@ -7137,8 +7137,8 @@ Dashboard:
           WallboxEinzelSumme: 135.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 1
+          PersonenW1: 2.00
+          PersonenW2: 1.00
           WWAnteilW1: 1.67
           WWAnteilW2: 0.83
           FrischwasserW1: 9.06
@@ -7170,8 +7170,8 @@ Dashboard:
           Ertrag: 8.01
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 1
+        1: 2.00
+        2: 1.00
     [11]:
       ReadingDate: "2025-11-01"
       Monat: "2025-11-01"
@@ -7197,8 +7197,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 1
+          PersonenW1: 2.00
+          PersonenW2: 1.00
           WWAnteilW1: 1.67
           WWAnteilW2: 0.83
           FrischwasserW1: 9.21
@@ -7230,8 +7230,8 @@ Dashboard:
           Ertrag: 10.69
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 1
+        1: 2.00
+        2: 1.00
     [12]:
       ReadingDate: "2025-10-01"
       Monat: "2025-10-01"
@@ -7257,8 +7257,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 9.30
@@ -7290,8 +7290,8 @@ Dashboard:
           Ertrag: 19.80
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [13]:
       ReadingDate: "2025-09-01"
       Monat: "2025-09-01"
@@ -7317,8 +7317,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 10.20
@@ -7350,8 +7350,8 @@ Dashboard:
           Ertrag: 35.88
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [14]:
       ReadingDate: "2025-08-01"
       Monat: "2025-08-01"
@@ -7377,8 +7377,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 11.10
@@ -7410,8 +7410,8 @@ Dashboard:
           Ertrag: 51.96
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [15]:
       ReadingDate: "2025-07-01"
       Monat: "2025-07-01"
@@ -7437,8 +7437,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 11.55
@@ -7470,8 +7470,8 @@ Dashboard:
           Ertrag: 60.00
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [16]:
       ReadingDate: "2025-06-01"
       Monat: "2025-06-01"
@@ -7497,8 +7497,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 11.55
@@ -7530,8 +7530,8 @@ Dashboard:
           Ertrag: 60.00
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [17]:
       ReadingDate: "2025-05-01"
       Monat: "2025-05-01"
@@ -7557,8 +7557,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 11.10
@@ -7590,8 +7590,8 @@ Dashboard:
           Ertrag: 51.96
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [18]:
       ReadingDate: "2025-04-01"
       Monat: "2025-04-01"
@@ -7617,8 +7617,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 10.20
@@ -7650,8 +7650,8 @@ Dashboard:
           Ertrag: 35.88
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [19]:
       ReadingDate: "2025-03-01"
       Monat: "2025-03-01"
@@ -7677,8 +7677,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 9.30
@@ -7710,8 +7710,8 @@ Dashboard:
           Ertrag: 19.80
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [20]:
       ReadingDate: "2025-02-01"
       Monat: "2025-02-01"
@@ -7737,8 +7737,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 8.79
@@ -7770,8 +7770,8 @@ Dashboard:
           Ertrag: 10.69
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [21]:
       ReadingDate: "2025-01-01"
       Monat: "2025-01-01"
@@ -7797,8 +7797,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 8.64
@@ -7830,8 +7830,8 @@ Dashboard:
           Ertrag: 8.01
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [22]:
       ReadingDate: "2024-12-01"
       Monat: "2024-12-01"
@@ -7857,8 +7857,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 8.64
@@ -7890,8 +7890,8 @@ Dashboard:
           Ertrag: 8.01
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [23]:
       ReadingDate: "2024-11-01"
       Monat: "2024-11-01"
@@ -7917,8 +7917,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 8.79
@@ -7950,8 +7950,8 @@ Dashboard:
           Ertrag: 10.69
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [24]:
       ReadingDate: "2024-10-01"
       Monat: "2024-10-01"
@@ -7977,8 +7977,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 1
+          PersonenW1: 2.00
+          PersonenW2: 1.00
           WWAnteilW1: 1.67
           WWAnteilW2: 0.83
           FrischwasserW1: 9.72
@@ -8010,8 +8010,8 @@ Dashboard:
           Ertrag: 19.80
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 1
+        1: 2.00
+        2: 1.00
     [25]:
       ReadingDate: "2024-09-01"
       Monat: "2024-09-01"
@@ -8037,8 +8037,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 1
+          PersonenW1: 2.00
+          PersonenW2: 1.00
           WWAnteilW1: 1.67
           WWAnteilW2: 0.83
           FrischwasserW1: 10.62
@@ -8070,8 +8070,8 @@ Dashboard:
           Ertrag: 35.88
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 1
+        1: 2.00
+        2: 1.00
     [26]:
       ReadingDate: "2024-08-01"
       Monat: "2024-08-01"
@@ -8097,8 +8097,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 1
+          PersonenW1: 2.00
+          PersonenW2: 1.00
           WWAnteilW1: 1.67
           WWAnteilW2: 0.83
           FrischwasserW1: 11.52
@@ -8130,8 +8130,8 @@ Dashboard:
           Ertrag: 51.96
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 1
+        1: 2.00
+        2: 1.00
     [27]:
       ReadingDate: "2024-07-01"
       Monat: "2024-07-01"
@@ -8157,8 +8157,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 1
+          PersonenW1: 2.00
+          PersonenW2: 1.00
           WWAnteilW1: 1.67
           WWAnteilW2: 0.83
           FrischwasserW1: 11.97
@@ -8190,8 +8190,8 @@ Dashboard:
           Ertrag: 60.00
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 1
+        1: 2.00
+        2: 1.00
     [28]:
       ReadingDate: "2024-06-01"
       Monat: "2024-06-01"
@@ -8217,8 +8217,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 1
+          PersonenW1: 2.00
+          PersonenW2: 1.00
           WWAnteilW1: 1.67
           WWAnteilW2: 0.83
           FrischwasserW1: 11.97
@@ -8250,8 +8250,8 @@ Dashboard:
           Ertrag: 60.00
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 1
+        1: 2.00
+        2: 1.00
     [29]:
       ReadingDate: "2024-05-01"
       Monat: "2024-05-01"
@@ -8277,8 +8277,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 11.10
@@ -8310,8 +8310,8 @@ Dashboard:
           Ertrag: 51.96
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [30]:
       ReadingDate: "2024-04-01"
       Monat: "2024-04-01"
@@ -8337,8 +8337,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 10.20
@@ -8370,8 +8370,8 @@ Dashboard:
           Ertrag: 35.88
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [31]:
       ReadingDate: "2024-03-01"
       Monat: "2024-03-01"
@@ -8397,8 +8397,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 9.30
@@ -8430,8 +8430,8 @@ Dashboard:
           Ertrag: 19.80
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [32]:
       ReadingDate: "2024-02-01"
       Monat: "2024-02-01"
@@ -8457,8 +8457,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 8.79
@@ -8490,8 +8490,8 @@ Dashboard:
           Ertrag: 10.69
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [33]:
       ReadingDate: "2024-01-01"
       Monat: "2024-01-01"
@@ -8517,8 +8517,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 8.64
@@ -8550,8 +8550,8 @@ Dashboard:
           Ertrag: 8.01
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [34]:
       ReadingDate: "2023-12-01"
       Monat: "2023-12-01"
@@ -8577,8 +8577,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 8.64
@@ -8610,8 +8610,8 @@ Dashboard:
           Ertrag: 8.01
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [35]:
       ReadingDate: "2023-11-01"
       Monat: "2023-11-01"
@@ -8637,8 +8637,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 8.79
@@ -8670,8 +8670,8 @@ Dashboard:
           Ertrag: 10.69
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [36]:
       ReadingDate: "2023-10-01"
       Monat: "2023-10-01"
@@ -8697,8 +8697,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 9.30
@@ -8730,8 +8730,8 @@ Dashboard:
           Ertrag: 19.80
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
     [37]:
       ReadingDate: "2023-09-01"
       Monat: "2023-09-01"
@@ -8757,8 +8757,8 @@ Dashboard:
           WallboxEinzelSumme: 0.00
           WallboxEinzelAuffaellig: false
         Wasser:
-          PersonenW1: 2
-          PersonenW2: 2
+          PersonenW1: 2.00
+          PersonenW2: 2.00
           WWAnteilW1: 1.25
           WWAnteilW2: 1.25
           FrischwasserW1: 10.20
@@ -8790,8 +8790,8 @@ Dashboard:
           Ertrag: 35.88
         PVGutschriftW1: 0.00
       Personen: {2}
-        1: 2
-        2: 2
+        1: 2.00
+        2: 2.00
   FixkostenListe: [39]
     [0]:
       Monat: "2026-10-01"

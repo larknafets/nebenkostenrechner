@@ -120,8 +120,8 @@ type HeizungMonat struct {
 // (e.g. no Fixkosten-Eingabe in the month of the first Ablesung).
 type PersonenMonat struct {
 	Monat     string
-	Fixkosten map[int64]int64
-	Ablesung  map[int64]int64
+	Fixkosten map[int64]float64
+	Ablesung  map[int64]float64
 }
 
 // MonatZeile is one Abrechnungsmonat of the Monatsverlauf (Anlage
@@ -808,7 +808,7 @@ func bezugsgroessen(apartments []store.Apartment) []Bezugsgroesse {
 // the warm water split). With several Ablesungen in a month the latest one
 // is shown.
 func personenMonate(monate []string, fixkosten map[string]calc.FixkostenMonat, periods []*store.LatestPeriod, apartments []store.Apartment) []PersonenMonat {
-	ablesung := map[string]map[int64]int64{}
+	ablesung := map[string]map[int64]float64{}
 	spaetestes := map[string]string{}
 	for _, p := range periods {
 		if p.Teilstand(apartments).IstTeilstand {

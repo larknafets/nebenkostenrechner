@@ -92,7 +92,7 @@ func TestBerechneEinspeisung(t *testing.T) {
 func TestBerechneFixkosten(t *testing.T) {
 	got := berechneFixkosten(fixkostenEingabe{
 		Eingabe: &store.FixkostenEingabeDetails{
-			Personen: map[int64]int64{1: 3, 2: 1},
+			Personen: map[int64]float64{1: 3, 2: 1},
 			Werte: map[int64]store.FixkostenPositionWert{
 				1: {Logik: store.LogikWohnung1, Typ: store.TypJaehrlich, Wert: 1200},
 				2: {Logik: store.LogikWohneinheit, Typ: store.TypMonatlich, Wert: 60},

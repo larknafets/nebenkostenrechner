@@ -27,7 +27,7 @@ func vollePeriode(date string, extra map[string]float64) PeriodInput {
 		AbwasserPreis:     Float64(4.87),
 		EinspeisungPreis:  Float64(0.08),
 		Readings:          r,
-		Personen:          map[int64]int64{1: 2, 2: 1},
+		Personen:          map[int64]float64{1: 2, 2: 1},
 	}
 }
 

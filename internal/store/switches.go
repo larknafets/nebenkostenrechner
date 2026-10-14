@@ -137,7 +137,7 @@ func selectPeriodSQL(where string) string {
 func scanPeriodRow(rows *sql.Rows) (*LatestPeriod, error) {
 	p := &LatestPeriod{
 		Readings:            map[string]float64{},
-		PersonenByApartment: map[int64]int64{},
+		PersonenByApartment: map[int64]float64{},
 	}
 	flags := make([]int, len(Switches))
 	dest := []any{&p.ID, &p.ReadingDate, &p.Monat, &p.Strompreis, &p.FrischwasserPreis, &p.AbwasserPreis, &p.EinspeisungPreis}

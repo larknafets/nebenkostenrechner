@@ -85,7 +85,7 @@ type FixkostenPositionWert struct {
 // FixkostenInput is one monthly Fixkosten-Eingabe, ready to be persisted.
 type FixkostenInput struct {
 	Monat    string                          // YYYY-MM-01, same convention as PeriodInput.ReadingDate
-	Personen map[int64]int64                 // apartment id -> Personenzahl - own to Fixkosten, not period_occupancy (Issue #60 Story 8)
+	Personen map[int64]float64               // apartment id -> Personenzahl - own to Fixkosten, not period_occupancy (Issue #60 Story 8)
 	Werte    map[int64]FixkostenPositionWert // kostenposition id -> Logik/Typ/Wert for this Eingabe
 	Abschlag map[int64]float64               // apartment id -> Nebenkostenabschlag value - not a Kostenposition, covers Fixkosten AND consumption costs together, see nebenkosten_abschlaege
 }
@@ -336,7 +336,7 @@ func AllFixkostenEingaben(db *sql.DB) ([]FixkostenEingabeSummary, error) {
 type FixkostenEingabeDetails struct {
 	ID       int64
 	Monat    string
-	Personen map[int64]int64                 // apartment id -> Personenzahl
+	Personen map[int64]float64               // apartment id -> Personenzahl
 	Werte    map[int64]FixkostenPositionWert // kostenposition id -> Logik/Typ/Wert
 	Abschlag map[int64]float64               // apartment id -> Nebenkostenabschlag-Wert
 }
@@ -374,7 +374,7 @@ func AllFixkostenEingabenDetails(db *sql.DB) ([]*FixkostenEingabeDetails, error)
 	var out []*FixkostenEingabeDetails
 	for rows.Next() {
 		f := &FixkostenEingabeDetails{
-			Personen: map[int64]int64{},
+			Personen: map[int64]float64{},
 			Werte:    map[int64]FixkostenPositionWert{},
 			Abschlag: map[int64]float64{},
 		}
@@ -413,7 +413,8 @@ func AllFixkostenEingabenDetails(db *sql.DB) ([]*FixkostenEingabeDetails, error)
 	}
 	defer personenRows.Close()
 	for personenRows.Next() {
-		var eingabeID, apartmentID, personen int64
+		var eingabeID, apartmentID int64
+		var personen float64
 		if err := personenRows.Scan(&eingabeID, &apartmentID, &personen); err != nil {
 			return nil, fmt.Errorf("scan fixkosten personen: %w", err)
 		}

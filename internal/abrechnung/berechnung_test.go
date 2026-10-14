@@ -12,7 +12,7 @@ func TestZaehlerstaende_UntermonatigeAblesungenEigeneZeilenTeilstandFehlt(t *tes
 	meters := []store.Meter{{Key: "strom_gesamt", Label: "Stromzähler Gesamt", Unit: "kWh"}}
 	preis := store.Float64(0.3)
 	ablesung := func(id int64, datum, monat string, stand float64, vollstaendig bool) *store.LatestPeriod {
-		p := &store.LatestPeriod{ID: id, ReadingDate: datum, Monat: monat, Readings: map[string]float64{}, PersonenByApartment: map[int64]int64{1: 1, 2: 1}}
+		p := &store.LatestPeriod{ID: id, ReadingDate: datum, Monat: monat, Readings: map[string]float64{}, PersonenByApartment: map[int64]float64{1: 1, 2: 1}}
 		if vollstaendig {
 			p.Strompreis, p.FrischwasserPreis, p.AbwasserPreis, p.EinspeisungPreis = preis, preis, preis, preis
 		}

@@ -22,7 +22,7 @@ func TestWasser_PersonenanteilUndKosten(t *testing.T) {
 			"wasser_wohnung2":               30,
 			"wasser_warmwasseraufbereitung": 20,
 		}),
-		Personen: map[int64]int64{1: 1, 2: 1},
+		Personen: map[int64]float64{1: 1, 2: 1},
 	})
 	if err != nil {
 		t.Fatalf("create period: %v", err)
@@ -75,7 +75,7 @@ func TestWasser_KeinePersonen_FaelltAufHaelftigeVerteilungZurueck(t *testing.T) 
 			"wasser_wohnung2":               30,
 			"wasser_warmwasseraufbereitung": 20,
 		}),
-		Personen: map[int64]int64{1: 0, 2: 0},
+		Personen: map[int64]float64{1: 0, 2: 0},
 	})
 	if err != nil {
 		t.Fatalf("create period: %v", err)
