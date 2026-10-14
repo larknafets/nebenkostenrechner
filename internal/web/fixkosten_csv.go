@@ -141,12 +141,9 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 	abschlag := make(map[int64]float64, 2)
 	for _, id := range [2]int64{1, 2} {
 		personenCol := fmt.Sprintf("personen_%d", id)
-		p, err := parseDecimalDE(cell(personenCol))
-		if err == nil {
-			err = validatePersonenzahl(p)
-		}
+		p, err := parseImportPersonenzahl(cell(personenCol), line, id)
 		if err != nil {
-			return store.FixkostenInput{}, fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q", line, id, cell(personenCol))
+			return store.FixkostenInput{}, err
 		}
 		personen[id] = p
 
