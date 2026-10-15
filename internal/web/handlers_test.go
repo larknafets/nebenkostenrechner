@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -700,13 +701,15 @@ func TestBuildJahresCard(t *testing.T) {
 		Heizung: &calc.HeizungErgebnis{},
 	}
 	periods := []periodKosten{
-		{ReadingDate: "2026-09-01", Monat: "2026-09-01", K: verbrauch2026, Personen: map[int64]float64{1: 3, 2: 2}},
-		{ReadingDate: "2026-08-01", Monat: "2026-08-01", K: verbrauch2026, Personen: map[int64]float64{1: 3, 2: 1}},
-		{ReadingDate: "2025-09-01", Monat: "2025-09-01", K: verbrauch2025, Personen: map[int64]float64{1: 3, 2: 99}}, // anderes Jahr, muss ausgeschlossen werden
+		{ReadingDate: "2026-09-01", Monat: "2026-09-01", K: verbrauch2026},
+		{ReadingDate: "2026-08-01", Monat: "2026-08-01", K: verbrauch2026},
+		{ReadingDate: "2025-09-01", Monat: "2025-09-01", K: verbrauch2025},
 	}
 	fixkostenListe := []fixkostenKosten{
-		{Monat: "2026-09-01", Erg: &calc.FixkostenErgebnis{KostenW1: 15, KostenW2: 25}},
-		{Monat: "2025-09-01", Erg: &calc.FixkostenErgebnis{KostenW1: 999, KostenW2: 999}}, // anderes Jahr
+		{Monat: "2026-09-01", Erg: &calc.FixkostenErgebnis{KostenW1: 15, KostenW2: 25}, Personen: map[int64]float64{1: 3, 2: 2}},
+		{Monat: "2026-08-01", Erg: &calc.FixkostenErgebnis{}, Personen: map[int64]float64{1: 3, 2: 1.25}},
+		{Monat: "2026-07-01", Erg: &calc.FixkostenErgebnis{}, Personen: map[int64]float64{1: 3, 2: 1}},
+		{Monat: "2025-09-01", Erg: &calc.FixkostenErgebnis{KostenW1: 999, KostenW2: 999}, Personen: map[int64]float64{1: 3, 2: 99}}, // anderes Jahr
 	}
 
 	card := buildJahresCard(2, "Wohnung 2", 86, 120.5, 2026, periods, fixkostenListe)
@@ -725,8 +728,9 @@ func TestBuildJahresCard(t *testing.T) {
 	if card.ApartmentFlurstueck != 120.5 {
 		t.Errorf("ApartmentFlurstueck = %v, want 120.5", card.ApartmentFlurstueck)
 	}
-	if card.PersonenSchnitt != 1.5 {
-		t.Errorf("PersonenSchnitt = %v, want 1.5 (Schnitt aus 2 und 1, 2025er Periode ausgeschlossen)", card.PersonenSchnitt)
+	// Monatsmittel der Fixkosten-Eingaben: (2 + 1,25 + 1) / 3, 2025er ausgeschlossen
+	if math.Abs(card.PersonenSchnitt-1.4167) > 0.0001 {
+		t.Errorf("PersonenSchnitt = %v, want 1.4167 (Monatsmittel aus 2, 1,25 und 1, 2025er Eingabe ausgeschlossen)", card.PersonenSchnitt)
 	}
 }
 
@@ -758,7 +762,7 @@ func TestBuildJahresCard_PVAnteilKWh(t *testing.T) {
 func TestBuildJahresCard_PersonenSchnittOhneAblesung(t *testing.T) {
 	card := buildJahresCard(1, "Wohnung 1", 116.23, 200, 2026, nil, nil)
 	if card.PersonenSchnitt != 0 {
-		t.Errorf("PersonenSchnitt = %v, want 0 (keine Ablesung im Jahr)", card.PersonenSchnitt)
+		t.Errorf("PersonenSchnitt = %v, want 0 (keine Fixkosten-Eingabe im Jahr)", card.PersonenSchnitt)
 	}
 }
 
@@ -1134,20 +1138,20 @@ func baseReadingsForImportTest(overrides map[string]float64) map[string]float64 
 
 func TestPeriodListItems(t *testing.T) {
 	periods := []store.PeriodSummary{
-		{ID: 3, ReadingDate: "2026-08-01"},
-		{ID: 2, ReadingDate: "2026-07-01"},
-		{ID: 1, ReadingDate: "2026-06-01"},
+		{ID: 3, ReadingDate: "2026-08-15", Monat: "2026-08-01"},
+		{ID: 2, ReadingDate: "2026-07-01", Monat: "2026-07-01"},
+		{ID: 1, ReadingDate: "2026-06-01", Monat: "2026-06-01"},
 	}
 
 	items := periodListItems(periods)
 	if len(items) != 3 {
 		t.Fatalf("len(items) = %d, want 3", len(items))
 	}
-	if items[0].Label != "01.08.2026 (01.07.2026–01.08.2026)" {
-		t.Errorf("items[0].Label = %q, want %q", items[0].Label, "01.08.2026 (01.07.2026–01.08.2026)")
+	if items[0].Label != "August 2026 (15.08.2026)" {
+		t.Errorf("items[0].Label = %q, want %q", items[0].Label, "August 2026 (15.08.2026)")
 	}
-	if items[2].Label != "01.06.2026 (keine Vorperiode)" {
-		t.Errorf("items[2].Label (oldest) = %q, want %q", items[2].Label, "01.06.2026 (keine Vorperiode)")
+	if items[2].Label != "Juni 2026 (01.06.2026)" {
+		t.Errorf("items[2].Label (oldest) = %q, want %q", items[2].Label, "Juni 2026 (01.06.2026)")
 	}
 	if items[0].ID != 3 || items[2].ID != 1 {
 		t.Errorf("ids not preserved: %+v", items)

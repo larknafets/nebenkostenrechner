@@ -33,6 +33,10 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Verbesserungen
 
+- Ablesung: Die Auswahl "Andere Ablesung anzeigen" zeigt jetzt den zugeordneten Monat und in Klammern das Ablesedatum (z. B. "August 2026 (15.08.2026)")
+
 ## Fehlerkorrekturen
+
+- Dashboard: Der Personen-Schnitt der Jahressumme ist jetzt das Mittel der Personenzahlen aller Fixkosten-Eingaben des Jahres (ein Wert je Monat, z. B. 1,25). Vorher kam er aus den Ablesungen und zählte jede Ablesung gleich, auch mehrere im selben Monat
 
 ## Wartung

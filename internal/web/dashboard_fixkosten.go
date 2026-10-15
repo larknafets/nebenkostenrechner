@@ -50,6 +50,7 @@ type fixkostenKosten struct {
 	Monat    string
 	Erg      *calc.FixkostenErgebnis
 	Abschlag map[int64]float64 // apartment id -> utility advance payment value, nil/missing entry = no value recorded
+	Personen map[int64]float64 // apartment id -> occupant count of the Fixkosten-Eingabe (one per Monat)
 }
 
 // alleFixkostenKosten returns every computable fixed-costs entry's result,
@@ -62,7 +63,7 @@ func alleFixkostenKosten(db *sql.DB) ([]fixkostenKosten, error) {
 	neueste := reihe.Neueste()
 	out := make([]fixkostenKosten, 0, len(neueste))
 	for _, m := range neueste {
-		out = append(out, fixkostenKosten{Monat: m.Eingabe.Monat, Erg: m.Ergebnis, Abschlag: m.Eingabe.Abschlag})
+		out = append(out, fixkostenKosten{Monat: m.Eingabe.Monat, Erg: m.Ergebnis, Abschlag: m.Eingabe.Abschlag, Personen: m.Eingabe.Personen})
 	}
 	return out, nil
 }
@@ -148,8 +149,9 @@ type dashboardJahresCard struct {
 
 // buildJahresCard sums the given apartment's consumption and fixed costs
 // over every period/entry whose date falls in jahr, and (Ticket #75)
-// averages the apartment's occupant count over jahr's readings (shown with
-// up to 2 decimal places, 0 if the year has no reading yet).
+// averages the apartment's occupant count over jahr's Fixkosten-Eingaben
+// (exactly one per Monat, so each month weighs the same; shown with up to 2
+// decimal places, 0 if the year has no entry yet).
 func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apartmentFlurstueck float64, jahr int, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten) dashboardJahresCard {
 	var strom, wallbox, heizung, wasser, fix, gutschrift float64
 	var pvAnteilKWh float64
@@ -176,14 +178,6 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 		if apartmentID == 2 && pk.K.Strom != nil {
 			pvAnteilKWh += pk.K.Strom.PVAnteilW2KWh
 		}
-		if p, ok := pk.Personen[apartmentID]; ok {
-			personenSumme += p
-			personenAnzahl++
-		}
-	}
-	var personenSchnitt float64
-	if personenAnzahl > 0 {
-		personenSchnitt = personenSumme / float64(personenAnzahl)
 	}
 	for _, fk := range fixkostenListe {
 		y, ok := store.Abrechnungsmonat(fk.Monat).Jahr()
@@ -191,6 +185,14 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 			continue
 		}
 		fix += fk.Erg.KostenFor(apartmentID)
+		if p, ok := fk.Personen[apartmentID]; ok {
+			personenSumme += p
+			personenAnzahl++
+		}
+	}
+	var personenSchnitt float64
+	if personenAnzahl > 0 {
+		personenSchnitt = personenSumme / float64(personenAnzahl)
 	}
 	strom, wallbox, heizung, wasser, fix, gutschrift = calc.Round2(strom), calc.Round2(wallbox), calc.Round2(heizung), calc.Round2(wasser), calc.Round2(fix), calc.Round2(gutschrift)
 	verbrauch := calc.Round2(strom + wallbox + heizung + wasser)
