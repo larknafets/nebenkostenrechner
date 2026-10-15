@@ -86,15 +86,12 @@ func kategorien(apartmentID int64, k calc.Kosten) []kategorie {
 // periodKosten is one period's already-computed calc.Kosten, for the yearly-
 // totals cards and Monatsverlauf (monthly history). ReadingDate stays in
 // its raw "YYYY-MM-DD" form (not pre-formatted) since downstream needs it
-// for both the month label and calendar-year grouping. Personen is this
-// period's occupant count per apartment (Ticket #75's average occupant
-// count averages this across a year's periods).
+// for both the month label and calendar-year grouping.
 type periodKosten struct {
 	ReadingDate string
 	// Monat is this period's billing month (Issue #86, "YYYY-MM-01") -
 	// the key groupKostenByMonat and the yearly cards group/filter by,
 	// distinct from ReadingDate which stays the exact reading date.
-	Monat    string
-	K        calc.Kosten
-	Personen map[int64]float64
+	Monat string
+	K     calc.Kosten
 }

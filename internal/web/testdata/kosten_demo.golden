@@ -6569,9 +6569,6 @@ Dashboard:
           EinspeisungKWh: 247.50
           Ertrag: 19.80
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [1]:
       ReadingDate: "2026-09-01"
       Monat: "2026-09-01"
@@ -6629,9 +6626,6 @@ Dashboard:
           EinspeisungKWh: 448.50
           Ertrag: 35.88
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [2]:
       ReadingDate: "2026-08-01"
       Monat: "2026-08-01"
@@ -6689,9 +6683,6 @@ Dashboard:
           EinspeisungKWh: 649.50
           Ertrag: 51.96
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [3]:
       ReadingDate: "2026-07-01"
       Monat: "2026-07-01"
@@ -6749,9 +6740,6 @@ Dashboard:
           EinspeisungKWh: 750.00
           Ertrag: 60.00
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [4]:
       ReadingDate: "2026-06-01"
       Monat: "2026-06-01"
@@ -6809,9 +6797,6 @@ Dashboard:
           EinspeisungKWh: 750.00
           Ertrag: 60.00
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [5]:
       ReadingDate: "2026-05-01"
       Monat: "2026-05-01"
@@ -6869,9 +6854,6 @@ Dashboard:
           EinspeisungKWh: 649.50
           Ertrag: 51.96
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [6]:
       ReadingDate: "2026-04-01"
       Monat: "2026-04-01"
@@ -6929,9 +6911,6 @@ Dashboard:
           EinspeisungKWh: 448.50
           Ertrag: 35.88
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [7]:
       ReadingDate: "2026-03-01"
       Monat: "2026-03-01"
@@ -6989,9 +6968,6 @@ Dashboard:
           EinspeisungKWh: 247.50
           Ertrag: 19.80
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [8]:
       ReadingDate: "2026-02-01"
       Monat: "2026-02-01"
@@ -7049,9 +7025,6 @@ Dashboard:
           EinspeisungKWh: 133.60
           Ertrag: 10.69
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [9]:
       ReadingDate: "2026-01-01"
       Monat: "2026-01-01"
@@ -7109,9 +7082,6 @@ Dashboard:
           EinspeisungKWh: 100.10
           Ertrag: 8.01
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 1.00
     [10]:
       ReadingDate: "2025-12-01"
       Monat: "2025-12-01"
@@ -7169,9 +7139,6 @@ Dashboard:
           EinspeisungKWh: 100.10
           Ertrag: 8.01
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 1.00
     [11]:
       ReadingDate: "2025-11-01"
       Monat: "2025-11-01"
@@ -7229,9 +7196,6 @@ Dashboard:
           EinspeisungKWh: 133.60
           Ertrag: 10.69
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 1.00
     [12]:
       ReadingDate: "2025-10-01"
       Monat: "2025-10-01"
@@ -7289,9 +7253,6 @@ Dashboard:
           EinspeisungKWh: 247.50
           Ertrag: 19.80
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [13]:
       ReadingDate: "2025-09-01"
       Monat: "2025-09-01"
@@ -7349,9 +7310,6 @@ Dashboard:
           EinspeisungKWh: 448.50
           Ertrag: 35.88
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [14]:
       ReadingDate: "2025-08-01"
       Monat: "2025-08-01"
@@ -7409,9 +7367,6 @@ Dashboard:
           EinspeisungKWh: 649.50
           Ertrag: 51.96
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [15]:
       ReadingDate: "2025-07-01"
       Monat: "2025-07-01"
@@ -7469,9 +7424,6 @@ Dashboard:
           EinspeisungKWh: 750.00
           Ertrag: 60.00
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [16]:
       ReadingDate: "2025-06-01"
       Monat: "2025-06-01"
@@ -7529,9 +7481,6 @@ Dashboard:
           EinspeisungKWh: 750.00
           Ertrag: 60.00
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [17]:
       ReadingDate: "2025-05-01"
       Monat: "2025-05-01"
@@ -7589,9 +7538,6 @@ Dashboard:
           EinspeisungKWh: 649.50
           Ertrag: 51.96
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [18]:
       ReadingDate: "2025-04-01"
       Monat: "2025-04-01"
@@ -7649,9 +7595,6 @@ Dashboard:
           EinspeisungKWh: 448.50
           Ertrag: 35.88
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [19]:
       ReadingDate: "2025-03-01"
       Monat: "2025-03-01"
@@ -7709,9 +7652,6 @@ Dashboard:
           EinspeisungKWh: 247.50
           Ertrag: 19.80
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [20]:
       ReadingDate: "2025-02-01"
       Monat: "2025-02-01"
@@ -7769,9 +7709,6 @@ Dashboard:
           EinspeisungKWh: 133.60
           Ertrag: 10.69
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [21]:
       ReadingDate: "2025-01-01"
       Monat: "2025-01-01"
@@ -7829,9 +7766,6 @@ Dashboard:
           EinspeisungKWh: 100.10
           Ertrag: 8.01
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [22]:
       ReadingDate: "2024-12-01"
       Monat: "2024-12-01"
@@ -7889,9 +7823,6 @@ Dashboard:
           EinspeisungKWh: 100.10
           Ertrag: 8.01
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [23]:
       ReadingDate: "2024-11-01"
       Monat: "2024-11-01"
@@ -7949,9 +7880,6 @@ Dashboard:
           EinspeisungKWh: 133.60
           Ertrag: 10.69
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [24]:
       ReadingDate: "2024-10-01"
       Monat: "2024-10-01"
@@ -8009,9 +7937,6 @@ Dashboard:
           EinspeisungKWh: 247.50
           Ertrag: 19.80
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 1.00
     [25]:
       ReadingDate: "2024-09-01"
       Monat: "2024-09-01"
@@ -8069,9 +7994,6 @@ Dashboard:
           EinspeisungKWh: 448.50
           Ertrag: 35.88
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 1.00
     [26]:
       ReadingDate: "2024-08-01"
       Monat: "2024-08-01"
@@ -8129,9 +8051,6 @@ Dashboard:
           EinspeisungKWh: 649.50
           Ertrag: 51.96
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 1.00
     [27]:
       ReadingDate: "2024-07-01"
       Monat: "2024-07-01"
@@ -8189,9 +8108,6 @@ Dashboard:
           EinspeisungKWh: 750.00
           Ertrag: 60.00
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 1.00
     [28]:
       ReadingDate: "2024-06-01"
       Monat: "2024-06-01"
@@ -8249,9 +8165,6 @@ Dashboard:
           EinspeisungKWh: 750.00
           Ertrag: 60.00
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 1.00
     [29]:
       ReadingDate: "2024-05-01"
       Monat: "2024-05-01"
@@ -8309,9 +8222,6 @@ Dashboard:
           EinspeisungKWh: 649.50
           Ertrag: 51.96
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [30]:
       ReadingDate: "2024-04-01"
       Monat: "2024-04-01"
@@ -8369,9 +8279,6 @@ Dashboard:
           EinspeisungKWh: 448.50
           Ertrag: 35.88
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [31]:
       ReadingDate: "2024-03-01"
       Monat: "2024-03-01"
@@ -8429,9 +8336,6 @@ Dashboard:
           EinspeisungKWh: 247.50
           Ertrag: 19.80
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [32]:
       ReadingDate: "2024-02-01"
       Monat: "2024-02-01"
@@ -8489,9 +8393,6 @@ Dashboard:
           EinspeisungKWh: 133.60
           Ertrag: 10.69
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [33]:
       ReadingDate: "2024-01-01"
       Monat: "2024-01-01"
@@ -8549,9 +8450,6 @@ Dashboard:
           EinspeisungKWh: 100.10
           Ertrag: 8.01
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [34]:
       ReadingDate: "2023-12-01"
       Monat: "2023-12-01"
@@ -8609,9 +8507,6 @@ Dashboard:
           EinspeisungKWh: 100.10
           Ertrag: 8.01
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [35]:
       ReadingDate: "2023-11-01"
       Monat: "2023-11-01"
@@ -8669,9 +8564,6 @@ Dashboard:
           EinspeisungKWh: 133.60
           Ertrag: 10.69
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [36]:
       ReadingDate: "2023-10-01"
       Monat: "2023-10-01"
@@ -8729,9 +8621,6 @@ Dashboard:
           EinspeisungKWh: 247.50
           Ertrag: 19.80
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
     [37]:
       ReadingDate: "2023-09-01"
       Monat: "2023-09-01"
@@ -8789,9 +8678,6 @@ Dashboard:
           EinspeisungKWh: 448.50
           Ertrag: 35.88
         PVGutschriftW1: 0.00
-      Personen: {2}
-        1: 2.00
-        2: 2.00
   FixkostenListe: [39]
     [0]:
       Monat: "2026-10-01"
@@ -8930,6 +8816,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [1]:
       Monat: "2026-09-01"
       Erg:
@@ -9067,6 +8956,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [2]:
       Monat: "2026-08-01"
       Erg:
@@ -9204,6 +9096,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [3]:
       Monat: "2026-07-01"
       Erg:
@@ -9341,6 +9236,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [4]:
       Monat: "2026-06-01"
       Erg:
@@ -9478,6 +9376,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [5]:
       Monat: "2026-05-01"
       Erg:
@@ -9615,6 +9516,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [6]:
       Monat: "2026-04-01"
       Erg:
@@ -9752,6 +9656,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [7]:
       Monat: "2026-03-01"
       Erg:
@@ -9889,6 +9796,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [8]:
       Monat: "2026-02-01"
       Erg:
@@ -10026,6 +9936,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [9]:
       Monat: "2026-01-01"
       Erg:
@@ -10163,6 +10076,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [10]:
       Monat: "2025-12-01"
       Erg:
@@ -10300,6 +10216,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [11]:
       Monat: "2025-11-01"
       Erg:
@@ -10437,6 +10356,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [12]:
       Monat: "2025-10-01"
       Erg:
@@ -10574,6 +10496,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [13]:
       Monat: "2025-09-01"
       Erg:
@@ -10711,6 +10636,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [14]:
       Monat: "2025-08-01"
       Erg:
@@ -10848,6 +10776,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [15]:
       Monat: "2025-07-01"
       Erg:
@@ -10985,6 +10916,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [16]:
       Monat: "2025-06-01"
       Erg:
@@ -11122,6 +11056,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [17]:
       Monat: "2025-05-01"
       Erg:
@@ -11259,6 +11196,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [18]:
       Monat: "2025-04-01"
       Erg:
@@ -11396,6 +11336,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [19]:
       Monat: "2025-03-01"
       Erg:
@@ -11533,6 +11476,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [20]:
       Monat: "2025-02-01"
       Erg:
@@ -11670,6 +11616,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [21]:
       Monat: "2025-01-01"
       Erg:
@@ -11807,6 +11756,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [22]:
       Monat: "2024-12-01"
       Erg:
@@ -11944,6 +11896,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [23]:
       Monat: "2024-11-01"
       Erg:
@@ -12081,6 +12036,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [24]:
       Monat: "2024-10-01"
       Erg:
@@ -12218,6 +12176,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [25]:
       Monat: "2024-09-01"
       Erg:
@@ -12355,6 +12316,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [26]:
       Monat: "2024-08-01"
       Erg:
@@ -12492,6 +12456,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [27]:
       Monat: "2024-07-01"
       Erg:
@@ -12629,6 +12596,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [28]:
       Monat: "2024-06-01"
       Erg:
@@ -12766,6 +12736,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [29]:
       Monat: "2024-05-01"
       Erg:
@@ -12903,6 +12876,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [30]:
       Monat: "2024-04-01"
       Erg:
@@ -13040,6 +13016,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [31]:
       Monat: "2024-03-01"
       Erg:
@@ -13177,6 +13156,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [32]:
       Monat: "2024-02-01"
       Erg:
@@ -13314,6 +13296,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [33]:
       Monat: "2024-01-01"
       Erg:
@@ -13451,6 +13436,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [34]:
       Monat: "2023-12-01"
       Erg:
@@ -13588,6 +13576,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [35]:
       Monat: "2023-11-01"
       Erg:
@@ -13725,6 +13716,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [36]:
       Monat: "2023-10-01"
       Erg:
@@ -13862,6 +13856,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [37]:
       Monat: "2023-09-01"
       Erg:
@@ -13999,6 +13996,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
     [38]:
       Monat: "2023-08-01"
       Erg:
@@ -14136,6 +14136,9 @@ Dashboard:
       Abschlag: {2}
         1: 260.00
         2: 190.00
+      Personen: {2}
+        1: 2.00
+        2: 2.00
   Jahr: 2026
 Fixkosten-Liste: [39]
   [0]:
@@ -14275,6 +14278,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [1]:
     Monat: "2026-09-01"
     Erg:
@@ -14412,6 +14418,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [2]:
     Monat: "2026-08-01"
     Erg:
@@ -14549,6 +14558,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [3]:
     Monat: "2026-07-01"
     Erg:
@@ -14686,6 +14698,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [4]:
     Monat: "2026-06-01"
     Erg:
@@ -14823,6 +14838,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [5]:
     Monat: "2026-05-01"
     Erg:
@@ -14960,6 +14978,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [6]:
     Monat: "2026-04-01"
     Erg:
@@ -15097,6 +15118,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [7]:
     Monat: "2026-03-01"
     Erg:
@@ -15234,6 +15258,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [8]:
     Monat: "2026-02-01"
     Erg:
@@ -15371,6 +15398,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [9]:
     Monat: "2026-01-01"
     Erg:
@@ -15508,6 +15538,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [10]:
     Monat: "2025-12-01"
     Erg:
@@ -15645,6 +15678,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [11]:
     Monat: "2025-11-01"
     Erg:
@@ -15782,6 +15818,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [12]:
     Monat: "2025-10-01"
     Erg:
@@ -15919,6 +15958,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [13]:
     Monat: "2025-09-01"
     Erg:
@@ -16056,6 +16098,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [14]:
     Monat: "2025-08-01"
     Erg:
@@ -16193,6 +16238,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [15]:
     Monat: "2025-07-01"
     Erg:
@@ -16330,6 +16378,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [16]:
     Monat: "2025-06-01"
     Erg:
@@ -16467,6 +16518,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [17]:
     Monat: "2025-05-01"
     Erg:
@@ -16604,6 +16658,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [18]:
     Monat: "2025-04-01"
     Erg:
@@ -16741,6 +16798,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [19]:
     Monat: "2025-03-01"
     Erg:
@@ -16878,6 +16938,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [20]:
     Monat: "2025-02-01"
     Erg:
@@ -17015,6 +17078,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [21]:
     Monat: "2025-01-01"
     Erg:
@@ -17152,6 +17218,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [22]:
     Monat: "2024-12-01"
     Erg:
@@ -17289,6 +17358,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [23]:
     Monat: "2024-11-01"
     Erg:
@@ -17426,6 +17498,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [24]:
     Monat: "2024-10-01"
     Erg:
@@ -17563,6 +17638,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [25]:
     Monat: "2024-09-01"
     Erg:
@@ -17700,6 +17778,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [26]:
     Monat: "2024-08-01"
     Erg:
@@ -17837,6 +17918,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [27]:
     Monat: "2024-07-01"
     Erg:
@@ -17974,6 +18058,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [28]:
     Monat: "2024-06-01"
     Erg:
@@ -18111,6 +18198,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [29]:
     Monat: "2024-05-01"
     Erg:
@@ -18248,6 +18338,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [30]:
     Monat: "2024-04-01"
     Erg:
@@ -18385,6 +18478,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [31]:
     Monat: "2024-03-01"
     Erg:
@@ -18522,6 +18618,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [32]:
     Monat: "2024-02-01"
     Erg:
@@ -18659,6 +18758,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [33]:
     Monat: "2024-01-01"
     Erg:
@@ -18796,6 +18898,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [34]:
     Monat: "2023-12-01"
     Erg:
@@ -18933,6 +19038,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [35]:
     Monat: "2023-11-01"
     Erg:
@@ -19070,6 +19178,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [36]:
     Monat: "2023-10-01"
     Erg:
@@ -19207,6 +19318,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [37]:
     Monat: "2023-09-01"
     Erg:
@@ -19344,6 +19458,9 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
   [38]:
     Monat: "2023-08-01"
     Erg:
@@ -19481,3 +19598,6 @@ Fixkosten-Liste: [39]
     Abschlag: {2}
       1: 260.00
       2: 190.00
+    Personen: {2}
+      1: 2.00
+      2: 2.00
