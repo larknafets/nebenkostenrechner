@@ -8,29 +8,19 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// periodListItem is one period's reading date (Ablesedatum) together
-// with its period (Zeitraum), combined into a single label (the gap to
-// the chronologically previous period, "keine Vorperiode" for the
-// oldest) - the reading detail's "show other reading" dropdown, where a
-// single-line option leaves no room for 2 columns.
+// periodListItem is one period's Abrechnungsmonat together with its
+// reading date (Ablesedatum) in parentheses, as one label - the reading
+// detail's "show other reading" dropdown.
 type periodListItem struct {
 	ID    int64
 	Label string
 }
 
-// periodListItems builds one periodListItem per period. periods must be in
-// store.AllPeriods' own order (newest first) - the predecessor of
-// periods[i] is then periods[i+1], the next-older one.
+// periodListItems builds one periodListItem per period.
 func periodListItems(periods []store.PeriodSummary) []periodListItem {
 	out := make([]periodListItem, len(periods))
 	for i, p := range periods {
-		var label string
-		if i+1 < len(periods) {
-			label = fmt.Sprintf("%s (%s–%s)", formatDatumDE(p.ReadingDate), formatDatumDE(periods[i+1].ReadingDate), formatDatumDE(p.ReadingDate))
-		} else {
-			label = fmt.Sprintf("%s (keine Vorperiode)", formatDatumDE(p.ReadingDate))
-		}
-		out[i] = periodListItem{ID: p.ID, Label: label}
+		out[i] = periodListItem{ID: p.ID, Label: fmt.Sprintf("%s (%s)", store.MonatLabel(p.Monat), formatDatumDE(p.ReadingDate))}
 	}
 	return out
 }
