@@ -73,7 +73,7 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 	berechenbar := verbrauchskosten.Berechenbare()
 	for i := len(berechenbar) - 1; i >= 0; i-- {
 		a := berechenbar[i]
-		periodenKosten = append(periodenKosten, periodKosten{ReadingDate: a.Period.ReadingDate, Monat: a.Period.Monat, K: a.Kosten, Personen: a.Period.PersonenByApartment})
+		periodenKosten = append(periodenKosten, periodKosten{ReadingDate: a.Period.ReadingDate, Monat: a.Period.Monat, K: a.Kosten})
 	}
 
 	fixkostenListe, err := alleFixkostenKosten(db)

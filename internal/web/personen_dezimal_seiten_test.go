@@ -59,14 +59,12 @@ func TestFixkosten_PersonenDezimal_Kostenanteil(t *testing.T) {
 func TestDashboard_PersonenSchnittDezimal(t *testing.T) {
 	db := openTestDB(t)
 	jahr := strconv.Itoa(time.Now().Year())
-	// The first period has no predecessor and carries no Kosten, so seed two.
-	if _, err := store.CreatePeriod(db, seedPeriodInputAt(jahr+"-01-01")); err != nil {
-		t.Fatalf("CreatePeriod: %v", err)
-	}
-	in := seedPeriodInputAt(jahr + "-02-01")
-	in.Personen = map[int64]float64{1: 1.25, 2: 2}
-	if _, err := store.CreatePeriod(db, in); err != nil {
-		t.Fatalf("CreatePeriod: %v", err)
+	// The Personen-Schnitt is the mean over the year's Fixkosten-Eingaben.
+	form := fixkostenForm(jahr + "-01")
+	form.Set("personen_1", "1.25")
+	form.Set("personen_2", "2")
+	if w := postFixkosten(t, db, form); w.Code != http.StatusFound {
+		t.Fatalf("status = %d (body: %s)", w.Code, w.Body.String())
 	}
 
 	badge := func(body string) []string {
