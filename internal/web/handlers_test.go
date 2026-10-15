@@ -1134,20 +1134,20 @@ func baseReadingsForImportTest(overrides map[string]float64) map[string]float64 
 
 func TestPeriodListItems(t *testing.T) {
 	periods := []store.PeriodSummary{
-		{ID: 3, ReadingDate: "2026-08-01"},
-		{ID: 2, ReadingDate: "2026-07-01"},
-		{ID: 1, ReadingDate: "2026-06-01"},
+		{ID: 3, ReadingDate: "2026-08-15", Monat: "2026-08-01"},
+		{ID: 2, ReadingDate: "2026-07-01", Monat: "2026-07-01"},
+		{ID: 1, ReadingDate: "2026-06-01", Monat: "2026-06-01"},
 	}
 
 	items := periodListItems(periods)
 	if len(items) != 3 {
 		t.Fatalf("len(items) = %d, want 3", len(items))
 	}
-	if items[0].Label != "01.08.2026 (01.07.2026–01.08.2026)" {
-		t.Errorf("items[0].Label = %q, want %q", items[0].Label, "01.08.2026 (01.07.2026–01.08.2026)")
+	if items[0].Label != "August 2026 (15.08.2026)" {
+		t.Errorf("items[0].Label = %q, want %q", items[0].Label, "August 2026 (15.08.2026)")
 	}
-	if items[2].Label != "01.06.2026 (keine Vorperiode)" {
-		t.Errorf("items[2].Label (oldest) = %q, want %q", items[2].Label, "01.06.2026 (keine Vorperiode)")
+	if items[2].Label != "Juni 2026 (01.06.2026)" {
+		t.Errorf("items[2].Label (oldest) = %q, want %q", items[2].Label, "Juni 2026 (01.06.2026)")
 	}
 	if items[0].ID != 3 || items[2].ID != 1 {
 		t.Errorf("ids not preserved: %+v", items)

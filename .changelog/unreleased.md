@@ -33,6 +33,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Verbesserungen
 
+- Ablesung: Die Auswahl "Andere Ablesung anzeigen" zeigt jetzt den zugeordneten Monat und in Klammern das Ablesedatum (z. B. "August 2026 (15.08.2026)")
+
 ## Fehlerkorrekturen
 
 ## Wartung
