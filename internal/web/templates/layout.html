@@ -70,6 +70,90 @@
     });
   })();
 </script>
+<div class="fehler-backdrop" id="fehler-overlay" hidden>
+  <div class="fehler-modal" role="alertdialog" aria-modal="true" aria-labelledby="fehler-titel" aria-describedby="fehler-text">
+    <h3 id="fehler-titel">Speichern nicht möglich</h3>
+    <div id="fehler-text"></div>
+    <div class="btn-row" style="margin-top:.8rem;justify-content:flex-end">
+      <button type="button" class="primary" id="fehler-ok">Verstanden</button>
+    </div>
+  </div>
+</div>
+<script>
+// Fehler-Overlay: Formulare mit data-fehler-overlay werden per fetch gesendet.
+// Ein 400 zeigt die Meldung des Servers im Dialog (mehrere Zeilen als
+// Liste), jeder andere Fehler einen allgemeinen Text. Die Seite lädt nicht
+// neu, die Eingaben bleiben. Ohne JavaScript sendet das Formular normal ab.
+(function () {
+  var overlay = document.getElementById("fehler-overlay");
+  var text = document.getElementById("fehler-text");
+  var okBtn = document.getElementById("fehler-ok");
+  var ALLGEMEIN = "Speichern fehlgeschlagen, bitte erneut versuchen.";
+  var markiert = null, vorher = null;
+
+  function zeige(msg, form, feldName) {
+    vorher = document.activeElement;
+    text.textContent = "";
+    var zeilen = msg.split("\n").filter(Boolean);
+    if (zeilen.length > 1) {
+      var ul = document.createElement("ul");
+      zeilen.forEach(function (z) { var li = document.createElement("li"); li.textContent = z; ul.appendChild(li); });
+      text.appendChild(ul);
+    } else {
+      text.textContent = msg;
+    }
+    markiere(form, feldName);
+    overlay.hidden = false;
+    okBtn.focus();
+  }
+
+  function markiere(form, feldName) {
+    entmarkiere();
+    var feld = feldName && form.elements[feldName];
+    if (!feld) return;
+    feld.classList.add("fehler-feld");
+    feld.setAttribute("aria-invalid", "true");
+    feld.addEventListener("input", entmarkiere, {once: true});
+    markiert = feld;
+  }
+  function entmarkiere() {
+    if (!markiert) return;
+    markiert.classList.remove("fehler-feld");
+    markiert.removeAttribute("aria-invalid");
+    markiert = null;
+  }
+
+  function schliessen() {
+    overlay.hidden = true;
+    var ziel = markiert || vorher;
+    if (!ziel) return;
+    // Wizard: zum Schritt des markierten Feldes zurückblättern.
+    var pane = ziel.closest && ziel.closest(".c-pane");
+    if (pane && window.zeigeSchritt) window.zeigeSchritt(pane.dataset.step);
+    ziel.focus();
+  }
+  okBtn.addEventListener("click", schliessen);
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) schliessen(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !overlay.hidden) schliessen(); });
+
+  document.addEventListener("submit", function (e) {
+    var form = e.target;
+    if (!form.hasAttribute || !form.hasAttribute("data-fehler-overlay") || e.defaultPrevented) return;
+    e.preventDefault();
+    // Die Handler lesen urlencoded, nur Datei-Uploads sind multipart.
+    var daten = new FormData(form);
+    var body = form.enctype === "multipart/form-data" ? daten : new URLSearchParams(daten);
+    fetch(form.action, {method: "POST", body: body, credentials: "same-origin"}).then(function (r) {
+      if (r.redirected) { window.location.href = r.url; return; }
+      if (r.status === 400) {
+        var feld = r.headers.get("X-Fehler-Feld");
+        return r.text().then(function (t) { zeige(t.trim() || ALLGEMEIN, form, feld); });
+      }
+      zeige(ALLGEMEIN, form);
+    }).catch(function () { zeige(ALLGEMEIN, form); });
+  });
+})();
+</script>
 </body>
 </html>
 {{end}}
@@ -207,6 +291,12 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   .login-backdrop[hidden] { display: none; }
   .login-modal { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; width: 320px; max-width: 90vw; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
   .login-error { color: var(--danger); font-size: .8rem; margin-top: .3rem; }
+  .fehler-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 200; }
+  .fehler-backdrop[hidden] { display: none; }
+  .fehler-modal { background: var(--panel); border: 1px solid var(--border); border-top: 4px solid var(--danger); border-radius: 10px; padding: 1.25rem 1.5rem; width: 420px; max-width: 92vw; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+  .fehler-modal h3 { margin: 0 0 .6rem; color: var(--danger); }
+  .fehler-modal ul { margin: 0 0 0 1.1rem; padding: 0; }
+  .fehler-feld { border-color: var(--danger) !important; outline: 2px solid var(--danger); }
   .field { margin-bottom: .9rem; }
   .radio-options { display: flex; gap: 1.25rem; flex-wrap: wrap; }
   .radio-option { display: flex; align-items: center; gap: .35rem; width: auto; font-size: .9rem; color: var(--text); margin-bottom: 0; }

@@ -3,7 +3,7 @@
 {{template "nav" .}}
 
 {{if .NoEingaben}}
-<form method="post" action="{{.Base}}/fixkosten/import" enctype="multipart/form-data" class="panel" style="margin-bottom:1rem">
+<form method="post" action="{{.Base}}/fixkosten/import" enctype="multipart/form-data" data-fehler-overlay class="panel" style="margin-bottom:1rem">
   <div class="field">
     <label>Oder: Fixkosten-Eingaben aus CSV importieren (gleiches Format wie der CSV-Export)</label>
     <input type="file" name="csv" accept=".csv,text/csv" required>
@@ -12,7 +12,7 @@
 </form>
 {{end}}
 
-<form method="post" action="{{.FormAction}}" class="panel">
+<form method="post" action="{{.FormAction}}" class="panel" data-fehler-overlay>
   <div class="field" style="max-width:220px">
     <label>Monat</label>
     <input type="month" name="monat" value="{{.Monat}}" required>

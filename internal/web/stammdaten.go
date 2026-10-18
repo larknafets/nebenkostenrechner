@@ -16,7 +16,7 @@ import (
 func parseFormFloat(r *http.Request, name, fieldLabel, apartmentID string) (float64, error) {
 	v, err := strconv.ParseFloat(r.FormValue(name), 64)
 	if err != nil {
-		return 0, fmt.Errorf("invalid %s for apartment %s", fieldLabel, apartmentID)
+		return 0, fmt.Errorf("ungültiger Wert für %s bei Wohnung %s", fieldLabel, apartmentID)
 	}
 	return v, nil
 }

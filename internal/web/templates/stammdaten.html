@@ -6,7 +6,7 @@
   .stammdaten-form { display: grid; gap: 1rem; }
   .stammdaten-form input[type=text], .stammdaten-form textarea { width: 100%; padding: .5rem .6rem; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; font-family: inherit; }
 </style>
-<form method="post" action="{{.Base}}/stammdaten" class="dirty-form stammdaten-form">
+<form method="post" action="{{.Base}}/stammdaten" class="dirty-form stammdaten-form" data-fehler-overlay>
   <div class="grid grid-2">
     {{range .Apartments}}
     <div class="panel">
