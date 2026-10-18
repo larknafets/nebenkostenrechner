@@ -280,7 +280,7 @@ func handleCreateFixkosten() http.HandlerFunc {
 		eingabeID, err := store.CreateFixkostenEingabe(db, in)
 		if err != nil {
 			if errors.Is(err, store.ErrFixkostenMonatBelegt) {
-				http.Error(w, monatBelegtMessage(in.Monat), http.StatusBadRequest)
+				badRequestFeld(w, monatBelegtMessage(in.Monat), "monat")
 				return
 			}
 			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
@@ -335,7 +335,7 @@ func handleUpdateFixkosten() http.HandlerFunc {
 
 		if err := store.UpdateFixkostenEingabe(db, eingabeID, in); err != nil {
 			if errors.Is(err, store.ErrFixkostenMonatBelegt) {
-				http.Error(w, monatBelegtMessage(in.Monat), http.StatusBadRequest)
+				badRequestFeld(w, monatBelegtMessage(in.Monat), "monat")
 				return
 			}
 			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)

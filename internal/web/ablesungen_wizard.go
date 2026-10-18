@@ -378,7 +378,7 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 		}
 		v, err := strconv.ParseFloat(raw, 64)
 		if err != nil {
-			return store.PeriodInput{}, fmt.Errorf("invalid value for %s", key)
+			return store.PeriodInput{}, fmt.Errorf("ungültiger Zählerstand für %s", key)
 		}
 		readings[key] = v
 	}
@@ -388,7 +388,7 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 	abwasserPreis, err3 := parseOptionalFloat(r.FormValue("abwasser_preis"))
 	einspeisungPreis, err4 := parseOptionalFloat(r.FormValue("einspeisung_preis"))
 	if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
-		return store.PeriodInput{}, fmt.Errorf("invalid price value")
+		return store.PeriodInput{}, fmt.Errorf("ungültiger Preiswert")
 	}
 
 	personen := make(map[int64]float64, len(apartments))
@@ -507,13 +507,13 @@ func handleUpdateAblesung() http.HandlerFunc {
 			var monatTooLate *store.PeriodMonatTooLateError
 			switch {
 			case errors.As(err, &tooEarly):
-				http.Error(w, fmt.Sprintf("Ablesedatum muss nach der Vorperiode (%s) liegen", tooEarly.Neighbor), http.StatusBadRequest)
+				badRequestFeld(w, fmt.Sprintf("Ablesedatum muss nach der Vorperiode (%s) liegen", tooEarly.Neighbor), "reading_date")
 			case errors.As(err, &tooLate):
-				http.Error(w, fmt.Sprintf("Ablesedatum muss vor der Folgeperiode (%s) liegen", tooLate.Neighbor), http.StatusBadRequest)
+				badRequestFeld(w, fmt.Sprintf("Ablesedatum muss vor der Folgeperiode (%s) liegen", tooLate.Neighbor), "reading_date")
 			case errors.As(err, &monatTooEarly):
-				http.Error(w, fmt.Sprintf("Abrechnungsmonat darf nicht vor dem der Vorperiode (%s) liegen", monatTooEarly.Neighbor), http.StatusBadRequest)
+				badRequestFeld(w, fmt.Sprintf("Abrechnungsmonat darf nicht vor dem der Vorperiode (%s) liegen", monatTooEarly.Neighbor), "monat")
 			case errors.As(err, &monatTooLate):
-				http.Error(w, fmt.Sprintf("Abrechnungsmonat darf nicht nach dem der Folgeperiode (%s) liegen", monatTooLate.Neighbor), http.StatusBadRequest)
+				badRequestFeld(w, fmt.Sprintf("Abrechnungsmonat darf nicht nach dem der Folgeperiode (%s) liegen", monatTooLate.Neighbor), "monat")
 			default:
 				http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
 			}
