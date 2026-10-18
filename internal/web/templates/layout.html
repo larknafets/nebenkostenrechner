@@ -70,6 +70,86 @@
     });
   })();
 </script>
+<!-- PROTOTYPE (Ticket Fehleranzeige-Overlay, Map 246): throwaway, nicht fuer main.
+     Varianten ?variant=A|B|C, Leiste unten. Echtes fetch + echte 400er des Servers;
+     "Test"-Knöpfe simulieren mehrzeilig (CSV) und 500. -->
+<style>
+  .fo-bar { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 300; display: flex; gap: .4rem; align-items: center; background: #111; color: #fff; padding: .4rem .6rem; border-radius: 999px; font-size: .8rem; box-shadow: 0 4px 20px rgba(0,0,0,.4); flex-wrap: wrap; justify-content: center; max-width: 95vw; }
+  .fo-bar button { background: #333; color: #fff; border: 0; border-radius: 999px; padding: .25rem .7rem; cursor: pointer; }
+  .fo-bar button.on { background: #f59e0b; color: #111; font-weight: 700; }
+  .fo-bar span { opacity: .7; }
+  /* A: zentriertes Modal wie das Login-Overlay */
+  .fo-a { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 200; }
+  .fo-a[hidden], .fo-b[hidden], .fo-c[hidden] { display: none; }
+  .fo-a .box { background: var(--panel); border: 1px solid var(--border); border-top: 4px solid var(--danger); border-radius: 10px; padding: 1.25rem 1.5rem; width: 420px; max-width: 92vw; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+  .fo-a h3 { margin: 0 0 .6rem; color: var(--danger); }
+  /* B: Banner oben, nicht modal, Seite bleibt bedienbar */
+  .fo-b { position: fixed; top: 0; left: 0; right: 0; z-index: 200; background: var(--danger); color: #fff; padding: .8rem 1rem; display: flex; gap: 1rem; align-items: flex-start; justify-content: center; box-shadow: 0 4px 16px rgba(0,0,0,.3); }
+  .fo-b .txt { max-width: 760px; flex: 1; }
+  .fo-b button { background: rgba(255,255,255,.2); color: #fff; border: 0; border-radius: 6px; padding: .3rem .7rem; cursor: pointer; }
+  /* C: Bottom-Sheet, halbhoch, mit Liste */
+  .fo-c { position: fixed; left: 0; right: 0; bottom: 0; z-index: 200; background: var(--panel); border-top: 4px solid var(--danger); box-shadow: 0 -10px 40px rgba(0,0,0,.3); padding: 1rem 1.25rem 4rem; max-height: 60vh; overflow: auto; }
+  .fo-c .in { max-width: 760px; margin: 0 auto; }
+  .fo-c ul { margin: .4rem 0 0 1.1rem; padding: 0; }
+  .fo-msg { white-space: pre-wrap; margin: 0 0 .8rem; }
+  .fo-list { margin: 0 0 .8rem 1.1rem; padding: 0; }
+  .fo-actions { display: flex; justify-content: flex-end; gap: .5rem; }
+</style>
+<div id="fo-a" class="fo-a" hidden role="alertdialog" aria-labelledby="fo-a-t"><div class="box"><h3 id="fo-a-t">Speichern nicht möglich</h3><div id="fo-a-body"></div><div class="fo-actions"><button type="button" class="primary" id="fo-a-ok">Verstanden</button></div></div></div>
+<div id="fo-b" class="fo-b" hidden role="alert"><div class="txt"><strong>Speichern nicht möglich</strong><div id="fo-b-body"></div></div><button type="button" id="fo-b-ok">Schließen</button></div>
+<div id="fo-c" class="fo-c" hidden role="alert"><div class="in"><h3 style="margin:0 0 .4rem;color:var(--danger)">Speichern nicht möglich</h3><div id="fo-c-body"></div><div class="fo-actions" style="margin-top:.8rem"><button type="button" class="secondary" id="fo-c-ok">Schließen</button></div></div></div>
+<div class="fo-bar no-print"><span>Prototyp Fehleranzeige</span>
+  <button data-v="A">A Modal</button><button data-v="B">B Banner</button><button data-v="C">C Sheet</button>
+  <span>|</span><button data-t="1">Test 1 Zeile</button><button data-t="2">Test CSV</button><button data-t="3">Test 500</button></div>
+<script>
+(function () {
+  var variant = (new URLSearchParams(location.search).get("variant") || "A").toUpperCase();
+  var $ = function (id) { return document.getElementById(id); };
+  var bar = document.querySelector(".fo-bar");
+  function paintBar() { bar.querySelectorAll("[data-v]").forEach(function (b) { b.classList.toggle("on", b.dataset.v === variant); }); }
+  function body(text, asList) {
+    var lines = text.split("\n").filter(Boolean);
+    if (lines.length > 1 && asList) {
+      return "<ul class='fo-list'>" + lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul>";
+    }
+    return "<p class='fo-msg'>" + esc(text) + "</p>";
+  }
+  function esc(s) { return s.replace(/[&<>]/g, function (c) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c]; }); }
+  function hideAll() { ["fo-a", "fo-b", "fo-c"].forEach(function (i) { $(i).hidden = true; }); }
+  var last = "";
+  function show(text) {
+    last = text;
+    hideAll();
+    var id = {A: "fo-a", B: "fo-b", C: "fo-c"}[variant];
+    $(id + "-body").innerHTML = body(text, variant !== "B");
+    $(id).hidden = false;
+    if (variant === "A") $("fo-a-ok").focus();
+  }
+  ["fo-a-ok", "fo-b-ok", "fo-c-ok"].forEach(function (i) { $(i).addEventListener("click", hideAll); });
+  $("fo-a").addEventListener("click", function (e) { if (e.target === this) hideAll(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") hideAll(); });
+  bar.addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.v) { variant = b.dataset.v; var u = new URL(location.href); u.searchParams.set("variant", variant); history.replaceState(null, "", u); paintBar(); if (last) show(last); }
+    if (b.dataset.t) {
+      show({1: "Für November 2026 gibt es bereits eine Fixkosten-Eingabe. Je Monat ist nur eine erlaubt, bitte die bestehende Eingabe korrigieren.",
+            2: "Zeile 3: ungültige Personenzahl für Wohnung 2: \"1,255\" (mehr als 2 Nachkommastellen)\nZeile 7: ungültiger Preiswert\nZeile 9: ungültiges Datum",
+            3: "Speichern fehlgeschlagen, bitte erneut versuchen."}[b.dataset.t]);
+    }
+  });
+  document.addEventListener("submit", function (e) {
+    var f = e.target;
+    if (!f.hasAttribute("data-fehler-overlay")) return;
+    e.preventDefault();
+    fetch(f.action, {method: "POST", body: f.enctype === "multipart/form-data" ? new FormData(f) : new URLSearchParams(new FormData(f)), credentials: "same-origin"}).then(function (r) {
+      if (r.redirected) { location.href = r.url; return; }
+      if (r.status === 400) { return r.text().then(show); }
+      show("Speichern fehlgeschlagen, bitte erneut versuchen.");
+    }).catch(function () { show("Speichern fehlgeschlagen, bitte erneut versuchen."); });
+  });
+  paintBar();
+})();
+</script>
 </body>
 </html>
 {{end}}
