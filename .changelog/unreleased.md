@@ -39,6 +39,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Fehlerkorrekturen
 
+- Ablesung: Die Warnung "Verbrauch über 1 Monate" erschien schon bei genau einem Monat Abstand zur letzten Ablesung (Zeitzonenfehler im Browser). Jetzt warnt sie erst bei mehr als einem Monat, nennt "1 Monat" in der Einzahl und zeigt das Datum der letzten Ablesung als 01.09.2026 (#257)
+
 - Ablesung korrigieren: Zählerwerte und Preise erschienen in der Vorbelegung mit Gleitkommaresten (z. B. 26520,69999999999 statt 26520,7). Jetzt zeigen die Felder die eingegebenen Werte ohne diese Reste (#254)
 
 - Dashboard: Der Update-Hinweis (Punkt neben der Version unten rechts) erschien im Nightly-Kanal nie, weil nur Release-Versionen verglichen wurden. Jetzt zeigt ein Nightly-Stand den Punkt, sobald ein neueres Nightly vorliegt, der Link führt zum zugehörigen Commit. Nightlys vom selben Tag lassen sich nicht unterscheiden und lösen keinen Hinweis aus

@@ -97,9 +97,10 @@ var templateFuncs = template.FuncMap{
 	// EditReadings/PreviousPersonen - "index" alone silently returns the
 	// zero value for a missing key, which couldn't distinguish "not
 	// recorded" from an actual 0.
-	"inputNumber": inputNumber,
-	"hasReading":  func(m map[string]float64, k string) bool { _, ok := m[k]; return ok },
-	"hasPersonen": func(m map[int64]float64, id int64) bool { _, ok := m[id]; return ok },
+	"inputNumber":      inputNumber,
+	"lueckenWarnungJS": lueckenWarnungScript,
+	"hasReading":       func(m map[string]float64, k string) bool { _, ok := m[k]; return ok },
+	"hasPersonen":      func(m map[int64]float64, id int64) bool { _, ok := m[id]; return ok },
 	// logikOptions is a zero-arg func rather than a per-page data field -
 	// it's a fixed, package-global list (see fixkosten.go), so the
 	// shared "monatsverlauf-wohnung-body" partial (monatsverlauf.html)
