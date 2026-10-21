@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -110,7 +111,8 @@ func handleStammdatenForm(a auth) http.HandlerFunc {
 			Aktuell          string
 			Apartments       []store.Apartment
 			Kostenpositionen []store.Kostenposition
-			LetzterIndex     int // Index der letzten Kostenposition, sperrt "nach unten"
+			LetzterIndex     int    // Index der letzten Kostenposition, sperrt "nach unten"
+			Variant          string // PROTOTYPE #255
 			Haus             store.Haus
 			GewichtungOpts   []heizungGewichtungOption
 		}{
@@ -119,6 +121,7 @@ func handleStammdatenForm(a auth) http.HandlerFunc {
 			Apartments:       apartments,
 			Kostenpositionen: kostenpositionen,
 			LetzterIndex:     len(kostenpositionen) - 1,
+			Variant:          prototypeVariant(r),
 			Haus:             haus,
 			GewichtungOpts:   heizungGewichtungOptionsFor(haus.HeizungWaermeGewichtung),
 		}
@@ -254,6 +257,19 @@ func handleMoveKostenposition() http.HandlerFunc {
 			http.Error(w, "move: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		http.Redirect(w, r, requestBase(r)+"/stammdaten#reihenfolge", http.StatusFound)
+		redirect := requestBase(r) + "/stammdaten"
+		if v := r.FormValue("variant"); v != "" { // PROTOTYPE #255
+			redirect += "?variant=" + url.QueryEscape(v)
+		}
+		http.Redirect(w, r, redirect+"#reihenfolge", http.StatusFound)
 	}
+}
+
+// prototypeVariant reads ?variant=A|B|C for the throwaway UI prototype of #255.
+func prototypeVariant(r *http.Request) string {
+	switch v := r.URL.Query().Get("variant"); v {
+	case "B", "C":
+		return v
+	}
+	return "A"
 }

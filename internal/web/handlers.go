@@ -98,6 +98,7 @@ var templateFuncs = template.FuncMap{
 	// zero value for a missing key, which couldn't distinguish "not
 	// recorded" from an actual 0.
 	"inputNumber":      inputNumber,
+	"inc":              func(i int) int { return i + 1 }, // PROTOTYPE #255
 	"lueckenWarnungJS": lueckenWarnungScript,
 	"hasReading":       func(m map[string]float64, k string) bool { _, ok := m[k]; return ok },
 	"hasPersonen":      func(m map[int64]float64, id int64) bool { _, ok := m[id]; return ok },

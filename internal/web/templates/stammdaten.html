@@ -77,20 +77,98 @@
 </form>
 
 {{if .IsLoggedIn}}
-<div class="panel" id="reihenfolge" style="margin-top:1rem">
+{{/* PROTOTYPE (#255): three looks for the reorder buttons, switch with ?variant=A|B|C. Throwaway, do not merge. */}}
+<style>
+  .pf-btn { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--accent); cursor: pointer; }
+  .pf-btn:hover:not(:disabled) { background: var(--accent-soft); }
+  .pf-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .pf-btn:disabled { opacity: .3; cursor: not-allowed; }
+  .pf-btn svg { width: 18px; height: 18px; }
+  .pf-form { display: flex; margin: 0; }
+
+  /* A: list, arrows on the right, separators */
+  .pf-a .pf-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .45rem 0; border-bottom: 1px solid var(--border); }
+  .pf-a .pf-row:last-child { border-bottom: none; }
+  .pf-a .pf-actions { display: flex; gap: .35rem; }
+
+  /* B: cards, arrows left as one joined segmented control */
+  .pf-b .pf-row { display: flex; align-items: center; gap: .85rem; padding: .35rem .6rem .35rem .35rem; margin-bottom: .45rem; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); }
+  .pf-b .pf-seg { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--panel); }
+  .pf-b .pf-btn { border: none; border-radius: 0; width: 38px; height: 34px; }
+  .pf-b .pf-btn + .pf-btn { border-left: 1px solid var(--border); }
+
+  /* C: numbered, small stacked chevrons on the right */
+  .pf-c .pf-row { display: flex; align-items: center; gap: .75rem; padding: .3rem 0; }
+  .pf-c .pf-nr { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: .75rem; font-weight: 700; }
+  .pf-c .pf-label { flex: 1; }
+  .pf-c .pf-stack { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--panel); }
+  .pf-c .pf-btn { border: none; border-radius: 0; width: 34px; height: 20px; }
+  .pf-c .pf-btn + .pf-btn { border-top: 1px solid var(--border); }
+  .pf-c .pf-btn svg { width: 14px; height: 14px; }
+
+  #proto-bar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: .75rem; padding: .45rem .9rem; border-radius: 999px; background: #111; color: #fff; font-size: .85rem; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+  #proto-bar a { color: #fff; text-decoration: none; font-size: 1.1rem; padding: 0 .3rem; }
+</style>
+
+
+<div class="panel pf-{{if eq .Variant "B"}}b{{else if eq .Variant "C"}}c{{else}}a{{end}}" id="reihenfolge" style="margin-top:1rem">
   <h3>Reihenfolge der Kostenpositionen</h3>
   <p class="muted">Gilt für Fixkosten-Eingabe, Fixkosten-Anzeige und Abrechnung. Ungespeicherte Änderungen im Formular oben gehen beim Verschieben verloren.</p>
+
   {{range $i, $kp := .Kostenpositionen}}
-  <div class="field" style="display:flex; gap:.5rem; align-items:center">
-    <form method="post" action="{{$.Base}}/stammdaten/sortierung" style="display:flex; gap:.25rem">
-      <input type="hidden" name="id" value="{{$kp.ID}}">
-      <button type="submit" name="richtung" value="hoch" aria-label="{{$kp.Label}} nach oben" {{if eq $i 0}}disabled{{end}}>&uarr;</button>
-      <button type="submit" name="richtung" value="runter" aria-label="{{$kp.Label}} nach unten" {{if eq $i $.LetzterIndex}}disabled{{end}}>&darr;</button>
+  {{if eq $.Variant "B"}}
+  <div class="pf-row">
+    <form class="pf-form" method="post" action="{{$.Base}}/stammdaten/sortierung">
+      <input type="hidden" name="id" value="{{$kp.ID}}"><input type="hidden" name="variant" value="{{$.Variant}}">
+      <div class="pf-seg">
+        <button class="pf-btn" type="submit" name="richtung" value="hoch" aria-label="{{$kp.Label}} nach oben" title="Nach oben" {{if eq $i 0}}disabled{{end}}>{{template "pf-up"}}</button>
+        <button class="pf-btn" type="submit" name="richtung" value="runter" aria-label="{{$kp.Label}} nach unten" title="Nach unten" {{if eq $i $.LetzterIndex}}disabled{{end}}>{{template "pf-down"}}</button>
+      </div>
     </form>
     <span>{{$kp.Label}}</span>
   </div>
+  {{else if eq $.Variant "C"}}
+  <div class="pf-row">
+    <span class="pf-nr">{{inc $i}}</span>
+    <span class="pf-label">{{$kp.Label}}</span>
+    <form class="pf-form" method="post" action="{{$.Base}}/stammdaten/sortierung">
+      <input type="hidden" name="id" value="{{$kp.ID}}"><input type="hidden" name="variant" value="{{$.Variant}}">
+      <div class="pf-stack">
+        <button class="pf-btn" type="submit" name="richtung" value="hoch" aria-label="{{$kp.Label}} nach oben" title="Nach oben" {{if eq $i 0}}disabled{{end}}>{{template "pf-up"}}</button>
+        <button class="pf-btn" type="submit" name="richtung" value="runter" aria-label="{{$kp.Label}} nach unten" title="Nach unten" {{if eq $i $.LetzterIndex}}disabled{{end}}>{{template "pf-down"}}</button>
+      </div>
+    </form>
+  </div>
+  {{else}}
+  <div class="pf-row">
+    <span>{{$kp.Label}}</span>
+    <form class="pf-form pf-actions" method="post" action="{{$.Base}}/stammdaten/sortierung">
+      <input type="hidden" name="id" value="{{$kp.ID}}"><input type="hidden" name="variant" value="{{$.Variant}}">
+      <button class="pf-btn" type="submit" name="richtung" value="hoch" aria-label="{{$kp.Label}} nach oben" title="Nach oben" {{if eq $i 0}}disabled{{end}}>{{template "pf-up"}}</button>
+      <button class="pf-btn" type="submit" name="richtung" value="runter" aria-label="{{$kp.Label}} nach unten" title="Nach unten" {{if eq $i $.LetzterIndex}}disabled{{end}}>{{template "pf-down"}}</button>
+    </form>
+  </div>
+  {{end}}
   {{end}}
 </div>
+
+<div id="proto-bar" data-current="{{.Variant}}"></div>
+<script>
+  (function () {
+    const varianten = { A: 'Liste, Pfeile rechts', B: 'Karten, Doppelknopf links', C: 'Nummeriert, gestapelt rechts' };
+    const keys = Object.keys(varianten);
+    const bar = document.getElementById('proto-bar');
+    const cur = bar.dataset.current;
+    const gehe = (d) => { const k = keys[(keys.indexOf(cur) + d + keys.length) % keys.length]; location.href = location.pathname + '?variant=' + k + '#reihenfolge'; };
+    bar.innerHTML = '<a href="#" id="pf-prev" aria-label="Vorherige Variante">&larr;</a><span>' + cur + ' (' + varianten[cur] + ')</span><a href="#" id="pf-next" aria-label="Nächste Variante">&rarr;</a>';
+    document.getElementById('pf-prev').onclick = (e) => { e.preventDefault(); gehe(-1); };
+    document.getElementById('pf-next').onclick = (e) => { e.preventDefault(); gehe(1); };
+    document.addEventListener('keydown', (e) => {
+      if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) || document.activeElement.isContentEditable) return;
+      if (e.key === 'ArrowLeft') gehe(-1); else if (e.key === 'ArrowRight') gehe(1);
+    });
+  })();
+</script>
 {{end}}
 
 <script>
@@ -109,3 +187,6 @@
   });
 </script>
 {{end}}
+
+{{define "pf-up"}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>{{end}}
+{{define "pf-down"}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>{{end}}
