@@ -2,10 +2,12 @@ package web
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -502,5 +504,37 @@ func TestStammdaten_KostenpositionVerschieben(t *testing.T) {
 	}
 	if w := move("999", "hoch"); w.Code != http.StatusNotFound {
 		t.Errorf("unbekannte Position: status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+// TestStammdaten_ReihenfolgeDarstellung verifies the order list (Issue #255):
+// every position is numbered, the buttons carry an accessible name, and only
+// the first "nach oben" and the last "nach unten" button are disabled.
+func TestStammdaten_ReihenfolgeDarstellung(t *testing.T) {
+	db := openTestDB(t)
+	a := newAuth("", nil)
+
+	w := httptest.NewRecorder()
+	handleStammdatenForm(a)(w, requestWithDB(httptest.NewRequest(http.MethodGet, "/stammdaten", nil), db))
+	_, panel, ok := strings.Cut(w.Body.String(), `id="reihenfolge"`)
+	if !ok {
+		t.Fatal("kein Reihenfolge-Block auf /stammdaten")
+	}
+
+	for n := 1; n <= 17; n++ {
+		if want := fmt.Sprintf(`<span class="reihenfolge-nr">%d</span>`, n); !strings.Contains(panel, want) {
+			t.Errorf("Nummer %d fehlt (%s)", n, want)
+		}
+	}
+	for _, want := range []string{`aria-label="Grundsteuer nach oben"`, `aria-label="Grundsteuer nach unten"`} {
+		if !strings.Contains(panel, want) {
+			t.Errorf("Block enthält %s nicht", want)
+		}
+	}
+	if got := len(regexp.MustCompile(`value="hoch"[^>]*disabled`).FindAllString(panel, -1)); got != 1 {
+		t.Errorf("gesperrte Hoch-Buttons = %d, want 1 (nur die erste Position)", got)
+	}
+	if got := len(regexp.MustCompile(`value="runter"[^>]*disabled`).FindAllString(panel, -1)); got != 1 {
+		t.Errorf("gesperrte Runter-Buttons = %d, want 1 (nur die letzte Position)", got)
 	}
 }

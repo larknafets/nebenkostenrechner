@@ -35,6 +35,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Verbesserungen
 
+- Stammdaten: Die Reihenfolge der Kostenpositionen hat eine übersichtlichere Darstellung: nummerierte Liste mit Trennlinien und Pfeil-Symbolen statt einfacher Textpfeile, mit sichtbarem Fokus für die Tastaturbedienung (#255)
+
 - Stammdaten: Die Reihenfolge der Kostenpositionen lässt sich mit Hoch/Runter-Buttons ändern. Sie gilt für Fixkosten-Eingabe, Fixkosten-Anzeige und Abrechnung. Neue Positionen erscheinen künftig am Ende der Liste
 
 ## Fehlerkorrekturen
