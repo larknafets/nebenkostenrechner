@@ -1174,6 +1174,11 @@ func TestEnsureFixkostenWerteLogikTypColumns(t *testing.T) {
 		t.Fatalf("ohneWert id: %v", err)
 	}
 
+	// Open applies this migration before the backfill, the hand-built old
+	// shape above has to do the same for Kostenpositionen() to work.
+	if err := ensureKostenpositionenSortColumn(db); err != nil {
+		t.Fatalf("ensureKostenpositionenSortColumn: %v", err)
+	}
 	if err := backfillFixkostenWerteLogikTyp(db); err != nil {
 		t.Fatalf("backfillFixkostenWerteLogikTyp: %v", err)
 	}
@@ -1627,7 +1632,7 @@ func TestGetPeriodByID_TeilstandPricesReadAsZero(t *testing.T) {
 
 // TestKostenpositionen_UmlagefaehigStartwerte verifies the Umlagefähig
 // starting values (Issue #163) on a fresh database: Ja for the BetrKV
-// positions plus Grundgebühr Strom, Nein for Internet, Streaming and
+// positions plus Grundgebühr Strom, Nein for Internet, PV-Anlage, Streaming and
 // Sonstige Kosten.
 func TestKostenpositionen_UmlagefaehigStartwerte(t *testing.T) {
 	db := openTestDB(t)
@@ -1636,9 +1641,9 @@ func TestKostenpositionen_UmlagefaehigStartwerte(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Kostenpositionen: %v", err)
 	}
-	nein := map[string]bool{"internet": true, "streaming": true, "sonstige": true}
-	if len(kps) != 16 {
-		t.Fatalf("len(kostenpositionen) = %d, want 16", len(kps))
+	nein := map[string]bool{"internet": true, "pv_wartung": true, "streaming": true, "sonstige": true}
+	if len(kps) != 17 {
+		t.Fatalf("len(kostenpositionen) = %d, want 17", len(kps))
 	}
 	for _, kp := range kps {
 		if want := !nein[kp.Key]; kp.Umlagefaehig != want {

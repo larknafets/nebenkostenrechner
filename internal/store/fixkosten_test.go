@@ -32,14 +32,14 @@ func TestKostenpositionen_Seed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Kostenpositionen: %v", err)
 	}
-	if len(kps) != 16 {
-		t.Fatalf("Kostenpositionen = %d, want 16", len(kps))
+	if len(kps) != 17 {
+		t.Fatalf("Kostenpositionen = %d, want 17", len(kps))
 	}
 
 	wantKeys := []string{
 		"grundsteuer", "gebaeudevers", "deich_grund", "deich_bau", "kreisverband",
 		"abfall_haushalt", "abfall_personen", "abfall_biomuell", "abfall_restmuell",
-		"strom_grundpreis", "trinkwasser", "abwasser", "internet", "wp_wartung",
+		"strom_grundpreis", "trinkwasser", "abwasser", "internet", "wp_wartung", "pv_wartung",
 		"streaming", "sonstige",
 	}
 	for i, want := range wantKeys {
@@ -436,5 +436,87 @@ func TestMonatUniqueErr(t *testing.T) {
 	}
 	if got := monatUniqueErr(nil, "2026-03-01"); got != nil {
 		t.Errorf("monatUniqueErr(nil) = %v, want nil", got)
+	}
+}
+
+// TestKostenpositionen_PVWartungDirektNachWaermepumpe pins the display order:
+// the PV-Anlage position has the highest id but sits right below the
+// Wärmepumpe position, with its starting values.
+func TestKostenpositionen_PVWartungDirektNachWaermepumpe(t *testing.T) {
+	db := openTestDB(t)
+
+	kps, err := Kostenpositionen(db)
+	if err != nil {
+		t.Fatalf("Kostenpositionen: %v", err)
+	}
+	var wp, pv = -1, -1
+	for i, kp := range kps {
+		switch kp.Key {
+		case "wp_wartung":
+			wp = i
+		case "pv_wartung":
+			pv = i
+		}
+	}
+	if wp < 0 || pv != wp+1 {
+		t.Fatalf("pv_wartung at %d, wp_wartung at %d, want pv_wartung directly after", pv, wp)
+	}
+	if kps[pv].Label != "Wartungskosten PV-Anlage" || kps[pv].Umlagefaehig {
+		t.Errorf("pv_wartung = %+v, want Label \"Wartungskosten PV-Anlage\" and not umlagefähig", kps[pv])
+	}
+}
+
+// TestOpen_ErgaenztPVWartungInBestehendenDaten covers an existing database
+// from before the position: no sort column, no Wert row for the new position.
+func TestOpen_ErgaenztPVWartungInBestehendenDaten(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "alt.db")
+	db, err := Open(path)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	werte := map[int64]FixkostenPositionWert{}
+	for _, kd := range KostenpositionDefaults {
+		if kd.Key != "pv_wartung" {
+			werte[kd.ID] = FixkostenPositionWert{Logik: kd.Logik, Typ: kd.Typ, Wert: 1}
+		}
+	}
+	eingabeID := mustCreateFixkostenEingabe(t, db, "2026-01-01", werte)
+	// Back to the old shape: the position row and the sort column are gone.
+	for _, stmt := range []string{
+		`DELETE FROM kostenpositionen WHERE key = 'pv_wartung'`,
+		`ALTER TABLE kostenpositionen DROP COLUMN sort`,
+	} {
+		if _, err := db.Exec(stmt); err != nil {
+			t.Fatalf("%s: %v", stmt, err)
+		}
+	}
+	db.Close()
+
+	db, err = Open(path)
+	if err != nil {
+		t.Fatalf("reopen store: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	var logik, typ string
+	var wert float64
+	if err := db.QueryRow(
+		`SELECT w.logik, w.typ, w.wert FROM fixkosten_werte w
+		 JOIN kostenpositionen k ON k.id = w.kostenposition_id
+		 WHERE w.fixkosten_eingabe_id = ? AND k.key = 'pv_wartung'`, eingabeID,
+	).Scan(&logik, &typ, &wert); err != nil {
+		t.Fatalf("pv_wartung Wert der bestehenden Eingabe: %v", err)
+	}
+	if logik != LogikWohnung1 || typ != TypJaehrlich || wert != 0 {
+		t.Errorf("pv_wartung = %s/%s/%v, want %s/%s/0", logik, typ, wert, LogikWohnung1, TypJaehrlich)
+	}
+	kps, err := Kostenpositionen(db)
+	if err != nil {
+		t.Fatalf("Kostenpositionen: %v", err)
+	}
+	for i, kd := range KostenpositionDefaults {
+		if kps[i].Key != kd.Key {
+			t.Errorf("Kostenpositionen[%d] = %s, want %s", i, kps[i].Key, kd.Key)
+		}
 	}
 }

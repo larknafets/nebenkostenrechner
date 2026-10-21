@@ -262,6 +262,7 @@ var demoKostenpositionWerte = map[string]float64{
 	"abwasser":         9.80,  // monthly
 	"internet":         39.90, // monthly
 	"wp_wartung":       14.50, // monthly
+	"pv_wartung":       0,     // annual, nicht umlagefähig
 	"streaming":        0,     // monthly, keine historischen Daten (Issue #143)
 	"sonstige":         0,     // monthly, keine historischen Daten (Issue #143)
 }

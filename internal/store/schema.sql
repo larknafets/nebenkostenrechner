@@ -50,7 +50,8 @@ CREATE TABLE IF NOT EXISTS kostenpositionen (
     id           INTEGER PRIMARY KEY,
     key          TEXT NOT NULL UNIQUE,
     label        TEXT NOT NULL,
-    umlagefaehig INTEGER NOT NULL DEFAULT 1
+    umlagefaehig INTEGER NOT NULL DEFAULT 1,
+    sort         INTEGER NOT NULL DEFAULT 0
 );
 
 -- haus is a single-row table (id is always 1) for house-wide Stammdaten

@@ -8682,7 +8682,7 @@ Dashboard:
     [0]:
       Monat: "2026-10-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -8796,6 +8796,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -8803,7 +8811,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -8822,7 +8830,7 @@ Dashboard:
     [1]:
       Monat: "2026-09-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -8936,6 +8944,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -8943,7 +8959,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -8962,7 +8978,7 @@ Dashboard:
     [2]:
       Monat: "2026-08-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -9076,6 +9092,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -9083,7 +9107,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -9102,7 +9126,7 @@ Dashboard:
     [3]:
       Monat: "2026-07-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -9216,6 +9240,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -9223,7 +9255,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -9242,7 +9274,7 @@ Dashboard:
     [4]:
       Monat: "2026-06-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -9356,6 +9388,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -9363,7 +9403,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -9382,7 +9422,7 @@ Dashboard:
     [5]:
       Monat: "2026-05-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -9496,6 +9536,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -9503,7 +9551,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -9522,7 +9570,7 @@ Dashboard:
     [6]:
       Monat: "2026-04-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -9636,6 +9684,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -9643,7 +9699,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -9662,7 +9718,7 @@ Dashboard:
     [7]:
       Monat: "2026-03-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -9776,6 +9832,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -9783,7 +9847,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -9802,7 +9866,7 @@ Dashboard:
     [8]:
       Monat: "2026-02-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -9916,6 +9980,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -9923,7 +9995,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -9942,7 +10014,7 @@ Dashboard:
     [9]:
       Monat: "2026-01-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -10056,6 +10128,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -10063,7 +10143,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -10082,7 +10162,7 @@ Dashboard:
     [10]:
       Monat: "2025-12-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -10196,6 +10276,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -10203,7 +10291,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -10222,7 +10310,7 @@ Dashboard:
     [11]:
       Monat: "2025-11-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -10336,6 +10424,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -10343,7 +10439,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -10362,7 +10458,7 @@ Dashboard:
     [12]:
       Monat: "2025-10-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -10476,6 +10572,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -10483,7 +10587,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -10502,7 +10606,7 @@ Dashboard:
     [13]:
       Monat: "2025-09-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -10616,6 +10720,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -10623,7 +10735,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -10642,7 +10754,7 @@ Dashboard:
     [14]:
       Monat: "2025-08-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -10756,6 +10868,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -10763,7 +10883,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -10782,7 +10902,7 @@ Dashboard:
     [15]:
       Monat: "2025-07-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -10896,6 +11016,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -10903,7 +11031,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -10922,7 +11050,7 @@ Dashboard:
     [16]:
       Monat: "2025-06-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -11036,6 +11164,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -11043,7 +11179,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -11062,7 +11198,7 @@ Dashboard:
     [17]:
       Monat: "2025-05-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -11176,6 +11312,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -11183,7 +11327,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -11202,7 +11346,7 @@ Dashboard:
     [18]:
       Monat: "2025-04-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -11316,6 +11460,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -11323,7 +11475,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -11342,7 +11494,7 @@ Dashboard:
     [19]:
       Monat: "2025-03-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -11456,6 +11608,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -11463,7 +11623,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -11482,7 +11642,7 @@ Dashboard:
     [20]:
       Monat: "2025-02-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -11596,6 +11756,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -11603,7 +11771,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -11622,7 +11790,7 @@ Dashboard:
     [21]:
       Monat: "2025-01-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -11736,6 +11904,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -11743,7 +11919,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -11762,7 +11938,7 @@ Dashboard:
     [22]:
       Monat: "2024-12-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -11876,6 +12052,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -11883,7 +12067,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -11902,7 +12086,7 @@ Dashboard:
     [23]:
       Monat: "2024-11-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -12016,6 +12200,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -12023,7 +12215,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -12042,7 +12234,7 @@ Dashboard:
     [24]:
       Monat: "2024-10-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -12156,6 +12348,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -12163,7 +12363,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -12182,7 +12382,7 @@ Dashboard:
     [25]:
       Monat: "2024-09-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -12296,6 +12496,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -12303,7 +12511,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -12322,7 +12530,7 @@ Dashboard:
     [26]:
       Monat: "2024-08-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -12436,6 +12644,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -12443,7 +12659,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -12462,7 +12678,7 @@ Dashboard:
     [27]:
       Monat: "2024-07-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -12576,6 +12792,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -12583,7 +12807,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -12602,7 +12826,7 @@ Dashboard:
     [28]:
       Monat: "2024-06-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -12716,6 +12940,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -12723,7 +12955,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -12742,7 +12974,7 @@ Dashboard:
     [29]:
       Monat: "2024-05-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -12856,6 +13088,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -12863,7 +13103,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -12882,7 +13122,7 @@ Dashboard:
     [30]:
       Monat: "2024-04-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -12996,6 +13236,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -13003,7 +13251,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -13022,7 +13270,7 @@ Dashboard:
     [31]:
       Monat: "2024-03-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -13136,6 +13384,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -13143,7 +13399,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -13162,7 +13418,7 @@ Dashboard:
     [32]:
       Monat: "2024-02-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -13276,6 +13532,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -13283,7 +13547,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -13302,7 +13566,7 @@ Dashboard:
     [33]:
       Monat: "2024-01-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -13416,6 +13680,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -13423,7 +13695,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -13442,7 +13714,7 @@ Dashboard:
     [34]:
       Monat: "2023-12-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -13556,6 +13828,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -13563,7 +13843,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -13582,7 +13862,7 @@ Dashboard:
     [35]:
       Monat: "2023-11-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -13696,6 +13976,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -13703,7 +13991,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -13722,7 +14010,7 @@ Dashboard:
     [36]:
       Monat: "2023-10-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -13836,6 +14124,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -13843,7 +14139,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -13862,7 +14158,7 @@ Dashboard:
     [37]:
       Monat: "2023-09-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -13976,6 +14272,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -13983,7 +14287,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -14002,7 +14306,7 @@ Dashboard:
     [38]:
       Monat: "2023-08-01"
       Erg:
-        Positionen: [16]
+        Positionen: [17]
           [0]:
             Key: "grundsteuer"
             Label: "Grundsteuer"
@@ -14116,6 +14420,14 @@ Dashboard:
             KostenW1: 7.25
             KostenW2: 7.25
           [14]:
+            Key: "pv_wartung"
+            Label: "Wartungskosten PV-Anlage"
+            Logik: "wohnung1"
+            Typ: "jaehrlich"
+            Monatswert: 0.00
+            KostenW1: 0.00
+            KostenW2: 0.00
+          [15]:
             Key: "streaming"
             Label: "Streaming-Dienste"
             Logik: "wohneinheit"
@@ -14123,7 +14435,7 @@ Dashboard:
             Monatswert: 0.00
             KostenW1: 0.00
             KostenW2: 0.00
-          [15]:
+          [16]:
             Key: "sonstige"
             Label: "Sonstige Kosten"
             Logik: "wohneinheit"
@@ -14144,7 +14456,7 @@ Fixkosten-Liste: [39]
   [0]:
     Monat: "2026-10-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -14258,6 +14570,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -14265,7 +14585,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -14284,7 +14604,7 @@ Fixkosten-Liste: [39]
   [1]:
     Monat: "2026-09-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -14398,6 +14718,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -14405,7 +14733,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -14424,7 +14752,7 @@ Fixkosten-Liste: [39]
   [2]:
     Monat: "2026-08-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -14538,6 +14866,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -14545,7 +14881,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -14564,7 +14900,7 @@ Fixkosten-Liste: [39]
   [3]:
     Monat: "2026-07-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -14678,6 +15014,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -14685,7 +15029,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -14704,7 +15048,7 @@ Fixkosten-Liste: [39]
   [4]:
     Monat: "2026-06-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -14818,6 +15162,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -14825,7 +15177,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -14844,7 +15196,7 @@ Fixkosten-Liste: [39]
   [5]:
     Monat: "2026-05-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -14958,6 +15310,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -14965,7 +15325,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -14984,7 +15344,7 @@ Fixkosten-Liste: [39]
   [6]:
     Monat: "2026-04-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -15098,6 +15458,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -15105,7 +15473,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -15124,7 +15492,7 @@ Fixkosten-Liste: [39]
   [7]:
     Monat: "2026-03-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -15238,6 +15606,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -15245,7 +15621,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -15264,7 +15640,7 @@ Fixkosten-Liste: [39]
   [8]:
     Monat: "2026-02-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -15378,6 +15754,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -15385,7 +15769,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -15404,7 +15788,7 @@ Fixkosten-Liste: [39]
   [9]:
     Monat: "2026-01-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -15518,6 +15902,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -15525,7 +15917,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -15544,7 +15936,7 @@ Fixkosten-Liste: [39]
   [10]:
     Monat: "2025-12-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -15658,6 +16050,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -15665,7 +16065,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -15684,7 +16084,7 @@ Fixkosten-Liste: [39]
   [11]:
     Monat: "2025-11-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -15798,6 +16198,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -15805,7 +16213,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -15824,7 +16232,7 @@ Fixkosten-Liste: [39]
   [12]:
     Monat: "2025-10-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -15938,6 +16346,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -15945,7 +16361,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -15964,7 +16380,7 @@ Fixkosten-Liste: [39]
   [13]:
     Monat: "2025-09-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -16078,6 +16494,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -16085,7 +16509,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -16104,7 +16528,7 @@ Fixkosten-Liste: [39]
   [14]:
     Monat: "2025-08-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -16218,6 +16642,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -16225,7 +16657,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -16244,7 +16676,7 @@ Fixkosten-Liste: [39]
   [15]:
     Monat: "2025-07-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -16358,6 +16790,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -16365,7 +16805,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -16384,7 +16824,7 @@ Fixkosten-Liste: [39]
   [16]:
     Monat: "2025-06-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -16498,6 +16938,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -16505,7 +16953,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -16524,7 +16972,7 @@ Fixkosten-Liste: [39]
   [17]:
     Monat: "2025-05-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -16638,6 +17086,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -16645,7 +17101,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -16664,7 +17120,7 @@ Fixkosten-Liste: [39]
   [18]:
     Monat: "2025-04-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -16778,6 +17234,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -16785,7 +17249,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -16804,7 +17268,7 @@ Fixkosten-Liste: [39]
   [19]:
     Monat: "2025-03-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -16918,6 +17382,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -16925,7 +17397,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -16944,7 +17416,7 @@ Fixkosten-Liste: [39]
   [20]:
     Monat: "2025-02-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -17058,6 +17530,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -17065,7 +17545,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -17084,7 +17564,7 @@ Fixkosten-Liste: [39]
   [21]:
     Monat: "2025-01-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -17198,6 +17678,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -17205,7 +17693,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -17224,7 +17712,7 @@ Fixkosten-Liste: [39]
   [22]:
     Monat: "2024-12-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -17338,6 +17826,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -17345,7 +17841,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -17364,7 +17860,7 @@ Fixkosten-Liste: [39]
   [23]:
     Monat: "2024-11-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -17478,6 +17974,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -17485,7 +17989,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -17504,7 +18008,7 @@ Fixkosten-Liste: [39]
   [24]:
     Monat: "2024-10-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -17618,6 +18122,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -17625,7 +18137,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -17644,7 +18156,7 @@ Fixkosten-Liste: [39]
   [25]:
     Monat: "2024-09-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -17758,6 +18270,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -17765,7 +18285,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -17784,7 +18304,7 @@ Fixkosten-Liste: [39]
   [26]:
     Monat: "2024-08-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -17898,6 +18418,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -17905,7 +18433,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -17924,7 +18452,7 @@ Fixkosten-Liste: [39]
   [27]:
     Monat: "2024-07-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -18038,6 +18566,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -18045,7 +18581,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -18064,7 +18600,7 @@ Fixkosten-Liste: [39]
   [28]:
     Monat: "2024-06-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -18178,6 +18714,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -18185,7 +18729,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -18204,7 +18748,7 @@ Fixkosten-Liste: [39]
   [29]:
     Monat: "2024-05-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -18318,6 +18862,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -18325,7 +18877,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -18344,7 +18896,7 @@ Fixkosten-Liste: [39]
   [30]:
     Monat: "2024-04-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -18458,6 +19010,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -18465,7 +19025,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -18484,7 +19044,7 @@ Fixkosten-Liste: [39]
   [31]:
     Monat: "2024-03-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -18598,6 +19158,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -18605,7 +19173,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -18624,7 +19192,7 @@ Fixkosten-Liste: [39]
   [32]:
     Monat: "2024-02-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -18738,6 +19306,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -18745,7 +19321,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -18764,7 +19340,7 @@ Fixkosten-Liste: [39]
   [33]:
     Monat: "2024-01-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -18878,6 +19454,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -18885,7 +19469,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -18904,7 +19488,7 @@ Fixkosten-Liste: [39]
   [34]:
     Monat: "2023-12-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -19018,6 +19602,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -19025,7 +19617,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -19044,7 +19636,7 @@ Fixkosten-Liste: [39]
   [35]:
     Monat: "2023-11-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -19158,6 +19750,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -19165,7 +19765,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -19184,7 +19784,7 @@ Fixkosten-Liste: [39]
   [36]:
     Monat: "2023-10-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -19298,6 +19898,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -19305,7 +19913,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -19324,7 +19932,7 @@ Fixkosten-Liste: [39]
   [37]:
     Monat: "2023-09-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -19438,6 +20046,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -19445,7 +20061,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
@@ -19464,7 +20080,7 @@ Fixkosten-Liste: [39]
   [38]:
     Monat: "2023-08-01"
     Erg:
-      Positionen: [16]
+      Positionen: [17]
         [0]:
           Key: "grundsteuer"
           Label: "Grundsteuer"
@@ -19578,6 +20194,14 @@ Fixkosten-Liste: [39]
           KostenW1: 7.25
           KostenW2: 7.25
         [14]:
+          Key: "pv_wartung"
+          Label: "Wartungskosten PV-Anlage"
+          Logik: "wohnung1"
+          Typ: "jaehrlich"
+          Monatswert: 0.00
+          KostenW1: 0.00
+          KostenW2: 0.00
+        [15]:
           Key: "streaming"
           Label: "Streaming-Dienste"
           Logik: "wohneinheit"
@@ -19585,7 +20209,7 @@ Fixkosten-Liste: [39]
           Monatswert: 0.00
           KostenW1: 0.00
           KostenW2: 0.00
-        [15]:
+        [16]:
           Key: "sonstige"
           Label: "Sonstige Kosten"
           Logik: "wohneinheit"
