@@ -469,11 +469,17 @@ func TestStammdaten_KostenpositionVerschieben(t *testing.T) {
 		handleMoveKostenposition()(w, requestWithDB(req, db))
 		return w
 	}
-	reihenfolgeOK := func(name string, h http.HandlerFunc, path string) {
+	// ab: only the part of the page after this marker is compared, so the
+	// Stammdaten check looks at the order list and not at the Umlagefähig
+	// list above it.
+	reihenfolgeOK := func(name string, h http.HandlerFunc, path, ab string) {
 		t.Helper()
 		w := httptest.NewRecorder()
 		h(w, requestWithDB(httptest.NewRequest(http.MethodGet, path, nil), db))
-		body := w.Body.String()
+		_, body, ok := strings.Cut(w.Body.String(), ab)
+		if !ok {
+			t.Fatalf("%s: Marker %q nicht gefunden", name, ab)
+		}
 		pv, wp := strings.Index(body, "Wartungskosten PV-Anlage"), strings.Index(body, "Wartungskosten Wärmepumpe")
 		if pv < 0 || wp < 0 || pv > wp {
 			t.Errorf("%s: PV-Anlage bei %d, Wärmepumpe bei %d, want PV-Anlage zuerst", name, pv, wp)
@@ -483,14 +489,13 @@ func TestStammdaten_KostenpositionVerschieben(t *testing.T) {
 	if w := move("17", "hoch"); w.Code != http.StatusFound {
 		t.Fatalf("POST status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())
 	}
-	reihenfolgeOK("Fixkosten-Eingabe", handleFixkostenForm(a), "/fixkosten/neu")
-	// The page lists the Umlagefähig checkboxes first, then the order list: both follow the order.
+	reihenfolgeOK("Fixkosten-Eingabe", handleFixkostenForm(a), "/fixkosten/neu", "")
 	w := httptest.NewRecorder()
 	handleStammdatenForm(a)(w, requestWithDB(httptest.NewRequest(http.MethodGet, "/stammdaten", nil), db))
 	if got := strings.Count(w.Body.String(), `name="richtung" value="hoch"`); got != 17 {
 		t.Errorf("Hoch-Buttons = %d, want 17", got)
 	}
-	reihenfolgeOK("Stammdaten", handleStammdatenForm(a), "/stammdaten")
+	reihenfolgeOK("Stammdaten", handleStammdatenForm(a), "/stammdaten", `id="reihenfolge"`)
 
 	if w := move("17", "seitwaerts"); w.Code != http.StatusBadRequest {
 		t.Errorf("ungültige Richtung: status = %d, want %d", w.Code, http.StatusBadRequest)
