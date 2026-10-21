@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 )
@@ -51,7 +52,8 @@ type Kostenposition struct {
 	Umlagefaehig bool
 }
 
-// Kostenpositionen returns the 17 Kostenpositionen in display order.
+// Kostenpositionen returns the 17 Kostenpositionen in display order (see
+// MoveKostenposition).
 func Kostenpositionen(db *sql.DB) ([]Kostenposition, error) {
 	rows, err := db.Query(`SELECT id, key, label, umlagefaehig FROM kostenpositionen ORDER BY sort, id`)
 	if err != nil {
@@ -68,6 +70,59 @@ func Kostenpositionen(db *sql.DB) ([]Kostenposition, error) {
 		out = append(out, kp)
 	}
 	return out, rows.Err()
+}
+
+// ErrKostenpositionNotFound is returned by MoveKostenposition for an unknown id.
+var ErrKostenpositionNotFound = errors.New("kostenposition not found")
+
+// MoveKostenposition moves one Kostenposition a step up (earlier) or down
+// (later) in the display order, which Fixkosten-Eingabe, Stammdaten and
+// Abrechnung share. At the first or last place it changes nothing. The whole
+// order is renumbered, so it stays gap- and tie-free.
+func MoveKostenposition(db *sql.DB, id int64, up bool) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.Query(`SELECT id FROM kostenpositionen ORDER BY sort, id`)
+	if err != nil {
+		return fmt.Errorf("query kostenpositionen: %w", err)
+	}
+	var ids []int64
+	for rows.Next() {
+		var kpID int64
+		if err := rows.Scan(&kpID); err != nil {
+			rows.Close()
+			return fmt.Errorf("scan kostenposition: %w", err)
+		}
+		ids = append(ids, kpID)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	rows.Close()
+
+	pos := slices.Index(ids, id)
+	if pos < 0 {
+		return ErrKostenpositionNotFound
+	}
+	other := pos + 1
+	if up {
+		other = pos - 1
+	}
+	if other < 0 || other >= len(ids) {
+		return nil
+	}
+	ids[pos], ids[other] = ids[other], ids[pos]
+	for i, kpID := range ids {
+		if _, err := tx.Exec(`UPDATE kostenpositionen SET sort = ? WHERE id = ?`, i+1, kpID); err != nil {
+			return fmt.Errorf("set sort for kostenposition %d: %w", kpID, err)
+		}
+	}
+	return tx.Commit()
 }
 
 // FixkostenPositionWert is one Kostenposition's Logik/Typ/Wert for a single

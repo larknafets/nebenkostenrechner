@@ -454,3 +454,48 @@ func TestStammdaten_MieterSeit(t *testing.T) {
 		t.Errorf("MieterSeit after clearing = %q, want empty", got)
 	}
 }
+
+// TestStammdaten_KostenpositionVerschieben verifies the shared order: moving a
+// position on /stammdaten changes Stammdaten and the Fixkosten-Eingabe form.
+func TestStammdaten_KostenpositionVerschieben(t *testing.T) {
+	db := openTestDB(t)
+	a := newAuth("", nil)
+
+	move := func(id, richtung string) *httptest.ResponseRecorder {
+		form := url.Values{"id": {id}, "richtung": {richtung}}
+		req := httptest.NewRequest(http.MethodPost, "/stammdaten/sortierung", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
+		handleMoveKostenposition()(w, requestWithDB(req, db))
+		return w
+	}
+	reihenfolgeOK := func(name string, h http.HandlerFunc, path string) {
+		t.Helper()
+		w := httptest.NewRecorder()
+		h(w, requestWithDB(httptest.NewRequest(http.MethodGet, path, nil), db))
+		body := w.Body.String()
+		pv, wp := strings.Index(body, "Wartungskosten PV-Anlage"), strings.Index(body, "Wartungskosten Wärmepumpe")
+		if pv < 0 || wp < 0 || pv > wp {
+			t.Errorf("%s: PV-Anlage bei %d, Wärmepumpe bei %d, want PV-Anlage zuerst", name, pv, wp)
+		}
+	}
+
+	if w := move("17", "hoch"); w.Code != http.StatusFound {
+		t.Fatalf("POST status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())
+	}
+	reihenfolgeOK("Fixkosten-Eingabe", handleFixkostenForm(a), "/fixkosten/neu")
+	// The page lists the Umlagefähig checkboxes first, then the order list: both follow the order.
+	w := httptest.NewRecorder()
+	handleStammdatenForm(a)(w, requestWithDB(httptest.NewRequest(http.MethodGet, "/stammdaten", nil), db))
+	if got := strings.Count(w.Body.String(), `name="richtung" value="hoch"`); got != 17 {
+		t.Errorf("Hoch-Buttons = %d, want 17", got)
+	}
+	reihenfolgeOK("Stammdaten", handleStammdatenForm(a), "/stammdaten")
+
+	if w := move("17", "seitwaerts"); w.Code != http.StatusBadRequest {
+		t.Errorf("ungültige Richtung: status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+	if w := move("999", "hoch"); w.Code != http.StatusNotFound {
+		t.Errorf("unbekannte Position: status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}

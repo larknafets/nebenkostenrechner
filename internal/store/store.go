@@ -295,10 +295,11 @@ func ensureKostenpositionenUmlagefaehigColumn(db *sql.DB) error {
 }
 
 // ensureKostenpositionenSortColumn adds the sort column to a kostenpositionen
-// table that predates it. The display order is not the id order any more, so a
-// new position can sit between two old ones without renumbering ids that
-// fixkosten_werte references. The values are not set here: seed() writes
-// them on every start, from the order of KostenpositionDefaults.
+// table that predates it and gives the existing rows the order of
+// KostenpositionDefaults. The display order is not the id order, so ids that
+// fixkosten_werte references never change. Afterwards sort is a user-edited
+// Stammdaten value (MoveKostenposition), so only the call that adds the column
+// sets it.
 func ensureKostenpositionenSortColumn(db *sql.DB) error {
 	ok, err := hasColumn(db, "kostenpositionen", "sort")
 	if err != nil {
@@ -307,8 +308,21 @@ func ensureKostenpositionenSortColumn(db *sql.DB) error {
 	if ok {
 		return nil
 	}
-	_, err = db.Exec(`ALTER TABLE kostenpositionen ADD COLUMN sort INTEGER NOT NULL DEFAULT 0`)
-	return err
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(`ALTER TABLE kostenpositionen ADD COLUMN sort INTEGER NOT NULL DEFAULT 0`); err != nil {
+		return fmt.Errorf("add sort column: %w", err)
+	}
+	for i, kp := range KostenpositionDefaults {
+		if _, err := tx.Exec(`UPDATE kostenpositionen SET sort = ? WHERE id = ?`, i+1, kp.ID); err != nil {
+			return fmt.Errorf("set sort for kostenposition %q: %w", kp.Key, err)
+		}
+	}
+	return tx.Commit()
 }
 
 func boolToInt(b bool) int {
@@ -932,9 +946,10 @@ type KostenpositionDefault struct {
 	Umlagefaehig bool
 }
 
-// KostenpositionDefaults is the fixed list of the 17 Kostenpositionen, in
-// display order (the slice order becomes kostenpositionen.sort, the ids stay
-// stable and are not in display order).
+// KostenpositionDefaults is the fixed list of the 17 Kostenpositionen. The
+// slice order is the starting display order and the fixed column order of the
+// Fixkosten CSV; afterwards the user orders the display on /stammdaten
+// (kostenpositionen.sort). A position added later goes to the end.
 var KostenpositionDefaults = []KostenpositionDefault{
 	{ID: 1, Key: "grundsteuer", Label: "Grundsteuer", Logik: LogikQM, Typ: TypJaehrlich, Umlagefaehig: true},
 	{ID: 2, Key: "gebaeudevers", Label: "Wohngebäudeversicherung", Logik: LogikQM, Typ: TypJaehrlich, Umlagefaehig: true},
@@ -992,14 +1007,15 @@ func seed(db *sql.DB) error {
 	// (immutable, referenced by id elsewhere) - Issue #71 renamed 2 labels
 	// in code but an already-seeded row silently kept the old text until
 	// this upsert.
-	for i, kp := range KostenpositionDefaults {
-		// umlagefaehig is only set on the INSERT: it is a user-edited
-		// Stammdaten value (Issue #163), so the DO UPDATE must never reset it.
-		// sort is structure like label and follows the slice order.
+	for _, kp := range KostenpositionDefaults {
+		// umlagefaehig and sort are only set on the INSERT: both are user-
+		// edited Stammdaten values (Issue #163, position order), so the DO
+		// UPDATE must never reset them. A new row goes to the end of the order.
 		if _, err := db.Exec(
-			`INSERT INTO kostenpositionen (id, key, label, umlagefaehig, sort) VALUES (?, ?, ?, ?, ?)
-			 ON CONFLICT(id) DO UPDATE SET label = excluded.label, sort = excluded.sort`,
-			kp.ID, kp.Key, kp.Label, boolToInt(kp.Umlagefaehig), i+1,
+			`INSERT INTO kostenpositionen (id, key, label, umlagefaehig, sort)
+			 VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(sort), 0) + 1 FROM kostenpositionen))
+			 ON CONFLICT(id) DO UPDATE SET label = excluded.label`,
+			kp.ID, kp.Key, kp.Label, boolToInt(kp.Umlagefaehig),
 		); err != nil {
 			return fmt.Errorf("seed kostenposition %q: %w", kp.Key, err)
 		}
