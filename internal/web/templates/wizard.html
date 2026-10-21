@@ -95,6 +95,7 @@
 </form>
 
 <script>
+  {{lueckenWarnungJS}}
   const steps = Array.from(document.querySelectorAll('.c-pane')).map(el => el.dataset.step);
   let current = 0;
 
@@ -152,23 +153,8 @@
   const dateInput = document.querySelector('input[name="reading_date"]');
   function checkGap() {
     const warnEl = document.getElementById('warn-reading_date');
-    const prevDateStr = dateInput.dataset.prevDate;
-    if (!warnEl || !prevDateStr || !dateInput.value) { if (warnEl) warnEl.textContent = ''; return; }
-    const newDate = new Date(dateInput.value);
-    const prevDate = new Date(prevDateStr);
-    if (isNaN(newDate.getTime()) || isNaN(prevDate.getTime())) { warnEl.textContent = ''; return; }
-    // Date.setMonth() overflows for day-of-month 29-31 into short months
-    // (e.g. Jan 31 + 1 month -> Mar 2/3, not Feb 28/29) - clamp instead.
-    const targetMonthFirst = new Date(prevDate.getFullYear(), prevDate.getMonth() + 1, 1);
-    const lastDayOfTargetMonth = new Date(targetMonthFirst.getFullYear(), targetMonthFirst.getMonth() + 1, 0).getDate();
-    const oneMonthLater = new Date(targetMonthFirst.getFullYear(), targetMonthFirst.getMonth(), Math.min(prevDate.getDate(), lastDayOfTargetMonth));
-    if (newDate.getTime() > oneMonthLater.getTime()) {
-      const diffDays = (newDate - prevDate) / (1000 * 60 * 60 * 24);
-      const months = Math.round((diffDays / 30.44) * 10) / 10;
-      warnEl.textContent = '⚠ Verbrauch über ' + months + ' Monate (letzte Ablesung: ' + prevDateStr + ')';
-    } else {
-      warnEl.textContent = '';
-    }
+    if (!warnEl) return;
+    warnEl.textContent = lueckenWarnung(dateInput.dataset.prevDate, dateInput.value);
   }
   if (dateInput) {
     dateInput.addEventListener('change', checkGap);
