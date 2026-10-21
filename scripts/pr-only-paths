@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Exits 1 when the commits old..new change something that must go through a PR
+# even though its commit type (build, ci, chore) would go straight to `main`:
+# the Go version, the Dockerfile and the workflows (docs/agents/git-workflow.md).
+# The pre-push hook calls it for a push to `main`.
+set -euo pipefail
+old=$1 new=$2
+
+hits=$(git diff --name-only "$old" "$new" -- Dockerfile .github/workflows || true)
+if git diff -U0 "$old" "$new" -- go.mod | grep -qE '^[+-](go|toolchain) '; then
+  hits=$(printf '%s\ngo.mod (go/toolchain line)' "$hits")
+fi
+hits=$(printf '%s' "$hits" | sed '/^$/d')
+
+if [ -n "$hits" ]; then
+  echo "pre-push: these changes need a PR so CI runs first (docs/agents/git-workflow.md):" >&2
+  echo "$hits" | sed 's/^/  /' >&2
+  exit 1
+fi
