@@ -71,6 +71,7 @@ func kategorieIcon(label string) template.HTML {
 }
 
 var templateFuncs = template.FuncMap{
+	"updateURL":     updateURL,
 	"de":            formatDecimalDE,
 	"de0":           formatDecimalDE0,
 	"de1":           formatDecimalDE1,
