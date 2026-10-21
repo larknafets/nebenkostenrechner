@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Regenerates docs/screenshots from the demo data: starts the app on a temp
+# database, takes full-page screenshots with headless Chrome (scripts/
+# screenshots.mjs) and stores them as WebP. Run it after a visible UI change
+# and commit the result: `scripts/screenshots`.
+# Needs Node, Google Chrome and cwebp (brew install webp).
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+command -v node >/dev/null || { echo "node not installed" >&2; exit 1; }
+command -v cwebp >/dev/null || { echo "cwebp not installed (brew install webp)" >&2; exit 1; }
+
+dir=$(mktemp -d)
+pid=""
+cleanup() {
+  if [ -n "$pid" ]; then kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; fi
+  rm -rf "$dir"
+}
+trap cleanup EXIT
+
+port=${SCREENSHOT_PORT:-18095}
+go build -o "$dir/app" ./cmd/nebenkostenrechner
+DB_PATH="$dir/nk.db" LISTEN_ADDR="127.0.0.1:$port" WIDGET_LISTEN_ADDR="127.0.0.1:$((port + 1))" "$dir/app" >"$dir/log" 2>&1 &
+pid=$!
+
+for _ in $(seq 50); do
+  curl -s -o /dev/null "localhost:$port/dashboard" && break
+  kill -0 "$pid" 2>/dev/null || { cat "$dir/log"; echo "screenshots: app exited on start" >&2; exit 1; }
+  sleep 0.2
+done
+
+BASE="http://localhost:$port" OUT="$dir/png" node scripts/screenshots.mjs
+
+rm -f docs/screenshots/*.webp
+mkdir -p docs/screenshots
+for png in "$dir"/png/*.png; do
+  cwebp -quiet -q 90 -m 6 "$png" -o "docs/screenshots/$(basename "${png%.png}").webp"
+done
+echo "screenshots: $(ls docs/screenshots | wc -l | tr -d ' ') files in docs/screenshots"

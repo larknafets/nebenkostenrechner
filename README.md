@@ -2,6 +2,22 @@
 
 Web-App zur monatlichen Nebenkostenabrechnung für ein Zweifamilienhaus mit Wärmepumpe und PV-Anlage. Berechnet Strom-, Heizung/Warmwasser- und Wasserkosten je Wohnung aus monatlich erfassten Zählerständen, sowie Fixkosten/Grundgebühren (Grundsteuer, Versicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise, Wärmepumpenwartung, PV-Anlagenwartung). Zusätzlich können Nebenkostenabschläge eingetragen und gegengerechnet werden, so daß eine erfassungsaktuelle Guthaben/Nachzahlung Übersicht entsteht. Angenommen wird, dass es Hauptzähler für die Gemeinschaft und separate Zwischenzähler für die Einliegerwohnung (Wohnung 2) und Wallboxen gibt.
 
+<p align="center">
+  <img src="docs/screenshots/hero.webp" alt="Dashboard im dunklen Design mit Jahressummen je Wohnung, Wallboxen, PV-Anlage und den Monatskosten von Wohnung 2" width="480">
+</p>
+
+## Screenshots
+
+Alle Bilder stammen aus dem [Demo-Modus](#demo-modus), die Daten sind erfunden.
+
+| Seite | Ansichten |
+|---|---|
+| Dashboard | [Verbrauch](docs/screenshots/dashboard.webp), [Fixkosten](docs/screenshots/dashboard-fixkosten.webp), [Kombiniert](docs/screenshots/dashboard-kombiniert.webp), [Wohnung 2](docs/screenshots/dashboard-wohnung2.webp), [PV-Anlage](docs/screenshots/dashboard-pv-anlage.webp), [dunkles Design](docs/screenshots/dashboard-dunkel.webp) |
+| Ablesungen | [Liste](docs/screenshots/ablesungen.webp), [Detail](docs/screenshots/ablesung-detail.webp) |
+| Fixkosten | [Liste](docs/screenshots/fixkosten.webp), [Detail](docs/screenshots/fixkosten-detail.webp), [neue Eingabe](docs/screenshots/fixkosten-neu.webp) |
+| Stammdaten | [Stammdaten](docs/screenshots/stammdaten.webp) |
+| Abrechnung | [Jahresabrechnung](docs/screenshots/abrechnung.webp) |
+
 ## Stammdaten
 
 Auf der `/stammdaten`-Seite gepflegt werden folgende Daten gepflegt. und gelten sofort auf alle Berechnungen:
