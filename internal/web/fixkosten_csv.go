@@ -13,7 +13,7 @@ import (
 
 // fixkostenCsvHeader is the canonical CSV column order for both export
 // (Issue #132) and import (Issue #133) - monat, then Logik/Typ/Wert per
-// Kostenposition (in store.KostenpositionDefaults' display order, since
+// Kostenposition (in store.KostenpositionDefaults' fixed order, not the display order, since
 // Logik/Typ are editable per Eingabe and can't be omitted like a period's
 // static meter keys), then Personen/Abschlag per apartment (fixed ids 1/2,
 // see store's seed()).

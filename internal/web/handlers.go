@@ -139,6 +139,7 @@ func NewMux(db, demoDB *sql.DB, version, buildDate string) *http.ServeMux {
 	mux.HandleFunc("GET /abrechnung", withDB(db, demoDB, a.RequireLogin(handleAbrechnung(a))))
 	mux.HandleFunc("GET /stammdaten", withDB(db, demoDB, handleStammdatenForm(a)))
 	mux.HandleFunc("POST /stammdaten", withDB(db, demoDB, a.RequireLogin(handleUpdateStammdaten())))
+	mux.HandleFunc("POST /stammdaten/sortierung", withDB(db, demoDB, a.RequireLogin(handleMoveKostenposition())))
 	mux.HandleFunc("GET /fixkosten", withDB(db, demoDB, handleFixkostenListe(a)))
 	mux.HandleFunc("GET /fixkosten/export.csv", withDB(db, demoDB, a.RequireLogin(handleExportFixkostenCSV())))
 	mux.HandleFunc("GET /fixkosten/neu", withDB(db, demoDB, a.RequireLogin(handleFixkostenForm(a))))

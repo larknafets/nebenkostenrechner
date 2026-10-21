@@ -76,6 +76,23 @@
   {{end}}
 </form>
 
+{{if .IsLoggedIn}}
+<div class="panel" id="reihenfolge" style="margin-top:1rem">
+  <h3>Reihenfolge der Kostenpositionen</h3>
+  <p class="muted">Gilt für Fixkosten-Eingabe, Fixkosten-Anzeige und Abrechnung. Ungespeicherte Änderungen im Formular oben gehen beim Verschieben verloren.</p>
+  {{range $i, $kp := .Kostenpositionen}}
+  <div class="field" style="display:flex; gap:.5rem; align-items:center">
+    <form method="post" action="{{$.Base}}/stammdaten/sortierung" style="display:flex; gap:.25rem">
+      <input type="hidden" name="id" value="{{$kp.ID}}">
+      <button type="submit" name="richtung" value="hoch" aria-label="{{$kp.Label}} nach oben" {{if eq $i 0}}disabled{{end}}>&uarr;</button>
+      <button type="submit" name="richtung" value="runter" aria-label="{{$kp.Label}} nach unten" {{if eq $i $.LetzterIndex}}disabled{{end}}>&darr;</button>
+    </form>
+    <span>{{$kp.Label}}</span>
+  </div>
+  {{end}}
+</div>
+{{end}}
+
 <script>
   // "Mieter seit" gilt nur bei Vermietung.
   document.querySelectorAll('select[name^="status_"]').forEach(function (sel) {

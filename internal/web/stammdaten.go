@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -109,6 +110,7 @@ func handleStammdatenForm(a auth) http.HandlerFunc {
 			Aktuell          string
 			Apartments       []store.Apartment
 			Kostenpositionen []store.Kostenposition
+			LetzterIndex     int // Index der letzten Kostenposition, sperrt "nach unten"
 			Haus             store.Haus
 			GewichtungOpts   []heizungGewichtungOption
 		}{
@@ -116,6 +118,7 @@ func handleStammdatenForm(a auth) http.HandlerFunc {
 			Aktuell:          "stammdaten",
 			Apartments:       apartments,
 			Kostenpositionen: kostenpositionen,
+			LetzterIndex:     len(kostenpositionen) - 1,
 			Haus:             haus,
 			GewichtungOpts:   heizungGewichtungOptionsFor(haus.HeizungWaermeGewichtung),
 		}
@@ -216,5 +219,41 @@ func handleUpdateStammdaten() http.HandlerFunc {
 		}
 
 		http.Redirect(w, r, requestBase(r)+"/stammdaten", http.StatusFound)
+	}
+}
+
+// handleMoveKostenposition moves one Kostenposition up or down in the shared
+// display order (Fixkosten-Eingabe, Stammdaten, Abrechnung) and goes back to
+// the list on /stammdaten.
+func handleMoveKostenposition() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "invalid form: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		if err != nil {
+			http.Error(w, "ungültige Kostenposition", http.StatusBadRequest)
+			return
+		}
+		var up bool
+		switch r.FormValue("richtung") {
+		case "hoch":
+			up = true
+		case "runter":
+		default:
+			http.Error(w, "ungültige Richtung", http.StatusBadRequest)
+			return
+		}
+		if err := store.MoveKostenposition(db, id, up); err != nil {
+			if errors.Is(err, store.ErrKostenpositionNotFound) {
+				http.Error(w, "Kostenposition nicht gefunden", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "move: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, requestBase(r)+"/stammdaten#reihenfolge", http.StatusFound)
 	}
 }

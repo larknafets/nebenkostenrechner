@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -510,13 +511,86 @@ func TestOpen_ErgaenztPVWartungInBestehendenDaten(t *testing.T) {
 	if logik != LogikWohnung1 || typ != TypJaehrlich || wert != 0 {
 		t.Errorf("pv_wartung = %s/%s/%v, want %s/%s/0", logik, typ, wert, LogikWohnung1, TypJaehrlich)
 	}
+	// A position that is new to an existing order goes to the end.
 	kps, err := Kostenpositionen(db)
 	if err != nil {
 		t.Fatalf("Kostenpositionen: %v", err)
 	}
-	for i, kd := range KostenpositionDefaults {
-		if kps[i].Key != kd.Key {
-			t.Errorf("Kostenpositionen[%d] = %s, want %s", i, kps[i].Key, kd.Key)
+	if last := kps[len(kps)-1]; last.Key != "pv_wartung" {
+		t.Errorf("letzte Kostenposition = %s, want pv_wartung", last.Key)
+	}
+}
+
+func kostenpositionKeys(t *testing.T, db *sql.DB) []string {
+	t.Helper()
+	kps, err := Kostenpositionen(db)
+	if err != nil {
+		t.Fatalf("Kostenpositionen: %v", err)
+	}
+	keys := make([]string, len(kps))
+	for i, kp := range kps {
+		keys[i] = kp.Key
+	}
+	return keys
+}
+
+func TestMoveKostenposition(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "sort.db")
+	db, err := Open(path)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	// pv_wartung (id 17) sits right below wp_wartung (id 14) and moves up
+	// past it.
+	if err := MoveKostenposition(db, 17, true); err != nil {
+		t.Fatalf("MoveKostenposition hoch: %v", err)
+	}
+	keys := kostenpositionKeys(t, db)
+	if keys[12] != "internet" || keys[13] != "pv_wartung" || keys[14] != "wp_wartung" {
+		t.Errorf("nach hoch = %v, want internet, pv_wartung, wp_wartung an Stelle 13 bis 15", keys[12:15])
+	}
+
+	// ...and back down again.
+	if err := MoveKostenposition(db, 17, false); err != nil {
+		t.Fatalf("MoveKostenposition runter: %v", err)
+	}
+	keys = kostenpositionKeys(t, db)
+	if keys[13] != "wp_wartung" || keys[14] != "pv_wartung" {
+		t.Errorf("nach runter = %v, want wp_wartung, pv_wartung an Stelle 14 und 15", keys[13:15])
+	}
+
+	// First position up and last position down change nothing.
+	before := kostenpositionKeys(t, db)
+	for _, c := range []struct {
+		id int64
+		up bool
+	}{{1, true}, {16, false}} {
+		if err := MoveKostenposition(db, c.id, c.up); err != nil {
+			t.Fatalf("MoveKostenposition(%d, %v): %v", c.id, c.up, err)
 		}
+	}
+	if got := kostenpositionKeys(t, db); !slices.Equal(got, before) {
+		t.Errorf("Rand-Verschieben änderte die Reihenfolge: %v, want %v", got, before)
+	}
+
+	if err := MoveKostenposition(db, 999, true); !errors.Is(err, ErrKostenpositionNotFound) {
+		t.Errorf("unbekannte id: err = %v, want ErrKostenpositionNotFound", err)
+	}
+
+	// The user's order survives a restart (seed must not reset it).
+	if err := MoveKostenposition(db, 17, true); err != nil {
+		t.Fatalf("MoveKostenposition: %v", err)
+	}
+	want := kostenpositionKeys(t, db)
+	db.Close()
+	db, err = Open(path)
+	if err != nil {
+		t.Fatalf("reopen store: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	if got := kostenpositionKeys(t, db); !slices.Equal(got, want) {
+		t.Errorf("Reihenfolge nach Neustart = %v, want %v", got, want)
 	}
 }
