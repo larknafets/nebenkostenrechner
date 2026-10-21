@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Starts the app on a temp database and fetches the main pages. A page passes
+# with status 200 and a closing </html>: Go's html/template can flush a 200
+# before it fails mid-render, so the status alone proves nothing. Run it after
+# a change to a handler or a template: `scripts/smoke`.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+dir=$(mktemp -d)
+pid=""
+cleanup() {
+  if [ -n "$pid" ]; then kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; fi
+  rm -rf "$dir"
+}
+trap cleanup EXIT
+
+port=${SMOKE_PORT:-18090}
+go build -o "$dir/app" ./cmd/nebenkostenrechner
+DB_PATH="$dir/nk.db" LISTEN_ADDR=":$port" WIDGET_LISTEN_ADDR=":$((port + 1))" "$dir/app" >"$dir/log" 2>&1 &
+pid=$!
+
+for _ in $(seq 50); do
+  curl -s -o /dev/null "localhost:$port/dashboard" && break
+  kill -0 "$pid" 2>/dev/null || { cat "$dir/log"; echo "smoke: app exited on start" >&2; exit 1; }
+  sleep 0.2
+done
+
+fail=0
+for path in dashboard fixkosten fixkosten/neu stammdaten berechnungslogik abrechnung; do
+  code=$(curl -s -o "$dir/body" -w '%{http_code}' "localhost:$port/$path")
+  if [ "$code" = 200 ] && grep -q '</html>' "$dir/body"; then
+    printf 'ok   /%s\n' "$path"
+  else
+    printf 'FAIL /%s (status %s, closing </html>: %s)\n' "$path" "$code" "$(grep -c '</html>' "$dir/body" || true)" >&2
+    fail=1
+  fi
+done
+[ "$fail" = 0 ] && echo "smoke: all pages ok"
+exit "$fail"
