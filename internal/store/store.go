@@ -85,6 +85,11 @@ func Open(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("migrate kostenpositionen umlagefaehig column: %w", err)
 	}
 
+	if err := ensureKostenpositionenSortColumn(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("migrate kostenpositionen sort column: %w", err)
+	}
+
 	if err := ensureApartmentsDetailsColumns(db); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("migrate apartments details columns: %w", err)
@@ -287,6 +292,23 @@ func ensureKostenpositionenUmlagefaehigColumn(db *sql.DB) error {
 		}
 	}
 	return tx.Commit()
+}
+
+// ensureKostenpositionenSortColumn adds the sort column to a kostenpositionen
+// table that predates it. The display order is not the id order any more, so a
+// new position can sit between two old ones without renumbering ids that
+// fixkosten_werte references. The values are not set here: seed() writes
+// them on every start, from the order of KostenpositionDefaults.
+func ensureKostenpositionenSortColumn(db *sql.DB) error {
+	ok, err := hasColumn(db, "kostenpositionen", "sort")
+	if err != nil {
+		return fmt.Errorf("inspect kostenpositionen columns: %w", err)
+	}
+	if ok {
+		return nil
+	}
+	_, err = db.Exec(`ALTER TABLE kostenpositionen ADD COLUMN sort INTEGER NOT NULL DEFAULT 0`)
+	return err
 }
 
 func boolToInt(b bool) int {
@@ -893,7 +915,7 @@ type apartmentSeed struct {
 
 func apartmentID(id int64) *int64 { return &id }
 
-// KostenpositionDefault is one of the 16 fixed Kostenpositionen (Issue #60)
+// KostenpositionDefault is one of the 17 fixed Kostenpositionen (Issue #60)
 // - id/key/label are app-fixed structure, seeded like meters. Logik/Typ are
 // only the starting values for the very first Fixkosten-Eingabe ever
 // created (Issue #105/#108) - every Eingabe afterwards is prefilled from
@@ -910,7 +932,9 @@ type KostenpositionDefault struct {
 	Umlagefaehig bool
 }
 
-// KostenpositionDefaults is the fixed, ordered list of the 16 Kostenpositionen.
+// KostenpositionDefaults is the fixed list of the 17 Kostenpositionen, in
+// display order (the slice order becomes kostenpositionen.sort, the ids stay
+// stable and are not in display order).
 var KostenpositionDefaults = []KostenpositionDefault{
 	{ID: 1, Key: "grundsteuer", Label: "Grundsteuer", Logik: LogikQM, Typ: TypJaehrlich, Umlagefaehig: true},
 	{ID: 2, Key: "gebaeudevers", Label: "Wohngebäudeversicherung", Logik: LogikQM, Typ: TypJaehrlich, Umlagefaehig: true},
@@ -926,6 +950,7 @@ var KostenpositionDefaults = []KostenpositionDefault{
 	{ID: 12, Key: "abwasser", Label: "Grundgebühr Abwasser", Logik: LogikWohneinheit, Typ: TypMonatlich, Umlagefaehig: true},
 	{ID: 13, Key: "internet", Label: "Grundgebühr Internet", Logik: LogikWohneinheit, Typ: TypMonatlich, Umlagefaehig: false},
 	{ID: 14, Key: "wp_wartung", Label: "Wartungskosten Wärmepumpe", Logik: LogikWohneinheit, Typ: TypMonatlich, Umlagefaehig: true},
+	{ID: 17, Key: "pv_wartung", Label: "Wartungskosten PV-Anlage", Logik: LogikWohnung1, Typ: TypJaehrlich, Umlagefaehig: false},
 	{ID: 15, Key: "streaming", Label: "Streaming-Dienste", Logik: LogikWohneinheit, Typ: TypMonatlich, Umlagefaehig: false},
 	{ID: 16, Key: "sonstige", Label: "Sonstige Kosten", Logik: LogikWohneinheit, Typ: TypMonatlich, Umlagefaehig: false},
 }
@@ -967,15 +992,29 @@ func seed(db *sql.DB) error {
 	// (immutable, referenced by id elsewhere) - Issue #71 renamed 2 labels
 	// in code but an already-seeded row silently kept the old text until
 	// this upsert.
-	for _, kp := range KostenpositionDefaults {
+	for i, kp := range KostenpositionDefaults {
 		// umlagefaehig is only set on the INSERT: it is a user-edited
 		// Stammdaten value (Issue #163), so the DO UPDATE must never reset it.
+		// sort is structure like label and follows the slice order.
 		if _, err := db.Exec(
-			`INSERT INTO kostenpositionen (id, key, label, umlagefaehig) VALUES (?, ?, ?, ?)
-			 ON CONFLICT(id) DO UPDATE SET label = excluded.label`,
-			kp.ID, kp.Key, kp.Label, boolToInt(kp.Umlagefaehig),
+			`INSERT INTO kostenpositionen (id, key, label, umlagefaehig, sort) VALUES (?, ?, ?, ?, ?)
+			 ON CONFLICT(id) DO UPDATE SET label = excluded.label, sort = excluded.sort`,
+			kp.ID, kp.Key, kp.Label, boolToInt(kp.Umlagefaehig), i+1,
 		); err != nil {
 			return fmt.Errorf("seed kostenposition %q: %w", kp.Key, err)
+		}
+	}
+
+	// A position added after an Eingabe was entered has no Wert row there.
+	// Give those Eingaben the starting Logik/Typ with Wert 0, so the form,
+	// the CSV export and a re-import see the same complete set of positions.
+	for _, kp := range KostenpositionDefaults {
+		if _, err := db.Exec(
+			`INSERT OR IGNORE INTO fixkosten_werte (fixkosten_eingabe_id, kostenposition_id, wert, logik, typ)
+			 SELECT id, ?, 0, ?, ? FROM fixkosten_eingaben`,
+			kp.ID, kp.Logik, kp.Typ,
+		); err != nil {
+			return fmt.Errorf("seed fixkosten werte for kostenposition %q: %w", kp.Key, err)
 		}
 	}
 

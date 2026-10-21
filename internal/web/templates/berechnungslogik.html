@@ -102,7 +102,7 @@ Kosten_Abwasser_X     = Abwasser_X * Abwasserpreis</pre>
 
 <div class="panel" style="margin-top:1rem">
   <h2>Fixkosten/Grundgebühren</h2>
-  <p>Die 16 festen <a href="{{.Base}}/stammdaten">Kostenpositionen</a> (Grundsteuer, Wohngebäudeversicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise Strom/Wasser/Abwasser/Internet, Wärmepumpen-Wartung, Streaming-Dienste, Sonstige Kosten) werden getrennt von Strom/Heizung/Wasser berechnet, auf der monatlichen <a href="{{.Base}}/fixkosten">Fixkosten-Eingabe</a>. Jede Position hat pro Jahr einen Typ:</p>
+  <p>Die 17 festen <a href="{{.Base}}/stammdaten">Kostenpositionen</a> (Grundsteuer, Wohngebäudeversicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise Strom/Wasser/Abwasser/Internet, Wärmepumpen-Wartung, PV-Anlagen-Wartung, Streaming-Dienste, Sonstige Kosten) werden getrennt von Strom/Heizung/Wasser berechnet, auf der monatlichen <a href="{{.Base}}/fixkosten">Fixkosten-Eingabe</a>. Jede Position hat pro Jahr einen Typ:</p>
   <pre class="formula">Monatswert("jährlich")  = Jahreswert / 12                       (aus den Stammdaten, im Formular nicht editierbar)
 Monatswert("monatlich") = expliziter Wert der Fixkosten-Eingabe  (fehlt er, z.B. nach Typwechsel:
                                                                    letzter_bekannter_Jahreswert / 12, sonst 0)</pre>
@@ -118,7 +118,7 @@ Wohnung 2               : 0 / 100</pre>
 
 <div class="panel" style="margin-top:1rem">
   <h2>Rundung</h2>
-  <p>Jede Kostenposition (Strom, Heizung/Warmwasser, Frischwasser, Abwasser, jede der 16 Fixkosten-Positionen) wird einzeln je Wohnung kaufmännisch auf Cent gerundet (0,5 Cent immer aufgerundet), erst nach der vollständigen Berechnung mit float-Genauigkeit. Die angezeigte Gesamtsumme je Wohnung kann dadurch um 1-2 Cent von der rechnerisch exakten Summe abweichen - das ist akzeptiert, es gibt keinen Korrekturmechanismus.</p>
+  <p>Jede Kostenposition (Strom, Heizung/Warmwasser, Frischwasser, Abwasser, jede der 17 Fixkosten-Positionen) wird einzeln je Wohnung kaufmännisch auf Cent gerundet (0,5 Cent immer aufgerundet), erst nach der vollständigen Berechnung mit float-Genauigkeit. Die angezeigte Gesamtsumme je Wohnung kann dadurch um 1-2 Cent von der rechnerisch exakten Summe abweichen - das ist akzeptiert, es gibt keinen Korrekturmechanismus.</p>
 </div>
 
 <div class="panel" style="margin-top:1rem">
