@@ -210,7 +210,7 @@ Die Seite `/abrechnung?jahr=2027&wohnung=2` zeigt die Betriebskostenabrechnung e
 
 ### Rundung
 
-Jede Kostenposition (Strom, Heizung/Warmwasser, Frischwasser, Abwasser, jede der 16 Fixkostenpositionen) wird einzeln je Wohnung **kaufmännisch auf Cent gerundet** (0,5 Cent immer aufgerundet), erst nach der vollständigen Berechnung mit float-Genauigkeit. Die angezeigte Gesamtsumme je Wohnung kann dadurch um 1-2 Cent von der rechnerisch exakten Summe abweichen - das ist akzeptiert, es gibt keinen Korrekturmechanismus.
+Jede Kostenposition (Strom, Heizung/Warmwasser, Frischwasser, Abwasser, jede Fixkostenposition) wird einzeln je Wohnung **kaufmännisch auf Cent gerundet** (0,5 Cent immer aufgerundet), erst nach der vollständigen Berechnung mit float-Genauigkeit. Die angezeigte Gesamtsumme je Wohnung kann dadurch um 1-2 Cent von der rechnerisch exakten Summe abweichen - das ist akzeptiert, es gibt keinen Korrekturmechanismus.
 
 ### Preise & Personenzahl
 

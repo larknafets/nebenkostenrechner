@@ -929,7 +929,7 @@ type apartmentSeed struct {
 
 func apartmentID(id int64) *int64 { return &id }
 
-// KostenpositionDefault is one of the 17 fixed Kostenpositionen (Issue #60)
+// KostenpositionDefault is one of the fixed Kostenpositionen (Issue #60)
 // - id/key/label are app-fixed structure, seeded like meters. Logik/Typ are
 // only the starting values for the very first Fixkosten-Eingabe ever
 // created (Issue #105/#108) - every Eingabe afterwards is prefilled from
@@ -946,7 +946,7 @@ type KostenpositionDefault struct {
 	Umlagefaehig bool
 }
 
-// KostenpositionDefaults is the fixed list of the 17 Kostenpositionen. The
+// KostenpositionDefaults is the fixed list of the Kostenpositionen. The
 // slice order is the starting display order and the fixed column order of the
 // Fixkosten CSV; afterwards the user orders the display on /stammdaten
 // (kostenpositionen.sort). A position added later goes to the end.
