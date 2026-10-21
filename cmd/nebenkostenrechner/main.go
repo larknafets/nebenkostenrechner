@@ -116,7 +116,7 @@ func main() {
 
 	mux := web.NewMux(db, demoDB, version, buildDate)
 	if version != "" {
-		web.PrimeUpdateCheck()
+		web.PrimeUpdateCheck(version)
 	}
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		if err := db.PingContext(r.Context()); err != nil {
