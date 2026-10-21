@@ -268,7 +268,7 @@ func handleMoveKostenposition() http.HandlerFunc {
 // prototypeVariant reads ?variant=A|B|C for the throwaway UI prototype of #255.
 func prototypeVariant(r *http.Request) string {
 	switch v := r.URL.Query().Get("variant"); v {
-	case "B", "C":
+	case "B", "C", "D":
 		return v
 	}
 	return "A"

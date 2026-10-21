@@ -106,12 +106,19 @@
   .pf-c .pf-btn + .pf-btn { border-top: 1px solid var(--border); }
   .pf-c .pf-btn svg { width: 14px; height: 14px; }
 
+  /* D: A + C, list with separators, number badge left, arrows right */
+  .pf-d .pf-row { display: flex; align-items: center; gap: .75rem; padding: .45rem 0; border-bottom: 1px solid var(--border); }
+  .pf-d .pf-row:last-child { border-bottom: none; }
+  .pf-d .pf-nr { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: .75rem; font-weight: 700; }
+  .pf-d .pf-label { flex: 1; }
+  .pf-d .pf-actions { display: flex; gap: .35rem; }
+
   #proto-bar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: .75rem; padding: .45rem .9rem; border-radius: 999px; background: #111; color: #fff; font-size: .85rem; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
   #proto-bar a { color: #fff; text-decoration: none; font-size: 1.1rem; padding: 0 .3rem; }
 </style>
 
 
-<div class="panel pf-{{if eq .Variant "B"}}b{{else if eq .Variant "C"}}c{{else}}a{{end}}" id="reihenfolge" style="margin-top:1rem">
+<div class="panel pf-{{if eq .Variant "B"}}b{{else if eq .Variant "C"}}c{{else if eq .Variant "D"}}d{{else}}a{{end}}" id="reihenfolge" style="margin-top:1rem">
   <h3>Reihenfolge der Kostenpositionen</h3>
   <p class="muted">Gilt für Fixkosten-Eingabe, Fixkosten-Anzeige und Abrechnung. Ungespeicherte Änderungen im Formular oben gehen beim Verschieben verloren.</p>
 
@@ -126,6 +133,16 @@
       </div>
     </form>
     <span>{{$kp.Label}}</span>
+  </div>
+  {{else if eq $.Variant "D"}}
+  <div class="pf-row">
+    <span class="pf-nr">{{inc $i}}</span>
+    <span class="pf-label">{{$kp.Label}}</span>
+    <form class="pf-form pf-actions" method="post" action="{{$.Base}}/stammdaten/sortierung">
+      <input type="hidden" name="id" value="{{$kp.ID}}"><input type="hidden" name="variant" value="{{$.Variant}}">
+      <button class="pf-btn" type="submit" name="richtung" value="hoch" aria-label="{{$kp.Label}} nach oben" title="Nach oben" {{if eq $i 0}}disabled{{end}}>{{template "pf-up"}}</button>
+      <button class="pf-btn" type="submit" name="richtung" value="runter" aria-label="{{$kp.Label}} nach unten" title="Nach unten" {{if eq $i $.LetzterIndex}}disabled{{end}}>{{template "pf-down"}}</button>
+    </form>
   </div>
   {{else if eq $.Variant "C"}}
   <div class="pf-row">
@@ -155,7 +172,7 @@
 <div id="proto-bar" data-current="{{.Variant}}"></div>
 <script>
   (function () {
-    const varianten = { A: 'Liste, Pfeile rechts', B: 'Karten, Doppelknopf links', C: 'Nummeriert, gestapelt rechts' };
+    const varianten = { A: 'Liste, Pfeile rechts', B: 'Karten, Doppelknopf links', C: 'Nummeriert, gestapelt rechts', D: 'A + C: Liste, Nummer, Pfeile rechts' };
     const keys = Object.keys(varianten);
     const bar = document.getElementById('proto-bar');
     const cur = bar.dataset.current;
