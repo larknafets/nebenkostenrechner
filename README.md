@@ -13,7 +13,7 @@ Alle Bilder stammen aus dem [Demo-Modus](#demo-modus), die Daten sind erfunden.
 | Seite | Ansichten |
 |---|---|
 | Dashboard | [Verbrauch](docs/screenshots/dashboard.webp), [Fixkosten](docs/screenshots/dashboard-fixkosten.webp), [Kombiniert](docs/screenshots/dashboard-kombiniert.webp), [Wohnung 2](docs/screenshots/dashboard-wohnung2.webp), [PV-Anlage](docs/screenshots/dashboard-pv-anlage.webp), [dunkles Design](docs/screenshots/dashboard-dunkel.webp) |
-| Ablesungen | [Liste](docs/screenshots/ablesungen.webp), [Detail](docs/screenshots/ablesung-detail.webp) |
+| Ablesungen | [Liste](docs/screenshots/ablesungen.webp), [Detail](docs/screenshots/ablesung-detail.webp), [Ablesung korrigieren](docs/screenshots/ablesung-bearbeiten.webp) |
 | Fixkosten | [Liste](docs/screenshots/fixkosten.webp), [Detail](docs/screenshots/fixkosten-detail.webp), [neue Eingabe](docs/screenshots/fixkosten-neu.webp) |
 | Stammdaten | [Stammdaten](docs/screenshots/stammdaten.webp) |
 | Abrechnung | [Jahresabrechnung](docs/screenshots/abrechnung.webp) |

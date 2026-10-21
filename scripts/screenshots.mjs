@@ -89,6 +89,7 @@ await shot('hero', '/dashboard', { theme: 'dark', js: dash(click('.wohnung-tab',
 await shot('dashboard-dunkel', '/dashboard', { theme: 'dark', js: dash() });
 await shot('ablesungen', '/ablesungen');
 await shot('ablesung-detail', `/ablesungen/${ablesungId}`);
+await shot('ablesung-bearbeiten', `/ablesungen/${ablesungId}/bearbeiten`);
 await shot('fixkosten', '/fixkosten');
 await shot('fixkosten-detail', `/fixkosten/${fixkostenId}`);
 await shot('fixkosten-neu', '/fixkosten/neu');
