@@ -39,6 +39,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Fehlerkorrekturen
 
+- Ablesung korrigieren: Zählerwerte und Preise erschienen in der Vorbelegung mit Gleitkommaresten (z. B. 26520,69999999999 statt 26520,7). Jetzt zeigen die Felder die eingegebenen Werte ohne diese Reste (#254)
+
 - Dashboard: Der Update-Hinweis (Punkt neben der Version unten rechts) erschien im Nightly-Kanal nie, weil nur Release-Versionen verglichen wurden. Jetzt zeigt ein Nightly-Stand den Punkt, sobald ein neueres Nightly vorliegt, der Link führt zum zugehörigen Commit. Nightlys vom selben Tag lassen sich nicht unterscheiden und lösen keinen Hinweis aus
 
 - Eingaben: Eine Fehlermeldung (z. B. "Für September 2026 gibt es bereits eine Fixkosten-Eingabe") führte auf eine leere Fehlerseite, man musste zurückgehen und die Eingaben waren weg. Jetzt erscheint sie als Dialog über der Seite, die Eingaben bleiben stehen, das betroffene Feld ist rot markiert und nach dem Schließen aktiv. Gilt für Fixkosten, Ablesung, Stammdaten und die beiden CSV-Importe

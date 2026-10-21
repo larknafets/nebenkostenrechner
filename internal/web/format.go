@@ -67,6 +67,15 @@ func formatDecimalDE(x float64) string {
 	return groupThousandsDE(strings.ReplaceAll(strconv.FormatFloat(rounded, 'f', -1, 64), ".", ","))
 }
 
+// inputNumber renders a prefilled meter reading or price for the value= of an
+// <input type="number">: without trailing zeros, with a "." as the HTML number
+// input requires. Rounding to 6 decimals removes the float residue of summed
+// or divided values (about 1e-12, "26520.69999999999" shows as "26520.7")
+// and keeps every decimal a user can enter, prices have up to 4.
+func inputNumber(x float64) string {
+	return strconv.FormatFloat(math.Round(x*1e6)/1e6, 'f', -1, 64)
+}
+
 // formatEuroDE renders a float64 as a German-formatted EUR amount, always
 // padded to exactly 2 decimal places (Ticket #40 - a currency amount reads
 // as "45,00", not "45"). EUR amounts are already Round2'd (commercial

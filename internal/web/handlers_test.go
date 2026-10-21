@@ -1986,6 +1986,90 @@ func TestHandleEditWizardForm_TeilstandBlankNotZero(t *testing.T) {
 	}
 }
 
+// TestHandleEditWizardForm_ZaehlerOhneGleitkommareste verifies that the
+// prefill of a meter reading shows the value the user entered, not the float
+// residue of a summed reading.
+func TestHandleEditWizardForm_ZaehlerOhneGleitkommareste(t *testing.T) {
+	db := openTestDB(t)
+	a := newAuth("", nil)
+
+	id, err := store.CreatePeriod(db, store.PeriodInput{
+		ReadingDate: "2026-11-01",
+		Strompreis:  store.Float64(0.22),
+		Readings:    map[string]float64{"strom_gesamt": 100, "strom_einspeisung": 26520.69999999999},
+		Personen:    map[int64]float64{1: 2},
+	})
+	if err != nil {
+		t.Fatalf("CreatePeriod: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/ablesungen/"+strconv.FormatInt(id, 10)+"/bearbeiten", nil)
+	req.SetPathValue("id", strconv.FormatInt(id, 10))
+	w := httptest.NewRecorder()
+	handleEditWizardForm(a)(w, requestWithDB(req, db))
+
+	body := w.Body.String()
+	if !strings.Contains(body, `name="strom_einspeisung" value="26520.7"`) {
+		t.Error(`strom_einspeisung = 26520.69999999999 wird nicht als value="26520.7" vorbelegt`)
+	}
+	if strings.Contains(body, "69999999999") {
+		t.Error("Gleitkommarest in der Vorbelegung")
+	}
+}
+
+// TestHandleEditWizardForm_PreisOhneGleitkommareste is the same for the
+// prefilled prices, which can carry up to 4 decimals.
+func TestHandleEditWizardForm_PreisOhneGleitkommareste(t *testing.T) {
+	db := openTestDB(t)
+	a := newAuth("", nil)
+
+	id, err := store.CreatePeriod(db, store.PeriodInput{
+		ReadingDate:       "2026-11-01",
+		Strompreis:        store.Float64(0.2234),
+		FrischwasserPreis: store.Float64(1.4600000000000002),
+		Readings:          map[string]float64{"strom_gesamt": 100},
+		Personen:          map[int64]float64{1: 2},
+	})
+	if err != nil {
+		t.Fatalf("CreatePeriod: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/ablesungen/"+strconv.FormatInt(id, 10)+"/bearbeiten", nil)
+	req.SetPathValue("id", strconv.FormatInt(id, 10))
+	w := httptest.NewRecorder()
+	handleEditWizardForm(a)(w, requestWithDB(req, db))
+
+	body := w.Body.String()
+	if !strings.Contains(body, `name="strompreis" value="0.2234"`) {
+		t.Error(`ein Preis mit 4 Nachkommastellen wird nicht unverändert vorbelegt`)
+	}
+	if !strings.Contains(body, `name="frischwasser_preis" value="1.46"`) {
+		t.Error(`frischwasser_preis = 1.4600000000000002 wird nicht als value="1.46" vorbelegt`)
+	}
+}
+
+func TestInputNumber(t *testing.T) {
+	cases := []struct {
+		in   float64
+		want string
+	}{
+		{26520.69999999999, "26520.7"},
+		{100, "100"},
+		{0, "0"},
+		{12.345, "12.345"},
+		{0.2234, "0.2234"},
+		{1.4600000000000002, "1.46"},
+		{4.869999999999999, "4.87"},
+		{0.1 + 0.2, "0.3"},
+		{-5.5, "-5.5"},
+	}
+	for _, c := range cases {
+		if got := inputNumber(c.in); got != c.want {
+			t.Errorf("inputNumber(%v) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}
+
 func TestKostenAnteil(t *testing.T) {
 	k := calc.Kosten{
 		Strom: &calc.StromErgebnis{KostenW2: 7.5, W2VerbrauchKWh: 30},
