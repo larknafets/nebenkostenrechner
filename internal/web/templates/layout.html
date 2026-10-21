@@ -309,6 +309,18 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   .jahressummen-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
   button, a.button { display: inline-block; border-radius: 6px; padding: .6rem 1.1rem; font-size: .9rem; cursor: pointer; text-decoration: none; line-height: 1.2; }
   button:disabled { opacity: .4; cursor: not-allowed; }
+  /* Quadratischer Symbolbutton (z. B. Pfeile der Positionsreihenfolge). */
+  .icon-btn { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--accent); }
+  .icon-btn:hover:not(:disabled) { background: var(--accent-soft); }
+  .icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .icon-btn:disabled { opacity: .3; }
+  .icon-btn svg { width: 18px; height: 18px; }
+  /* Reihenfolge der Kostenpositionen auf /stammdaten. */
+  .reihenfolge-zeile { display: flex; align-items: center; gap: .75rem; padding: .45rem 0; border-bottom: 1px solid var(--border); }
+  .reihenfolge-zeile:last-child { border-bottom: none; }
+  .reihenfolge-nr { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: .75rem; font-weight: 700; }
+  .reihenfolge-label { flex: 1; min-width: 0; }
+  .reihenfolge-aktionen { display: flex; gap: .35rem; margin: 0; }
   button.primary, a.button.primary { background: var(--accent); color: white; border: none; }
   button.secondary, a.button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
   button.success, a.button.success { background: var(--success); color: white; border: none; }

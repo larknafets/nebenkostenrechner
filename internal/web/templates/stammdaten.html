@@ -81,13 +81,14 @@
   <h3>Reihenfolge der Kostenpositionen</h3>
   <p class="muted">Gilt für Fixkosten-Eingabe, Fixkosten-Anzeige und Abrechnung. Ungespeicherte Änderungen im Formular oben gehen beim Verschieben verloren.</p>
   {{range $i, $kp := .Kostenpositionen}}
-  <div class="field" style="display:flex; gap:.5rem; align-items:center">
-    <form method="post" action="{{$.Base}}/stammdaten/sortierung" style="display:flex; gap:.25rem">
+  <div class="reihenfolge-zeile">
+    <span class="reihenfolge-nr">{{inc $i}}</span>
+    <span class="reihenfolge-label">{{$kp.Label}}</span>
+    <form class="reihenfolge-aktionen" method="post" action="{{$.Base}}/stammdaten/sortierung">
       <input type="hidden" name="id" value="{{$kp.ID}}">
-      <button type="submit" name="richtung" value="hoch" aria-label="{{$kp.Label}} nach oben" {{if eq $i 0}}disabled{{end}}>&uarr;</button>
-      <button type="submit" name="richtung" value="runter" aria-label="{{$kp.Label}} nach unten" {{if eq $i $.LetzterIndex}}disabled{{end}}>&darr;</button>
+      <button class="icon-btn" type="submit" name="richtung" value="hoch" aria-label="{{$kp.Label}} nach oben" title="Nach oben" {{if eq $i 0}}disabled{{end}}>{{template "pfeil-hoch"}}</button>
+      <button class="icon-btn" type="submit" name="richtung" value="runter" aria-label="{{$kp.Label}} nach unten" title="Nach unten" {{if eq $i $.LetzterIndex}}disabled{{end}}>{{template "pfeil-runter"}}</button>
     </form>
-    <span>{{$kp.Label}}</span>
   </div>
   {{end}}
 </div>
@@ -109,3 +110,6 @@
   });
 </script>
 {{end}}
+
+{{define "pfeil-hoch"}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>{{end}}
+{{define "pfeil-runter"}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>{{end}}
