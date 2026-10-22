@@ -171,12 +171,13 @@ func TestPVGutschrift_NegativeZeileBeiWohnung1(t *testing.T) {
 }
 
 func TestSaldo_GutschriftErhoehtGuthabenOhneDeckel(t *testing.T) {
-	monate := []dashboardMonat{
-		{Label: "Nov", HasFixkosten: true, FixkostenGesamt: 25, PVGutschrift: 5},
-		{Label: "Okt", HasFixkosten: true, FixkostenGesamt: 30},
+	monate := []dashboardMonat{{Label: "Nov"}, {Label: "Okt"}}
+	werte := []calc.Monatswert{
+		{Monat: "2026-10-01", HatFixkosten: true, Fixkosten: 30, Abschlag: 100},
+		{Monat: "2026-11-01", HatFixkosten: true, Fixkosten: 25, Abschlag: 100, Gutschrift: 5},
 	}
 	// Brutto Nov = 25 (net 20 + 5 credit): saldo Okt 100-30 = 70, Nov 70 + 100 - 20 = 150.
-	accumulateAbschlagSaldo(monate, []float64{100, 100})
+	applySaldo(monate, []string{"2026-11-01", "2026-10-01"}, werte)
 	if got := monate[1].Saldo; got == nil || got.Betrag() != 70 {
 		t.Fatalf("Okt.Saldo = %+v, want 70", got)
 	}
