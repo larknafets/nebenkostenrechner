@@ -342,50 +342,40 @@ func groupKostenByMonat(apartmentID int64, periodenKosten []periodKosten) map[st
 	return out
 }
 
-// accumulateAbschlagSaldo computes the Nebenkostenabschlag-Saldo (utility
-// advance payment balance) for every month in monate, writing Saldo/
-// AbschlagProzent directly into monate (index-aligned with abschlagWerte).
-// Continuously accumulated from oldest to newest month (monate is sorted
-// newest-first, hence the backward iteration) - saldo(m) = abschlag(m) -
-// (Verbrauch(m) + Fixkosten(m)) + PVGutschrift(m), fed from the monthly parts,
-// not from the displayed KombiniertGesamt. The gate is HasFixkosten, not HasKombiniert:
-// abschlagWert comes exclusively from a fixed-costs entry (see
-// buildDashboardVerlauf's fixErg==nil condition) - a month with only a
-// reading but (still) no fixed-costs entry has no recorded advance-payment
-// value and would otherwise be wrongly computed with abschlag=0, instead of
-// being skipped like a month with no data (#94: "no data" instead of an
+// applySaldo writes the Nebenkostenabschlag-Saldo (utility advance payment
+// balance) into every month of monate that has a Fixkosten-Eingabe, plus its
+// AbschlagProzent. monate is sorted newest-first and index-aligned with keys,
+// the Abrechnungsmonat of each. The balance itself is calc.Verlauf over werte
+// (oldest first), the same accumulation the Jahresabrechnung uses. The gate is
+// HatFixkosten, not HatVerbrauch: the Abschlag comes exclusively from a
+// Fixkosten-Eingabe, so a month with only a reading but (still) no entry has
+// no recorded advance-payment value and is skipped like a month with no data,
+// instead of being computed with Abschlag 0 (#94: "no data" instead of an
 // implicit jump).
-func accumulateAbschlagSaldo(monate []dashboardMonat, abschlagWerte []float64) {
-	// Walk oldest to newest over the months that have Fixkosten.
-	var idx []int
-	var reihe []calc.SaldoMonat
-	for i := len(monate) - 1; i >= 0; i-- {
-		if !monate[i].HasFixkosten {
-			continue
+func applySaldo(monate []dashboardMonat, keys []string, werte []calc.Monatswert) {
+	var reihe []calc.Monatswert
+	for _, w := range werte {
+		if w.HatFixkosten {
+			reihe = append(reihe, w)
 		}
-		idx = append(idx, i)
-		reihe = append(reihe, calc.SaldoMonat{
-			Abschlag: abschlagWerte[i], Kosten: monate[i].VerbrauchGesamt + monate[i].FixkostenGesamt, Gutschrift: monate[i].PVGutschrift,
-		})
 	}
-	verlauf, _ := calc.Saldoverlauf(0, reihe)
-	saldi := make([]float64, len(monate))
-	hatSaldo := make([]bool, len(monate))
+	zeilen, _ := calc.Verlauf(0, reihe)
+	saldi := make(map[string]float64, len(zeilen))
 	var maxAbsSaldo float64
-	for k, i := range idx {
-		saldi[i] = verlauf[k]
-		hatSaldo[i] = true
-		if abs := math.Abs(verlauf[k]); abs > maxAbsSaldo {
+	for _, z := range zeilen {
+		saldi[z.Monat] = z.Saldo
+		if abs := math.Abs(z.Saldo); abs > maxAbsSaldo {
 			maxAbsSaldo = abs
 		}
 	}
-	for i := range monate {
-		if !hatSaldo[i] {
+	for i, key := range keys {
+		saldo, ok := saldi[key]
+		if !ok {
 			continue
 		}
-		monate[i].Saldo = calc.NewAbschlagSaldo(saldi[i])
+		monate[i].Saldo = calc.NewAbschlagSaldo(saldo)
 		if maxAbsSaldo > 0 {
-			monate[i].AbschlagProzent = math.Abs(saldi[i]) / maxAbsSaldo * 50
+			monate[i].AbschlagProzent = math.Abs(saldo) / maxAbsSaldo * 50
 		}
 	}
 }
@@ -402,8 +392,6 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 		jahr          int
 		verbrauchKats []kategorie
 		fixErg        *calc.FixkostenErgebnis
-		abschlagWert  float64 // 0 if no value recorded (see #92: a missing value counts as 0)
-		pvGutschrift  float64
 	}
 	buckets := map[string]*bucket{}
 	var order []string
@@ -427,26 +415,36 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 			b.verbrauchKats = kats
 		}
 	}
-	for _, pk := range periodenKosten {
-		if b := ensure(pk.Monat); b != nil {
-			b.pvGutschrift += pk.K.Anteil(apartmentID).PVGutschrift
-		}
-	}
 	for _, fk := range fixkostenListe {
 		if b := ensure(fk.Monat); b != nil && b.fixErg == nil {
 			b.fixErg = fk.Erg
-			b.abschlagWert = fk.Abschlag[apartmentID]
 		}
+	}
+
+	// What counts in the balance (Abschlag, PV-Gutschrift, the sums) is
+	// decided by calc.Monatswerte, the same fold the Jahresabrechnung reads.
+	// The Dashboard counts every item. A missing Abschlag value counts as 0
+	// (#92).
+	kosten := make([]calc.MonatsKosten, len(periodenKosten))
+	for i, pk := range periodenKosten {
+		kosten[i] = calc.MonatsKosten{Monat: pk.Monat, Kosten: pk.K}
+	}
+	fixkosten := make([]calc.MonatsFixkosten, len(fixkostenListe))
+	for i, fk := range fixkostenListe {
+		fixkosten[i] = calc.MonatsFixkosten{Monat: fk.Monat, Ergebnis: fk.Erg, Abschlag: fk.Abschlag}
+	}
+	werte := calc.Monatswerte(apartmentID, kosten, fixkosten, calc.Posten{Strom: true, Wallbox: true, PVGutschrift: true})
+	gutschrift := make(map[string]float64, len(werte))
+	for _, w := range werte {
+		gutschrift[w.Monat] = w.Gutschrift
 	}
 
 	sort.Sort(sort.Reverse(sort.StringSlice(order)))
 
 	monate := make([]dashboardMonat, 0, len(order))
-	abschlagWerte := make([]float64, 0, len(order))
 	for _, key := range order {
 		b := buckets[key]
 		dm := dashboardMonat{Label: b.label, Jahr: b.jahr}
-		abschlagWerte = append(abschlagWerte, b.abschlagWert)
 
 		if b.verbrauchKats != nil {
 			dm.HasVerbrauch = true
@@ -471,7 +469,7 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 
 		if dm.HasVerbrauch || dm.HasFixkosten {
 			dm.HasKombiniert = true
-			dm.PVGutschrift = calc.Round2(b.pvGutschrift)
+			dm.PVGutschrift = calc.Round2(gutschrift[key])
 			if dm.HasVerbrauch {
 				dm.KombiniertSegmente = append(dm.KombiniertSegmente, dashboardSegment{Farbe: "verbrauch-gesamt", Label: "Verbrauch", Kosten: dm.VerbrauchGesamt})
 			}
@@ -509,7 +507,7 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 		setSegmentPct(monate[i].KombiniertSegmente, maxKombiniert)
 	}
 
-	accumulateAbschlagSaldo(monate, abschlagWerte)
+	applySaldo(monate, order, werte)
 
 	var latestSaldo *calc.AbschlagSaldo
 	for i := range monate {

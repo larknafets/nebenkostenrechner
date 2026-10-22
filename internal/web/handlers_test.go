@@ -537,22 +537,23 @@ func TestBuildDashboardVerlauf_AbschlagSaldo_UeberspringtMonatOhneFixkosten(t *t
 	}
 }
 
-// TestAccumulateAbschlagSaldo tests the running-balance accumulation
-// (architecture review: extracted out of buildDashboardVerlauf so this hard,
-// order-dependent logic - reverse iteration, HasFixkosten gating, per-step
-// rounding, maxAbsSaldo-scaled percent - has a seam of its own to test,
-// instead of only being reachable through the much larger function.
-func TestAccumulateAbschlagSaldo(t *testing.T) {
+// TestApplySaldo tests the running-balance presentation (architecture
+// review: extracted out of buildDashboardVerlauf so this order-dependent
+// logic - HatFixkosten gating, maxAbsSaldo-scaled percent - has a seam of its
+// own to test, instead of only being reachable through the much larger
+// function). The accumulation itself is calc.Verlauf.
+func TestApplySaldo(t *testing.T) {
 	// monate is newest-first (Mär, Feb, Jan); Feb has no Fixkosten-Eingabe
 	// and must be skipped, not treated as Abschlag=0 (#94).
-	monate := []dashboardMonat{
-		{Label: "Mär", HasFixkosten: true, FixkostenGesamt: 30},
-		{Label: "Feb", HasFixkosten: false, FixkostenGesamt: 20},
-		{Label: "Jan", HasFixkosten: true, FixkostenGesamt: 20},
+	monate := []dashboardMonat{{Label: "Mär"}, {Label: "Feb"}, {Label: "Jan"}}
+	keys := []string{"2026-03-01", "2026-02-01", "2026-01-01"}
+	werte := []calc.Monatswert{
+		{Monat: "2026-01-01", HatFixkosten: true, Fixkosten: 20, Abschlag: 100},
+		{Monat: "2026-02-01", HatVerbrauch: true, Verbrauch: 20}, // Feb's Abschlag 0 must never be used
+		{Monat: "2026-03-01", HatFixkosten: true, Fixkosten: 30, Abschlag: 100},
 	}
-	abschlagWerte := []float64{100, 0, 100} // Feb's 0 must never be used
 
-	accumulateAbschlagSaldo(monate, abschlagWerte)
+	applySaldo(monate, keys, werte)
 
 	if monate[2].Saldo == nil || monate[2].Saldo.Betrag() != 80 || !monate[2].Saldo.Guthaben() {
 		t.Fatalf("Jan.Saldo = %+v, want Betrag 80/Guthaben (Abschlag 100 - Kombiniert 20)", monate[2].Saldo)

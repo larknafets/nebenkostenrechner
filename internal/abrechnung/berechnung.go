@@ -368,7 +368,7 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	ab.Saldo = calc.NewAbschlagSaldo(jahressaldo)
 
 	uebertrag := berechneUebertrag(d, z, apartment, p)
-	ab.Monatsverlauf = f.verlauf(kostenpositionen, apartmentID, uebertrag.Betrag)
+	ab.Monatsverlauf = f.verlauf(uebertrag.Betrag)
 	ab.Monatsverlauf.Uebertrag = uebertrag
 	ab.Verbrauch = verbrauchUebersicht(periods, apartments, meters, f.imBereich, apartmentID)
 	ab.Zaehlerstaende = zaehlerstaende(periods, apartments, meters, f.imBereich, apartmentID)
@@ -392,13 +392,11 @@ type monatsfaltung struct {
 	// without an Eingabe is missing).
 	fixkosten map[string]calc.FixkostenMonat
 	// ablesungen are the Ablesungen of the range that have Verbrauchskosten,
-	// oldest first. verbrauchJeMonat is their consumption cost per month
-	// (see monatsVerbrauch), a month without such an Ablesung is missing.
-	ablesungen       []calc.Ablesung
-	verbrauchJeMonat map[string]float64
-	// gutschriftJeMonat is the PV-Gutschrift per month, only filled if it
-	// is part of the Abrechnung (posten.pvGutschrift).
-	gutschriftJeMonat map[string]float64
+	// oldest first. werte are the values per Abrechnungsmonat of the
+	// Monatsverlauf (calc.Monatswerte), counting exactly the posten of the
+	// Abrechnung.
+	ablesungen []calc.Ablesung
+	werte      []calc.Monatswert
 }
 
 // posten says which optional items count for the settled apartment: the
@@ -426,24 +424,35 @@ func postenFuer(apartment store.Apartment, haus store.Haus) posten {
 // faltMonate folds the months von to bis (first of month, both included) for
 // apartmentID.
 func faltMonate(d BerechnungsDaten, von, bis time.Time, apartmentID int64, p posten) monatsfaltung {
-	f := monatsfaltung{imBereich: map[string]bool{}, verbrauchJeMonat: map[string]float64{}, gutschriftJeMonat: map[string]float64{}}
+	f := monatsfaltung{imBereich: map[string]bool{}}
 	for m := von; !m.After(bis); m = m.AddDate(0, 1, 0) {
 		key := m.Format("2006-01-02")
 		f.monate = append(f.monate, key)
 		f.imBereich[key] = true
 	}
 	f.fixkosten = fixkostenJeMonat(d.Fixkosten, f.monate)
+	var kosten []calc.MonatsKosten
 	for _, a := range d.Kosten.Berechenbare() {
 		if !f.imBereich[a.Period.Monat] {
 			continue
 		}
 		f.ablesungen = append(f.ablesungen, a)
-		anteil := a.Kosten.Anteil(apartmentID)
-		f.verbrauchJeMonat[a.Period.Monat] += monatsVerbrauch(anteil, p)
-		if p.pvGutschrift {
-			f.gutschriftJeMonat[a.Period.Monat] += anteil.PVGutschrift
+		kosten = append(kosten, calc.MonatsKosten{Monat: a.Period.Monat, Kosten: a.Kosten})
+	}
+	var fixkosten []calc.MonatsFixkosten
+	for _, m := range f.monate {
+		if fm, ok := f.fixkosten[m]; ok {
+			fixkosten = append(fixkosten, calc.MonatsFixkosten{Monat: m, Ergebnis: fm.Ergebnis, Abschlag: fm.Eingabe.Abschlag})
 		}
 	}
+	umlagefaehig := map[string]bool{}
+	for _, kp := range d.Kostenpositionen {
+		umlagefaehig[kp.Key] = kp.Umlagefaehig
+	}
+	f.werte = calc.Monatswerte(apartmentID, kosten, fixkosten, calc.Posten{
+		Strom: p.strom, Wallbox: p.wallbox, PVGutschrift: p.pvGutschrift,
+		Fixkosten: func(key string) bool { return umlagefaehig[key] },
+	})
 	return f
 }
 
@@ -458,20 +467,6 @@ func fixkostenJeMonat(reihe *calc.Fixkostenreihe, monate []string) map[string]ca
 		}
 	}
 	return out
-}
-
-// monatsVerbrauch is the consumption cost of one Ablesung for the Monats-
-// verlauf: Heizung plus Wasser, plus the passed-on electricity of Wohnung 2
-// and the Wallbox costs if they are part of the Abrechnung.
-func monatsVerbrauch(anteil calc.Wohnungsanteil, p posten) float64 {
-	v := anteil.HeizungKosten + anteil.WasserKosten
-	if p.strom {
-		v += anteil.StromKosten
-	}
-	if p.wallbox {
-		v += anteil.WallboxKosten
-	}
-	return v
 }
 
 // berechneUebertrag calculates the "Übertrag Vorjahre" for the period z: the
@@ -520,7 +515,7 @@ func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment
 		return Uebertrag{Hinweis: "Übertrag nicht berechenbar: " + erster.Text}
 	}
 
-	v := faltMonate(d, start, letzter, apartment.ID, p).verlauf(d.Kostenpositionen, apartment.ID, 0)
+	v := faltMonate(d, start, letzter, apartment.ID, p).verlauf(0)
 	if len(v.Zeilen) == 0 {
 		return Uebertrag{} // only the month of the Ausgangsstand, no costs yet
 	}
@@ -531,47 +526,17 @@ func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment
 // uebertrag, from the same monthly values the cost overview sums, so there is
 // no second cost formula. A month with neither a Fixkosten-Eingabe nor a
 // computable Ablesung (the month of the first Ablesung, which has no
-// consumption) has no row. The balance accumulates with calc.Saldoverlauf.
-func (f monatsfaltung) verlauf(kostenpositionen []store.Kostenposition, apartmentID int64, uebertrag float64) Monatsverlauf {
-	v := Monatsverlauf{Endsaldo: uebertrag}
-	for _, m := range f.monate {
-		fm, hatFix := f.fixkosten[m]
-		verbrauch, hatVerbrauch := f.verbrauchJeMonat[m]
-		if !hatFix && !hatVerbrauch {
-			continue
-		}
-		z := MonatZeile{Monat: m, Verbrauch: calc.Round2(verbrauch), Gutschrift: calc.Round2(f.gutschriftJeMonat[m])}
-		if hatFix {
-			z.Abschlag = calc.Round2(fm.Eingabe.Abschlag[apartmentID])
-		}
-		if erg := fm.Ergebnis; erg != nil {
-			for _, kp := range kostenpositionen {
-				if !kp.Umlagefaehig {
-					continue
-				}
-				for _, pos := range erg.Positionen {
-					if pos.Key == kp.Key {
-						z.Fixkosten += pos.KostenFor(apartmentID)
-					}
-				}
-			}
-			z.Fixkosten = calc.Round2(z.Fixkosten)
-		}
+// consumption) has no row. The balance accumulates in calc.Verlauf.
+func (f monatsfaltung) verlauf(uebertrag float64) Monatsverlauf {
+	zeilen, endsaldo := calc.Verlauf(uebertrag, f.werte)
+	v := Monatsverlauf{Endsaldo: endsaldo}
+	for _, z := range zeilen {
+		v.Zeilen = append(v.Zeilen, MonatZeile{Monat: z.Monat, Verbrauch: z.Verbrauch, Fixkosten: z.Fixkosten, Abschlag: z.Abschlag, Gutschrift: z.Gutschrift, Saldo: z.Saldo})
 		v.Fixkosten += z.Fixkosten
 		v.Verbrauch += z.Verbrauch
 		v.Abschlag += z.Abschlag
 		v.Gutschrift += z.Gutschrift
-		v.Zeilen = append(v.Zeilen, z)
 	}
-	reihe := make([]calc.SaldoMonat, len(v.Zeilen))
-	for i, z := range v.Zeilen {
-		reihe[i] = calc.SaldoMonat{Abschlag: z.Abschlag, Kosten: z.Fixkosten + z.Verbrauch, Gutschrift: z.Gutschrift}
-	}
-	saldi, endsaldo := calc.Saldoverlauf(uebertrag, reihe)
-	for i := range v.Zeilen {
-		v.Zeilen[i].Saldo = saldi[i]
-	}
-	v.Endsaldo = endsaldo
 	v.Fixkosten, v.Verbrauch, v.Abschlag, v.Gutschrift = calc.Round2(v.Fixkosten), calc.Round2(v.Verbrauch), calc.Round2(v.Abschlag), calc.Round2(v.Gutschrift)
 	return v
 }
