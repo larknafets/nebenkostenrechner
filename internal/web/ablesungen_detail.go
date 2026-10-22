@@ -85,22 +85,8 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			return
 		}
 
-		period, err := store.GetPeriodDetails(db, periodID)
-		if err != nil {
-			http.Error(w, "period: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if period == nil {
-			http.NotFound(w, r)
-			return
-		}
-
-		allPeriods, err := store.AllPeriods(db)
-		if err != nil {
-			http.Error(w, "periods: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
+		// One load serves the Ablesung, its Vorperiode, the dropdown and the
+		// Kosten: ds.Periods is ordered oldest first by reading date, then id.
 		ds, err := store.LadeDatenstand(db)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -108,16 +94,30 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 		}
 		apartments := ds.Apartments
 
+		var period *store.LatestPeriod
+		var vorperiode []store.PeriodReadings
+		allPeriods := make([]store.PeriodSummary, len(ds.Periods))
+		for i, p := range ds.Periods {
+			allPeriods[len(ds.Periods)-1-i] = store.PeriodSummary{ID: p.ID, ReadingDate: p.ReadingDate, Monat: p.Monat}
+			if p.ID != periodID {
+				continue
+			}
+			period = p
+			if i > 0 {
+				v := ds.Periods[i-1]
+				vorperiode = []store.PeriodReadings{{ID: v.ID, ReadingDate: v.ReadingDate, Readings: v.Readings}}
+			}
+		}
+		if period == nil {
+			http.NotFound(w, r)
+			return
+		}
+
 		// ZeitraumStart is the immediately preceding period's ReadingDate -
 		// the values shown here are the *consumption over that interval*,
 		// not just a single point-in-time reading, so the detail view
 		// spells out the whole span, not only its end date.
 		var zeitraumStart string
-		vorperiode, err := store.PeriodReadingsBefore(db, period.ID, 1)
-		if err != nil {
-			http.Error(w, "vorperiode: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
 		if len(vorperiode) > 0 {
 			zeitraumStart = vorperiode[0].ReadingDate
 		}

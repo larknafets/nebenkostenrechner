@@ -125,3 +125,42 @@ func TestHandleImportCSV_Reihenfolge(t *testing.T) {
 		t.Errorf("AllPeriods = %d, want 0 (all-or-nothing)", len(all))
 	}
 }
+
+// TestAblesungDetail_VorperiodeAusDemDatenstand verifies the detail page takes
+// the Vorperiode from the one loaded Datenstand: the consumption is the
+// difference to the chronologically previous Ablesung, the oldest one has
+// none, and an unknown id is a 404.
+func TestAblesungDetail_VorperiodeAusDemDatenstand(t *testing.T) {
+	db := openTestDB(t)
+	var ids []int64
+	for i, datum := range []string{"2026-07-01", "2026-08-01", "2026-09-01"} {
+		in := seedPeriodInputAt(datum)
+		in.Readings["strom_gesamt"] = float64(100 + i*250)
+		id, err := store.CreatePeriod(db, in)
+		if err != nil {
+			t.Fatalf("CreatePeriod %s: %v", datum, err)
+		}
+		ids = append(ids, id)
+	}
+
+	zeile := func(id int64) string { return tabellenzeile(t, detailBody(t, db, id), "Strom Netzbezug (1.8.0)") }
+	if got := zeile(ids[1]); !strings.Contains(got, "&#43;250,00") {
+		t.Errorf("mittlere Ablesung: %q, want Differenz +250,00 zur Vorperiode", got)
+	}
+	if got := zeile(ids[0]); strings.Contains(got, "&#43;") {
+		t.Errorf("älteste Ablesung: %q, want keine Differenz", got)
+	}
+	for _, id := range ids {
+		if body := detailBody(t, db, id); !strings.Contains(body, "2026-07-01") && !strings.Contains(body, "01.07.2026") {
+			t.Errorf("Auswahlliste von Ablesung %d zeigt nicht alle Ablesungen", id)
+		}
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/ablesungen/999", nil)
+	req.SetPathValue("id", "999")
+	w := httptest.NewRecorder()
+	handleAblesungDetail(newAuth("", nil))(w, requestWithDB(req, db))
+	if w.Code != http.StatusNotFound {
+		t.Errorf("unbekannte Id: status = %d, want 404", w.Code)
+	}
+}
