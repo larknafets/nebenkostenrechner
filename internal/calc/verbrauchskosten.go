@@ -2,7 +2,6 @@ package calc
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -117,21 +116,18 @@ type Verbrauchskosten struct {
 	byID map[int64]int
 }
 
-// Load reads all Ablesungen and the Stammdaten they depend on.
+// Load reads the Datenstand and computes the Verbrauchskosten of it.
 func Load(db *sql.DB) (*Verbrauchskosten, error) {
-	periods, err := store.AllPeriodDetails(db)
+	ds, err := store.LadeDatenstand(db)
 	if err != nil {
-		return nil, fmt.Errorf("periods: %w", err)
+		return nil, err
 	}
-	apartments, err := store.Apartments(db)
-	if err != nil {
-		return nil, fmt.Errorf("apartments: %w", err)
-	}
-	haus, err := store.GetHaus(db)
-	if err != nil {
-		return nil, fmt.Errorf("haus: %w", err)
-	}
-	return New(Daten{Periods: periods, Apartments: apartments, Haus: haus}), nil
+	return KostenAus(ds), nil
+}
+
+// KostenAus computes the Verbrauchskosten of an already loaded Datenstand.
+func KostenAus(ds *store.Datenstand) *Verbrauchskosten {
+	return New(Daten{Periods: ds.Periods, Apartments: ds.Apartments, Haus: ds.Haus})
 }
 
 // New computes the Verbrauchskosten of every Ablesung in d.

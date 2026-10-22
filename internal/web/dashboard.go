@@ -2,7 +2,6 @@ package web
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -30,32 +29,28 @@ type dashboardData struct {
 // display year. HasAnyData=false (zero-value everything else) when
 // neither readings nor fixed-costs entries exist yet.
 func loadDashboardData(db *sql.DB) (dashboardData, error) {
-	apartments, err := store.Apartments(db)
+	ds, err := store.LadeDatenstand(db)
 	if err != nil {
-		return dashboardData{}, fmt.Errorf("apartments: %w", err)
+		return dashboardData{}, err
 	}
+	apartments := ds.Apartments
 
-	allPeriods, err := store.AllPeriods(db)
-	if err != nil {
-		return dashboardData{}, fmt.Errorf("all periods: %w", err)
+	// Newest first, like store.AllPeriods and store.AllFixkostenEingaben.
+	allPeriods := make([]store.PeriodSummary, len(ds.Periods))
+	for i, p := range ds.Periods {
+		allPeriods[len(ds.Periods)-1-i] = store.PeriodSummary{ID: p.ID, ReadingDate: p.ReadingDate, Monat: p.Monat}
 	}
 	// Teilstand/partial reading (Ticket #129): only the newest period can
-	// be incomplete (enforced on creation, see handleCreateAblesung) -
+	// be incomplete (enforced on creation, see store.CreatePeriod) -
 	// stays completely excluded here (no yearly-totals/monthly-history
 	// entry, no effect on HasAnyData or the display year) until it's
 	// completed.
-	if len(allPeriods) > 0 {
-		latest, err := store.GetLatestPeriod(db)
-		if err != nil {
-			return dashboardData{}, fmt.Errorf("latest period: %w", err)
-		}
-		if latest != nil && latest.Teilstand(apartments).IstTeilstand {
-			allPeriods = allPeriods[1:]
-		}
+	if len(ds.Periods) > 0 && ds.Periods[len(ds.Periods)-1].Teilstand(apartments).IstTeilstand {
+		allPeriods = allPeriods[1:]
 	}
-	fixkostenEingaben, err := store.AllFixkostenEingaben(db)
-	if err != nil {
-		return dashboardData{}, fmt.Errorf("fixkosten eingaben: %w", err)
+	fixkostenEingaben := make([]store.FixkostenEingabeSummary, len(ds.Eingaben))
+	for i, e := range ds.Eingaben {
+		fixkostenEingaben[len(ds.Eingaben)-1-i] = store.FixkostenEingabeSummary{ID: e.ID, Monat: e.Monat}
 	}
 
 	if len(allPeriods) == 0 && len(fixkostenEingaben) == 0 {
@@ -65,10 +60,7 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 	// Verbrauchskosten newest -> oldest. The very first period ever
 	// recorded has no Vorperiode and so no Verbrauchskosten, which is the
 	// natural end of the available history.
-	verbrauchskosten, err := calc.Load(db)
-	if err != nil {
-		return dashboardData{}, fmt.Errorf("verbrauchskosten: %w", err)
-	}
+	verbrauchskosten := calc.KostenAus(ds)
 	var periodenKosten []periodKosten
 	berechenbar := verbrauchskosten.Berechenbare()
 	for i := len(berechenbar) - 1; i >= 0; i-- {
@@ -76,10 +68,7 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 		periodenKosten = append(periodenKosten, periodKosten{ReadingDate: a.Period.ReadingDate, Monat: a.Period.Monat, K: a.Kosten})
 	}
 
-	fixkostenListe, err := alleFixkostenKosten(db)
-	if err != nil {
-		return dashboardData{}, err
-	}
+	fixkostenListe := alleFixkostenKosten(calc.FixkostenreiheAus(ds))
 
 	return dashboardData{
 		HasAnyData:     true,

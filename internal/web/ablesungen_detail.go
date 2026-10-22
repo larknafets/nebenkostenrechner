@@ -101,11 +101,12 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			return
 		}
 
-		apartments, err := store.Apartments(db)
+		ds, err := store.LadeDatenstand(db)
 		if err != nil {
-			http.Error(w, "apartments: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		apartments := ds.Apartments
 
 		// ZeitraumStart is the immediately preceding period's ReadingDate -
 		// the values shown here are the *consumption over that interval*,
@@ -145,12 +146,7 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			meters = append(meters, entry)
 		}
 
-		verbrauchskosten, err := calc.Load(db)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		ablesung, _ := verbrauchskosten.Ablesung(period.ID)
+		ablesung, _ := calc.KostenAus(ds).Ablesung(period.ID)
 		k := ablesung.Kosten
 
 		data := struct {
