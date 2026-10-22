@@ -52,3 +52,5 @@ Keep every section, an empty one included. Do not change the headings.
 - Eingaben: Eine Fehlermeldung (z. B. "Für September 2026 gibt es bereits eine Fixkosten-Eingabe") führte auf eine leere Fehlerseite, man musste zurückgehen und die Eingaben waren weg. Jetzt erscheint sie als Dialog über der Seite, die Eingaben bleiben stehen, das betroffene Feld ist rot markiert und nach dem Schließen aktiv. Gilt für Fixkosten, Ablesung, Stammdaten und die beiden CSV-Importe
 
 ## Wartung
+
+- Datenbank: Vor einer Schema-Änderung sichert die App die Datenbank neben der Datei als `<Datenbank>.vor-schema-<Version>-<Zeitstempel>`, die letzten drei Sicherungen bleiben. Beim ersten Start nach diesem Update entsteht einmalig eine Sicherung der bestehenden Datenbank. Zum Zurückspielen die App stoppen und die Sicherung auf den Namen der Datenbank kopieren. Scheitert die Sicherung, startet die App nicht und die Datenbank bleibt unverändert (#266)

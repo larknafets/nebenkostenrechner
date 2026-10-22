@@ -21,9 +21,20 @@ import (
 var schemaSQL string
 
 // Open creates the database file's parent directory if needed, opens the
-// SQLite database at path, applies the schema, and seeds the fixed master
-// data (apartments, meters) if it isn't present yet.
+// SQLite database at path, saves it if a migration is due (see
+// sichereVorMigration), applies the schema, runs the migration steps and seeds
+// the fixed master data (apartments, meters) if it isn't present yet.
 func Open(path string) (*sql.DB, error) {
+	return open(path, true)
+}
+
+// OpenDemo opens the demo database like Open, without the save before a
+// migration: it holds no data of its own, it is reset on every demo login.
+func OpenDemo(path string) (*sql.DB, error) {
+	return open(path, false)
+}
+
+func open(path string, sichern bool) (*sql.DB, error) {
 	if dir := filepath.Dir(path); dir != "." {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return nil, fmt.Errorf("create db directory: %w", err)
@@ -40,100 +51,31 @@ func Open(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("enable foreign keys: %w", err)
 	}
 
+	// Before the schema is applied: even CREATE TABLE IF NOT EXISTS would
+	// already change a database that is about to be migrated.
+	var sicherung string
+	if sichern {
+		var err error
+		if sicherung, err = sichereVorMigration(db, path); err != nil {
+			db.Close()
+			return nil, err
+		}
+	}
+
 	if _, err := db.Exec(schemaSQL); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("apply schema: %w", err)
 	}
 
-	// CREATE TABLE IF NOT EXISTS above only creates periods on a brand-new
-	// database - a pre-existing one (from before Issue #27) needs this
-	// column added explicitly. SQLite has no "ADD COLUMN IF NOT EXISTS", so
-	// check first.
-	if err := ensurePeriodsHeizungGewichtungColumn(db); err != nil {
+	if err := migrate(db); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("migrate heizung_waerme_gewichtung column: %w", err)
-	}
-
-	if err := ensurePeriodsEinspeisungPreisColumn(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("migrate einspeisung_preis column: %w", err)
-	}
-
-	if err := ensureApartmentsFlurstueckGroesseColumn(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("migrate flurstueck_groesse column: %w", err)
-	}
-
-	if err := ensurePeriodsMonatColumn(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("migrate monat column: %w", err)
-	}
-
-	if err := ensurePeriodsNullablePriceColumns(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("migrate periods price columns nullable: %w", err)
-	}
-
-	// After the periods rebuild above, which would drop the column again.
-	if err := ensurePeriodSwitchColumns(db); err != nil {
-		db.Close()
+		if sicherung != "" {
+			verwirfDieseSicherung(path, sicherung)
+		}
 		return nil, err
 	}
-
-	if err := ensureKostenpositionenUmlagefaehigColumn(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("migrate kostenpositionen umlagefaehig column: %w", err)
-	}
-
-	if err := ensureKostenpositionenSortColumn(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("migrate kostenpositionen sort column: %w", err)
-	}
-
-	if err := ensureApartmentsDetailsColumns(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("migrate apartments details columns: %w", err)
-	}
-
-	if err := ensureMieterSeitColumn(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("migrate apartments mieter_seit column: %w", err)
-	}
-
-	if err := ensureHausDetailsColumns(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("migrate haus details columns: %w", err)
-	}
-
-	if err := ensureHausWallboxWeiterberechnenColumn(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("migrate haus wallbox_weiterberechnen column: %w", err)
-	}
-
-	if err := seed(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("seed master data: %w", err)
-	}
-
-	// After seed(): it needs the haus row to write the weighting into.
-	if err := migrateHeizungGewichtungToHaus(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("migrate heizung_waerme_gewichtung to haus: %w", err)
-	}
-
-	if err := ensureFixkostenWerteLogikTypColumns(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("migrate fixkosten_werte logik/typ columns: %w", err)
-	}
-
-	if err := dropKostenpositionenJahreTable(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("drop kostenpositionen_jahre: %w", err)
-	}
-
-	if err := ensureFixkostenEingabenMonatUnique(db); err != nil {
-		db.Close()
-		return nil, err
+	if sichern {
+		raeumeSicherungenAuf(path)
 	}
 
 	return db, nil
