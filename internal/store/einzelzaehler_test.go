@@ -118,7 +118,7 @@ func TestEinzelzaehler_ErsetztKeinenFehlendenPflichtzaehler(t *testing.T) {
 	}
 }
 
-func TestVerbrauchOptional(t *testing.T) {
+func TestVerbrauch(t *testing.T) {
 	cases := []struct {
 		name      string
 		cur, prev map[string]float64
@@ -133,9 +133,9 @@ func TestVerbrauchOptional(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got, ok := VerbrauchOptional(c.cur, c.prev, "k")
+			got, ok := Verbrauch(c.cur, c.prev, "k")
 			if ok != c.wantOK || got != c.want {
-				t.Errorf("VerbrauchOptional = %v, %v, want %v, %v", got, ok, c.want, c.wantOK)
+				t.Errorf("Verbrauch = %v, %v, want %v, %v", got, ok, c.want, c.wantOK)
 			}
 		})
 	}

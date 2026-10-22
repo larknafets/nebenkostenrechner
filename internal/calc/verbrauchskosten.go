@@ -151,11 +151,11 @@ func New(d Daten) *Verbrauchskosten {
 		}
 		verbrauch := make(map[string]float64, len(store.MeterKeys))
 		for _, key := range store.MeterKeys {
-			verbrauch[key] = p.Readings[key] - d.Periods[i-1].Readings[key]
+			verbrauch[key], _ = store.Verbrauch(p.Readings, d.Periods[i-1].Readings, key)
 		}
 		einzel := make(map[string]float64, len(store.OptionalMeterKeys))
 		for _, key := range store.OptionalMeterKeys {
-			if v, ok := store.VerbrauchOptional(p.Readings, d.Periods[i-1].Readings, key); ok {
+			if v, ok := store.Verbrauch(p.Readings, d.Periods[i-1].Readings, key); ok {
 				einzel[key] = v
 			}
 		}

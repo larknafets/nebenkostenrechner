@@ -283,15 +283,15 @@ func importWarnings(rows []importRow, ids []int64) []string {
 		if i > 0 {
 			prev := history[0]
 			for _, key := range warnedMeterKeys {
-				newVal, prevVal := row.input.Readings[key], prev.Readings[key]
-				// An optional Einzelzähler without both readings has no
-				// consumption, so there is nothing to warn about (#224).
-				if _, ok := store.VerbrauchOptional(row.input.Readings, prev.Readings, key); store.IsOptionalMeter(key) && !ok {
+				// A meter without both readings has no consumption, so
+				// there is nothing to warn about (#224).
+				consumption, ok := store.Verbrauch(row.input.Readings, prev.Readings, key)
+				if !ok {
 					continue
 				}
-				if newVal < prevVal {
+				if consumption < 0 {
 					warnings = append(warnings, fmt.Sprintf("Zeile %d (%s): negativer Verbrauch bei %s (%s < Vorstand %s)",
-						row.line, row.input.ReadingDate, key, formatDecimalDE(newVal), formatDecimalDE(prevVal)))
+						row.line, row.input.ReadingDate, key, formatDecimalDE(row.input.Readings[key]), formatDecimalDE(prev.Readings[key])))
 				}
 			}
 			if avg, ok := outlierAvg(history); ok {
@@ -300,10 +300,10 @@ func importWarnings(rows []importRow, ids []int64) []string {
 					if a == 0 {
 						continue
 					}
-					if _, ok := store.VerbrauchOptional(row.input.Readings, prev.Readings, key); store.IsOptionalMeter(key) && !ok {
+					consumption, ok := store.Verbrauch(row.input.Readings, prev.Readings, key)
+					if !ok {
 						continue
 					}
-					consumption := row.input.Readings[key] - prev.Readings[key]
 					if math.Abs(consumption-a) > 0.5*math.Abs(a) {
 						warnings = append(warnings, fmt.Sprintf("Zeile %d (%s): Ausreißer bei %s (Verbrauch %s weicht >50%% vom Schnitt der letzten 3 Ablesungen %s ab)",
 							row.line, row.input.ReadingDate, key, formatDecimalDE(consumption), formatDecimalDE(a)))

@@ -15,20 +15,13 @@ func outlierAvg(recent []store.PeriodReadings) (avg map[string]float64, ok bool)
 	if len(recent) < 4 {
 		return nil, false
 	}
-	avg = make(map[string]float64, len(store.MeterKeys)+len(store.OptionalMeterKeys))
-	for _, key := range store.MeterKeys {
-		sum := 0.0
-		for i := 0; i < 3; i++ {
-			sum += recent[i].Readings[key] - recent[i+1].Readings[key]
-		}
-		avg[key] = sum / 3
-	}
-	// An optional Einzelzähler (#224) has a baseline only if all 4 readings
-	// exist, a gap never counts as 0.
-	for _, key := range store.OptionalMeterKeys {
+	avg = make(map[string]float64, len(warnedMeterKeys))
+	// A meter has a baseline only if all 4 readings exist, a gap never
+	// counts as 0 (#224).
+	for _, key := range warnedMeterKeys {
 		sum, complete := 0.0, true
 		for i := 0; i < 3; i++ {
-			d, ok := store.VerbrauchOptional(recent[i].Readings, recent[i+1].Readings, key)
+			d, ok := store.Verbrauch(recent[i].Readings, recent[i+1].Readings, key)
 			if !ok {
 				complete = false
 				break
