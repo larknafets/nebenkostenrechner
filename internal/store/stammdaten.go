@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 	"time"
 )
 
@@ -33,8 +34,8 @@ const (
 	StatusEigennutzung = "eigennutzung"
 )
 
-// ValidStatus reports whether s is a known Wohnungsstatus.
-func ValidStatus(s string) bool {
+// validStatus reports whether s is a known Wohnungsstatus.
+func validStatus(s string) bool {
 	return s == StatusVermietet || s == StatusEigennutzung
 }
 
@@ -198,9 +199,76 @@ type StammdatenSave struct {
 	Haus      HausDetails
 }
 
+// InvalidStatusError is returned by SaveStammdaten for a Wohnungsstatus that
+// is neither vermietet nor eigennutzung.
+type InvalidStatusError struct {
+	ApartmentID int64
+	Status      string
+}
+
+func (e *InvalidStatusError) Error() string {
+	return fmt.Sprintf("invalid status %q for apartment %d", e.Status, e.ApartmentID)
+}
+
+// InvalidMieterSeitError is returned by SaveStammdaten for a "Mieter seit"
+// that is not an Abrechnungsmonat ("YYYY-MM-01") or empty.
+type InvalidMieterSeitError struct {
+	ApartmentID int64
+	MieterSeit  string
+}
+
+func (e *InvalidMieterSeitError) Error() string {
+	return fmt.Sprintf("invalid mieter_seit %q for apartment %d", e.MieterSeit, e.ApartmentID)
+}
+
+// InvalidHeizungGewichtungError is returned by SaveStammdaten for a
+// Heizungs-Gewichtung outside HeizungGewichtungOptions.
+type InvalidHeizungGewichtungError struct {
+	Gewichtung float64
+}
+
+func (e *InvalidHeizungGewichtungError) Error() string {
+	return fmt.Sprintf("invalid Heizungs-Gewichtung %v", e.Gewichtung)
+}
+
+// validate checks every rule of a /stammdaten submission before anything is
+// written, the one place for them: the Wohnungsstatus and "Mieter seit" per
+// apartment (in id order), then the Heizungs-Gewichtung. A violation is one of
+// the Invalid...Error types, so a caller can answer with 400 instead of 500.
+func (in StammdatenSave) validate() error {
+	ids := make([]int64, 0, len(in.Wohnungen))
+	for id := range in.Wohnungen {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	for _, id := range ids {
+		w := in.Wohnungen[id]
+		if !validStatus(w.Status) {
+			return &InvalidStatusError{ApartmentID: id, Status: w.Status}
+		}
+		if w.MieterSeit != "" && !validAbrechnungsmonat(w.MieterSeit) {
+			return &InvalidMieterSeitError{ApartmentID: id, MieterSeit: w.MieterSeit}
+		}
+	}
+	if !ValidHeizungGewichtung(in.HeizungWaermeGewichtung) {
+		return &InvalidHeizungGewichtungError{Gewichtung: in.HeizungWaermeGewichtung}
+	}
+	return nil
+}
+
+// validAbrechnungsmonat reports whether s is an Abrechnungsmonat ("YYYY-MM-01").
+func validAbrechnungsmonat(s string) bool {
+	t, err := time.Parse("2006-01-02", s)
+	return err == nil && t.Day() == 1 && len(s) == 10
+}
+
 // SaveStammdaten writes one /stammdaten form submission in a single
-// transaction, so a failing write never leaves the form half saved.
+// transaction, so a failing write never leaves the form half saved. Invalid
+// input is refused before anything is written (see validate).
 func SaveStammdaten(db *sql.DB, in StammdatenSave) error {
+	if err := in.validate(); err != nil {
+		return err
+	}
 	return inTx(db, func(tx *sql.Tx) error {
 		if err := updateApartmentsTx(tx, in.Apartments); err != nil {
 			return err
@@ -208,21 +276,10 @@ func SaveStammdaten(db *sql.DB, in StammdatenSave) error {
 		if err := updateFlagsTx(tx, in.Flags); err != nil {
 			return err
 		}
-		if !ValidHeizungGewichtung(in.HeizungWaermeGewichtung) {
-			return fmt.Errorf("invalid Heizungs-Gewichtung %v", in.HeizungWaermeGewichtung)
-		}
 		if _, err := tx.Exec(`UPDATE haus SET heizung_waerme_gewichtung = ? WHERE id = 1`, in.HeizungWaermeGewichtung); err != nil {
 			return fmt.Errorf("update heizung_waerme_gewichtung: %w", err)
 		}
 		for apartmentID, w := range in.Wohnungen {
-			if !ValidStatus(w.Status) {
-				return fmt.Errorf("invalid status %q for apartment %d", w.Status, apartmentID)
-			}
-			if w.MieterSeit != "" {
-				if _, err := time.Parse("2006-01-02", w.MieterSeit); err != nil || len(w.MieterSeit) != 10 || w.MieterSeit[8:] != "01" {
-					return fmt.Errorf("invalid mieter_seit %q for apartment %d", w.MieterSeit, apartmentID)
-				}
-			}
 			if _, err := tx.Exec(
 				`UPDATE apartments SET mieter_name = ?, mieter_anschrift = ?, status = ?, mieter_seit = ? WHERE id = ?`,
 				w.MieterName, w.MieterAnschrift, w.Status, w.MieterSeit, apartmentID,

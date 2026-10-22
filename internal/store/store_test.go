@@ -2309,3 +2309,64 @@ func TestSaveStammdaten_MieterSeit(t *testing.T) {
 		}
 	}
 }
+
+// TestSaveStammdaten_UngueltigeEingabe verifies that SaveStammdaten is the one
+// place that checks the Stammdaten rules: it names the violation as a typed
+// error, before it writes anything.
+func TestSaveStammdaten_UngueltigeEingabe(t *testing.T) {
+	gueltig := func() StammdatenSave {
+		return StammdatenSave{HeizungWaermeGewichtung: 0.7, Wohnungen: map[int64]WohnungDetails{1: {Status: StatusEigennutzung}, 2: {Status: StatusVermietet, MieterSeit: "2026-01-01"}}}
+	}
+
+	t.Run("Wohnungsstatus", func(t *testing.T) {
+		db := openTestDB(t)
+		in := gueltig()
+		in.Wohnungen[2] = WohnungDetails{Status: "leer"}
+		var e *InvalidStatusError
+		if err := SaveStammdaten(db, in); !errors.As(err, &e) || e.ApartmentID != 2 {
+			t.Fatalf("SaveStammdaten err = %v, want *InvalidStatusError für Wohnung 2", err)
+		}
+	})
+	t.Run("Mieter seit", func(t *testing.T) {
+		db := openTestDB(t)
+		for _, seit := range []string{"2026-13-01", "2026-01-15", "2026-01", "01.01.2026"} {
+			in := gueltig()
+			in.Wohnungen[2] = WohnungDetails{Status: StatusVermietet, MieterSeit: seit}
+			var e *InvalidMieterSeitError
+			if err := SaveStammdaten(db, in); !errors.As(err, &e) || e.ApartmentID != 2 {
+				t.Errorf("MieterSeit %q: err = %v, want *InvalidMieterSeitError für Wohnung 2", seit, err)
+			}
+		}
+	})
+	t.Run("Heizungs-Gewichtung", func(t *testing.T) {
+		db := openTestDB(t)
+		in := gueltig()
+		in.HeizungWaermeGewichtung = 0.8
+		var e *InvalidHeizungGewichtungError
+		if err := SaveStammdaten(db, in); !errors.As(err, &e) || e.Gewichtung != 0.8 {
+			t.Fatalf("SaveStammdaten err = %v, want *InvalidHeizungGewichtungError für 0.8", err)
+		}
+	})
+	t.Run("nichts geschrieben", func(t *testing.T) {
+		db := openTestDB(t)
+		in := gueltig()
+		in.Apartments = map[int64]StammdatenInput{1: {QM: 999, FlurstueckGroesse: 999}}
+		in.HeizungWaermeGewichtung = 0.8
+		if err := SaveStammdaten(db, in); err == nil {
+			t.Fatal("SaveStammdaten: want error")
+		}
+		apartments, err := Apartments(db)
+		if err != nil {
+			t.Fatalf("Apartments: %v", err)
+		}
+		if apartments[0].QM == 999 {
+			t.Error("QM wurde trotz ungültiger Eingabe geschrieben")
+		}
+	})
+	t.Run("gültige Eingabe", func(t *testing.T) {
+		db := openTestDB(t)
+		if err := SaveStammdaten(db, gueltig()); err != nil {
+			t.Fatalf("SaveStammdaten: %v", err)
+		}
+	})
+}

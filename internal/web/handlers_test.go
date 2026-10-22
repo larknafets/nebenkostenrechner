@@ -826,8 +826,6 @@ func TestParseHeizungGewichtung(t *testing.T) {
 		{"0.7", 0.7, false},
 		{"0.6", 0.6, false},
 		{"0.5", 0.5, false},
-		{"0.8", 0, true},
-		{"70", 0, true},
 		{"", 0, true},
 		{"abc", 0, true},
 	}
