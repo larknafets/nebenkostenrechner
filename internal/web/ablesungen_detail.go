@@ -133,16 +133,13 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 		for _, m := range meterDisplays {
 			entry := meterZeile{Label: m.AblesungLabel, Value: period.Readings[m.Key], Unit: m.Unit, Erfasst: status.MeterErfasst[m.Key], Optional: m.Optional, Eingerueckt: m.Eingerueckt}
 			if len(vorperiode) > 0 {
-				if m.Optional {
-					// Optional Einzelzähler (#224): no consumption unless both
-					// readings exist, never computed against 0.
-					if d, ok := store.VerbrauchOptional(period.Readings, vorperiode[0].Readings, m.Key); ok {
-						entry.Diff = formatMeterDiff(d, 0)
-					} else if entry.Erfasst {
-						entry.NichtBerechenbar = true
-					}
-				} else {
-					entry.Diff = formatMeterDiff(period.Readings[m.Key], vorperiode[0].Readings[m.Key])
+				// No consumption unless both readings exist, never computed
+				// against 0. A recorded optional Einzelzähler (#224) without
+				// a Vorperiode stand is "nicht berechenbar".
+				if d, ok := store.Verbrauch(period.Readings, vorperiode[0].Readings, m.Key); ok {
+					entry.Diff = formatMeterDiff(d, 0)
+				} else if m.Optional && entry.Erfasst {
+					entry.NichtBerechenbar = true
 				}
 			}
 			meters = append(meters, entry)

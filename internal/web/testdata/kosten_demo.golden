@@ -4822,7 +4822,7 @@ Abrechnung 2025 Wohnung 1:
         Einheit: "kWh"
         Beginn: 0.00
         Ende: 957.20
-        Verbrauch: 957.20
+        Verbrauch: 0.00
         BeginnFehlt: true
         EndeFehlt: false
         Eigen: true
@@ -4831,7 +4831,7 @@ Abrechnung 2025 Wohnung 1:
         Einheit: "kWh"
         Beginn: 0.00
         Ende: 404.80
-        Verbrauch: 404.80
+        Verbrauch: 0.00
         BeginnFehlt: true
         EndeFehlt: false
         Eigen: false
@@ -6148,7 +6148,7 @@ Abrechnung 2025 Wohnung 2:
         Einheit: "kWh"
         Beginn: 0.00
         Ende: 957.20
-        Verbrauch: 957.20
+        Verbrauch: 0.00
         BeginnFehlt: true
         EndeFehlt: false
         Eigen: false
@@ -6157,7 +6157,7 @@ Abrechnung 2025 Wohnung 2:
         Einheit: "kWh"
         Beginn: 0.00
         Ende: 404.80
-        Verbrauch: 404.80
+        Verbrauch: 0.00
         BeginnFehlt: true
         EndeFehlt: false
         Eigen: true

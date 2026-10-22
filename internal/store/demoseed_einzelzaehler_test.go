@@ -35,8 +35,8 @@ func TestSeedDemoData_Einzelzaehler(t *testing.T) {
 			continue
 		}
 		prev := periods[i-1]
-		d1, ok1 := VerbrauchOptional(p.Readings, prev.Readings, keyWallboxW1)
-		d2, ok2 := VerbrauchOptional(p.Readings, prev.Readings, keyWallboxW2)
+		d1, ok1 := Verbrauch(p.Readings, prev.Readings, keyWallboxW1)
+		d2, ok2 := Verbrauch(p.Readings, prev.Readings, keyWallboxW2)
 		if !ok1 || !ok2 {
 			// The first month with Einzelzähler has no Vorperiode.
 			continue

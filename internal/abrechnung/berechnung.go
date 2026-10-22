@@ -776,8 +776,9 @@ func verbrauchUebersicht(periods []*store.LatestPeriod, apartments []store.Apart
 		if unit == "m3" {
 			unit = "m³"
 		}
+		verbrauch, _ := store.Verbrauch(ende.Readings, beginn.Readings, m.Key)
 		out = append(out, VerbrauchZeile{
-			Zaehler: m.Label, Einheit: unit, Beginn: b, Ende: e, Verbrauch: e - b,
+			Zaehler: m.Label, Einheit: unit, Beginn: b, Ende: e, Verbrauch: verbrauch,
 			BeginnFehlt: optional && !okB, EndeFehlt: optional && !okE,
 			Eigen: m.ApartmentID == apartmentID,
 		})

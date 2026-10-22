@@ -6,10 +6,12 @@ import (
 	"fmt"
 )
 
-// VerbrauchOptional is the consumption of an optional meter: current minus
-// previous reading. ok is false if either reading is missing ("nicht
-// berechenbar", never computed against 0).
-func VerbrauchOptional(current, previous map[string]float64, key string) (verbrauch float64, ok bool) {
+// Verbrauch is the consumption of one meter: its reading in current minus
+// the one in previous (the Vorperiode's). ok is false if either reading is
+// missing ("nicht berechenbar", never computed against 0) - always for a
+// meter without a stand, whether required or an optional Einzelzähler. The
+// one place that forms this difference.
+func Verbrauch(current, previous map[string]float64, key string) (verbrauch float64, ok bool) {
 	cur, okCur := current[key]
 	prev, okPrev := previous[key]
 	if !okCur || !okPrev {
