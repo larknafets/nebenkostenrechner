@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -101,10 +102,11 @@ func TestKostenDemodatenGolden(t *testing.T) {
 	}
 	dumpValue(&sb, "Dashboard", reflect.ValueOf(&dash).Elem(), 0)
 
-	liste, err := alleFixkostenKosten(db)
+	reihe, err := calc.LoadFixkostenreihe(db)
 	if err != nil {
-		t.Fatalf("alleFixkostenKosten: %v", err)
+		t.Fatalf("LoadFixkostenreihe: %v", err)
 	}
+	liste := alleFixkostenKosten(reihe)
 	dumpValue(&sb, "Fixkosten-Liste", reflect.ValueOf(&liste).Elem(), 0)
 
 	got := sb.String()

@@ -1,7 +1,6 @@
 package web
 
 import (
-	"database/sql"
 	"math"
 	"sort"
 	"time"
@@ -54,18 +53,14 @@ type fixkostenKosten struct {
 }
 
 // alleFixkostenKosten returns every computable fixed-costs entry's result,
-// newest first (store.AllFixkostenEingaben's own order).
-func alleFixkostenKosten(db *sql.DB) ([]fixkostenKosten, error) {
-	reihe, err := calc.LoadFixkostenreihe(db)
-	if err != nil {
-		return nil, err
-	}
+// newest first.
+func alleFixkostenKosten(reihe *calc.Fixkostenreihe) []fixkostenKosten {
 	neueste := reihe.Neueste()
 	out := make([]fixkostenKosten, 0, len(neueste))
 	for _, m := range neueste {
 		out = append(out, fixkostenKosten{Monat: m.Eingabe.Monat, Erg: m.Ergebnis, Abschlag: m.Eingabe.Abschlag, Personen: m.Eingabe.Personen})
 	}
-	return out, nil
+	return out
 }
 
 // fixkostenGruppen groups one fixed-costs result's 14 positions by Logik
