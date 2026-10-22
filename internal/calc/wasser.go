@@ -27,7 +27,7 @@ type WasserErgebnis struct {
 }
 
 // wasserEingabe is everything the water allocation reads: the period's
-// prices, its meter consumptions (store.Verbrauch) and the occupants of
+// prices, its meter consumptions and the occupants of
 // both apartments.
 type wasserEingabe struct {
 	FrischwasserPreis, AbwasserPreis float64

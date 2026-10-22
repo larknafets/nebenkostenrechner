@@ -220,48 +220,6 @@ func TestGetLatestPeriod_NoPeriods(t *testing.T) {
 	}
 }
 
-func TestVerbrauch_Normal(t *testing.T) {
-	db := openTestDB(t)
-	mustCreatePeriod(t, db, "2026-09-01", baseReadings(map[string]float64{"strom_gesamt": 100}))
-	p2 := mustCreatePeriod(t, db, "2026-10-01", baseReadings(map[string]float64{"strom_gesamt": 350}))
-
-	v, err := Verbrauch(db, p2)
-	if err != nil {
-		t.Fatalf("Verbrauch: %v", err)
-	}
-	if v["strom_gesamt"] != 250 {
-		t.Errorf("Verbrauch[strom_gesamt] = %v, want 250", v["strom_gesamt"])
-	}
-}
-
-func TestVerbrauch_ErrNoPreviousPeriod(t *testing.T) {
-	db := openTestDB(t)
-	p1 := mustCreatePeriod(t, db, "2026-09-01", baseReadings(map[string]float64{"strom_gesamt": 100}))
-
-	_, err := Verbrauch(db, p1)
-	if !errors.Is(err, ErrNoPreviousPeriod) {
-		t.Fatalf("Verbrauch on the oldest period: err = %v, want ErrNoPreviousPeriod", err)
-	}
-}
-
-// TestVerbrauch_UeberLuecke verifies that a missing Ablesung (Ticket #9)
-// doesn't break Verbrauch - it just diffs against whichever period is
-// chronologically next-older, however far back that is.
-func TestVerbrauch_UeberLuecke(t *testing.T) {
-	db := openTestDB(t)
-	mustCreatePeriod(t, db, "2026-06-01", baseReadings(map[string]float64{"strom_gesamt": 100}))
-	// 4-month gap (July-Sept missing) instead of the usual 1.
-	p2 := mustCreatePeriod(t, db, "2026-10-01", baseReadings(map[string]float64{"strom_gesamt": 500}))
-
-	v, err := Verbrauch(db, p2)
-	if err != nil {
-		t.Fatalf("Verbrauch: %v", err)
-	}
-	if v["strom_gesamt"] != 400 {
-		t.Errorf("Verbrauch ueber Luecke [strom_gesamt] = %v, want 400 (500-100, ueber den laengeren Zeitraum)", v["strom_gesamt"])
-	}
-}
-
 func TestUpdatePeriod_Roundtrip(t *testing.T) {
 	db := openTestDB(t)
 	mustCreatePeriod(t, db, "2026-09-01", baseReadings(map[string]float64{"strom_gesamt": 100}))
@@ -297,14 +255,6 @@ func TestUpdatePeriod_Roundtrip(t *testing.T) {
 	}
 	if latest.PersonenByApartment[1] != 3 {
 		t.Errorf("PersonenByApartment[1] = %v, want 3", latest.PersonenByApartment[1])
-	}
-
-	v, err := Verbrauch(db, p2)
-	if err != nil {
-		t.Fatalf("Verbrauch: %v", err)
-	}
-	if v["strom_gesamt"] != 110 {
-		t.Errorf("Verbrauch[strom_gesamt] after update = %v, want 110 (210-100, recomputed live)", v["strom_gesamt"])
 	}
 }
 
@@ -822,16 +772,6 @@ func TestDeletePeriod_MiddlePeriod_Roundtrip(t *testing.T) {
 
 	if got, err := GetPeriodDetails(db, p2); err != nil || got != nil {
 		t.Fatalf("GetPeriodDetails(deleted p2) = %+v, %v, want nil, nil", got, err)
-	}
-
-	// p3's Verbrauch must now diff against p1 (the new previous period),
-	// recomputed live since nothing caches consumption.
-	v, err := Verbrauch(db, p3)
-	if err != nil {
-		t.Fatalf("Verbrauch: %v", err)
-	}
-	if v["strom_gesamt"] != 400 {
-		t.Errorf("Verbrauch[strom_gesamt] after deleting p2 = %v, want 400 (500-100)", v["strom_gesamt"])
 	}
 }
 

@@ -2,14 +2,8 @@ package store
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 )
-
-// ErrNoPreviousPeriod is returned by Verbrauch when the given period is the
-// oldest one on record, so no consumption can be derived yet (Verbrauch =
-// current reading minus previous period's reading needs a previous period).
-var ErrNoPreviousPeriod = errors.New("no previous period to compute consumption from")
 
 // Period is one periods row without its readings/occupancy - the shared
 // shape cost calculations key off (see LatestPeriod for the fuller
@@ -45,46 +39,6 @@ func GetPeriodByID(db *sql.DB, id int64) (*Period, error) {
 	}
 	p.Strompreis, p.FrischwasserPreis, p.AbwasserPreis, p.EinspeisungPreis = strompreis.Float64, frischwasserPreis.Float64, abwasserPreis.Float64, einspeisungPreis.Float64
 	return &p, nil
-}
-
-// Verbrauch returns, for every meter key, the consumption in this period:
-// this period's meter reading minus the chronologically next-older
-// period's meter reading for the same meter (Ticket #6). Returns
-// ErrNoPreviousPeriod if periodID is the oldest period on record.
-func Verbrauch(db *sql.DB, periodID int64) (map[string]float64, error) {
-	period, err := GetPeriodByID(db, periodID)
-	if err != nil {
-		return nil, err
-	}
-
-	var previousID int64
-	err = db.QueryRow(
-		`SELECT id FROM periods
-		 WHERE reading_date < ? OR (reading_date = ? AND id < ?)
-		 ORDER BY reading_date DESC, id DESC LIMIT 1`,
-		period.ReadingDate, period.ReadingDate, period.ID,
-	).Scan(&previousID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, ErrNoPreviousPeriod
-		}
-		return nil, fmt.Errorf("find previous period: %w", err)
-	}
-
-	current, err := readingsByMeterKey(db, periodID)
-	if err != nil {
-		return nil, fmt.Errorf("current readings: %w", err)
-	}
-	previous, err := readingsByMeterKey(db, previousID)
-	if err != nil {
-		return nil, fmt.Errorf("previous readings: %w", err)
-	}
-
-	out := make(map[string]float64, len(MeterKeys))
-	for _, key := range MeterKeys {
-		out[key] = current[key] - previous[key]
-	}
-	return out, nil
 }
 
 func readingsByMeterKey(db *sql.DB, periodID int64) (map[string]float64, error) {
