@@ -40,7 +40,12 @@ func ValidStatus(s string) bool {
 
 // Apartments returns the 2 apartments ordered by id.
 func Apartments(db *sql.DB) ([]Apartment, error) {
-	rows, err := db.Query(`SELECT id, name, qm, flurstueck_groesse, mieter_name, mieter_anschrift, status, mieter_seit FROM apartments ORDER BY id`)
+	return apartments(db)
+}
+
+// apartments is Apartments against a *sql.DB or a *sql.Tx.
+func apartments(q querier) ([]Apartment, error) {
+	rows, err := q.Query(`SELECT id, name, qm, flurstueck_groesse, mieter_name, mieter_anschrift, status, mieter_seit FROM apartments ORDER BY id`)
 	if err != nil {
 		return nil, fmt.Errorf("query apartments: %w", err)
 	}

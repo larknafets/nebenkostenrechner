@@ -93,14 +93,6 @@ func placeholders(n int) string {
 	return strings.TrimSuffix(strings.Repeat("?,", n), ",")
 }
 
-func keysAsArgs(keys []string) []any {
-	out := make([]any, len(keys))
-	for i, k := range keys {
-		out[i] = k
-	}
-	return out
-}
-
 // MeterDefs returns all meters from the descriptor, ordered by id, without
 // touching a database.
 func MeterDefs() []Meter {
