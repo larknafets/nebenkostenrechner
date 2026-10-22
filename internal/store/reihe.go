@@ -14,6 +14,7 @@ import (
 // querier is the read side shared by *sql.DB and *sql.Tx, so a rule can run
 // inside the transaction that is about to write.
 type querier interface {
+	Query(query string, args ...any) (*sql.Rows, error)
 	QueryRow(query string, args ...any) *sql.Row
 }
 

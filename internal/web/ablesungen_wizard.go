@@ -109,11 +109,11 @@ func openTeilstandID(db *sql.DB) (id int64, ok bool, err error) {
 	if latest == nil {
 		return 0, false, nil
 	}
-	complete, err := store.PeriodComplete(db, latest.ID)
+	apartments, err := store.Apartments(db)
 	if err != nil {
-		return 0, false, fmt.Errorf("period complete: %w", err)
+		return 0, false, fmt.Errorf("apartments: %w", err)
 	}
-	return latest.ID, !complete, nil
+	return latest.ID, latest.Teilstand(apartments).IstTeilstand, nil
 }
 
 // redirectIfOpenTeilstand redirects to the open Teilstand's completion

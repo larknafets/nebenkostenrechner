@@ -45,11 +45,11 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 	// entry, no effect on HasAnyData or the display year) until it's
 	// completed.
 	if len(allPeriods) > 0 {
-		complete, err := store.PeriodComplete(db, allPeriods[0].ID)
+		latest, err := store.GetLatestPeriod(db)
 		if err != nil {
-			return dashboardData{}, fmt.Errorf("period complete: %w", err)
+			return dashboardData{}, fmt.Errorf("latest period: %w", err)
 		}
-		if !complete {
+		if latest != nil && latest.Teilstand(apartments).IstTeilstand {
 			allPeriods = allPeriods[1:]
 		}
 	}

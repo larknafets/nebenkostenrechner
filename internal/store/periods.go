@@ -353,12 +353,12 @@ func AllPeriodDetails(db *sql.DB) ([]*LatestPeriod, error) {
 // loadPeriodDetails is the single hydration path of AllPeriodDetails (id 0)
 // and GetPeriodDetails (one id): the same three queries, the latter filtered
 // to the one period.
-func loadPeriodDetails(db *sql.DB, id int64) ([]*LatestPeriod, error) {
+func loadPeriodDetails(q querier, id int64) ([]*LatestPeriod, error) {
 	periodWhere, childWhere, args := "", "", []any{}
 	if id != 0 {
 		periodWhere, childWhere, args = "WHERE id = ?", "WHERE r.period_id = ?", []any{id}
 	}
-	rows, err := db.Query(selectPeriodSQL(periodWhere), args...)
+	rows, err := q.Query(selectPeriodSQL(periodWhere), args...)
 	if err != nil {
 		return nil, fmt.Errorf("query periods: %w", err)
 	}
@@ -378,7 +378,7 @@ func loadPeriodDetails(db *sql.DB, id int64) ([]*LatestPeriod, error) {
 		return nil, err
 	}
 
-	readingRows, err := db.Query(
+	readingRows, err := q.Query(
 		`SELECT r.period_id, m.key, r.zaehlerstand FROM meter_readings r JOIN meters m ON m.id = r.meter_id `+childWhere, args...,
 	)
 	if err != nil {
@@ -400,7 +400,7 @@ func loadPeriodDetails(db *sql.DB, id int64) ([]*LatestPeriod, error) {
 		return nil, err
 	}
 
-	occRows, err := db.Query(`SELECT r.period_id, r.apartment_id, r.personen FROM period_occupancy r `+childWhere, args...)
+	occRows, err := q.Query(`SELECT r.period_id, r.apartment_id, r.personen FROM period_occupancy r `+childWhere, args...)
 	if err != nil {
 		return nil, fmt.Errorf("query occupancy: %w", err)
 	}
@@ -524,9 +524,9 @@ func DeletePeriod(db *sql.DB, periodID int64) error {
 }
 
 // PeriodComplete reports whether periodID is a fully entered Ablesung or a
-// Teilstand (Ticket #128): complete means all 4 price columns are set,
-// Monat isn't empty, every store.MeterKeys entry has a meter_readings row,
-// and every apartment has a period_occupancy row. Purely derived - no
+// Teilstand (Ticket #128): the answer of LatestPeriod.Teilstand, the one
+// place that knows what "complete" means, for callers that only hold a bare
+// periodID (e.g. requireLoginUnlessTeilstand). Purely derived - no
 // dedicated "complete" flag, so there's no second source of truth.
 func PeriodComplete(db *sql.DB, periodID int64) (bool, error) {
 	return periodComplete(db, periodID)
@@ -535,45 +535,18 @@ func PeriodComplete(db *sql.DB, periodID int64) (bool, error) {
 // periodComplete is PeriodComplete against a *sql.DB or a *sql.Tx, so the
 // Ablesungsreihe rules can ask inside the transaction that is about to write.
 func periodComplete(q querier, periodID int64) (bool, error) {
-	var pricesSet int
-	var monat string
-	if err := q.QueryRow(
-		`SELECT (strompreis IS NOT NULL AND frischwasser_preis IS NOT NULL AND abwasser_preis IS NOT NULL AND einspeisung_preis IS NOT NULL), monat
-		 FROM periods WHERE id = ?`,
-		periodID,
-	).Scan(&pricesSet, &monat); err != nil {
-		if err == sql.ErrNoRows {
-			return false, fmt.Errorf("%w: period %d", ErrPeriodNotFound, periodID)
-		}
-		return false, fmt.Errorf("query period %d: %w", periodID, err)
+	periods, err := loadPeriodDetails(q, periodID)
+	if err != nil {
+		return false, fmt.Errorf("period %d: %w", periodID, err)
 	}
-	if pricesSet == 0 || monat == "" {
-		return false, nil
+	if len(periods) == 0 {
+		return false, fmt.Errorf("%w: period %d", ErrPeriodNotFound, periodID)
 	}
-
-	var readingCount int
-	// Only the required meters count: the optional Einzelzähler (#224) are
-	// no part of completeness, and must not stand in for a missing one.
-	if err := q.QueryRow(
-		`SELECT COUNT(*) FROM meter_readings r JOIN meters m ON m.id = r.meter_id
-		 WHERE r.period_id = ? AND m.key IN (`+placeholders(len(MeterKeys))+`)`,
-		append([]any{periodID}, keysAsArgs(MeterKeys)...)...,
-	).Scan(&readingCount); err != nil {
-		return false, fmt.Errorf("count readings for period %d: %w", periodID, err)
+	aps, err := apartments(q)
+	if err != nil {
+		return false, err
 	}
-	if readingCount < len(MeterKeys) {
-		return false, nil
-	}
-
-	var apartmentCount int
-	if err := q.QueryRow(`SELECT COUNT(*) FROM apartments`).Scan(&apartmentCount); err != nil {
-		return false, fmt.Errorf("count apartments: %w", err)
-	}
-	var occupancyCount int
-	if err := q.QueryRow(`SELECT COUNT(*) FROM period_occupancy WHERE period_id = ?`, periodID).Scan(&occupancyCount); err != nil {
-		return false, fmt.Errorf("count occupancy for period %d: %w", periodID, err)
-	}
-	return occupancyCount >= apartmentCount, nil
+	return !periods[0].Teilstand(aps).IstTeilstand, nil
 }
 
 // PersonenByApartment returns the given period's occupancy (apartment id ->

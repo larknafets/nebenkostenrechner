@@ -5,9 +5,9 @@ package store
 // which apartment's Personen are still missing, computed once from an
 // already-hydrated *LatestPeriod instead of every view re-deriving its own
 // nil-checks against Strompreis/Readings/PersonenByApartment.
-// PeriodComplete is the DB-level gate for callers that only hold a bare
-// periodID (e.g. requireLoginUnlessTeilstand); TestPeriodComplete asserts
-// both agree.
+// PeriodComplete answers the same question for callers that only hold a bare
+// periodID (e.g. requireLoginUnlessTeilstand) by loading the period and
+// asking Teilstand, so there is only one rule.
 type TeilstandStatus struct {
 	MonatErfasst            bool
 	StrompreisErfasst       bool
@@ -16,9 +16,8 @@ type TeilstandStatus struct {
 	EinspeisungPreisErfasst bool
 	MeterErfasst            map[string]bool
 	PersonenErfasst         map[int64]bool
-	// IstTeilstand is true if any field above is missing - equivalent to
-	// !PeriodComplete for the same period, but derived from data already in
-	// hand instead of a 2nd DB round-trip.
+	// IstTeilstand is true if any field above is missing - the negation of
+	// PeriodComplete, derived from data already in hand.
 	IstTeilstand bool
 }
 
