@@ -164,3 +164,38 @@ func TestAblesungDetail_VorperiodeAusDemDatenstand(t *testing.T) {
 		t.Errorf("unbekannte Id: status = %d, want 404", w.Code)
 	}
 }
+
+// TestImportWarnings_TeilstandOhnePflichtzaehler verifies the warnings keep
+// reading a missing required stand as 0, as before (#262): a Teilstand as the
+// last CSV row is still warned about, only an optional Einzelzähler without a
+// stand is skipped.
+func TestImportWarnings_TeilstandOhnePflichtzaehler(t *testing.T) {
+	voll := map[string]float64{}
+	for _, key := range store.MeterKeys {
+		voll[key] = 100
+	}
+	teilstand := map[string]float64{}
+	for _, key := range store.MeterKeys {
+		if key != "strom_gesamt" {
+			teilstand[key] = 100
+		}
+	}
+	rows := []importRow{
+		{input: store.PeriodInput{ReadingDate: "2026-06-01", Readings: voll}, line: 2},
+		{input: store.PeriodInput{ReadingDate: "2026-07-01", Readings: teilstand}, line: 3},
+	}
+
+	warnings := importWarnings(rows, []int64{1, 2})
+	var found bool
+	for _, w := range warnings {
+		if strings.Contains(w, "negativer Verbrauch bei strom_gesamt") {
+			found = true
+		}
+		if strings.Contains(w, store.OptionalMeterKeys[0]) {
+			t.Errorf("Warnung für den optionalen Einzelzähler ohne Stand: %q", w)
+		}
+	}
+	if !found {
+		t.Errorf("warnings = %q, want eine Warnung \"negativer Verbrauch bei strom_gesamt\"", warnings)
+	}
+}
