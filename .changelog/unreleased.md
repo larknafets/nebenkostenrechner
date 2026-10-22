@@ -53,4 +53,6 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Wartung
 
+- Go auf 1.27.3 angehoben (Sicherheitsupdate für `crypto/x509`, GO-2026-6809)
+
 - Datenbank: Vor einer Schema-Änderung sichert die App die Datenbank neben der Datei als `<Datenbank>.vor-schema-<Version>-<Zeitstempel>`, die letzten drei Sicherungen bleiben. Beim ersten Start nach diesem Update entsteht einmalig eine Sicherung der bestehenden Datenbank. Zum Zurückspielen die App stoppen und die Sicherung auf den Namen der Datenbank kopieren. Scheitert die Sicherung, startet die App nicht und die Datenbank bleibt unverändert (#266)
