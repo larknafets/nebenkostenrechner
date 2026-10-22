@@ -117,9 +117,9 @@ func openTeilstandID(db *sql.DB) (id int64, ok bool, err error) {
 }
 
 // redirectIfOpenTeilstand redirects to the open Teilstand's completion
-// (Vervollständigung) and reports whether it did - the shared "block a
-// second open reading" check for both handleWizardForm (GET) and
-// handleCreateAblesung (POST). Callers must return immediately when this
+// (Vervollständigung) and reports whether it did - so the "New reading" form
+// leads to completing instead of offering a form the store would refuse
+// (store.PeriodOpenTeilstandError). Callers must return immediately when this
 // reports true (or a non-nil err, which it has already turned into a 500).
 func redirectIfOpenTeilstand(w http.ResponseWriter, r *http.Request, db *sql.DB) (redirected bool) {
 	teilstandID, hasOpenTeilstand, err := openTeilstandID(db)
@@ -331,8 +331,8 @@ type monatInput string
 
 // monatInputFromStored converts periods.monat ("YYYY-MM-01") to its
 // <input type="month"> value ("YYYY-MM"). Returns "" if stored is too
-// short to safely take the first 7 characters from - CreatePeriod never
-// validates Monat (only UpdatePeriod does, see checkReadingOrder), so a
+// short to safely take the first 7 characters from - the store checks the
+// order of Monat values (see store/reihe.go), not their format, so a
 // malformed value can in principle reach the edit form; a blank field beats
 // a panic.
 func monatInputFromStored(stored string) monatInput {
@@ -430,13 +430,6 @@ func handleCreateAblesung() http.HandlerFunc {
 			return
 		}
 
-		// Teilstand/partial reading (Ticket #129): see
-		// redirectIfOpenTeilstand - a second open reading must not be
-		// created, not even via a direct POST (e.g. a stale form).
-		if redirectIfOpenTeilstand(w, r, db) {
-			return
-		}
-
 		apartments, err := store.Apartments(db)
 		if err != nil {
 			http.Error(w, "apartments: "+err.Error(), http.StatusInternalServerError)
@@ -451,6 +444,19 @@ func handleCreateAblesung() http.HandlerFunc {
 
 		periodID, err := store.CreatePeriod(db, in)
 		if err != nil {
+			// Teilstand/partial reading (Ticket #129): a second open
+			// reading is refused by the store, even for a direct POST
+			// (e.g. a stale form). Lead to completing the open one, like
+			// the GET form does.
+			var open *store.PeriodOpenTeilstandError
+			if errors.As(err, &open) {
+				http.Redirect(w, r, fmt.Sprintf("%s/ablesungen/%d/bearbeiten", requestBase(r), open.ID), http.StatusFound)
+				return
+			}
+			if msg, feld, ok := reiheFehler(err); ok {
+				badRequestFeld(w, msg, feld)
+				return
+			}
 			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -501,20 +507,9 @@ func handleUpdateAblesung() http.HandlerFunc {
 		}
 
 		if err := store.UpdatePeriod(db, periodID, in); err != nil {
-			var tooEarly *store.PeriodDateTooEarlyError
-			var tooLate *store.PeriodDateTooLateError
-			var monatTooEarly *store.PeriodMonatTooEarlyError
-			var monatTooLate *store.PeriodMonatTooLateError
-			switch {
-			case errors.As(err, &tooEarly):
-				badRequestFeld(w, fmt.Sprintf("Ablesedatum muss nach der Vorperiode (%s) liegen", tooEarly.Neighbor), "reading_date")
-			case errors.As(err, &tooLate):
-				badRequestFeld(w, fmt.Sprintf("Ablesedatum muss vor der Folgeperiode (%s) liegen", tooLate.Neighbor), "reading_date")
-			case errors.As(err, &monatTooEarly):
-				badRequestFeld(w, fmt.Sprintf("Abrechnungsmonat darf nicht vor dem der Vorperiode (%s) liegen", monatTooEarly.Neighbor), "monat")
-			case errors.As(err, &monatTooLate):
-				badRequestFeld(w, fmt.Sprintf("Abrechnungsmonat darf nicht nach dem der Folgeperiode (%s) liegen", monatTooLate.Neighbor), "monat")
-			default:
+			if msg, feld, ok := reiheFehler(err); ok {
+				badRequestFeld(w, msg, feld)
+			} else {
 				http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
 			}
 			return

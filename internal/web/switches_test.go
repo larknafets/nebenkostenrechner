@@ -34,6 +34,7 @@ func TestSwitches_FormularCSVRoundtrip(t *testing.T) {
 			// second Ablesung.
 			db := openTestDB(t)
 			in.ReadingDate = "2026-06-01"
+			in.Monat = "2026-06-01"
 			if _, err := store.CreatePeriod(db, in); err != nil {
 				t.Fatalf("CreatePeriod: %v", err)
 			}
