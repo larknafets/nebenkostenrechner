@@ -76,7 +76,7 @@ type StromErgebnis struct {
 }
 
 // stromEingabe is everything the electricity allocation reads: the
-// period's price and its meter consumptions (store.Verbrauch).
+// period's price and its meter consumptions.
 type stromEingabe struct {
 	Strompreis float64
 	Verbrauch  map[string]float64

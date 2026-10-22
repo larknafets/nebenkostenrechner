@@ -39,7 +39,7 @@ type HeizungErgebnis struct {
 
 // heizungEingabe is everything the heating distribution reads: the period's
 // Strom result, the Stammdaten Heizungs-Gewichtung, the meter consumptions
-// (store.Verbrauch) and both apartments' Wohnungsgröße.
+// and both apartments' Wohnungsgröße.
 type heizungEingabe struct {
 	Strom            *StromErgebnis
 	WaermeGewichtung float64

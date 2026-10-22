@@ -179,13 +179,6 @@ func TestEinzelzaehler_BestehendeDatenbankBleibtUnveraendert(t *testing.T) {
 		t.Errorf("Einzelzähler-Meter nach Öffnen = %d, want 2", n)
 	}
 
-	v, err := Verbrauch(db, p2)
-	if err != nil {
-		t.Fatalf("Verbrauch: %v", err)
-	}
-	if v["strom_gesamt"] != 250 {
-		t.Errorf("Verbrauch[strom_gesamt] = %v, want 250", v["strom_gesamt"])
-	}
 	for _, id := range []int64{p1, p2} {
 		ok, err := PeriodComplete(db, id)
 		if err != nil || !ok {
