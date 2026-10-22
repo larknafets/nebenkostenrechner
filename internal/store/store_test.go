@@ -28,16 +28,40 @@ func baseReadings(overrides map[string]float64) map[string]float64 {
 	return out
 }
 
-func mustCreatePeriod(t *testing.T, db *sql.DB, date string, readings map[string]float64) int64 {
-	t.Helper()
-	id, err := CreatePeriod(db, PeriodInput{
+// completePeriodInput is a fully entered Ablesung (Monat and all prices
+// set), so a series of them passes the Ablesungsreihe rules (only the
+// newest may be a Teilstand).
+func completePeriodInput(date string, readings map[string]float64) PeriodInput {
+	return PeriodInput{
 		ReadingDate:       date,
+		Monat:             date[:7] + "-01",
 		Strompreis:        Float64(0.22),
 		FrischwasserPreis: Float64(1.46),
 		AbwasserPreis:     Float64(4.87),
+		EinspeisungPreis:  Float64(0.08),
 		Readings:          readings,
 		Personen:          map[int64]float64{1: 2, 2: 1},
-	})
+	}
+}
+
+// mustInsertUnchecked inserts an Ablesung past the Ablesungsreihe rules, to
+// build legacy data with a disordered series (existing databases are never
+// re-checked, only writes).
+func mustInsertUnchecked(t *testing.T, db *sql.DB, in PeriodInput) int64 {
+	t.Helper()
+	var id int64
+	if err := inTx(db, func(tx *sql.Tx) (err error) {
+		id, err = insertPeriodTx(tx, in)
+		return err
+	}); err != nil {
+		t.Fatalf("insert period %s: %v", in.ReadingDate, err)
+	}
+	return id
+}
+
+func mustCreatePeriod(t *testing.T, db *sql.DB, date string, readings map[string]float64) int64 {
+	t.Helper()
+	id, err := CreatePeriod(db, completePeriodInput(date, readings))
 	if err != nil {
 		t.Fatalf("create period %s: %v", date, err)
 	}
@@ -324,16 +348,8 @@ func TestImportPeriods_Success(t *testing.T) {
 	db := openTestDB(t)
 
 	ids, err := ImportPeriods(db, []PeriodInput{
-		{
-			ReadingDate: "2026-06-01",
-			Readings:    baseReadings(map[string]float64{"strom_gesamt": 100}),
-			Personen:    map[int64]float64{1: 2, 2: 1},
-		},
-		{
-			ReadingDate: "2026-07-01",
-			Readings:    baseReadings(map[string]float64{"strom_gesamt": 200}),
-			Personen:    map[int64]float64{1: 2, 2: 1},
-		},
+		completePeriodInput("2026-06-01", baseReadings(map[string]float64{"strom_gesamt": 100})),
+		completePeriodInput("2026-07-01", baseReadings(map[string]float64{"strom_gesamt": 200})),
 	})
 	if err != nil {
 		t.Fatalf("ImportPeriods: %v", err)
@@ -351,13 +367,67 @@ func TestImportPeriods_Success(t *testing.T) {
 	}
 }
 
+// TestImportPeriods_Reihenfolge verifies the import passes the same
+// Ablesungsreihe rules as CreatePeriod and names the offending reading date.
+func TestImportPeriods_Reihenfolge(t *testing.T) {
+	cases := []struct {
+		name   string
+		inputs []PeriodInput
+		want   any
+	}{
+		{"Ablesedatum doppelt", []PeriodInput{
+			completePeriodInput("2026-06-01", baseReadings(nil)),
+			completePeriodInput("2026-06-01", baseReadings(nil)),
+		}, new(*PeriodDateTooEarlyError)},
+		{"Abrechnungsmonat fällt", []PeriodInput{
+			completePeriodInput("2026-06-01", baseReadings(nil)),
+			func() PeriodInput {
+				in := completePeriodInput("2026-07-01", baseReadings(nil))
+				in.Monat = "2026-05-01"
+				return in
+			}(),
+		}, new(*PeriodMonatTooEarlyError)},
+		{"Teilstand mitten in der Reihe", []PeriodInput{
+			{ReadingDate: "2026-06-01", Readings: baseReadings(nil)},
+			completePeriodInput("2026-07-01", baseReadings(nil)),
+		}, new(*PeriodOpenTeilstandError)},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			db := openTestDB(t)
+			_, err := ImportPeriods(db, c.inputs)
+			if err == nil || !errors.As(err, c.want) {
+				t.Fatalf("ImportPeriods err = %v, want %T", err, c.want)
+			}
+			var row *ImportRowError
+			if !errors.As(err, &row) || row.ReadingDate == "" {
+				t.Errorf("err = %v, want *ImportRowError naming the offending reading date", err)
+			}
+			all, _ := AllPeriods(db)
+			if len(all) != 0 {
+				t.Errorf("AllPeriods = %d, want 0 (all-or-nothing)", len(all))
+			}
+		})
+	}
+
+	t.Run("Teilstand als letzte Zeile bleibt erlaubt", func(t *testing.T) {
+		db := openTestDB(t)
+		if _, err := ImportPeriods(db, []PeriodInput{
+			completePeriodInput("2026-06-01", baseReadings(nil)),
+			{ReadingDate: "2026-07-01", Readings: baseReadings(nil)},
+		}); err != nil {
+			t.Fatalf("ImportPeriods: %v", err)
+		}
+	})
+}
+
 // TestAllPeriodDetails_OrderAndData verifies AllPeriodDetails returns every
 // period oldest-first with its full readings/occupancy attached (Ticket
 // #53's CSV export data source).
 func TestAllPeriodDetails_OrderAndData(t *testing.T) {
 	db := openTestDB(t)
-	p1 := mustCreatePeriod(t, db, "2026-07-01", baseReadings(map[string]float64{"strom_gesamt": 200}))
-	p2 := mustCreatePeriod(t, db, "2026-06-01", baseReadings(map[string]float64{"strom_gesamt": 100}))
+	p1 := mustInsertUnchecked(t, db, completePeriodInput("2026-07-01", baseReadings(map[string]float64{"strom_gesamt": 200})))
+	p2 := mustInsertUnchecked(t, db, completePeriodInput("2026-06-01", baseReadings(map[string]float64{"strom_gesamt": 100})))
 
 	details, err := AllPeriodDetails(db)
 	if err != nil {
@@ -519,13 +589,7 @@ func TestUpdatePeriod_DateConflict(t *testing.T) {
 // Ablesungen may share an Abrechnungsmonat).
 func TestUpdatePeriod_MonatConflict(t *testing.T) {
 	db := openTestDB(t)
-	create := func(date string) int64 {
-		id, err := CreatePeriod(db, PeriodInput{ReadingDate: date, Monat: date, Readings: baseReadings(nil)})
-		if err != nil {
-			t.Fatalf("CreatePeriod %s: %v", date, err)
-		}
-		return id
-	}
+	create := func(date string) int64 { return mustCreatePeriod(t, db, date, baseReadings(nil)) }
 	create("2026-06-01")
 	p2 := create("2026-07-01")
 	create("2026-08-01")
@@ -578,28 +642,100 @@ func TestUpdatePeriod_MonatConflict(t *testing.T) {
 	})
 }
 
-// TestCreatePeriod_MonatUnvalidated verifies Issue #86: unlike UpdatePeriod,
-// CreatePeriod does not enforce the monat-monotonicity invariant - matching
-// the existing behavior for reading_date, which also isn't checked against
-// neighbors on creation, only on correction.
-func TestCreatePeriod_MonatUnvalidated(t *testing.T) {
+// TestCreatePeriod_Reihenfolge verifies the Ablesungsreihe rules on appending
+// (Ticket #260): the reading date must rise, the Abrechnungsmonat must not
+// fall, and a second open Teilstand is refused - by the store itself, not
+// just by the web wizard.
+func TestCreatePeriod_Reihenfolge(t *testing.T) {
 	db := openTestDB(t)
-	if _, err := CreatePeriod(db, PeriodInput{
-		ReadingDate: "2026-08-01",
-		Monat:       "2026-08-01",
-		Readings:    baseReadings(nil),
-	}); err != nil {
-		t.Fatalf("CreatePeriod: %v", err)
+	mustCreatePeriod(t, db, "2026-08-01", baseReadings(nil))
+
+	t.Run("Ablesedatum vor der neuesten Ablesung", func(t *testing.T) {
+		_, err := CreatePeriod(db, completePeriodInput("2026-07-01", baseReadings(nil)))
+		var tooEarly *PeriodDateTooEarlyError
+		if !errors.As(err, &tooEarly) {
+			t.Fatalf("CreatePeriod err = %v, want *PeriodDateTooEarlyError", err)
+		}
+		if tooEarly.Neighbor != "2026-08-01" {
+			t.Errorf("Neighbor = %q, want 2026-08-01", tooEarly.Neighbor)
+		}
+	})
+	t.Run("gleiches Ablesedatum", func(t *testing.T) {
+		_, err := CreatePeriod(db, completePeriodInput("2026-08-01", baseReadings(nil)))
+		var tooEarly *PeriodDateTooEarlyError
+		if !errors.As(err, &tooEarly) {
+			t.Fatalf("CreatePeriod err = %v, want *PeriodDateTooEarlyError", err)
+		}
+	})
+	t.Run("Abrechnungsmonat vor dem der neuesten Ablesung", func(t *testing.T) {
+		in := completePeriodInput("2026-09-01", baseReadings(nil))
+		in.Monat = "2026-07-01"
+		_, err := CreatePeriod(db, in)
+		var tooEarly *PeriodMonatTooEarlyError
+		if !errors.As(err, &tooEarly) {
+			t.Fatalf("CreatePeriod err = %v, want *PeriodMonatTooEarlyError", err)
+		}
+		if tooEarly.Neighbor != "2026-08-01" {
+			t.Errorf("Neighbor = %q, want 2026-08-01", tooEarly.Neighbor)
+		}
+	})
+	t.Run("gleicher Abrechnungsmonat bleibt erlaubt", func(t *testing.T) {
+		in := completePeriodInput("2026-08-15", baseReadings(nil))
+		in.Monat = "2026-08-01"
+		if _, err := CreatePeriod(db, in); err != nil {
+			t.Fatalf("CreatePeriod: %v", err)
+		}
+	})
+	t.Run("abgelehnte Ablesung wird nicht gespeichert", func(t *testing.T) {
+		all, err := AllPeriods(db)
+		if err != nil {
+			t.Fatalf("AllPeriods: %v", err)
+		}
+		if len(all) != 2 {
+			t.Errorf("AllPeriods = %d, want 2 (rejected inputs leave no row)", len(all))
+		}
+	})
+}
+
+// TestCreatePeriod_OffenerTeilstand verifies that only the newest Ablesung
+// may be a Teilstand: appending one is allowed, a second one is refused with
+// the open Teilstand's id, until the first is completed.
+func TestCreatePeriod_OffenerTeilstand(t *testing.T) {
+	db := openTestDB(t)
+	mustCreatePeriod(t, db, "2026-08-01", baseReadings(nil))
+
+	teilstand, err := CreatePeriod(db, PeriodInput{ReadingDate: "2026-09-01", Readings: baseReadings(nil)})
+	if err != nil {
+		t.Fatalf("CreatePeriod Teilstand as newest: %v, want allowed", err)
 	}
 
-	// A chronologically later period with an earlier monat - would be
-	// rejected by UpdatePeriod, but CreatePeriod lets it through.
-	if _, err := CreatePeriod(db, PeriodInput{
-		ReadingDate: "2026-09-01",
-		Monat:       "2026-07-01",
-		Readings:    baseReadings(nil),
-	}); err != nil {
-		t.Errorf("CreatePeriod with out-of-order monat: %v, want no error", err)
+	_, err = CreatePeriod(db, completePeriodInput("2026-10-01", baseReadings(nil)))
+	var open *PeriodOpenTeilstandError
+	if !errors.As(err, &open) {
+		t.Fatalf("CreatePeriod err = %v, want *PeriodOpenTeilstandError", err)
+	}
+	if open.ID != teilstand {
+		t.Errorf("open Teilstand ID = %d, want %d", open.ID, teilstand)
+	}
+
+	if err := UpdatePeriod(db, teilstand, completePeriodInput("2026-09-01", baseReadings(nil))); err != nil {
+		t.Fatalf("UpdatePeriod complete: %v", err)
+	}
+	if _, err := CreatePeriod(db, completePeriodInput("2026-10-01", baseReadings(nil))); err != nil {
+		t.Errorf("CreatePeriod after completing the Teilstand: %v, want allowed", err)
+	}
+}
+
+// TestCreatePeriod_BestehendeUnordnungStartet verifies that legacy data with a
+// disordered series stays usable: only writes are checked, never the data
+// at rest.
+func TestCreatePeriod_BestehendeUnordnungStartet(t *testing.T) {
+	db := openTestDB(t)
+	mustInsertUnchecked(t, db, completePeriodInput("2026-09-01", baseReadings(nil)))
+	mustInsertUnchecked(t, db, completePeriodInput("2026-07-01", baseReadings(nil)))
+
+	if _, err := CreatePeriod(db, completePeriodInput("2026-10-01", baseReadings(nil))); err != nil {
+		t.Errorf("CreatePeriod after the newest legacy period: %v, want allowed", err)
 	}
 }
 
@@ -1528,6 +1664,7 @@ func TestPeriodComplete(t *testing.T) {
 
 	complete := func(t *testing.T, in PeriodInput) bool {
 		t.Helper()
+		db := openTestDB(t) // one Ablesung per database, no series rules involved
 		id, err := CreatePeriod(db, in)
 		if err != nil {
 			t.Fatalf("CreatePeriod: %v", err)

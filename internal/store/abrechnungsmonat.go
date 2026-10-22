@@ -9,7 +9,7 @@ import (
 type Abrechnungsmonat string
 
 // Jahr returns the calendar year, or ok=false if m isn't a valid "YYYY-MM-01"
-// value (CreatePeriod never validates Monat, see PeriodMonatTooEarlyError).
+// value (the store checks the order of Monat values, not their format, see reihe.go).
 func (m Abrechnungsmonat) Jahr() (jahr int, ok bool) {
 	t, err := time.Parse("2006-01-02", string(m))
 	if err != nil {

@@ -117,8 +117,7 @@ func personenWohnung2(i int) float64 {
 }
 
 // seedDemoPeriods creates 39 monthly meter readings, oldest first
-// (CreatePeriod expects chronological order - see store.UpdatePeriod's
-// previous-period checks elsewhere), with cumulative meter readings that
+// (CreatePeriod enforces the Ablesungsreihe rules, see reihe.go), with cumulative meter readings that
 // only ever go up and seasonal deltas per heizfaktor/pvFaktor.
 func seedDemoPeriods(db *sql.DB, now time.Time) error {
 	readings := map[string]float64{

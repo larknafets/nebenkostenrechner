@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"database/sql"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -92,12 +93,23 @@ func RunCSVImport[T any](w http.ResponseWriter, r *http.Request, db *sql.DB, cfg
 
 	ids, err = cfg.Insert(db, rows)
 	if err != nil {
+		var eingabe *importEingabeFehler
+		if errors.As(err, &eingabe) {
+			http.Error(w, eingabe.msg, http.StatusBadRequest)
+			return nil, nil, false
+		}
 		http.Error(w, "import: "+err.Error(), http.StatusInternalServerError)
 		return nil, nil, false
 	}
 
 	return ids, rows, true
 }
+
+// importEingabeFehler is an Insert error caused by the uploaded data and not
+// by the system: answered with 400 and msg instead of a 500.
+type importEingabeFehler struct{ msg string }
+
+func (e *importEingabeFehler) Error() string { return e.msg }
 
 func parseImportCSVRows[T any](file io.Reader, cfg ImportConfig[T]) ([]T, error) {
 	reader := bufio.NewReader(file)

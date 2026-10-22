@@ -12,6 +12,9 @@ _Avoid_: Eintrag, Datensatz
 Eine Ablesung, bei der nicht alle Felder gefüllt sind (Zählerstände, Preise, Personenzahl, oder Abrechnungsmonat - nur das Ablesedatum ist immer zwingend). Fließt nicht in die Berechnung ein - erst nach Vervollständigung wird sie zur regulären Ablesung. Nur die neueste Ablesung darf ein Teilstand sein.
 _Avoid_: unvollständige Ablesung (funktioniert, aber "Teilstand" ist der feste Begriff)
 
+**Ablesungsreihe**:
+Alle Ablesungen des Hauses in der Reihenfolge ihres Ablesedatums. Drei Regeln gelten für jede Änderung der Reihe (Anlegen, Korrigieren, Import): das Ablesedatum steigt strikt, der Abrechnungsmonat fällt nie, und nur die neueste Ablesung darf ein Teilstand sein. Die Vorperiode einer Ablesung ist die nächst-ältere der Reihe. Löschen kann keine der Regeln verletzen. Bestehende Daten werden nicht nachgeprüft, geprüft wird nur beim Schreiben.
+
 **Zählerstand**:
 Der am Ablesedatum abgelesene Wert eines Zählers - ein kumulativer Punktwert, kein Verbrauch.
 _Avoid_: Messwert, Reading

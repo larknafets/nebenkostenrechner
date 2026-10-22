@@ -2,6 +2,7 @@ package web
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -145,7 +146,17 @@ func handleImportCSV() http.HandlerFunc {
 				for i, row := range rows {
 					inputs[i] = row.input
 				}
-				return store.ImportPeriods(db, inputs)
+				ids, err := store.ImportPeriods(db, inputs)
+				var row *store.ImportRowError
+				if errors.As(err, &row) {
+					if msg, _, ok := reiheFehler(row.Err); ok {
+						return nil, &importEingabeFehler{msg: fmt.Sprintf("Ablesung vom %s: %s", row.ReadingDate, msg)}
+					}
+					if open := new(store.PeriodOpenTeilstandError); errors.As(row.Err, &open) {
+						return nil, &importEingabeFehler{msg: fmt.Sprintf("Ablesung vom %s: die vorherige Ablesung ist ein Teilstand, nur die neueste darf eines sein", row.ReadingDate)}
+					}
+				}
+				return ids, err
 			},
 		}
 

@@ -79,7 +79,7 @@ func TestDemoMode_WritesIsolatedFromRealDB(t *testing.T) {
 		t.Fatalf("AllPeriods(demoDB) baseline: %v", err)
 	}
 
-	form := periodFormValues("2026-06-15", "2026-06")
+	form := periodFormValues("2026-11-15", "2026-11")
 	req := httptest.NewRequest(http.MethodPost, "/ablesungen", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	attachCookies(req, cookies)

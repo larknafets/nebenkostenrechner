@@ -100,15 +100,16 @@ func TestBearbeitenUndUpdate_TeilstandUngatedVollstaendigGated(t *testing.T) {
 	db := openTestDB(t)
 	mux := NewMux(db, openTestDB(t), "", "")
 
+	// Only the newest Ablesung may be a Teilstand: the complete one first.
+	vollstaendigID, err := store.CreatePeriod(db, seedPeriodInputAt("2026-11-01"))
+	if err != nil {
+		t.Fatalf("CreatePeriod (vollständig): %v", err)
+	}
 	teilstandID, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate: "2026-11-01",
+		ReadingDate: "2026-12-01",
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod (Teilstand): %v", err)
-	}
-	vollstaendigID, err := store.CreatePeriod(db, seedPeriodInputAt("2026-12-01"))
-	if err != nil {
-		t.Fatalf("CreatePeriod (vollständig): %v", err)
 	}
 
 	t.Run("GET bearbeiten Teilstand ungated", func(t *testing.T) {
