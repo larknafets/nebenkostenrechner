@@ -2,6 +2,7 @@ package calc
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -74,13 +75,23 @@ type Fixkostenreihe struct {
 	byMonat map[string]int
 }
 
-// LoadFixkostenreihe reads the Datenstand and computes the Fixkostenreihe of it.
+// LoadFixkostenreihe reads what the Fixkostenreihe needs (the Fixkosten-
+// Eingaben, Kostenpositionen and Wohnungen) and computes it, for the pages
+// that show only Fixkosten and so do not need the whole Datenstand.
 func LoadFixkostenreihe(db *sql.DB) (*Fixkostenreihe, error) {
-	ds, err := store.LadeDatenstand(db)
+	eingaben, err := store.AllFixkostenEingabenDetails(db)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("fixkosten eingaben: %w", err)
 	}
-	return FixkostenreiheAus(ds), nil
+	kostenpositionen, err := store.Kostenpositionen(db)
+	if err != nil {
+		return nil, fmt.Errorf("kostenpositionen: %w", err)
+	}
+	apartments, err := store.Apartments(db)
+	if err != nil {
+		return nil, fmt.Errorf("apartments: %w", err)
+	}
+	return NewFixkostenreihe(FixkostenDaten{Eingaben: eingaben, Kostenpositionen: kostenpositionen, Apartments: apartments}), nil
 }
 
 // FixkostenreiheAus computes the Fixkostenreihe of an already loaded
