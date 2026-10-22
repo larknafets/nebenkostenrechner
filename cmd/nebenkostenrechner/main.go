@@ -92,14 +92,14 @@ func main() {
 	defer db.Close()
 
 	// demoDB is a completely separate database for demo mode (Issue #120) -
-	// created automatically on the very first start (store.Open sets up
-	// schema+seed just like for db) and, if still empty, immediately filled
+	// created automatically on the very first start (store.OpenDemo sets up
+	// schema+seed just like Open does for db) and, if still empty, immediately filled
 	// with the 39-month test dataset. This only covers the very first start,
 	// before anyone has ever logged in as "demo" - every demo login itself
 	// unconditionally resets the demo DB anyway (Issue #121,
 	// store.ResetDemoData in handleLogin), so this startup fill-in is just
 	// the fallback for the period before that.
-	demoDB, err := store.Open(demoDBPath(dbPath))
+	demoDB, err := store.OpenDemo(demoDBPath(dbPath))
 	if err != nil {
 		log.Fatalf("open demo store: %v", err)
 	}
