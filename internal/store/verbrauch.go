@@ -5,9 +5,8 @@ import (
 	"fmt"
 )
 
-// Period is one periods row without its readings/occupancy - the shared
-// shape cost calculations key off (see LatestPeriod for the fuller
-// read-view shape used by the UI).
+// Period is one periods row without its readings/occupancy (see
+// LatestPeriod for the fuller read-view shape).
 type Period struct {
 	ID                int64
 	ReadingDate       string
@@ -19,10 +18,8 @@ type Period struct {
 
 // GetPeriodByID fetches a single period by id. A Teilstand's (partial
 // reading) not-yet-entered price (Ticket #128, periods.<preis> IS NULL)
-// reads back as 0 here, not nil - Period only ever feeds calc's cost
-// calculation (internal/calc), which by design never runs against an
-// incomplete period (see PeriodComplete), so this coalesce is a safe
-// default rather than a real "was it entered" answer.
+// reads back as 0 here, not nil - a coalesce, not a real "was it entered"
+// answer (see LatestPeriod and Teilstand for that).
 func GetPeriodByID(db *sql.DB, id int64) (*Period, error) {
 	var p Period
 	var strompreis, frischwasserPreis, abwasserPreis, einspeisungPreis sql.NullFloat64

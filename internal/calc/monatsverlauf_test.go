@@ -95,3 +95,18 @@ func TestVerlauf(t *testing.T) {
 		t.Errorf("ohne Monate: %v, %v, want leer und der Übertrag", z, end)
 	}
 }
+
+func TestMonatswerte_FixkostenJeLogikRunden(t *testing.T) {
+	fix := []MonatsFixkosten{{Monat: "2026-02-01", Ergebnis: &FixkostenErgebnis{Positionen: []FixkostenPosition{
+		{Key: "a", Logik: "qm", KostenW1: 0.006},
+		{Key: "b", Logik: "personen", KostenW1: 0.006},
+	}}}}
+
+	if got := Monatswerte(1, nil, fix, Posten{})[0].Fixkosten; got != 0.012 {
+		t.Errorf("ungerundet = %v, want 0.012", got)
+	}
+	// Each group rounds to 0.01 first: the Dashboard shows 0.01 + 0.01.
+	if got := Monatswerte(1, nil, fix, Posten{FixkostenJeLogik: true})[0].Fixkosten; got != 0.02 {
+		t.Errorf("je Logik gerundet = %v, want 0.02", got)
+	}
+}

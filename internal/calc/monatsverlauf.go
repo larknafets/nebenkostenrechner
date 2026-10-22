@@ -33,6 +33,10 @@ type Posten struct {
 	// Fixkosten reports whether the Kostenposition with the given key counts,
 	// nil counts all.
 	Fixkosten func(key string) bool
+	// FixkostenJeLogik rounds the Fixkosten per Logik group to the cent before
+	// summing, like the bars of the Dashboard show them. Otherwise the
+	// unrounded positions are summed.
+	FixkostenJeLogik bool
 }
 
 // Monatswert is the value of one Abrechnungsmonat. The sums are not rounded.
@@ -89,9 +93,17 @@ func Monatswerte(apartmentID int64, kosten []MonatsKosten, fixkosten []MonatsFix
 		w.HatFixkosten = true
 		w.Abschlag = f.Abschlag[apartmentID]
 		if f.Ergebnis != nil {
+			jeLogik := map[string]float64{}
 			for _, pos := range f.Ergebnis.Positionen {
 				if p.Fixkosten == nil || p.Fixkosten(pos.Key) {
 					w.Fixkosten += pos.KostenFor(apartmentID)
+					jeLogik[pos.Logik] += pos.KostenFor(apartmentID)
+				}
+			}
+			if p.FixkostenJeLogik {
+				w.Fixkosten = 0
+				for _, kosten := range jeLogik {
+					w.Fixkosten += Round2(kosten)
 				}
 			}
 		}

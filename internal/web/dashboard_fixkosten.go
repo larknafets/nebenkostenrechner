@@ -428,7 +428,7 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 	for i, fk := range fixkostenListe {
 		fixkosten[i] = calc.MonatsFixkosten{Monat: fk.Monat, Ergebnis: fk.Erg, Abschlag: fk.Abschlag}
 	}
-	werte := calc.Monatswerte(apartmentID, kosten, fixkosten, calc.Posten{Strom: true, Wallbox: true, PVGutschrift: true})
+	werte := calc.Monatswerte(apartmentID, kosten, fixkosten, calc.Posten{Strom: true, Wallbox: true, PVGutschrift: true, FixkostenJeLogik: true})
 	gutschrift := make(map[string]float64, len(werte))
 	for _, w := range werte {
 		gutschrift[w.Monat] = w.Gutschrift
