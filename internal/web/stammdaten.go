@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -46,20 +45,14 @@ func heizungGewichtungOptionsFor(current float64) []heizungGewichtungOption {
 	return opts
 }
 
-// parseHeizungGewichtung validates the form value against the allowed
-// Heizungs-Gewichtungen.
+// parseHeizungGewichtung reads the Heizungs-Gewichtung from the form. Whether
+// the value is an allowed one is decided by store.SaveStammdaten.
 func parseHeizungGewichtung(raw string) (float64, error) {
 	v, err := strconv.ParseFloat(raw, 64)
-	if err != nil || !store.ValidHeizungGewichtung(v) {
+	if err != nil {
 		return 0, fmt.Errorf("ungültige Heizungs-Gewichtung %q (muss 0.7, 0.6 oder 0.5 sein)", raw)
 	}
 	return v, nil
-}
-
-// gueltigerMonat reports whether s is an Abrechnungsmonat ("YYYY-MM-01").
-func gueltigerMonat(s string) bool {
-	t, err := time.Parse("2006-01-02", s)
-	return err == nil && t.Day() == 1 && len(s) == 10
 }
 
 // formText reads a free-text form field: surrounding whitespace is trimmed
@@ -161,21 +154,11 @@ func handleUpdateStammdaten() http.HandlerFunc {
 			}
 			in[a.ID] = store.StammdatenInput{QM: qm, FlurstueckGroesse: flurstueckGroesse}
 
-			status := r.FormValue("status_" + idStr)
-			if !store.ValidStatus(status) {
-				http.Error(w, "ungültiger Wohnungsstatus für Wohnung "+idStr, http.StatusBadRequest)
-				return
-			}
-			mieterSeit := monatInput(r.FormValue("mieter_seit_" + idStr)).toStored()
-			if mieterSeit != "" && !gueltigerMonat(mieterSeit) {
-				http.Error(w, "ungültiges Datum für \"Mieter seit\" bei Wohnung "+idStr, http.StatusBadRequest)
-				return
-			}
 			wohnungen[a.ID] = store.WohnungDetails{
 				MieterName:      formText(r, "mieter_name_"+idStr),
 				MieterAnschrift: formText(r, "mieter_anschrift_"+idStr),
-				Status:          status,
-				MieterSeit:      mieterSeit,
+				Status:          r.FormValue("status_" + idStr),
+				MieterSeit:      monatInput(r.FormValue("mieter_seit_" + idStr)).toStored(),
 			}
 		}
 
@@ -195,7 +178,8 @@ func handleUpdateStammdaten() http.HandlerFunc {
 			flags.Umlagefaehig[kp.ID] = r.FormValue("umlagefaehig_"+strconv.FormatInt(kp.ID, 10)) == "1"
 		}
 
-		gewichtung, err := parseHeizungGewichtung(r.FormValue("heizung_gewichtung"))
+		rohGewichtung := r.FormValue("heizung_gewichtung")
+		gewichtung, err := parseHeizungGewichtung(rohGewichtung)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -214,7 +198,19 @@ func handleUpdateStammdaten() http.HandlerFunc {
 			},
 		}
 		if err := store.SaveStammdaten(db, save); err != nil {
-			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
+			var status *store.InvalidStatusError
+			var mieterSeit *store.InvalidMieterSeitError
+			var ungueltigeGewichtung *store.InvalidHeizungGewichtungError
+			switch {
+			case errors.As(err, &status):
+				http.Error(w, "ungültiger Wohnungsstatus für Wohnung "+strconv.FormatInt(status.ApartmentID, 10), http.StatusBadRequest)
+			case errors.As(err, &mieterSeit):
+				http.Error(w, "ungültiges Datum für \"Mieter seit\" bei Wohnung "+strconv.FormatInt(mieterSeit.ApartmentID, 10), http.StatusBadRequest)
+			case errors.As(err, &ungueltigeGewichtung):
+				http.Error(w, fmt.Sprintf("ungültige Heizungs-Gewichtung %q (muss 0.7, 0.6 oder 0.5 sein)", rohGewichtung), http.StatusBadRequest)
+			default:
+				http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
+			}
 			return
 		}
 
