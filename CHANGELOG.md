@@ -1,5 +1,36 @@
 # Changelog
 
+## v0.18.0 - 2026-10-22
+
+### Neue Funktionen
+
+- Fixkosten: Neue Position "Wartungskosten PV-Anlage" direkt unter "Wartungskosten Wärmepumpe", auf der Fixkosten-Eingabe und in den Stammdaten. Vorbelegt mit Berechnungslogik "Wohnung 1", Typ "jährlich" und nicht umlagefähig. Bestehende Eingaben erhalten die Position automatisch mit dem Wert 0. Ein älterer Fixkosten-CSV-Export lässt sich nicht mehr importieren, weil die Spalten der neuen Position fehlen
+
+### Verbesserungen
+
+- Stammdaten: Die Reihenfolge der Kostenpositionen hat eine übersichtlichere Darstellung: nummerierte Liste mit Trennlinien und Pfeil-Symbolen statt einfacher Textpfeile, mit sichtbarem Fokus für die Tastaturbedienung (#255)
+
+- Stammdaten: Die Reihenfolge der Kostenpositionen lässt sich mit Hoch/Runter-Buttons ändern. Sie gilt für Fixkosten-Eingabe, Fixkosten-Anzeige und Abrechnung. Neue Positionen erscheinen künftig am Ende der Liste
+
+### Fehlerkorrekturen
+
+- Ablesung: Eine neue Ablesung mit früherem Ablesedatum oder früherem Abrechnungsmonat als die neueste Ablesung ließ sich anlegen und verschob die Vorperioden aller anderen. Jetzt wird sie mit einer Meldung abgelehnt, auch ein zweiter offener Teilstand lässt sich nicht mehr anlegen. Das gilt auch für den CSV-Import, der die Zeile mit dem Ablesedatum nennt (#260)
+
+- Ablesung: Die Warnung "Verbrauch über 1 Monate" erschien schon bei genau einem Monat Abstand zur letzten Ablesung (Zeitzonenfehler im Browser). Jetzt warnt sie erst bei mehr als einem Monat, nennt "1 Monat" in der Einzahl und zeigt das Datum der letzten Ablesung als 01.09.2026 (#257)
+
+- Ablesung korrigieren: Zählerwerte und Preise erschienen in der Vorbelegung mit Gleitkommaresten (z. B. 26520,69999999999 statt 26520,7). Jetzt zeigen die Felder die eingegebenen Werte ohne diese Reste (#254)
+
+- Dashboard: Der Update-Hinweis (Punkt neben der Version unten rechts) erschien im Nightly-Kanal nie, weil nur Release-Versionen verglichen wurden. Jetzt zeigt ein Nightly-Stand den Punkt, sobald ein neueres Nightly vorliegt, der Link führt zum zugehörigen Commit. Nightlys vom selben Tag lassen sich nicht unterscheiden und lösen keinen Hinweis aus
+
+- Eingaben: Eine Fehlermeldung (z. B. "Für September 2026 gibt es bereits eine Fixkosten-Eingabe") führte auf eine leere Fehlerseite, man musste zurückgehen und die Eingaben waren weg. Jetzt erscheint sie als Dialog über der Seite, die Eingaben bleiben stehen, das betroffene Feld ist rot markiert und nach dem Schließen aktiv. Gilt für Fixkosten, Ablesung, Stammdaten und die beiden CSV-Importe
+
+### Wartung
+
+- Go auf 1.27.3 angehoben (Sicherheitsupdate für `crypto/x509`, GO-2026-6809)
+
+- Datenbank: Vor einer Schema-Änderung sichert die App die Datenbank neben der Datei als `<Datenbank>.vor-schema-<Version>-<Zeitstempel>`, die letzten drei Sicherungen bleiben. Beim ersten Start nach diesem Update entsteht einmalig eine Sicherung der bestehenden Datenbank. Zum Zurückspielen die App stoppen und die Sicherung auf den Namen der Datenbank kopieren. Scheitert die Sicherung, startet die App nicht und die Datenbank bleibt unverändert (#266)
+- Interne Aufräumarbeiten am Code ohne sichtbare Änderung
+
 ## v0.17.0 - 2026-10-18
 
 ### Verbesserungen
