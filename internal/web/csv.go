@@ -283,9 +283,9 @@ func importWarnings(rows []importRow, ids []int64) []string {
 		if i > 0 {
 			prev := history[0]
 			for _, key := range warnedMeterKeys {
-				// A meter without both readings has no consumption, so
-				// there is nothing to warn about (#224).
-				consumption, ok := store.Verbrauch(row.input.Readings, prev.Readings, key)
+				// An optional Einzelzähler without both readings has no
+				// consumption, so there is nothing to warn about (#224).
+				consumption, ok := warnVerbrauch(row.input.Readings, prev.Readings, key)
 				if !ok {
 					continue
 				}
@@ -300,7 +300,7 @@ func importWarnings(rows []importRow, ids []int64) []string {
 					if a == 0 {
 						continue
 					}
-					consumption, ok := store.Verbrauch(row.input.Readings, prev.Readings, key)
+					consumption, ok := warnVerbrauch(row.input.Readings, prev.Readings, key)
 					if !ok {
 						continue
 					}
