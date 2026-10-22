@@ -681,58 +681,13 @@ func TestBerechneAbrechnung_NichtAbrechenbar(t *testing.T) {
 	}
 }
 
-// TestBerechneAbrechnung_StimmtMitDemDashboardUeberein is the consistency
-// check of Issue #166: with every position umlagefähig and the Strom passed
-// on, the Jahressaldo of a year is the change of the Dashboard's cumulative
-// balance over that year (the Dashboard's year-end balance is continuous,
-// no reset), for both apartments.
-func TestBerechneAbrechnung_StimmtMitDemDashboardUeberein(t *testing.T) {
-	db := openTestDB(t)
-	if err := store.SeedDemoData(db, time.Date(2026, time.October, 15, 0, 0, 0, 0, time.UTC)); err != nil {
-		t.Fatalf("SeedDemoData: %v", err)
-	}
-	all := map[int64]bool{}
-	kps, _ := store.Kostenpositionen(db)
-	for _, kp := range kps {
-		all[kp.ID] = true
-	}
-	// The Dashboard counts every item, so the Jahressaldo equals its change
-	// only if the Wohnungsstatus table shows every item: Wohnung 2 is rented,
-	// so "Wallbox weiterberechnen" must be on (Wohnung 1 is Eigennutzung).
-	saveStammdaten(t, db, func(s *store.StammdatenSave) {
-		s.Flags = store.StammdatenFlags{Umlagefaehig: all, StromWeiterberechnen: true, WallboxWeiterberechnen: true}
-	})
-
-	dd, err := loadDashboardData(db)
-	if err != nil {
-		t.Fatalf("loadDashboardData: %v", err)
-	}
-	for _, apt := range dd.Apartments {
-		verlauf := buildDashboardVerlauf(apt.ID, apt.Name, dd.PeriodenKosten, dd.FixkostenListe)
-		endstand := map[int]float64{}
-		for _, e := range verlauf.Eintraege {
-			if e.Jahreszeile != nil && e.Jahreszeile.Endstand != nil {
-				endstand[e.Jahreszeile.Jahr] = e.Jahreszeile.Endstand.Wert()
-			}
-		}
-
-		for _, jahr := range []int{2023, 2024, 2025} {
-			erg, err := berechneAbrechnungDB(db, jahr, apt.ID)
-			if err != nil || erg.Abrechnung == nil {
-				t.Fatalf("%s %d: err %v, Maengel %v", apt.Name, jahr, err, maengelTexte(erg.Pruefung))
-			}
-			want := endstand[jahr] - endstand[jahr-1] // 2022 has none: the balance starts at 0
-			if got := erg.Abrechnung.Saldo.Wert(); !near(got, want) {
-				t.Errorf("%s %d: Jahressaldo = %v, want the Dashboard's change over the year %v", apt.Name, jahr, got, want)
-			}
-		}
-	}
-}
-
-// TestJahressaldo_GleichtDashboardSaldoAufDenCent is the strict form of the
-// Glossar claim for "Jahressaldo": gap-free data and only umlagefähige
-// positions give exactly the Dashboard's change over the year, to the cent
-// (the test above allows half a cent).
+// TestJahressaldo_GleichtDashboardSaldoAufDenCent is the consistency check of
+// Issue #166 for the Glossar claim for "Jahressaldo": gap-free data and only
+// umlagefähige positions give exactly the Dashboard's change over the year,
+// to the cent (the Dashboard's year-end balance is continuous, no reset), for
+// both apartments. The fold itself is shared (calc.Monatswerte), but the Posten
+// and the Fixkosten rounding stay inputs of each view, so this keeps their
+// wiring honest.
 func TestJahressaldo_GleichtDashboardSaldoAufDenCent(t *testing.T) {
 	db := openTestDB(t)
 	if err := store.SeedDemoData(db, time.Date(2026, time.October, 15, 0, 0, 0, 0, time.UTC)); err != nil {
