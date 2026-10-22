@@ -88,7 +88,7 @@ func handleAblesungenListe(a auth) http.HandlerFunc {
 			http.Error(w, "periods: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		teilstandID, hasOpenTeilstand, err := openTeilstandID(db)
+		teilstandID, hasOpenTeilstand, err := store.OffenerTeilstand(db)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

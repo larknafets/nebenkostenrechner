@@ -654,9 +654,16 @@ func TestCreatePeriod_OffenerTeilstand(t *testing.T) {
 	db := openTestDB(t)
 	mustCreatePeriod(t, db, "2026-08-01", baseReadings(nil))
 
+	if _, ok, err := OffenerTeilstand(db); err != nil || ok {
+		t.Fatalf("OffenerTeilstand ohne Teilstand = %v, %v, want false, nil", ok, err)
+	}
+
 	teilstand, err := CreatePeriod(db, PeriodInput{ReadingDate: "2026-09-01", Readings: baseReadings(nil)})
 	if err != nil {
 		t.Fatalf("CreatePeriod Teilstand as newest: %v, want allowed", err)
+	}
+	if id, ok, err := OffenerTeilstand(db); err != nil || !ok || id != teilstand {
+		t.Fatalf("OffenerTeilstand = %d, %v, %v, want %d, true, nil", id, ok, err, teilstand)
 	}
 
 	_, err = CreatePeriod(db, completePeriodInput("2026-10-01", baseReadings(nil)))

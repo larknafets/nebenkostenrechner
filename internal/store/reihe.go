@@ -43,22 +43,46 @@ func (e *ImportRowError) Error() string {
 
 func (e *ImportRowError) Unwrap() error { return e.Err }
 
+// newestPeriod returns the chronologically newest Ablesung (latest reading
+// date, then highest id), found is false without any.
+func newestPeriod(q querier) (newest PeriodSummary, found bool, err error) {
+	err = q.QueryRow(`SELECT id, reading_date, monat FROM periods ORDER BY reading_date DESC, id DESC LIMIT 1`).
+		Scan(&newest.ID, &newest.ReadingDate, &newest.Monat)
+	if err == sql.ErrNoRows {
+		return PeriodSummary{}, false, nil
+	}
+	if err != nil {
+		return PeriodSummary{}, false, fmt.Errorf("query newest period: %w", err)
+	}
+	return newest, true, nil
+}
+
+// OffenerTeilstand returns the id of the open Teilstand, ok is false if there
+// is none: only the newest Ablesung may be a Teilstand, so this is the one
+// question that decides whether a new reading may be appended (see
+// PeriodOpenTeilstandError) and where the "New reading" form leads instead.
+func OffenerTeilstand(db *sql.DB) (id int64, ok bool, err error) {
+	newest, found, err := newestPeriod(db)
+	if err != nil || !found {
+		return 0, false, err
+	}
+	complete, err := periodComplete(db, newest.ID)
+	if err != nil || complete {
+		return 0, false, err
+	}
+	return newest.ID, true, nil
+}
+
 // checkAppend validates in as a new, newest Ablesung: the newest existing one
 // must be complete, the reading date must lie after its date and the
 // Abrechnungsmonat must not lie before its Monat. An empty Monat (Teilstand,
 // Ticket #128) is not a conflict until it is entered. Without any Ablesung
 // everything is allowed.
 func checkAppend(q querier, in PeriodInput) error {
-	var newest PeriodSummary
-	err := q.QueryRow(`SELECT id, reading_date, monat FROM periods ORDER BY reading_date DESC, id DESC LIMIT 1`).
-		Scan(&newest.ID, &newest.ReadingDate, &newest.Monat)
-	if err == sql.ErrNoRows {
-		return nil
+	newest, found, err := newestPeriod(q)
+	if err != nil || !found {
+		return err
 	}
-	if err != nil {
-		return fmt.Errorf("query newest period: %w", err)
-	}
-
 	complete, err := periodComplete(q, newest.ID)
 	if err != nil {
 		return err

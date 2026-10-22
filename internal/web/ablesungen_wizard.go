@@ -95,34 +95,13 @@ var einzelzaehlerFelder = func() []store.Meter {
 	return out
 }()
 
-// openTeilstandID returns the id of the chronologically newest period, if
-// it's a Teilstand (partial reading) - 0/false if there's no period yet
-// or the newest one is already complete. Only the newest period may ever
-// be incomplete (Ticket #129), so this is the one check that decides
-// whether creating another new reading must be blocked, instead of
-// allowing a second open reading.
-func openTeilstandID(db *sql.DB) (id int64, ok bool, err error) {
-	latest, err := store.GetLatestPeriod(db)
-	if err != nil {
-		return 0, false, fmt.Errorf("latest period: %w", err)
-	}
-	if latest == nil {
-		return 0, false, nil
-	}
-	apartments, err := store.Apartments(db)
-	if err != nil {
-		return 0, false, fmt.Errorf("apartments: %w", err)
-	}
-	return latest.ID, latest.Teilstand(apartments).IstTeilstand, nil
-}
-
 // redirectIfOpenTeilstand redirects to the open Teilstand's completion
 // (Vervollständigung) and reports whether it did - so the "New reading" form
 // leads to completing instead of offering a form the store would refuse
 // (store.PeriodOpenTeilstandError). Callers must return immediately when this
 // reports true (or a non-nil err, which it has already turned into a 500).
 func redirectIfOpenTeilstand(w http.ResponseWriter, r *http.Request, db *sql.DB) (redirected bool) {
-	teilstandID, hasOpenTeilstand, err := openTeilstandID(db)
+	teilstandID, hasOpenTeilstand, err := store.OffenerTeilstand(db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return true
