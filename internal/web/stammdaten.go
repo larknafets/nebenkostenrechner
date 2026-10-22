@@ -45,12 +45,23 @@ func heizungGewichtungOptionsFor(current float64) []heizungGewichtungOption {
 	return opts
 }
 
+// heizungGewichtungFehler is the user-facing message for a form value that is
+// no allowed Heizungs-Gewichtung, built from store.HeizungGewichtungOptions.
+func heizungGewichtungFehler(raw string) error {
+	werte := make([]string, len(store.HeizungGewichtungOptions))
+	for i, v := range store.HeizungGewichtungOptions {
+		werte[i] = strconv.FormatFloat(v, 'f', -1, 64)
+	}
+	erlaubt := strings.Join(werte[:len(werte)-1], ", ") + " oder " + werte[len(werte)-1]
+	return fmt.Errorf("ungültige Heizungs-Gewichtung %q (muss %s sein)", raw, erlaubt)
+}
+
 // parseHeizungGewichtung reads the Heizungs-Gewichtung from the form. Whether
 // the value is an allowed one is decided by store.SaveStammdaten.
 func parseHeizungGewichtung(raw string) (float64, error) {
 	v, err := strconv.ParseFloat(raw, 64)
 	if err != nil {
-		return 0, fmt.Errorf("ungültige Heizungs-Gewichtung %q (muss 0.7, 0.6 oder 0.5 sein)", raw)
+		return 0, heizungGewichtungFehler(raw)
 	}
 	return v, nil
 }
@@ -207,7 +218,7 @@ func handleUpdateStammdaten() http.HandlerFunc {
 			case errors.As(err, &mieterSeit):
 				http.Error(w, "ungültiges Datum für \"Mieter seit\" bei Wohnung "+strconv.FormatInt(mieterSeit.ApartmentID, 10), http.StatusBadRequest)
 			case errors.As(err, &ungueltigeGewichtung):
-				http.Error(w, fmt.Sprintf("ungültige Heizungs-Gewichtung %q (muss 0.7, 0.6 oder 0.5 sein)", rohGewichtung), http.StatusBadRequest)
+				http.Error(w, heizungGewichtungFehler(rohGewichtung).Error(), http.StatusBadRequest)
 			default:
 				http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
 			}
