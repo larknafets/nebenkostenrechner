@@ -1594,6 +1594,12 @@ func TestUpdatePeriod_EmptyMonat_NoNeighborConflict(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("UpdatePeriod mit leerem Monat: %v, want kein Fehler (Nachbar-Prüfung übersprungen)", err)
 	}
+
+	// An empty field never erases a stored value, so correcting cannot turn a
+	// complete Ablesung in the middle of the series into a Teilstand.
+	if ok, err := PeriodComplete(db, p2); err != nil || !ok {
+		t.Errorf("PeriodComplete nach Korrektur mit leerem Monat = %v, %v, want true (Monat bleibt erhalten)", ok, err)
+	}
 }
 
 // TestPeriodComplete covers AC3: every combination of a missing field
