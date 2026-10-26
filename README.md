@@ -1,6 +1,9 @@
 # Nebenkostenrechner
 
-Web-App zur monatlichen Nebenkostenabrechnung für ein Zweifamilienhaus mit Wärmepumpe und PV-Anlage. Berechnet Strom-, Heizung/Warmwasser- und Wasserkosten je Wohnung aus monatlich erfassten Zählerständen, sowie Fixkosten/Grundgebühren (Grundsteuer, Versicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise, Wärmepumpenwartung, PV-Anlagenwartung). Zusätzlich können Nebenkostenabschläge eingetragen und gegengerechnet werden, so daß eine erfassungsaktuelle Guthaben/Nachzahlung Übersicht entsteht. Angenommen wird, dass es Hauptzähler für die Gemeinschaft und separate Zwischenzähler für die Einliegerwohnung (Wohnung 2) und Wallboxen gibt.
+Web-App zur monatlichen Nebenkostenabrechnung für ein Zweifamilienhaus mit Wärmepumpe und PV-Anlage.
+Berechnet Strom-, Heizung/Warmwasser- und Wasserkosten je Wohnung aus monatlich erfassten Zählerständen, sowie Fixkosten/Grundgebühren (Grundsteuer, Versicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise, Wärmepumpenwartung, PV-Anlagenwartung).
+Zusätzlich können Nebenkostenabschläge eingetragen und gegengerechnet werden, so daß eine erfassungsaktuelle Guthaben/Nachzahlung Übersicht entsteht.
+Angenommen wird, dass es Hauptzähler für die Gemeinschaft und separate Zwischenzähler für die Einliegerwohnung (Wohnung 2) und Wallboxen gibt.
 
 <p align="center">
   <img src="docs/screenshots/hero.webp" alt="Dashboard im dunklen Design mit Jahressummen je Wohnung, Wallboxen, PV-Anlage und den Monatskosten von Wohnung 2" width="480">
@@ -27,12 +30,19 @@ Auf der `/stammdaten`-Seite gepflegt werden folgende Daten gepflegt. und gelten 
 | Wohnung 1 | 116,23 m² | - |
 | Wohnung 2 | 86 m² | - |
 
-Je Wohnung gibt es außerdem einen **Wohnungsstatus** ("Vermietung" oder "Eigennutzung", vorbelegt Wohnung 1 Eigennutzung, Wohnung 2 Vermietung), den Namen des Mieters bzw. Bewohners, die Zustellanschrift und bei Vermietung den Einzugsmonat ("Mieter seit", leer = ab Erfassungsbeginn). Für das Haus gibt es Vermieter-Name, Vermieter-Anschrift, Objektanschrift und eine optionale IBAN mit optionalem Kontoinhaber (leer = Vermieter). Diese Angaben füllen die künftige Jahresabrechnung. Die personenbezogenen Felder (Namen, Anschriften, "Mieter seit", IBAN) sind nur für angemeldete Nutzer sichtbar und änderbar, der Wohnungsstatus ist für alle sichtbar. Ohne gesetztes `LOGIN_PASSWORD` ist jeder angemeldet.
+Je Wohnung gibt es außerdem einen **Wohnungsstatus** ("Vermietung" oder "Eigennutzung", vorbelegt Wohnung 1 Eigennutzung, Wohnung 2 Vermietung), den Namen des Mieters bzw. Bewohners, die Zustellanschrift und bei Vermietung den Einzugsmonat ("Mieter seit", leer = ab Erfassungsbeginn).
+Für das Haus gibt es Vermieter-Name, Vermieter-Anschrift, Objektanschrift und eine optionale IBAN mit optionalem Kontoinhaber (leer = Vermieter).
+Diese Angaben füllen die künftige Jahresabrechnung.
+Die personenbezogenen Felder (Namen, Anschriften, "Mieter seit", IBAN) sind nur für angemeldete Nutzer sichtbar und änderbar, der Wohnungsstatus ist für alle sichtbar.
+Ohne gesetztes `LOGIN_PASSWORD` ist jeder angemeldet.
 
 Dazu kommt die **Heizung/Warmwasser-Gewichtung** (siehe [Heizung](#heizungwarmwasser-konfigurierbarer-split-default-7030)), die im Gegensatz zu den beiden folgenden Schaltern auch Dashboard und Verlauf beeinflusst. Außerdem stehen hier drei Schalter für die Jahresabrechnung. Sie wirken auf alle Monate und Jahre, Dashboard und Monatsverlauf zeigen weiterhin alle Positionen und ändern sich nicht:
 
 - **Reihenfolge** der Kostenpositionen: Mit den Hoch/Runter-Buttons unter "Reihenfolge der Kostenpositionen" änderst du die Reihenfolge. Sie gilt für Fixkosten-Eingabe, Fixkosten-Anzeige und Abrechnung. Der Fixkosten-CSV-Export behält seine feste Spaltenreihenfolge.
-- **Umlagefähig** je Kostenposition (Ja/Nein): Nur umlagefähige Positionen erscheinen in der Jahresabrechnung. Vorbelegt mit Ja für Grundsteuer, Wohngebäudeversicherung, Deichbeitrag Grund und Boden, Deichbeitrag Bauliche Anlagen, Kreisverband Wesermarsch, die vier Abfallwirtschafts-Positionen, Grundgebühr Strom, Trinkwasser und Abwasser sowie Wärmepumpenwartung. Vorbelegt mit Nein für Grundgebühr Internet, PV-Anlagenwartung, Streaming-Dienste und Sonstige Kosten. Teilweise umlagefähige Positionen teilst du über die Berechnungslogik der Fixkosteneingabe auf (z. B. "Wohnung 1" für den nicht umlagefähigen Teil).
+- **Umlagefähig** je Kostenposition (Ja/Nein): Nur umlagefähige Positionen erscheinen in der Jahresabrechnung.
+  Vorbelegt mit Ja für Grundsteuer, Wohngebäudeversicherung, Deichbeitrag Grund und Boden, Deichbeitrag Bauliche Anlagen, Kreisverband Wesermarsch, die vier Abfallwirtschafts-Positionen, Grundgebühr Strom, Trinkwasser und Abwasser sowie Wärmepumpenwartung.
+  Vorbelegt mit Nein für Grundgebühr Internet, PV-Anlagenwartung, Streaming-Dienste und Sonstige Kosten.
+  Teilweise umlagefähige Positionen teilst du über die Berechnungslogik der Fixkosteneingabe auf (z. B. "Wohnung 1" für den nicht umlagefähigen Teil).
 - **Stromverbrauch weiterberechnen** (Ja/Nein, vorbelegt Ja): Der Haushaltsstrom ist keine Betriebskostenart und wird nur laut Vereinbarung weiterberechnet. Der Schalter gilt für eine vermietete Wohnung 1 und 2 gleich. Bei Eigennutzung gilt er nicht, dort steht der Strom immer in der Abrechnung.
 - **Wallbox weiterberechnen** (Ja/Nein, vorbelegt Ja, auch nach dem Update einer bestehenden Datenbank): Ob der Wallbox-Anteil einer vermieteten Wohnung in deren Jahresabrechnung steht, unabhängig vom Haushaltsstrom. Bei Eigennutzung gilt der Schalter nicht, dort steht die Wallbox immer in der Abrechnung (Tabelle unter "Jahresabrechnung").
 
@@ -68,9 +78,16 @@ Preise (aktuell, werden pro Monat neu erfasst statt zentral versioniert):
 
 Ableserhythmus: 1x/Monat. Verbrauch = aktueller Zählerstand minus Stand der chronologisch nächstälteren Ablesung (einfache Differenz, funktioniert automatisch auch über Lücken hinweg).
 
-Eine Ablesung darf auch nur teilweise ausgefüllt gespeichert werden (**Teilstand**) - einzelne Zählerstände, Preise, Personenzahl oder der Abrechnungsmonat können fehlen und später nachgetragen werden (nur das Ablesedatum ist immer zwingend). Ein Teilstand fließt nicht in die Berechnung ein (Dashboard, Verbrauch) und ist in der Ablesungen-Liste/-Detailansicht als "unvollständig" markiert. Nur die jeweils neueste Ablesung darf ein Teilstand sein - solange sie es ist, führt "Neue Ablesung" stattdessen zu ihrer Vervollständigung. Anlegen und Vervollständigen sind beide auch ohne Login möglich, siehe `LOGIN_PASSWORD` unten.
+Eine Ablesung darf auch nur teilweise ausgefüllt gespeichert werden (**Teilstand**) - einzelne Zählerstände, Preise, Personenzahl oder der Abrechnungsmonat können fehlen und später nachgetragen werden (nur das Ablesedatum ist immer zwingend).
+Ein Teilstand fließt nicht in die Berechnung ein (Dashboard, Verbrauch) und ist in der Ablesungen-Liste/-Detailansicht als "unvollständig" markiert.
+Nur die jeweils neueste Ablesung darf ein Teilstand sein - solange sie es ist, führt "Neue Ablesung" stattdessen zu ihrer Vervollständigung.
+Anlegen und Vervollständigen sind beide auch ohne Login möglich, siehe `LOGIN_PASSWORD` unten.
 
-Unter den Wallboxen lassen sich zwei **optionale Einzelzähler** erfassen: `strom_wallbox_wohnung1` (Wallbox Wohnung 1) und `strom_wallbox_wohnung2` (Wallbox Wohnung 2), jeweils in kWh und nur nachrichtlich vom Wallbox-Display abzulesen. Beide Felder dürfen leer bleiben, auch nur eines von beiden: Die Ablesung bleibt vollständig (kein Teilstand) und der Zähler gilt als "nicht erfasst". Der Verbrauch eines Einzelzählers entsteht nur, wenn der Stand in der Ablesung und in der direkten Vorperiode vorliegt, sonst ist er "nicht berechenbar" (er wird nie gegen 0 gerechnet, und eine Lücke wird nicht über mehrere Monate überbrückt). Die Warnungen "negativer Verbrauch" und "Ausreißer" gelten auch für die Einzelzähler und entfallen, sobald ein beteiligter Stand fehlt. Wofür die Einzelzähler in die Kosten eingehen, steht unter "Strom".
+Unter den Wallboxen lassen sich zwei **optionale Einzelzähler** erfassen: `strom_wallbox_wohnung1` (Wallbox Wohnung 1) und `strom_wallbox_wohnung2` (Wallbox Wohnung 2), jeweils in kWh und nur nachrichtlich vom Wallbox-Display abzulesen.
+Beide Felder dürfen leer bleiben, auch nur eines von beiden: Die Ablesung bleibt vollständig (kein Teilstand) und der Zähler gilt als "nicht erfasst".
+Der Verbrauch eines Einzelzählers entsteht nur, wenn der Stand in der Ablesung und in der direkten Vorperiode vorliegt, sonst ist er "nicht berechenbar" (er wird nie gegen 0 gerechnet, und eine Lücke wird nicht über mehrere Monate überbrückt).
+Die Warnungen "negativer Verbrauch" und "Ausreißer" gelten auch für die Einzelzähler und entfallen, sobald ein beteiligter Stand fehlt.
+Wofür die Einzelzähler in die Kosten eingehen, steht unter "Strom".
 
 Je Ablesung gibt es außerdem den Schalter **"Wallboxen vollständig Wohnung 1"** (Formular, Schritt 1, direkt unter den Wallbox-Feldern; die Ablesungsseite zeigt ihn als Ja/Nein). Eine neue Ablesung belegt ihn aus der chronologisch letzten Ablesung vor, beim Korrigieren gilt der Wert der Ablesung. Bestehende Ablesungen bekommen beim Update den Wert "Nein", ihre Kosten ändern sich nicht.
 
@@ -123,13 +140,22 @@ sonst (Schalter aus, Wallbox Wohnung 2 oder deren Vorperiode fehlt):
     keine Zuordnung, die Wallbox-Kosten bleiben informativ
 ```
 
-Der Schalter schlägt die Einzelzähler. Wallbox Wohnung 1 darf fehlen, die Summe von Wohnung 1 und 2 ist immer cent-genau `Kosten_Wallbox`. Liegen beide Einzelzähler samt Vorperiode vor, vergleicht die Ablesungsseite deren Summe mit dem Verbrauch des Zwischenzählers und zeigt einen nicht blockierenden Plausibilitätshinweis, wenn sie um mehr als 5 % des Zwischenzähler-Verbrauchs oder 2 kWh (je nachdem, was größer ist) abweichen. Die Hinweis- und Kostenanzeige erscheint auch direkt nach dem Speichern, weil das Speichern auf die Ablesungsseite weiterleitet. Dashboard und Jahresabrechnung übernehmen die Zuordnung in späteren Schritten.
+Der Schalter schlägt die Einzelzähler.
+Wallbox Wohnung 1 darf fehlen, die Summe von Wohnung 1 und 2 ist immer cent-genau `Kosten_Wallbox`.
+Liegen beide Einzelzähler samt Vorperiode vor, vergleicht die Ablesungsseite deren Summe mit dem Verbrauch des Zwischenzählers und zeigt einen nicht blockierenden Plausibilitätshinweis, wenn sie um mehr als 5 % des Zwischenzähler-Verbrauchs oder 2 kWh (je nachdem, was größer ist) abweichen.
+Die Hinweis- und Kostenanzeige erscheint auch direkt nach dem Speichern, weil das Speichern auf die Ablesungsseite weiterleitet.
+Dashboard und Jahresabrechnung übernehmen die Zuordnung in späteren Schritten.
 
 Visuelle Übersicht der Zählerverschachtelung und der PV-Verrechnungskaskade: [docs/pv-verrechnung.md](docs/pv-verrechnung.md).
 
 ### Heizung/Warmwasser (konfigurierbarer Split, Default 70/30)
 
-Die Wärmepumpenstromkosten (siehe oben) werden nach Wärmemengenzählerverhältnis und Wohnungsgrößenverhältnis auf die beiden Wohnungen verteilt. Die Gewichtung (70/30, 60/40 oder 50/50, vorbelegt 70/30) ist ein einzelner Wert auf der `/stammdaten`-Seite, weil der Mietvertrag die Heizkostenverteilung für das ganze Jahr festlegt. Sie gilt für alle Monate, auch rückwirkend, und wird nicht mehr bei der Ablesung gewählt. Beim Update einer bestehenden Datenbank übernimmt die Migration einmalig den Wert der neuesten Ablesung. `qm_W1`/`qm_W2` kommen ebenfalls live von den Stammdaten, nicht von der Periode. Die Heizungsverteilung verwendet keine Personenzahl.
+Die Wärmepumpenstromkosten (siehe oben) werden nach Wärmemengenzählerverhältnis und Wohnungsgrößenverhältnis auf die beiden Wohnungen verteilt.
+Die Gewichtung (70/30, 60/40 oder 50/50, vorbelegt 70/30) ist ein einzelner Wert auf der `/stammdaten`-Seite, weil der Mietvertrag die Heizkostenverteilung für das ganze Jahr festlegt.
+Sie gilt für alle Monate, auch rückwirkend, und wird nicht mehr bei der Ablesung gewählt.
+Beim Update einer bestehenden Datenbank übernimmt die Migration einmalig den Wert der neuesten Ablesung.
+`qm_W1`/`qm_W2` kommen ebenfalls live von den Stammdaten, nicht von der Periode.
+Die Heizungsverteilung verwendet keine Personenzahl.
 
 ```
 Ratio_Waerme_W1  = Verbrauch(waerme_wohnung1) / (Verbrauch(waerme_wohnung1) + Verbrauch(waerme_wohnung2))
@@ -161,7 +187,10 @@ Kosten_Abwasser_X     = Abwasser_X * Abwasserpreis
 
 ### Einspeisevergütung (PV)
 
-Haus-weit und informativ, unabhängig von der Kostenverteilung oben, da der Einspeisezähler hausweit misst. Nur mit dem Schalter **"PV-Gutschrift Wohnung 1"** der Ablesung wird der Ertrag dieser Ablesung als **PV-Gutschrift** Wohnung 1 gutgeschrieben: Sie erhöht deren Guthaben im fortlaufenden Saldo ohne Deckel, mindert aber nicht die Verbrauchskosten. Wohnung 2 bekommt nie eine Gutschrift, die haus-weite Tabelle bleibt unverändert. Mehrere Ablesungen im selben Abrechnungsmonat haben je ihren eigenen Schalter.
+Haus-weit und informativ, unabhängig von der Kostenverteilung oben, da der Einspeisezähler hausweit misst.
+Nur mit dem Schalter **"PV-Gutschrift Wohnung 1"** der Ablesung wird der Ertrag dieser Ablesung als **PV-Gutschrift** Wohnung 1 gutgeschrieben: Sie erhöht deren Guthaben im fortlaufenden Saldo ohne Deckel, mindert aber nicht die Verbrauchskosten.
+Wohnung 2 bekommt nie eine Gutschrift, die haus-weite Tabelle bleibt unverändert.
+Mehrere Ablesungen im selben Abrechnungsmonat haben je ihren eigenen Schalter.
 
 ```
 Einspeisevergütung = Verbrauch(strom_einspeisung) * Einspeisung_Preis
@@ -169,9 +198,14 @@ Einspeisevergütung = Verbrauch(strom_einspeisung) * Einspeisung_Preis
 
 ### Fixkosten/Grundgebühren
 
-Die festen Kostenpositionen (Grundsteuer, Wohngebäudeversicherung, Deichbeitrag Grund und Boden, Deichbeitrag Bauliche Anlagen, Kreisverband Wesermarsch, Abfallwirtschaft Grundgebühr Haushalt/Personen/Biomüll/Restmüll, Grundgebühr Strom, Grundgebühr Trinkwasser/Abwasser, Grundgebühr Internet, Wärmepumpenwartung, PV-Anlagenwartung, Streaming-Dienste, Sonstige Kosten) werden unabhängig von Strom/Heizung/Wasser auf einer eigenen monatlichen Fixkosteneingabe erfasst und berechnet. Jede Position trägt in dieser Eingabe ihre eigene Berechnungslogik, ihren Typ und ihren Wert (vorbelegt von der letzten Eingabe, frei überschreibbar):
+Die festen Kostenpositionen (Grundsteuer, Wohngebäudeversicherung, Deichbeitrag Grund und Boden, Deichbeitrag Bauliche Anlagen, Kreisverband Wesermarsch, Abfallwirtschaft Grundgebühr Haushalt/Personen/Biomüll/Restmüll, Grundgebühr Strom, Grundgebühr Trinkwasser/Abwasser, Grundgebühr Internet, Wärmepumpenwartung, PV-Anlagenwartung, Streaming-Dienste, Sonstige Kosten) werden unabhängig von Strom/Heizung/Wasser auf einer eigenen monatlichen Fixkosteneingabe erfasst und berechnet.
+Jede Position trägt in dieser Eingabe ihre eigene Berechnungslogik, ihren Typ und ihren Wert (vorbelegt von der letzten Eingabe, frei überschreibbar):
 
-Je Monat gibt es genau eine Fixkosten-Eingabe. Eine zweite für denselben Monat sowie das Verschieben auf einen belegten Monat werden abgelehnt, ebenso ein CSV-Import mit einem doppelten Monat. Enthält eine bestehende Datenbank schon doppelte Monate, startet die App trotzdem und nennt die betroffenen Monate im Log. Die doppelten Eingaben lassen sich unter `/fixkosten` löschen oder in einen freien Monat verschieben, eine Eingabe kann dabei auch unter ihrem eigenen Monat weiter korrigiert werden. Der Schutz per UNIQUE-Index wird beim nächsten Start angelegt, sobald keine Doppelten mehr existieren.
+Je Monat gibt es genau eine Fixkosten-Eingabe.
+Eine zweite für denselben Monat sowie das Verschieben auf einen belegten Monat werden abgelehnt, ebenso ein CSV-Import mit einem doppelten Monat.
+Enthält eine bestehende Datenbank schon doppelte Monate, startet die App trotzdem und nennt die betroffenen Monate im Log.
+Die doppelten Eingaben lassen sich unter `/fixkosten` löschen oder in einen freien Monat verschieben, eine Eingabe kann dabei auch unter ihrem eigenen Monat weiter korrigiert werden.
+Der Schutz per UNIQUE-Index wird beim nächsten Start angelegt, sobald keine Doppelten mehr existieren.
 
 ```
 Monatswert("jährlich")  = Jahreswert / 12          (Jahreswert = erfasster Wert dieser Eingabe)
@@ -195,7 +229,15 @@ Sind bei "Je anteiliges Flurstück", "Je anteilige Wohnungsgröße" oder "Je Anz
 
 Die monatliche Vorauszahlung je Wohnung, an der jeweiligen Fixkosteneingabe erfasst wie ein monatlich typisierter Wert (vorbelegt von der letzten Eingabe, frei überschreibbar) - deckt Fixkosten UND Verbräuche gemeinsam ab, ist selbst aber keine Kostenposition (keine Berechnungslogik, kein Split, direkter Wert je Wohnung).
 
-Abschlag und **Miete** (die monatliche Einnahme je Wohnung) fragt das Formular nur für Wohnungen mit dem Status Vermietung ab. Beide sind dort Pflichtfelder (0 ist erlaubt) und aus der letzten Eingabe vorbelegt. Bei Eigennutzung gibt es kein Feld: Ein früher gespeicherter Abschlag zählt weiter in Saldo, Übertrag und Abrechnung, und "Eingabe korrigieren" lässt ihn unverändert. Die Miete geht in keine Berechnung, keinen Saldo und keine Abrechnung ein. Im Fixkosten-CSV stehen immer `abschlag_1`, `abschlag_2`, `miete_1` und `miete_2` (leere Zelle = nicht erfasst). Der Import übernimmt die Werte unabhängig vom Status, ältere Dateien ohne die Miete-Spalten lassen sich weiter importieren. Die Demo hat eine Miete für die vermietete Wohnung. Die Detailseite einer Fixkosten-Eingabe zeigt die Miete in einer Spalte neben dem Nebenkostenabschlag, nur bei Vermietung ("0,00 €" bei erfasster 0, "–" bei nicht erfasster Miete, leer bei Eigennutzung), auch ohne Login wie der Abschlag. Die Liste der Eingaben und der Monatsverlauf zeigen keine Miete.
+Abschlag und **Miete** (die monatliche Einnahme je Wohnung) fragt das Formular nur für Wohnungen mit dem Status Vermietung ab.
+Beide sind dort Pflichtfelder (0 ist erlaubt) und aus der letzten Eingabe vorbelegt.
+Bei Eigennutzung gibt es kein Feld: Ein früher gespeicherter Abschlag zählt weiter in Saldo, Übertrag und Abrechnung, und "Eingabe korrigieren" lässt ihn unverändert.
+Die Miete geht in keine Berechnung, keinen Saldo und keine Abrechnung ein.
+Im Fixkosten-CSV stehen immer `abschlag_1`, `abschlag_2`, `miete_1` und `miete_2` (leere Zelle = nicht erfasst).
+Der Import übernimmt die Werte unabhängig vom Status, ältere Dateien ohne die Miete-Spalten lassen sich weiter importieren.
+Die Demo hat eine Miete für die vermietete Wohnung.
+Die Detailseite einer Fixkosten-Eingabe zeigt die Miete in einer Spalte neben dem Nebenkostenabschlag, nur bei Vermietung ("0,00 €" bei erfasster 0, "–" bei nicht erfasster Miete, leer bei Eigennutzung), auch ohne Login wie der Abschlag.
+Die Liste der Eingaben und der Monatsverlauf zeigen keine Miete.
 
 ```
 Saldo(Monat) = Saldo(Vormonat) + Abschlag(Monat) - (Fixkosten(Monat) + Verbrauch(Monat))
@@ -203,7 +245,16 @@ Saldo(Monat) = Saldo(Vormonat) + Abschlag(Monat) - (Fixkosten(Monat) + Verbrauch
 
 Der Verbrauch enthält den **Strom** (Wohnung 1: Rest des Netzbezugs, Wohnung 2: Zwischenzähler) und die **Wallbox**-Kosten der Wohnung (siehe Strom). Die Salden von Wohnung 1 sinken damit rückwirkend um die bisher aufgelaufenen Stromkosten. Bei Wohnung 1 kommt die **PV-Gutschrift** des Monats als Gutschrift dazu: `Saldo(Monat) = Saldo(Vormonat) + Abschlag + PV-Gutschrift - (Fixkosten + Verbrauch)`, ohne Deckel.
 
-**Dashboard und Widgets:** Die Jahreskarte und der Monatsverlauf beider Wohnungen zeigen die Kategorie **Wallbox** auch mit 0 EUR. Einzige Ausnahme ist die Jahreskarte einer vermieteten Wohnung bei ausgeschaltetem "Wallbox weiterberechnen" und Betrag 0: Dort entfallen Zeile und Balkensegment (bei Betrag ungleich 0 bleibt sie), Gesamt und Saldo ändern sich nicht. "Strom" steht für beide Wohnungen immer in der Jahreskarte (auch mit 0,00), im Balken und im Monatsverlauf (Wohnung 1: Rest des Netzbezugs, Wohnung 2: Haushaltsstrom), "Verbrauchswerte" zeigen die zugeordneten Netzbezug-kWh (bei Wohnung 1 die Rest-kWh). Wohnung 1 bekommt in der Jahreskarte die Zeile **PV-Gutschrift** (auch mit 0,00, dann ohne Minus; Wohnung 2 zeigt entsprechend den PV-Anteil in kWh auch mit 0): Sie senkt die Gesamtkosten, aber nicht die Verbrauchskosten und ist kein Balkensegment. Im Monatsverlauf steht sie nur in "Kombiniert" (Gesamt abzüglich Gutschrift) und fließt in den Saldo ein, nicht in "Verbrauch" und "Verbrauchswerte". Die haus-weiten Karten "Wallboxen" und "PV-Anlage" bleiben unverändert. Die Widget-Routen zeigen dieselben Posten, ohne neue Routen. Die Jahreskarte der vermieteten Wohnung zeigt unter Guthaben / Nachzahlung die **Mieteinnahmen** des Anzeigejahres (Summe der Miete aller Fixkosten-Eingaben des Jahres, auch mit 0,00; bei Eigennutzung nie). Der Block erscheint nur für angemeldete Nutzer und steht ohne Login nicht im HTML-Quelltext. Die Widgets zeigen keine Mieteinnahmen, weil ihre Routen bewusst ohne Login erreichbar sind.
+**Dashboard und Widgets:** Die Jahreskarte und der Monatsverlauf beider Wohnungen zeigen die Kategorie **Wallbox** auch mit 0 EUR.
+Einzige Ausnahme ist die Jahreskarte einer vermieteten Wohnung bei ausgeschaltetem "Wallbox weiterberechnen" und Betrag 0: Dort entfallen Zeile und Balkensegment (bei Betrag ungleich 0 bleibt sie), Gesamt und Saldo ändern sich nicht.
+"Strom" steht für beide Wohnungen immer in der Jahreskarte (auch mit 0,00), im Balken und im Monatsverlauf (Wohnung 1: Rest des Netzbezugs, Wohnung 2: Haushaltsstrom), "Verbrauchswerte" zeigen die zugeordneten Netzbezug-kWh (bei Wohnung 1 die Rest-kWh).
+Wohnung 1 bekommt in der Jahreskarte die Zeile **PV-Gutschrift** (auch mit 0,00, dann ohne Minus; Wohnung 2 zeigt entsprechend den PV-Anteil in kWh auch mit 0): Sie senkt die Gesamtkosten, aber nicht die Verbrauchskosten und ist kein Balkensegment.
+Im Monatsverlauf steht sie nur in "Kombiniert" (Gesamt abzüglich Gutschrift) und fließt in den Saldo ein, nicht in "Verbrauch" und "Verbrauchswerte".
+Die haus-weiten Karten "Wallboxen" und "PV-Anlage" bleiben unverändert.
+Die Widget-Routen zeigen dieselben Posten, ohne neue Routen.
+Die Jahreskarte der vermieteten Wohnung zeigt unter Guthaben / Nachzahlung die **Mieteinnahmen** des Anzeigejahres (Summe der Miete aller Fixkosten-Eingaben des Jahres, auch mit 0,00; bei Eigennutzung nie).
+Der Block erscheint nur für angemeldete Nutzer und steht ohne Login nicht im HTML-Quelltext.
+Die Widgets zeigen keine Mieteinnahmen, weil ihre Routen bewusst ohne Login erreichbar sind.
 
 Fortlaufend seit Erfassungsbeginn kumuliert, kein Reset zum Jahreswechsel. Positiv heißt Guthaben, negativ Nachzahlung, exakt 0 Ausgeglichen. Ein Monat ohne Fixkosteneingabe lässt den Saldo unverändert, statt ihn verschwinden zu lassen.
 
@@ -213,8 +264,12 @@ Die Seite `/abrechnung?jahr=2027&wohnung=2` zeigt die Betriebskostenabrechnung e
 
 - **Auswahl:** Die Jahresliste enthält alle Jahre mit Ablesungen oder Fixkosten-Eingaben, die Wohnung wählst du über zwei Schaltflächen mit Name und Wohnungsstatus. Vorbelegt sind das neueste Jahr, das vollständig ist (sonst das neueste), und die erste vermietete Wohnung. Ein ungültiges Jahr oder eine ungültige Wohnung in der URL fällt auf diese Vorbelegung zurück.
 - **Nicht abrechenbar:** Fehlen Daten, zeigt die Seite statt der Abrechnung die Liste aller Mängel mit je einem Link zum Beheben (fehlende oder unvollständige Ablesung, fehlende oder doppelte Fixkosten-Eingabe, fehlende Pflicht-Stammdaten). Im ersten Erfassungsjahr beginnt der Zeitraum mit dem Datum der ersten Ablesung (Ausgangsstand), Fixkosten und Vorauszahlungen gelten dort ab dem Folgemonat.
-- **Mieterwechsel unterjährig:** Das Häkchen "Abweichender Zeitraum" blendet Von- und Bis-Monat ein (`?teil=1&von=3&bis=7`), die Abrechnung gilt dann für diese vollen Monate innerhalb des Jahres, Standard ist das Kalenderjahr. Ein Monat gehört ganz zu dem Zeitraum, in den die Ablesung seines Abrechnungsmonats fällt. Mieter und Anschrift kommen aus den Stammdaten, die App speichert keine Abrechnung: den Stand als PDF sichern, bevor die Stammdaten für den neuen Mieter umgeschrieben werden. Beim Einzug eines neuen Mieters trägst du in den Stammdaten den Einzugsmonat unter "Mieter seit" ein: Der Übertrag in der Monatstabelle (Anlage 1) zählt dann erst ab diesem Monat, auch in den Folgejahren.
-- **Inhalt:** Kopf mit Vermieter, Mieter und Zeitraum, Ergebnis (Guthaben, Nachzahlung mit vorangestelltem Minus), Kostenübersicht je Position (Gesamtkosten, Verteilerschlüssel, Anteil, Betrag), bei Bedarf der Strom der Wohnung, Vorauszahlungen, Saldo, Hinweise, eine Anlagenliste und der Anhang mit sieben nummerierten Anlagen: 1 Monatsverlauf und Saldo, 2 Heizung und Warmwasser je Monat, 3 Bezugsgrößen, 4 Personenzahl je Monat, 5 Verteilerschlüssel, 6 Verbrauchsübersicht, 7 Zählerstände. Bei Eigennutzung steht oben "Interne Übersicht, keine Betriebskostenabrechnung", ohne Mieter-Block und Rechtshinweise.
+- **Mieterwechsel unterjährig:** Das Häkchen "Abweichender Zeitraum" blendet Von- und Bis-Monat ein (`?teil=1&von=3&bis=7`), die Abrechnung gilt dann für diese vollen Monate innerhalb des Jahres, Standard ist das Kalenderjahr.
+  Ein Monat gehört ganz zu dem Zeitraum, in den die Ablesung seines Abrechnungsmonats fällt.
+  Mieter und Anschrift kommen aus den Stammdaten, die App speichert keine Abrechnung: den Stand als PDF sichern, bevor die Stammdaten für den neuen Mieter umgeschrieben werden.
+  Beim Einzug eines neuen Mieters trägst du in den Stammdaten den Einzugsmonat unter "Mieter seit" ein: Der Übertrag in der Monatstabelle (Anlage 1) zählt dann erst ab diesem Monat, auch in den Folgejahren.
+- **Inhalt:** Kopf mit Vermieter, Mieter und Zeitraum, Ergebnis (Guthaben, Nachzahlung mit vorangestelltem Minus), Kostenübersicht je Position (Gesamtkosten, Verteilerschlüssel, Anteil, Betrag), bei Bedarf der Strom der Wohnung, Vorauszahlungen, Saldo, Hinweise, eine Anlagenliste und der Anhang mit sieben nummerierten Anlagen: 1 Monatsverlauf und Saldo, 2 Heizung und Warmwasser je Monat, 3 Bezugsgrößen, 4 Personenzahl je Monat, 5 Verteilerschlüssel, 6 Verbrauchsübersicht, 7 Zählerstände.
+  Bei Eigennutzung steht oben "Interne Übersicht, keine Betriebskostenabrechnung", ohne Mieter-Block und Rechtshinweise.
 - **Wallbox und PV-Gutschrift:** Der Wohnungsstatus bestimmt, welche Posten in der Abrechnung einer Wohnung stehen:
 
   | Status der Wohnung | Block "Wallbox" (ihr Anteil) | Block "PV-Gutschrift" (nur Wohnung 1, wenn der Schalter der Ablesung an ist) |
@@ -222,10 +277,32 @@ Die Seite `/abrechnung?jahr=2027&wohnung=2` zeigt die Betriebskostenabrechnung e
   | Eigennutzung | immer (der Schalter "Wallbox weiterberechnen" gilt nicht) | immer |
   | Vermietung | nur mit gesetztem "Wallbox weiterberechnen" | nie |
 
-  Der Strom der Wohnung steht bei Eigennutzung immer in der Abrechnung, bei Vermietung nur mit "Stromverbrauch weiterberechnen" (für Wohnung 1 und 2). Sind beide Wohnungen vermietet und "Wallbox weiterberechnen" ist aus, steht die Wallbox in keiner Abrechnung und die PV-Gutschrift nirgends. Die Gutschrift folgt ihrer Zuordnung zu Wohnung 1, auch wenn Wohnung 1 vermietet und Wohnung 2 Eigennutzung ist. Der Block "Wallbox" erscheint neben dem Stromverbrauch (Haushaltsstrom), sobald die Wallbox-Kosten den Wohnungen zugeordnet sind (Schalter oder Einzelzähler von Wohnung 2). Der Jahressaldo und der Übertrag Vorjahre zählen genau die Posten, die in der Abrechnung stehen: Vorauszahlungen minus Betriebskosten minus Strom minus Wallbox plus PV-Gutschrift. Das Dashboard richtet sich nur in zwei Punkten nach dem Wohnungsstatus: Die Wallbox-Zeile der Jahreskarte entfällt bei Vermietung, ausgeschaltetem "Wallbox weiterberechnen" und Betrag 0, und die Mieteinnahmen stehen nur bei Vermietung in der Jahreskarte. Summen, Saldo und Kostenberechnung bleiben unberührt.
-- **Monatsverlauf und Saldo (Anlage 1):** Je Abrechnungsmonat Fixkosten (nur umlagefähig), Verbrauchskosten (Heizung, Wasser/Abwasser, der Strom der Wohnung (bei Vermietung nur mit "Stromverbrauch weiterberechnen"), die Wallbox, wenn sie in der Abrechnung steht), bei Wohnung 1 in Eigennutzung eine Spalte PV-Gutschrift, Nebenkostenabschlag und der kumulierte Saldo, darunter die Summe und der Jahressaldo der Saldoberechnung. Oben steht, wenn es etwas zu übertragen gibt, der **Übertrag Vorjahre**: der Saldo (Abschlag minus Kosten) aller Monate vom Startmonat bis zum Monat vor dem Zeitraum. Startmonat ist der spätere von "Mieter seit" (nur bei Vermietung) und dem Beginn der Erfassung. Ein eingegrenzter Zeitraum zählt die Monate davor mit. Hat einer dieser Monate einen Mangel, entfällt der Übertrag mit dem Hinweis "Übertrag nicht berechenbar" und dem ersten betroffenen Monat. Liegt "Mieter seit" nach dem Beginn des Zeitraums, gibt es keinen Übertrag. Der Übertrag ist nicht der Dashboard-Saldo, weil das Dashboard auch nicht umlagefähige Positionen zählt.
-- **Zählerstände (Anlage 7):** Eine Zeile je Ablesung mit Ablesedatum, zugeordnetem Abrechnungsmonat und allen Zählerständen, die erste Zeile ist der Ausgangsstand. Die Einzelzähler Wallbox Wohnung 1 und 2 stehen direkt hinter dem Zwischenzähler "Wallboxen", ein fehlender Stand als "-". Liegt im Zeitraum für einen Einzelzähler kein Stand vor, entfällt seine Spalte (so auch seine Zeile in Anlage 6, Verbrauchsübersicht). Fehlende Einzelzähler sind nie ein Mangel. Am Bildschirm scrollt die Tabelle waagerecht.
-- **Layout:** Der Kopf zeigt Titel, Objekt, Zeitraum, Vermieter und Mieter und das Ergebnis in einer Box. Darunter stehen links die Kostenblöcke "Fixkosten" und "Verbrauchsabhängig" (mit dem Strom der Wohnung) und rechts eine Seitenleiste mit der Saldoberechnung und den Hinweisen. Der Anhang beginnt auf einer eigenen Seite und läuft über die volle Breite, die Werte der abgerechneten Wohnung stehen dort fett. Jede Anlage bricht im Druck nicht um und rückt als Ganzes auf die nächste Seite, wenn sie nicht mehr passt. Die Zählerstände (Anlage 7) stehen allein auf der letzten Seite im Querformat. Gedruckt oder als PDF wird immer hell auf DIN A4 ausgegeben (Ränder 14 bis 15 mm), am Bildschirm folgt die Seite dem Theme der App. Auf einem schmalen Bildschirm stehen die Tabellen als gestapelte Karten, die Seitenleiste folgt unter den Tabellen.
+  Der Strom der Wohnung steht bei Eigennutzung immer in der Abrechnung, bei Vermietung nur mit "Stromverbrauch weiterberechnen" (für Wohnung 1 und 2).
+  Sind beide Wohnungen vermietet und "Wallbox weiterberechnen" ist aus, steht die Wallbox in keiner Abrechnung und die PV-Gutschrift nirgends.
+  Die Gutschrift folgt ihrer Zuordnung zu Wohnung 1, auch wenn Wohnung 1 vermietet und Wohnung 2 Eigennutzung ist.
+  Der Block "Wallbox" erscheint neben dem Stromverbrauch (Haushaltsstrom), sobald die Wallbox-Kosten den Wohnungen zugeordnet sind (Schalter oder Einzelzähler von Wohnung 2).
+  Der Jahressaldo und der Übertrag Vorjahre zählen genau die Posten, die in der Abrechnung stehen: Vorauszahlungen minus Betriebskosten minus Strom minus Wallbox plus PV-Gutschrift.
+  Das Dashboard richtet sich nur in zwei Punkten nach dem Wohnungsstatus: Die Wallbox-Zeile der Jahreskarte entfällt bei Vermietung, ausgeschaltetem "Wallbox weiterberechnen" und Betrag 0, und die Mieteinnahmen stehen nur bei Vermietung in der Jahreskarte.
+  Summen, Saldo und Kostenberechnung bleiben unberührt.
+- **Monatsverlauf und Saldo (Anlage 1):** Je Abrechnungsmonat Fixkosten (nur umlagefähig), Verbrauchskosten (Heizung, Wasser/Abwasser, der Strom der Wohnung (bei Vermietung nur mit "Stromverbrauch weiterberechnen"), die Wallbox, wenn sie in der Abrechnung steht), bei Wohnung 1 in Eigennutzung eine Spalte PV-Gutschrift, Nebenkostenabschlag und der kumulierte Saldo, darunter die Summe und der Jahressaldo der Saldoberechnung.
+  Oben steht, wenn es etwas zu übertragen gibt, der **Übertrag Vorjahre**: der Saldo (Abschlag minus Kosten) aller Monate vom Startmonat bis zum Monat vor dem Zeitraum.
+  Startmonat ist der spätere von "Mieter seit" (nur bei Vermietung) und dem Beginn der Erfassung.
+  Ein eingegrenzter Zeitraum zählt die Monate davor mit.
+  Hat einer dieser Monate einen Mangel, entfällt der Übertrag mit dem Hinweis "Übertrag nicht berechenbar" und dem ersten betroffenen Monat.
+  Liegt "Mieter seit" nach dem Beginn des Zeitraums, gibt es keinen Übertrag.
+  Der Übertrag ist nicht der Dashboard-Saldo, weil das Dashboard auch nicht umlagefähige Positionen zählt.
+- **Zählerstände (Anlage 7):** Eine Zeile je Ablesung mit Ablesedatum, zugeordnetem Abrechnungsmonat und allen Zählerständen, die erste Zeile ist der Ausgangsstand.
+  Die Einzelzähler Wallbox Wohnung 1 und 2 stehen direkt hinter dem Zwischenzähler "Wallboxen", ein fehlender Stand als "-".
+  Liegt im Zeitraum für einen Einzelzähler kein Stand vor, entfällt seine Spalte (so auch seine Zeile in Anlage 6, Verbrauchsübersicht).
+  Fehlende Einzelzähler sind nie ein Mangel.
+  Am Bildschirm scrollt die Tabelle waagerecht.
+- **Layout:** Der Kopf zeigt Titel, Objekt, Zeitraum, Vermieter und Mieter und das Ergebnis in einer Box.
+  Darunter stehen links die Kostenblöcke "Fixkosten" und "Verbrauchsabhängig" (mit dem Strom der Wohnung) und rechts eine Seitenleiste mit der Saldoberechnung und den Hinweisen.
+  Der Anhang beginnt auf einer eigenen Seite und läuft über die volle Breite, die Werte der abgerechneten Wohnung stehen dort fett.
+  Jede Anlage bricht im Druck nicht um und rückt als Ganzes auf die nächste Seite, wenn sie nicht mehr passt.
+  Die Zählerstände (Anlage 7) stehen allein auf der letzten Seite im Querformat.
+  Gedruckt oder als PDF wird immer hell auf DIN A4 ausgegeben (Ränder 14 bis 15 mm), am Bildschirm folgt die Seite dem Theme der App.
+  Auf einem schmalen Bildschirm stehen die Tabellen als gestapelte Karten, die Seitenleiste folgt unter den Tabellen.
 - **Nur am Bildschirm:** Auswahl, Drucken-Knopf und eine Hinweisbox (Frist bis 31.12. des Folgejahres bei einer Nachzahlung, PDF aufbewahren, Warnung bei einem Wechsel des Verteilerschlüssels im Jahr) erscheinen nicht im Druck. Zum Sichern als PDF: Drucken, Ziel PDF. Die App speichert den verschickten Stand nicht.
 
 ### Rundung
@@ -302,21 +379,30 @@ Danach erreichbar unter `http://localhost:8080`, Health-Check unter `/healthz`. 
 
 ### Demo-Modus
 
-Login mit dem Kennwort `demo` funktioniert immer, unabhängig davon ob `LOGIN_PASSWORD` gesetzt ist - er meldet in einer komplett separaten, eigenen Datenbank (`demo.db`, im selben Verzeichnis wie `DB_PATH`) an, gefüllt mit 39 Monaten realitätsnahen Testdaten. Änderungen im Demo-Modus (Ablesungen, Fixkosten-Eingaben, Stammdaten) landen ausschließlich in dieser Demo-Datenbank, nie in den echten Daten. Jeder erneute Demo-Login setzt die Demo-Datenbank vollständig auf ihren frischen Ausgangszustand zurück - keine Isolation zwischen gleichzeitigen Demo-Besuchern.
+Login mit dem Kennwort `demo` funktioniert immer, unabhängig davon ob `LOGIN_PASSWORD` gesetzt ist - er meldet in einer komplett separaten, eigenen Datenbank (`demo.db`, im selben Verzeichnis wie `DB_PATH`) an, gefüllt mit 39 Monaten realitätsnahen Testdaten.
+Änderungen im Demo-Modus (Ablesungen, Fixkosten-Eingaben, Stammdaten) landen ausschließlich in dieser Demo-Datenbank, nie in den echten Daten.
+Jeder erneute Demo-Login setzt die Demo-Datenbank vollständig auf ihren frischen Ausgangszustand zurück - keine Isolation zwischen gleichzeitigen Demo-Besuchern.
 
 Ein manueller Reset (z. B. nach einem Bug) ist ohne eigene Route möglich: `demo.db` löschen und den Server neu starten - die Datei entsteht beim nächsten Start automatisch neu, wieder mit einem frischen 39-Monats-Datensatz.
 
-> **Beim lokalen Testen:** das Browser-Cookie ist an den Host gebunden, nicht an den Port - ein Browser, der bereits als `demo` angemeldet ist, schickt dieses Cookie automatisch auch an eine andere lokale Instanz unter `localhost` (z. B. `go run` auf einem Port, ein Docker-Container auf einem anderen). Da beide Instanzen mit demselben fest verdrahteten Cookie-Secret signieren, wird das Cookie dort ebenfalls als gültige Demo-Session akzeptiert. Für einen sauberen, nicht angemeldeten Zustand des Cookies für `localhost` löschen oder ein privates Fenster verwenden.
+> **Beim lokalen Testen:** das Browser-Cookie ist an den Host gebunden, nicht an den Port - ein Browser, der bereits als `demo` angemeldet ist, schickt dieses Cookie automatisch auch an eine andere lokale Instanz unter `localhost` (z. B. `go run` auf einem Port, ein Docker-Container auf einem anderen).
+> Da beide Instanzen mit demselben fest verdrahteten Cookie-Secret signieren, wird das Cookie dort ebenfalls als gültige Demo-Session akzeptiert.
+> Für einen sauberen, nicht angemeldeten Zustand des Cookies für `localhost` löschen oder ein privates Fenster verwenden.
 
 ### Home Assistant Add-on
 
 Für den Betrieb als Home Assistant Add-on (inkl. Ingress-Integration) siehe das Add-on-Repository [`larknafets/ha-addons`](https://github.com/larknafets/ha-addons).
 
-Das Repository enthält zwei Add-ons zur Wahl: **Nebenkosten** (Release, aktualisiert sich bei jedem Tag `v*`) und **Nebenkosten (Nightly)** (täglicher Stand von `main`, `stage: experimental`). Der Nightly hat eigene Daten und einen eigenen Port (8082 statt 8081 für die Widget-Routen), beide Add-ons können gleichzeitig installiert sein. Ein Wechsel nimmt die Daten nicht mit, und der Nightly kann Datenbank-Migrationen enthalten, die der Release nicht kennt - nie die Datenbank vom Nightly zurück in den Release kopieren. Der Workflow `nightly.yml` baut jede Nacht (nur wenn es in den letzten 24 Stunden einen Commit gab), behält die letzten 7 Images und lässt sich manuell für einen beliebigen Branch starten.
+Das Repository enthält zwei Add-ons zur Wahl: **Nebenkosten** (Release, aktualisiert sich bei jedem Tag `v*`) und **Nebenkosten (Nightly)** (täglicher Stand von `main`, `stage: experimental`).
+Der Nightly hat eigene Daten und einen eigenen Port (8082 statt 8081 für die Widget-Routen), beide Add-ons können gleichzeitig installiert sein.
+Ein Wechsel nimmt die Daten nicht mit, und der Nightly kann Datenbank-Migrationen enthalten, die der Release nicht kennt - nie die Datenbank vom Nightly zurück in den Release kopieren.
+Der Workflow `nightly.yml` baut jede Nacht (nur wenn es in den letzten 24 Stunden einen Commit gab), behält die letzten 7 Images und lässt sich manuell für einen beliebigen Branch starten.
 
 ### Dashboard-Widgets (Home Assistant Lovelace)
 
-Für einzelne, kleine Karten im eigenen Dashboard - statt der ganzen App über Ingress - stellt der Server auf einem eigenen, 2. Port (`WIDGET_LISTEN_ADDR`) 3 zusätzliche, read-only Routen bereit, gedacht für ein Lovelace "Webpage card"/Iframe. HA-Ingress-URLs lassen sich nicht zuverlässig in ein beliebiges Iframe einbetten (Ingress-Session muss erst durch Besuch des Addon-Panels geprimt werden), deshalb ein eigener, Ingress-freier Port - bewusst ohne Login und ohne jede mutierende Route, kleinstmögliche Angriffsfläche.
+Für einzelne, kleine Karten im eigenen Dashboard - statt der ganzen App über Ingress - stellt der Server auf einem eigenen, 2.
+Port (`WIDGET_LISTEN_ADDR`) 3 zusätzliche, read-only Routen bereit, gedacht für ein Lovelace "Webpage card"/Iframe.
+HA-Ingress-URLs lassen sich nicht zuverlässig in ein beliebiges Iframe einbetten (Ingress-Session muss erst durch Besuch des Addon-Panels geprimt werden), deshalb ein eigener, Ingress-freier Port - bewusst ohne Login und ohne jede mutierende Route, kleinstmögliche Angriffsfläche.
 
 | Route | Inhalt |
 |---|---|

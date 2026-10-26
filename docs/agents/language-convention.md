@@ -13,3 +13,7 @@
 - Code comments (`.go`, `.html`, any other source file), regardless of the language of the ticket or commit for that change.
 - Markdown internal to development and tooling: `AGENTS.md`, `CLAUDE.md`, `docs/agents/`.
 - The local agent definitions in `.claude/agents/`.
+
+## Layout of Markdown prose
+
+Write one sentence per line in `README.md` and `GLOSSARY.md`, as a paragraph or a list item (continuation lines of a list item indented). Markdown renders the same, and two tickets that change different sentences of one paragraph no longer conflict on the whole line.
