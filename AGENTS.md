@@ -5,6 +5,7 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 ## Commands and layout
 
 - Run: `DB_PATH=./nk.db go run ./cmd/nebenkostenrechner` (`LOGIN_PASSWORD` optional, other variables: `cmd/nebenkostenrechner/main.go`)
+- Look at it in the browser: `scripts/dev-server` (login `dev`, a private window shows the anonymous view)
 - `cmd/nebenkostenrechner`: main, wiring through environment variables
 - `internal/calc`: pure cost calculation (Strom, Wasser, Heizung, Einspeisung, Fixkosten), no HTTP
 - `internal/store`: SQLite (modernc), `schema.sql`, Ablesungen, Fixkosten-Eingaben, Stammdaten
