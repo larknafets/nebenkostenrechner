@@ -141,6 +141,25 @@ type dashboardJahresCard struct {
 	// computed here in buildJahresCard. nil = no balance calculable (see
 	// AbschlagSaldo).
 	Saldo *calc.AbschlagSaldo
+
+	// Mieteinnahmen is the yearly sum of the Miete (#278), rounded to the
+	// cent, shown below the Saldo. nil = no block: set only by
+	// handleDashboard for a rented apartment and a logged-in user, so the
+	// rent never reaches the template otherwise (and never the widgets).
+	Mieteinnahmen *float64
+}
+
+// mieteinnahmen sums the Miete of the apartment over every Fixkosten-Eingabe
+// of jahr (the Abrechnungsmonat counts), rounded to the cent. Pure display
+// value, it enters no calculation.
+func mieteinnahmen(apartmentID int64, jahr int, eingaben []*store.FixkostenEingabeDetails) float64 {
+	var summe float64
+	for _, e := range eingaben {
+		if y, ok := store.Abrechnungsmonat(e.Monat).Jahr(); ok && y == jahr {
+			summe += e.Miete[apartmentID]
+		}
+	}
+	return calc.Round2(summe)
 }
 
 // buildJahresCard sums the given apartment's consumption and fixed costs

@@ -134,10 +134,28 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			}
 		}
 
+		// The Miete is read only for a logged-in user (#278), it is no part
+		// of dashboardData, which the widgets share.
+		var mieteEingaben []*store.FixkostenEingabeDetails
+		if nav.IsLoggedIn {
+			mieteEingaben, err = store.AllFixkostenEingabenDetails(dbFromContext(r.Context()))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
 		var cards []dashboardJahresCard
 		var verlaufSpalten []dashboardVerlaufSpalte
 		for _, a := range apartments {
 			card, verlauf := buildEntityView(dd, a.ID)
+			// Mieteinnahmen (#278): only for a rented apartment and a
+			// logged-in user, so the rent stays out of the template data
+			// otherwise.
+			if nav.IsLoggedIn && a.Status == store.StatusVermietet {
+				summe := mieteinnahmen(a.ID, jahr, mieteEingaben)
+				card.Mieteinnahmen = &summe
+			}
 			cards = append(cards, card)
 			verlaufSpalten = append(verlaufSpalten, verlauf)
 		}
