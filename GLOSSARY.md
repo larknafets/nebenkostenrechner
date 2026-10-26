@@ -83,12 +83,12 @@ Die Seite für Werte, die sich selten ändern und nicht Teil einer monatlichen E
 **Wohnungsstatus**:
 Je Wohnung "Vermietung" oder "Eigennutzung" (Stammdaten, Startwert Wohnung 1 Eigennutzung, Wohnung 2 Vermietung). Steuert die Jahresabrechnung (Mieter-Block, Rechtshinweise, Pflichtfelder und welche Posten darin stehen) und auf dem Dashboard und in den Widgets nur die Wallbox-Zeile der Jahreskarte (bei Vermietung, ausgeschaltetem Flag "Wallbox weiterberechnen" und Betrag 0 entfällt sie samt Balkensegment), nie die Summen, den fortlaufenden Saldo, die Kostenberechnung oder die Heizungs-Gewichtung. Welche Posten in der Abrechnung einer Wohnung stehen:
 
-| Status der Wohnung | Block "Wallbox" (ihr Anteil) | Block "PV-Gutschrift" (nur Wohnung 1, wenn der Schalter der Ablesung an ist) |
-|---|---|---|
-| Eigennutzung | immer (das Flag "Wallbox weiterberechnen" gilt nicht) | immer |
-| Vermietung | nur mit gesetztem Flag "Wallbox weiterberechnen" | nie |
+| Status der Wohnung | Block "Strom" (ihr Haushaltsstrom) | Block "Wallbox" (ihr Anteil) | Block "PV-Gutschrift" (nur Wohnung 1, wenn der Schalter der Ablesung an ist) |
+|---|---|---|---|
+| Eigennutzung | immer (das Flag "Stromverbrauch weiterberechnen" gilt nicht) | immer (das Flag "Wallbox weiterberechnen" gilt nicht) | immer |
+| Vermietung | nur mit gesetztem Flag "Stromverbrauch weiterberechnen" | nur mit gesetztem Flag "Wallbox weiterberechnen" | nie |
 
-Sind beide Wohnungen vermietet und das Flag ist aus, steht die Wallbox in keiner Abrechnung und die PV-Gutschrift nirgends. Die PV-Gutschrift folgt ihrer Zuordnung zu Wohnung 1, auch wenn Wohnung 1 vermietet und Wohnung 2 Eigennutzung ist. Kein Personenbezug, deshalb auch ohne Anmeldung sichtbar (nicht änderbar).
+Sind beide Wohnungen vermietet und die Flags sind aus, stehen Strom und Wallbox in keiner Abrechnung und die PV-Gutschrift nirgends. Die PV-Gutschrift folgt ihrer Zuordnung zu Wohnung 1, auch wenn Wohnung 1 vermietet und Wohnung 2 Eigennutzung ist. Kein Personenbezug, deshalb auch ohne Anmeldung sichtbar (nicht änderbar).
 _Avoid_: Vermietungsstatus, Nutzungsart
 
 **Mieter seit**:
@@ -100,7 +100,7 @@ Ein Ja/Nein-Flag je Kostenposition in den Stammdaten: Nur umlagefähige Position
 _Avoid_: umlegbar, abrechenbar (das ist die Vollständigkeit eines Abrechnungsjahres)
 
 **Stromverbrauch weiterberechnen**:
-Ein haus-weites Ja/Nein-Flag in den Stammdaten, ob der Stromverbrauch von Wohnung 2 (Haushaltsstrom, Zwischenzähler, ohne Wallbox) in der Jahresabrechnung weiterberechnet wird. Der Haushaltsstrom ist keine Betriebskostenart, deshalb ein eigenes Flag statt des Umlagefähig-Flags einer Kostenposition.
+Ein haus-weites Ja/Nein-Flag in den Stammdaten, ob der Stromverbrauch einer vermieteten Wohnung (Haushaltsstrom, ohne Wallbox; bei Wohnung 1 der Rest des Netzbezugs, bei Wohnung 2 der Zwischenzähler) in deren Jahresabrechnung weiterberechnet wird. Das Flag gilt für Wohnung 1 und Wohnung 2 gleich. Bei Eigennutzung gilt es nicht, dort steht der Strom immer in der Abrechnung (wie bei der Wallbox). Die Tabelle steht unter **Wohnungsstatus**. Der Haushaltsstrom ist keine Betriebskostenart, deshalb ein eigenes Flag statt des Umlagefähig-Flags einer Kostenposition.
 
 **Wallbox weiterberechnen**:
 Ein haus-weites Ja/Nein-Flag in den Stammdaten (Startwert Ja, auch für bestehende Datenbanken), ob der Wallbox-Anteil einer vermieteten Wohnung in deren Jahresabrechnung steht. Unabhängig von "Stromverbrauch weiterberechnen" (Haushaltsstrom). Bei Eigennutzung gilt das Flag nicht, dort steht die Wallbox immer in der Abrechnung. Die Tabelle steht unter **Wohnungsstatus**.
@@ -146,7 +146,7 @@ Ein Grund, warum für ein Jahr und eine Wohnung noch keine Jahresabrechnung ents
 _Avoid_: Fehler, Warnung
 
 **Jahresabrechnung**:
-Die Betriebskostenabrechnung einer Wohnung für einen Abrechnungszeitraum, live aus den vorhandenen Daten berechnet und nichts festgeschrieben. Sie zeigt nur umlagefähige Kostenpositionen, Heizung/Warmwasser und Wasser/Abwasser (Verbrauch) sowie, wenn das Stammdaten-Flag es erlaubt, den Stromverbrauch von Wohnung 2 als eigenen Block. Je Position steht der Anteil als Summe der je Monat auf den Cent gerundeten Monatsanteile, wie im Dashboard (daher sind wenige Cent Abweichung zu "Gesamtkosten mal Prozentsatz" möglich). Wechselt die Berechnungslogik einer Position im Zeitraum, gibt es je zusammenhängendem Zeitraum gleicher Logik eine Zeile. Eine Position, für die die abgerechnete Wohnung nichts zahlt (z. B. voll der anderen Wohnung zugerechnet), erscheint nicht.
+Die Betriebskostenabrechnung einer Wohnung für einen Abrechnungszeitraum, live aus den vorhandenen Daten berechnet und nichts festgeschrieben. Sie zeigt nur umlagefähige Kostenpositionen, Heizung/Warmwasser und Wasser/Abwasser (Verbrauch) sowie, wenn es die Tabelle unter **Wohnungsstatus** erlaubt, den Stromverbrauch der Wohnung als eigenen Block. Je Position steht der Anteil als Summe der je Monat auf den Cent gerundeten Monatsanteile, wie im Dashboard (daher sind wenige Cent Abweichung zu "Gesamtkosten mal Prozentsatz" möglich). Wechselt die Berechnungslogik einer Position im Zeitraum, gibt es je zusammenhängendem Zeitraum gleicher Logik eine Zeile. Eine Position, für die die abgerechnete Wohnung nichts zahlt (z. B. voll der anderen Wohnung zugerechnet), erscheint nicht.
 
 **Übertrag Vorjahre**:
 Der Saldo (Nebenkostenabschlag minus Kosten nach Abrechnungs-Logik) aller Monate vom Startmonat bis zum Monat vor dem Zeitraum der Jahresabrechnung, Anfangswert des kumulierten Saldos der Monatstabelle. Startmonat ist der spätere von "Mieter seit" (nur bei Vermietung) und dem Monat der ersten Ablesung. Hat ein Monat dieses Bereichs einen Mangel, ist er nicht berechenbar und entfällt mit Hinweis. Nicht der Dashboard-Saldo: Der zählt auch nicht umlagefähige Positionen. Im Code `abrechnung.Berechne` (`internal/abrechnung/berechnung.go`): Übertrag und Jahresabrechnung falten ihre Monate gleich (`calc.Monatswerte`) und summieren mit `calc.Verlauf`, der Übertrag ist dessen Startwert.
@@ -156,7 +156,7 @@ _Avoid_: Vortrag, Saldovortrag
 Ein nummerierter Teil des Anhangs der Jahresabrechnung (1 Monatsverlauf und Saldo bis 7 Zählerstände), aufgelistet auf Seite 1 und im Druck nicht umbrechend. Anlage 7 steht allein im Querformat auf der letzten Seite.
 
 **Jahressaldo**:
-Vorauszahlungen (Nebenkostenabschläge des Abrechnungszeitraums, ein fehlender zählt als 0) minus die Betriebskosten der Jahresabrechnung minus den weiterberechneten Strom minus die Wallbox plus die PV-Gutschrift, jeweils nur, wenn der Posten laut Tabelle unter **Wohnungsstatus** in der Abrechnung steht. Der Übertrag Vorjahre zählt dieselben Posten. Positiv Guthaben, negativ Nachzahlung, null Ausgeglichen. Nicht der fortlaufend kumulierte Saldo des Dashboards, aber bei lückenlosen Daten und lauter umlagefähigen Positionen gleich dessen Änderung über das Jahr.
+Vorauszahlungen (Nebenkostenabschläge des Abrechnungszeitraums, ein fehlender zählt als 0) minus die Betriebskosten der Jahresabrechnung minus den Strom der Wohnung minus die Wallbox plus die PV-Gutschrift, jeweils nur, wenn der Posten laut Tabelle unter **Wohnungsstatus** in der Abrechnung steht. Der Übertrag Vorjahre zählt dieselben Posten. Positiv Guthaben, negativ Nachzahlung, null Ausgeglichen. Nicht der fortlaufend kumulierte Saldo des Dashboards, aber bei lückenlosen Daten und lauter umlagefähigen Positionen gleich dessen Änderung über das Jahr.
 _Avoid_: Jahresergebnis
 
 **Guthaben / Nachzahlung**:

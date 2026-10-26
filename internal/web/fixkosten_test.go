@@ -113,7 +113,7 @@ func TestStammdaten_FlagsAnzeigenUndSpeichern(t *testing.T) {
 		t.Fatalf("GET status = %d, want %d", w.Code, http.StatusOK)
 	}
 	body := w.Body.String()
-	for _, want := range []string{"Streaming-Dienste", "Grundgebühr Strom", "Stromverbrauch Wohnung 2 weiterberechnen", `name="umlagefaehig_10" value="1" checked`} {
+	for _, want := range []string{"Streaming-Dienste", "Grundgebühr Strom", "Stromverbrauch weiterberechnen", `name="umlagefaehig_10" value="1" checked`} {
 		if !strings.Contains(body, want) {
 			t.Errorf("GET /stammdaten body does not contain %q", want)
 		}
