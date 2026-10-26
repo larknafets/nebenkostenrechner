@@ -466,6 +466,18 @@ func handleFixkostenListe(a auth) http.HandlerFunc {
 	}
 }
 
+// fixkostenDetailApartment is one apartment row of the detail view's top
+// table. Miete is shown only for Status Vermietung (an empty cell otherwise);
+// MieteErfasst is false for entries from before the Miete existed.
+type fixkostenDetailApartment struct {
+	Name         string
+	Personen     float64
+	Abschlag     float64
+	Vermietet    bool
+	MieteErfasst bool
+	Miete        float64
+}
+
 // fixkostenDetailPosition is one cost position's row on the detail view.
 type fixkostenDetailPosition struct {
 	Label      string
@@ -517,13 +529,25 @@ func handleFixkostenDetail(a auth) http.HandlerFunc {
 			})
 		}
 
+		wohnungen := make([]fixkostenDetailApartment, 0, len(apartments))
+		for _, ap := range apartments {
+			w := fixkostenDetailApartment{
+				Name:      ap.Name,
+				Personen:  eingabe.Personen[ap.ID],
+				Abschlag:  eingabe.Abschlag[ap.ID],
+				Vermietet: ap.Status == store.StatusVermietet,
+			}
+			w.Miete, w.MieteErfasst = eingabe.Miete[ap.ID]
+			wohnungen = append(wohnungen, w)
+		}
+
 		data := struct {
 			navData
 			Aktuell     string
 			Eingabe     *store.FixkostenEingabeDetails
 			MonatLabel  string
 			AllEingaben []fixkostenListItem
-			Apartments  []store.Apartment
+			Wohnungen   []fixkostenDetailApartment
 			Positionen  []fixkostenDetailPosition
 			KostenW1    float64
 			KostenW2    float64
@@ -533,7 +557,7 @@ func handleFixkostenDetail(a auth) http.HandlerFunc {
 			Eingabe:     eingabe,
 			MonatLabel:  store.MonatLabel(eingabe.Monat),
 			AllEingaben: allItems,
-			Apartments:  apartments,
+			Wohnungen:   wohnungen,
 			Positionen:  positionen,
 			KostenW1:    erg.KostenW1,
 			KostenW2:    erg.KostenW2,
