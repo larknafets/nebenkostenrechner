@@ -14,10 +14,7 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 ## Rules that always apply
 
 - **Language**: German for GitHub issues, commit messages and user docs, English for code comments and `AGENTS.md`/`docs/agents/`.
-- **Writing style**: no em dashes (—) in issues, comments, commit messages and committed files. Use commas, colons or " - ".
-- **Plan mode**: make the plan extremely concise, sacrifice grammar for concision. End each plan with a list of unresolved questions, if any.
 - **PR or main**: product changes (`feat`, `fix`, `refactor`, `perf`) go through a PR, ask before opening one. Developer changes (`docs`, `chore`, `ci`, `test`, `style`, `build`) go straight to `main`, no PR, no release. A release only when the user asks.
-- **Push**: each push is its own call, no `&&`, no pipe. Only the forms in `docs/agents/agents.md` work, the user runs the rest with `! <command>`.
 - **Changelog**: a `feat` or `fix`, or anything an operator must know when updating, adds one German line to `.changelog/unreleased.md` in the same commit (never as a separate `docs` commit, so a revert takes the line with it). Only the release itself touches `CHANGELOG.md`.
 - **Checks**: run `scripts/check` before every commit. The pre-push hook (`git config core.hooksPath .githooks`) runs it too.
 
