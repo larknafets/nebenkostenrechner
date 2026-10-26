@@ -119,25 +119,17 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			}
 			return
 		}
-		apartments, periodenKosten, jahr := dd.Apartments, dd.PeriodenKosten, dd.Jahr
+		jahr := dd.Jahr
 
-		// Not logged in: only apartment 2 goes into the template data
-		// object at all (Ticket #112) - purely server-side hiding in the
-		// template would still leave apartment 1's data in the HTML
-		// source (finding from the login overlay prototype, Issue #113).
-		if !nav.IsLoggedIn {
-			for _, a := range apartments {
-				if a.ID == 2 {
-					apartments = []store.Apartment{a}
-					break
-				}
-			}
+		b := betrachterAnonym
+		if nav.IsLoggedIn {
+			b = betrachterAngemeldet
 		}
 
 		// The Miete is read only for a logged-in user (#278), it is no part
 		// of dashboardData, which the widgets share.
 		var mieteEingaben []*store.FixkostenEingabeDetails
-		if nav.IsLoggedIn {
+		if b == betrachterAngemeldet {
 			mieteEingaben, err = store.AllFixkostenEingabenDetails(dbFromContext(r.Context()))
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -145,36 +137,15 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			}
 		}
 
-		var cards []dashboardJahresCard
-		var verlaufSpalten []dashboardVerlaufSpalte
-		for _, a := range apartments {
-			card, verlauf := buildEntityView(dd, a.ID)
-			// Mieteinnahmen (#278): only for a rented apartment and a
-			// logged-in user, so the rent stays out of the template data
-			// otherwise.
-			if nav.IsLoggedIn && store.NewWohnungsregeln(a, store.Haus{}).Mieteinnahmen() {
-				summe := mieteinnahmen(a.ID, jahr, mieteEingaben)
-				card.Mieteinnahmen = &summe
-			}
-			cards = append(cards, card)
-			verlaufSpalten = append(verlaufSpalten, verlauf)
-		}
-
-		// Wallboxen/PV-Anlage (wallboxes/PV system, Ticket #67) - whole-
-		// house, purely informative entities alongside the apartment tabs,
-		// analogous to the prototype
-		// (docs/prototypes/fixkosten-prototype.html): own yearly total +
-		// monthly history, no fixed-costs share, no apartment allocation.
-		// Not logged in: stay completely excluded, like apartment 1 above
-		// - the same "only apartment 2 visible" rule applies to the whole
-		// house.
+		// What the viewer may see is decided in one place (#293).
+		view := sichtbareAnsicht(b, dd, mieteEingaben)
 		var wallboxCard, pvCard dashboardSimpleCard
 		var wallboxVerlauf, pvVerlauf dashboardSimpleSpalte
-		if nav.IsLoggedIn {
-			wallboxCard = buildSimpleJahresCard(wallboxSeries, jahr, periodenKosten)
-			wallboxVerlauf = buildSimpleVerlauf(wallboxSeries, periodenKosten)
-			pvCard = buildSimpleJahresCard(pvSeries, jahr, periodenKosten)
-			pvVerlauf = buildSimpleVerlauf(pvSeries, periodenKosten)
+		if view.Wallbox != nil {
+			wallboxCard, wallboxVerlauf = view.Wallbox.Card, view.Wallbox.Verlauf
+		}
+		if view.PV != nil {
+			pvCard, pvVerlauf = view.PV.Card, view.PV.Verlauf
 		}
 
 		data := struct {
@@ -199,8 +170,8 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			HasAnyData:         true,
 			AnzeigeJahr:        jahr,
 			AnzeigeJahrLaufend: jahr == time.Now().Year(),
-			Cards:              cards,
-			VerlaufSpalten:     verlaufSpalten,
+			Cards:              view.Cards,
+			VerlaufSpalten:     view.VerlaufSpalten,
 			WallboxCard:        wallboxCard,
 			WallboxVerlauf:     wallboxVerlauf,
 			PVCard:             pvCard,

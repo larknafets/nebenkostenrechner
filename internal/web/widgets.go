@@ -52,18 +52,23 @@ type widgetView struct {
 	SimpleVerlauf *dashboardSimpleSpalte
 }
 
-// resolveWidgetView builds both the yearly-totals card and the Verlauf for
-// whichever entity matched (apartmentID xor simple) - shared by all 3
-// widget handlers instead of each hand-writing the same simple/apartment
-// branch.
+// resolveWidgetView picks the entity (apartmentID xor simple) out of the
+// Sichtbarkeit view for the widget betrachter - shared by all 3 widget
+// handlers instead of each hand-writing the same simple/apartment branch.
 func resolveWidgetView(dd dashboardData, apartmentID int64, simple *simpleSeries) widgetView {
+	v := sichtbareAnsicht(betrachterWidget, dd, nil)
 	if simple != nil {
-		c := buildSimpleJahresCard(*simple, dd.Jahr, dd.PeriodenKosten)
-		v := buildSimpleVerlauf(*simple, dd.PeriodenKosten)
-		return widgetView{SimpleCard: &c, SimpleVerlauf: &v}
+		s := v.PV
+		if simple == &wallboxSeries {
+			s = v.Wallbox
+		}
+		return widgetView{SimpleCard: &s.Card, SimpleVerlauf: &s.Verlauf}
 	}
-	c, v := buildEntityView(dd, apartmentID)
-	return widgetView{Card: &c, Verlauf: &v}
+	w, ok := v.Wohnung(apartmentID)
+	if !ok {
+		return widgetView{}
+	}
+	return widgetView{Card: &w.Card, Verlauf: &w.Verlauf}
 }
 
 // handleWidgetJahressumme serves the ingress-free HA widget route (Issue
