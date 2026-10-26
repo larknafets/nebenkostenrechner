@@ -20,6 +20,9 @@ type dashboardData struct {
 	PeriodenKosten []periodKosten
 	FixkostenListe []fixkostenKosten
 	Jahr           int
+	// WallboxWeiterberechnen is the house flag of the same name; with the
+	// Wohnungsstatus it decides whether a zero Wallbox line is shown.
+	WallboxWeiterberechnen bool
 }
 
 // loadDashboardData runs the shared, DB-heavy first half of both
@@ -71,11 +74,12 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 	fixkostenListe := alleFixkostenKosten(calc.FixkostenreiheAus(ds))
 
 	return dashboardData{
-		HasAnyData:     true,
-		Apartments:     apartments,
-		PeriodenKosten: periodenKosten,
-		FixkostenListe: fixkostenListe,
-		Jahr:           anzeigeJahr(allPeriods, fixkostenEingaben),
+		HasAnyData:             true,
+		Apartments:             apartments,
+		PeriodenKosten:         periodenKosten,
+		FixkostenListe:         fixkostenListe,
+		Jahr:                   anzeigeJahr(allPeriods, fixkostenEingaben),
+		WallboxWeiterberechnen: ds.Haus.WallboxWeiterberechnen,
 	}, nil
 }
 

@@ -2,6 +2,7 @@ package web
 
 import (
 	"math"
+	"slices"
 	"sort"
 	"time"
 
@@ -533,6 +534,12 @@ func buildEntityView(dd dashboardData, apartmentID int64) (dashboardJahresCard, 
 	a := findApartment(dd.Apartments, apartmentID)
 	verlauf := buildDashboardVerlauf(a.ID, a.Name, dd.PeriodenKosten, dd.FixkostenListe)
 	card := buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, dd.Jahr, dd.PeriodenKosten, dd.FixkostenListe)
+	// The Wohnungsstatus steers the display, too (#276): a rented apartment
+	// whose Wallbox is not passed on and costs nothing shows no Wallbox line
+	// and no bar segment. Totals and Saldo stay untouched (the segment is 0).
+	if a.Status == store.StatusVermietet && !dd.WallboxWeiterberechnen && card.WallboxEUR == 0 {
+		card.Segmente = slices.DeleteFunc(card.Segmente, func(s dashboardSegment) bool { return s.Farbe == "wallbox" })
+	}
 	card.Saldo = verlauf.LatestSaldo
 	return card, verlauf
 }

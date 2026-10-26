@@ -41,7 +41,7 @@
   </div>
   <div class="muted stat-kategorien">
     {{range .Card.Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{deEUR .Kosten}}&nbsp;€</span>{{end}}
-    {{if ne .Card.PVGutschriftEUR 0.0}}<span class="v-pv" title="PV-Gutschrift">{{kategorieIcon "PV-Gutschrift"}}&minus;{{deEUR .Card.PVGutschriftEUR}}&nbsp;€</span>{{end}}
+    {{if eq .Card.ApartmentID 1}}<span class="v-pv" title="PV-Gutschrift">{{kategorieIcon "PV-Gutschrift"}}{{if ne .Card.PVGutschriftEUR 0.0}}&minus;{{end}}{{deEUR .Card.PVGutschriftEUR}}&nbsp;€</span>{{end}}
   </div>
   {{with .Card.Saldo}}{{template "abschlag-value" .}}{{end}}
 </div>

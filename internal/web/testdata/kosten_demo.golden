@@ -14452,6 +14452,7 @@ Dashboard:
         1: 2.00
         2: 2.00
   Jahr: 2026
+  WallboxWeiterberechnen: true
 Fixkosten-Liste: [39]
   [0]:
     Monat: "2026-10-01"

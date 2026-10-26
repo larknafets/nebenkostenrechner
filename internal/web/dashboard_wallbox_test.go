@@ -233,7 +233,7 @@ func TestDashboardHTML_WallboxUndPVGutschrift(t *testing.T) {
 	if n := strings.Count(body, `title="Wallbox"`); n < 2 {
 		t.Errorf("Kategorie Wallbox %d mal in der Jahreskarte, want mindestens 2 (Wohnung 1 und 2)", n)
 	}
-	if !strings.Contains(body, `title="PV-Gutschrift"`) || !strings.Contains(body, "4,20") {
+	if !strings.Contains(body, `title="PV-Gutschrift"`) || !strings.Contains(body, "&minus;4,20") {
 		t.Error("Jahreskarte Wohnung 1 ohne Zeile PV-Gutschrift 4,20")
 	}
 	// The house-wide cards stay as they are.
@@ -244,11 +244,15 @@ func TestDashboardHTML_WallboxUndPVGutschrift(t *testing.T) {
 	}
 }
 
-func TestDashboardHTML_OhneSchalterKeineGutschriftZeile(t *testing.T) {
+func TestDashboardHTML_OhneSchalterGutschriftNurMitNull(t *testing.T) {
 	db := openTestDB(t)
 	wallboxPVAblesungen(t, db, false)
-	if body := dashboardHTML(t, db); strings.Contains(body, `title="PV-Gutschrift"`) {
-		t.Error("Zeile PV-Gutschrift ohne Schalter")
+	body := dashboardHTML(t, db)
+	if !strings.Contains(body, `title="PV-Gutschrift"`) {
+		t.Error("Zeile PV-Gutschrift fehlt, sie steht auch mit 0")
+	}
+	if strings.Contains(body, "&minus;4,20") {
+		t.Error("Gutschrift 4,20 ohne Schalter")
 	}
 }
 
