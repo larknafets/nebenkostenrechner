@@ -17,8 +17,9 @@ import (
 // migrationen: a database below it is saved before the steps run (see
 // sichereVorMigration). The steps themselves do not look at it, each one is
 // idempotent and checks the schema itself, so a database in an unknown state
-// is migrated the same way as before.
-const schemaVersion = 1
+// is migrated the same way as before. Version 2: table mieten (#277), created
+// by schema.sql, so there is no step in migrationen for it.
+const schemaVersion = 2
 
 // sicherungenBehalten is how many saves made before a migration are kept.
 const sicherungenBehalten = 3

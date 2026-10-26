@@ -308,7 +308,7 @@ func fixkostenForm(monat string) url.Values {
 	v := url.Values{
 		"monat":      {monat},
 		"personen_1": {"2"}, "personen_2": {"1"},
-		"abschlag_1": {"0"}, "abschlag_2": {"100"},
+		"abschlag_1": {"0"}, "abschlag_2": {"100"}, "miete_2": {"750"},
 	}
 	for _, kd := range store.KostenpositionDefaults {
 		id := strconv.FormatInt(kd.ID, 10)

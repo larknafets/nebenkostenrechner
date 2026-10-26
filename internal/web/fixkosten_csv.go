@@ -15,16 +15,46 @@ import (
 // (Issue #132) and import (Issue #133) - monat, then Logik/Typ/Wert per
 // Kostenposition (in store.KostenpositionDefaults' fixed order, not the display order, since
 // Logik/Typ are editable per Eingabe and can't be omitted like a period's
-// static meter keys), then Personen/Abschlag per apartment (fixed ids 1/2,
-// see store's seed()).
+// static meter keys), then Personen/Abschlag/Miete per apartment (fixed ids
+// 1/2, see store's seed()). The export always has all columns, an empty cell
+// means "not recorded" (#277).
 var fixkostenCsvHeader = buildFixkostenCsvHeader()
+
+// fixkostenCsvMieteSpalten are the columns an import may lack: files exported
+// before the Miete existed stay importable.
+var fixkostenCsvMieteSpalten = []string{"miete_1", "miete_2"}
 
 func buildFixkostenCsvHeader() []string {
 	header := []string{"monat"}
 	for _, kd := range store.KostenpositionDefaults {
 		header = append(header, kd.Key+"_logik", kd.Key+"_typ", kd.Key+"_wert")
 	}
-	return append(header, "personen_1", "personen_2", "abschlag_1", "abschlag_2")
+	header = append(header, "personen_1", "personen_2", "abschlag_1", "abschlag_2")
+	return append(header, fixkostenCsvMieteSpalten...)
+}
+
+// fixkostenCsvPflichtSpalten is the header an import requires: everything
+// the export writes except the optional Miete columns.
+func fixkostenCsvPflichtSpalten() []string {
+	return fixkostenCsvHeader[:len(fixkostenCsvHeader)-len(fixkostenCsvMieteSpalten)]
+}
+
+// formatErfasst renders a recorded value, "" for a value that is not recorded.
+func formatErfasst(m map[int64]float64, id int64) string {
+	v, ok := m[id]
+	if !ok {
+		return ""
+	}
+	return formatDecimalDE(v)
+}
+
+// parseErfasst reads an optional cell: empty means "not recorded" (ok false).
+func parseErfasst(cell string) (v float64, ok bool, err error) {
+	if strings.TrimSpace(cell) == "" {
+		return 0, false, nil
+	}
+	v, err = parseDecimalDE(cell)
+	return v, err == nil, err
 }
 
 // handleExportFixkostenCSV streams every Fixkosten-Eingabe as CSV (Issue #132).
@@ -49,8 +79,10 @@ func formatFixkostenCSVRow(f *store.FixkostenEingabeDetails) []string {
 	row = append(row,
 		formatDecimalDE(f.Personen[1]),
 		formatDecimalDE(f.Personen[2]),
-		formatDecimalDE(f.Abschlag[1]),
-		formatDecimalDE(f.Abschlag[2]),
+		formatErfasst(f.Abschlag, 1),
+		formatErfasst(f.Abschlag, 2),
+		formatErfasst(f.Miete, 1),
+		formatErfasst(f.Miete, 2),
 	)
 	return row
 }
@@ -66,7 +98,7 @@ func handleImportFixkostenCSV() http.HandlerFunc {
 		db := dbFromContext(r.Context())
 
 		cfg := ImportConfig[store.FixkostenInput]{
-			Header: fixkostenCsvHeader,
+			Header: fixkostenCsvPflichtSpalten(),
 			CheckExisting: func(db *sql.DB) (bool, error) {
 				existing, err := store.AllFixkostenEingaben(db)
 				return len(existing) > 0, err
@@ -110,7 +142,14 @@ func validateFixkostenMonateEindeutig(rows []store.FixkostenInput) error {
 // parseImportFixkostenRow validates one CSV record (semicolon-separated,
 // comma-decimal) into a FixkostenInput.
 func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (store.FixkostenInput, error) {
-	cell := func(col string) string { return record[colIdx[col]] }
+	// A column an old file lacks (the Miete columns) reads as an empty cell.
+	cell := func(col string) string {
+		i, ok := colIdx[col]
+		if !ok {
+			return ""
+		}
+		return record[i]
+	}
 
 	monat := strings.TrimSpace(cell("monat"))
 	if _, err := time.Parse("2006-01-02", monat); err != nil {
@@ -139,6 +178,7 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 
 	personen := make(map[int64]float64, 2)
 	abschlag := make(map[int64]float64, 2)
+	miete := make(map[int64]float64, 2)
 	for _, id := range [2]int64{1, 2} {
 		personenCol := fmt.Sprintf("personen_%d", id)
 		p, err := parseImportPersonenzahl(cell(personenCol), line, id)
@@ -148,11 +188,23 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 		personen[id] = p
 
 		abschlagCol := fmt.Sprintf("abschlag_%d", id)
-		a, err := parseDecimalDE(cell(abschlagCol))
+		// Taken regardless of the apartment's status, empty = not recorded.
+		a, ok, err := parseErfasst(cell(abschlagCol))
 		if err != nil {
 			return store.FixkostenInput{}, fmt.Errorf("Zeile %d: ungültiger Abschlag für Wohnung %d: %q", line, id, cell(abschlagCol))
 		}
-		abschlag[id] = a
+		if ok {
+			abschlag[id] = a
+		}
+
+		mieteCol := fmt.Sprintf("miete_%d", id)
+		m, ok, err := parseErfasst(cell(mieteCol))
+		if err != nil {
+			return store.FixkostenInput{}, fmt.Errorf("Zeile %d: ungültige Miete für Wohnung %d: %q", line, id, cell(mieteCol))
+		}
+		if ok {
+			miete[id] = m
+		}
 	}
 
 	return store.FixkostenInput{
@@ -160,5 +212,6 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 		Personen: personen,
 		Werte:    werte,
 		Abschlag: abschlag,
+		Miete:    miete,
 	}, nil
 }

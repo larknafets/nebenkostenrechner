@@ -70,8 +70,39 @@ type fixkostenFormData struct {
 	Monat            string // "YYYY-MM", <input type="month"> value
 	Apartments       []store.Apartment
 	PreviousPersonen map[int64]float64
-	PreviousAbschlag map[int64]float64
+	Vermietet        []fixkostenMieteRow // Abschlag and Miete fields, one per apartment with Status Vermietung only
 	Positionen       []fixkostenPositionRow
+}
+
+// fixkostenMieteRow is the Abschlag and Miete input pair of one rented
+// apartment. The values are ready for value=, "" means nothing to prefill.
+type fixkostenMieteRow struct {
+	ID              int64
+	Name            string
+	Abschlag, Miete string
+}
+
+// buildFixkostenMieteRows makes one row per apartment with Status Vermietung
+// (an owner-occupied apartment gets no field). abschlag and miete are the
+// stored values of the Eingabe to prefill from. A Miete that was never
+// recorded stays empty, so the required field asks for it. The Abschlag keeps
+// its older prefill: 0 when the Eingabe has no value for the apartment.
+func buildFixkostenMieteRows(apartments []store.Apartment, abschlag, miete map[int64]float64, hatVorlage bool) []fixkostenMieteRow {
+	var rows []fixkostenMieteRow
+	for _, a := range apartments {
+		if a.Status != store.StatusVermietet {
+			continue
+		}
+		row := fixkostenMieteRow{ID: a.ID, Name: a.Name}
+		if hatVorlage {
+			row.Abschlag = inputNumber(abschlag[a.ID])
+		}
+		if v, ok := miete[a.ID]; ok {
+			row.Miete = inputNumber(v)
+		}
+		rows = append(rows, row)
+	}
+	return rows
 }
 
 // buildFixkostenPositionRows assembles one row per cost position, using
@@ -137,8 +168,10 @@ func handleFixkostenForm(a auth) http.HandlerFunc {
 		var werte map[int64]store.FixkostenPositionWert
 		if latest != nil {
 			data.PreviousPersonen = latest.Personen
-			data.PreviousAbschlag = latest.Abschlag
+			data.Vermietet = buildFixkostenMieteRows(apartments, latest.Abschlag, latest.Miete, true)
 			werte = latest.Werte
+		} else {
+			data.Vermietet = buildFixkostenMieteRows(apartments, nil, nil, false)
 		}
 		data.Positionen = buildFixkostenPositionRows(kostenpositionen, werte)
 
@@ -191,7 +224,7 @@ func handleFixkostenEditForm(a auth) http.HandlerFunc {
 			Monat:            monatForInput(target.Monat),
 			Apartments:       apartments,
 			PreviousPersonen: target.Personen,
-			PreviousAbschlag: target.Abschlag,
+			Vermietet:        buildFixkostenMieteRows(apartments, target.Abschlag, target.Miete, true),
 			Positionen:       positionen,
 		}
 
@@ -240,21 +273,35 @@ func parseFixkostenInput(r *http.Request, apartments []store.Apartment) (store.F
 
 	personen := make(map[int64]float64, len(apartments))
 	abschlag := make(map[int64]float64, len(apartments))
+	miete := make(map[int64]float64, len(apartments))
 	for _, a := range apartments {
-		p, err := parsePersonenzahl(r.FormValue("personen_" + strconv.FormatInt(a.ID, 10)))
+		idStr := strconv.FormatInt(a.ID, 10)
+		p, err := parsePersonenzahl(r.FormValue("personen_" + idStr))
 		if err != nil {
 			return store.FixkostenInput{}, fmt.Errorf("ungültige Personenzahl für %s: %w", a.Name, err)
 		}
 		personen[a.ID] = p
 
-		v, err := strconv.ParseFloat(r.FormValue("abschlag_"+strconv.FormatInt(a.ID, 10)), 64)
+		// Only a rented apartment has the fields. For an owner-occupied one
+		// nothing is read: an Abschlag stored earlier stays as it is (the
+		// store leaves an apartment without an entry alone on update).
+		if a.Status != store.StatusVermietet {
+			continue
+		}
+		v, err := strconv.ParseFloat(r.FormValue("abschlag_"+idStr), 64)
 		if err != nil {
 			return store.FixkostenInput{}, fmt.Errorf("ungültiger Abschlag für %s", a.Name)
 		}
 		abschlag[a.ID] = v
+
+		m, err := strconv.ParseFloat(r.FormValue("miete_"+idStr), 64)
+		if err != nil {
+			return store.FixkostenInput{}, fmt.Errorf("ungültige Miete für %s", a.Name)
+		}
+		miete[a.ID] = m
 	}
 
-	return store.FixkostenInput{Monat: monat, Personen: personen, Werte: werte, Abschlag: abschlag}, nil
+	return store.FixkostenInput{Monat: monat, Personen: personen, Werte: werte, Abschlag: abschlag, Miete: miete}, nil
 }
 
 func handleCreateFixkosten() http.HandlerFunc {

@@ -106,7 +106,7 @@ Ein haus-weites Ja/Nein-Flag in den Stammdaten, ob der Stromverbrauch von Wohnun
 Ein haus-weites Ja/Nein-Flag in den Stammdaten (Startwert Ja, auch für bestehende Datenbanken), ob der Wallbox-Anteil einer vermieteten Wohnung in deren Jahresabrechnung steht. Unabhängig von "Stromverbrauch weiterberechnen" (Haushaltsstrom). Bei Eigennutzung gilt das Flag nicht, dort steht die Wallbox immer in der Abrechnung. Die Tabelle steht unter **Wohnungsstatus**.
 
 **Fixkosten-Eingabe**:
-Eine monatliche Erfassung, analog zur Ablesung, aber **genau eine je Monat** (beim Anlegen, beim Ändern des Monats und beim CSV-Import erzwungen, per UNIQUE-Index abgesichert; anders als bei Ablesungen gibt es keine untermonatigen Zusatzeingaben): Personenzahl je Wohnung (Dezimalzahl mit höchstens 2 Nachkommastellen, 0 erlaubt; eigenständig, nicht die der Ablesung) und für jede Kostenposition ihre Berechnungslogik, ihr Typ und ihr Wert. Anders als die Ablesung hängt sie nicht von einer Vorperiode ab (kein Verbrauch, keine Zählerstand-Differenz); Logik/Typ/Wert sind, wie Personen und der Nebenkostenabschlag, je Eingabe unabhängig gespeichert und von der letzten Eingabe vorbelegt, nicht jahresweise zentral gepflegt.
+Eine monatliche Erfassung, analog zur Ablesung, aber **genau eine je Monat** (beim Anlegen, beim Ändern des Monats und beim CSV-Import erzwungen, per UNIQUE-Index abgesichert; anders als bei Ablesungen gibt es keine untermonatigen Zusatzeingaben): Personenzahl je Wohnung (Dezimalzahl mit höchstens 2 Nachkommastellen, 0 erlaubt; eigenständig, nicht die der Ablesung), für Wohnungen mit Status Vermietung Nebenkostenabschlag und **Miete / Mieteinnahmen** und für jede Kostenposition ihre Berechnungslogik, ihr Typ und ihr Wert. Anders als die Ablesung hängt sie nicht von einer Vorperiode ab (kein Verbrauch, keine Zählerstand-Differenz); Logik/Typ/Wert sind, wie Personen und der Nebenkostenabschlag, je Eingabe unabhängig gespeichert und von der letzten Eingabe vorbelegt, nicht jahresweise zentral gepflegt.
 _Avoid_: Fixkosten-Eintrag, Fixkosten-Periode
 
 **Kostenposition**:
@@ -131,6 +131,10 @@ Die Grundstücksgröße je Wohnung (`apartments.flurstueck_groesse`), Grundlage 
 **Nebenkostenabschlag**:
 Die monatliche Vorauszahlung je Wohnung (Tabelle `nebenkosten_abschlaege`), an der jeweiligen Fixkosten-Eingabe erfasst wie ein monatlich-typisierter Wert, aber keine Kostenposition - deckt Fixkosten UND Verbräuche gemeinsam ab, zählt nicht in die Fixkosten-Summen und hat keine Berechnungslogik (direkter Wert je Wohnung, kein Split).
 _Avoid_: Abschlag ohne "Nebenkosten"-Präfix (zu unspezifisch), Vorauszahlung
+
+**Miete / Mieteinnahmen**:
+Die monatliche Miete je Wohnung (Tabelle `mieten`), an der Fixkosten-Eingabe erfasst wie der Nebenkostenabschlag, aber reine Einnahmen-Information: keine Kostenposition, keine Berechnungslogik, geht in keinen Saldo, Übertrag und keine Abrechnung ein. Das Formularfeld heißt "Miete", die Anzeige (Jahressumme) "Mieteinnahmen". Wie der Abschlag nur für Wohnungen mit Status Vermietung erfasst (Pflicht, 0 erlaubt, vorbelegt aus der letzten Eingabe), bei Eigennutzung gibt es kein Feld. Ein früher gespeicherter Abschlag einer inzwischen eigengenutzten Wohnung zählt weiter und bleibt beim Korrigieren unverändert. Im CSV immer `abschlag_1`, `abschlag_2`, `miete_1`, `miete_2`, eine leere Zelle heißt nicht erfasst, der Import übernimmt Werte unabhängig vom Status.
+_Avoid_: Kaltmiete, Mietzahlung
 
 **Abrechnungszeitraum**:
 Der Zeitraum einer Jahresabrechnung: das Kalenderjahr, im ersten Erfassungsjahr ab dem Datum der ersten Ablesung (dem Ausgangsstand, der selbst keinen Verbrauch liefert) bis 31.12. Fixkosten-Eingaben und Nebenkostenabschläge sind dort erst ab dem Folgemonat des Ausgangsstands nötig. Der Verbrauch jeder späteren Ablesung ist die Differenz zur vorherigen, deshalb ist er im Zeitraum immer berechenbar.
