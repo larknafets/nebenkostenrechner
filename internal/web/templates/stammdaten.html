@@ -15,14 +15,14 @@
       <div class="field"><label>Flurstücksgröße (m²)</label><input type="number" step="any" name="flurstueck_groesse_{{.ID}}" value="{{.FlurstueckGroesse}}" required {{if not $.IsLoggedIn}}disabled{{end}}></div>
       <div class="field"><label>Wohnungsstatus</label>
         <select name="status_{{.ID}}" {{if not $.IsLoggedIn}}disabled{{end}}>
-          <option value="vermietet" {{if eq .Status "vermietet"}}selected{{end}}>Vermietung</option>
-          <option value="eigennutzung" {{if eq .Status "eigennutzung"}}selected{{end}}>Eigennutzung</option>
+          <option value="vermietet" {{if .Vermietet}}selected{{end}}>Vermietung</option>
+          <option value="eigennutzung" {{if not .Vermietet}}selected{{end}}>Eigennutzung</option>
         </select>
       </div>
       {{if $.IsLoggedIn}}
       <div class="field"><label>Name des Mieters bzw. Bewohners</label><input type="text" name="mieter_name_{{.ID}}" value="{{.MieterName}}"></div>
       <div class="field"><label>Zustellanschrift</label><textarea name="mieter_anschrift_{{.ID}}" rows="3">{{.MieterAnschrift}}</textarea></div>
-      <div class="field mieter-seit" {{if ne .Status "vermietet"}}hidden{{end}}><label>Mieter seit (Einzugsmonat)</label><input type="month" name="mieter_seit_{{.ID}}" value="{{mieterSeit .MieterSeit}}"><p class="muted klein">Leer: ab Erfassungsbeginn. Der Übertrag in der Abrechnung zählt erst ab diesem Monat.</p></div>
+      <div class="field mieter-seit" {{if not .Vermietet}}hidden{{end}}><label>Mieter seit (Einzugsmonat)</label><input type="month" name="mieter_seit_{{.ID}}" value="{{mieterSeit .MieterSeit}}"><p class="muted klein">Leer: ab Erfassungsbeginn. Der Übertrag in der Abrechnung zählt erst ab diesem Monat.</p></div>
       {{end}}
     </div>
     {{end}}

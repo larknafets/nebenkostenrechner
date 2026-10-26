@@ -415,7 +415,7 @@ type posten struct {
 // "Wallbox weiterberechnen", never the PV-Gutschrift. The Strom flag applies
 // to Wohnung 1 and 2 alike.
 func postenFuer(apartment store.Apartment, haus store.Haus) posten {
-	vermietet := apartment.Status == store.StatusVermietet
+	vermietet := apartment.Vermietet()
 	return posten{
 		strom:        !vermietet || haus.StromWeiterberechnen,
 		wallbox:      !vermietet || haus.WallboxWeiterberechnen,
@@ -490,7 +490,7 @@ func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment
 		return Uebertrag{} // the Prüfung already reported it
 	}
 	start := beginn
-	if apartment.Status == store.StatusVermietet && apartment.MieterSeit != "" {
+	if apartment.Vermietet() && apartment.MieterSeit != "" {
 		seit, err := time.Parse("2006-01-02", apartment.MieterSeit)
 		if err == nil {
 			if seit.After(z.ErsterMonat) {
