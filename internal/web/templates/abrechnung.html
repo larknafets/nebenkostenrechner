@@ -124,7 +124,7 @@
     </div>
     <div class="btn-row">
       {{range .Apartments}}
-      <button type="submit" name="wohnung" value="{{.ID}}" class="{{if eq .ID $.ApartmentID}}primary{{else}}secondary{{end}}">{{.Name}} ({{if eq .Status "vermietet"}}Vermietung{{else}}Eigennutzung{{end}})</button>
+      <button type="submit" name="wohnung" value="{{.ID}}" class="{{if eq .ID $.ApartmentID}}primary{{else}}secondary{{end}}">{{.Name}} ({{if .Vermietet}}Vermietung{{else}}Eigennutzung{{end}})</button>
       {{end}}
       <input type="hidden" name="wohnung" value="{{.ApartmentID}}">
       <button type="submit" class="secondary">Anzeigen</button>

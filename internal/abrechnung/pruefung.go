@@ -361,7 +361,7 @@ func pruefeStammdaten(d Daten, apartment store.Apartment) []Mangel {
 			add(fmt.Sprintf("Wohnungsgröße von %s fehlt (muss größer als 0 sein)", a.Name))
 		}
 	}
-	if apartment.Status == store.StatusVermietet {
+	if apartment.Vermietet() {
 		if leer(apartment.MieterName) {
 			add(fmt.Sprintf("Name des Mieters von %s fehlt", apartment.Name))
 		}
