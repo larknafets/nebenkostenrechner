@@ -14,7 +14,8 @@ Subagents isolated in a git worktree must call `/usr/bin/git` instead of plain `
 
 - A worktree agent can start on another branch than the integration branch. Put it on the integration branch with `/usr/bin/git checkout -B <ticket-branch> <integration-branch>`. `reset --hard` is blocked by the guard hook.
 - A heredoc is refused only when its body contains text matching a blocked git pattern (see Guard hook). Worktree agents still write files with the Write or Edit tool, not with shell redirects or `python3` scripts: the tools show the diff and keep the guard out of the way.
-- After the epic is merged, remove what is left: `git worktree remove <path>`, then `git branch -D` for the `ticket/*` and `worktree-agent-*` branches and any backup branch.
+- Merge a finished ticket branch into the integration branch with `scripts/merge-ticket <branch>` (merge, then `scripts/check`, stops at a conflict or a red check).
+- After the epic is merged, run `scripts/worktree-cleanup`: it removes the agent worktrees under `.claude/worktrees` and the `ticket/*` and `worktree-agent-*` branches that are merged into the current branch, and lists what it kept. A backup branch is removed by hand.
 
 ## Implementer brief
 

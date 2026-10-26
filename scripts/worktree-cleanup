@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Removes the agent worktrees under .claude/worktrees and the ticket/* and
+# worktree-agent-* branches, but only those whose branch is already merged into
+# the current branch. What is not merged stays and is listed, so no work is lost.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+kept=()
+while read -r path _ ref; do
+  case "$path" in
+    */.claude/worktrees/*) ;;
+    *) continue ;;
+  esac
+  branch=${ref#\[}; branch=${branch%\]}
+  if git merge-base --is-ancestor "$branch" HEAD 2>/dev/null; then
+    git worktree remove --force "$path"
+  else
+    kept+=("worktree $path ($branch)")
+  fi
+done < <(git worktree list)
+git worktree prune
+
+for branch in $(git branch --format='%(refname:short)' | grep -E '^(ticket/|worktree-agent-)' || true); do
+  if git merge-base --is-ancestor "$branch" HEAD; then
+    git branch -D "$branch" >/dev/null
+  else
+    kept+=("branch $branch")
+  fi
+done
+
+if [ "${#kept[@]}" -gt 0 ]; then
+  echo "worktree-cleanup: kept, not merged into $(git branch --show-current):"
+  printf '  %s\n' "${kept[@]}"
+else
+  echo "worktree-cleanup: nothing left"
+fi
