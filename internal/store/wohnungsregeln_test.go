@@ -36,6 +36,45 @@ func TestWohnungsregeln_AnzeigeUndErfassung(t *testing.T) {
 	}
 }
 
+// TestWohnungsregelnOhneHaus pins the questions that need no Haus flags: they
+// answer from the Wohnungsstatus alone, and the flag-dependent ones refuse to
+// answer instead of silently assuming "flag off".
+func TestWohnungsregelnOhneHaus(t *testing.T) {
+	for _, status := range []string{StatusEigennutzung, StatusVermietet} {
+		for _, id := range []int64{1, 2} {
+			vermietet := status == StatusVermietet
+			s := NewWohnungsregelnOhneHaus(Apartment{ID: id, Status: status})
+			if got := s.FixkostenAbschlagMiete(); got != vermietet {
+				t.Errorf("%s W%d: FixkostenAbschlagMiete=%v, want %v", status, id, got, vermietet)
+			}
+			if got := s.FixkostenDetailMiete(); got != vermietet {
+				t.Errorf("%s W%d: FixkostenDetailMiete=%v, want %v", status, id, got, vermietet)
+			}
+			if got := s.Mieteinnahmen(); got != vermietet {
+				t.Errorf("%s W%d: Mieteinnahmen=%v, want %v", status, id, got, vermietet)
+			}
+			if got, want := s.AbrechnungPVGutschrift(), !vermietet && id == 1; got != want {
+				t.Errorf("%s W%d: AbrechnungPVGutschrift=%v, want %v", status, id, got, want)
+			}
+
+			for name, ask := range map[string]func(){
+				"AbrechnungStrom":         func() { s.AbrechnungStrom() },
+				"AbrechnungWallbox":       func() { s.AbrechnungWallbox() },
+				"JahreskarteWallboxZeile": func() { s.JahreskarteWallboxZeile(0) },
+			} {
+				func() {
+					defer func() {
+						if recover() == nil {
+							t.Errorf("%s W%d: %s without Haus did not panic", status, id, name)
+						}
+					}()
+					ask()
+				}()
+			}
+		}
+	}
+}
+
 // TestWohnungsregeln_Abrechnung is the Wohnungsstatus table of GLOSSARY.md at
 // the seam of Wohnungsregeln: status x both flags x apartment.
 func TestWohnungsregeln_Abrechnung(t *testing.T) {

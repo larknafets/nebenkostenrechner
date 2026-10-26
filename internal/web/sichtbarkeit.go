@@ -122,7 +122,7 @@ func (v *ansicht) addWohnung(b betrachter, dd dashboardData, a store.Apartment, 
 	card, verlauf := buildEntityView(dd, a.ID)
 	// Mieteinnahmen (#278): only for a rented apartment and a logged-in
 	// user, so the rent stays out of the view otherwise.
-	if b == betrachterAngemeldet && store.NewWohnungsregeln(a, store.Haus{}).Mieteinnahmen() {
+	if b == betrachterAngemeldet && store.NewWohnungsregelnOhneHaus(a).Mieteinnahmen() {
 		summe := mieteinnahmen(a.ID, dd.Jahr, miete)
 		card.Mieteinnahmen = &summe
 	}

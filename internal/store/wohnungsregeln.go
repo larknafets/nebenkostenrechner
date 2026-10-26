@@ -7,25 +7,50 @@ package store
 type Wohnungsregeln struct {
 	apartment Apartment
 	haus      Haus
+	// hatHaus is false for rules built without a Haus: the flag-dependent
+	// questions then panic instead of answering as if every flag were off.
+	hatHaus bool
 }
 
-// NewWohnungsregeln builds the rules for one apartment.
+// NewWohnungsregeln builds the rules for one apartment with the flags of the
+// Haus. Use it whenever the caller has the Haus.
 func NewWohnungsregeln(a Apartment, h Haus) Wohnungsregeln {
-	return Wohnungsregeln{apartment: a, haus: h}
+	return Wohnungsregeln{apartment: a, haus: h, hatHaus: true}
+}
+
+// NewWohnungsregelnOhneHaus builds the rules for callers that have no Haus
+// at hand and only ask Haus-free questions (FixkostenAbschlagMiete,
+// FixkostenDetailMiete, Mieteinnahmen, AbrechnungPVGutschrift). A question
+// that depends on a Haus flag (AbrechnungStrom, AbrechnungWallbox,
+// JahreskarteWallboxZeile) panics on these rules: a programming error, not a
+// silent "flag off".
+func NewWohnungsregelnOhneHaus(a Apartment) Wohnungsregeln {
+	return Wohnungsregeln{apartment: a}
+}
+
+// flags returns the Haus flags and panics if the rules were built without
+// a Haus.
+func (s Wohnungsregeln) flags() Haus {
+	if !s.hatHaus {
+		panic("store: Wohnungsregeln ohne Haus: Frage braucht die Haus-Flags")
+	}
+	return s.haus
 }
 
 // AbrechnungStrom reports whether the Haushaltsstrom of the apartment stands
 // in its Jahresabrechnung. Eigennutzung: always. Vermietung: only with the
 // flag "Stromverbrauch weiterberechnen", which applies to Wohnung 1 and 2 alike.
 func (s Wohnungsregeln) AbrechnungStrom() bool {
-	return !s.apartment.Vermietet() || s.haus.StromWeiterberechnen
+	h := s.flags()
+	return !s.apartment.Vermietet() || h.StromWeiterberechnen
 }
 
 // AbrechnungWallbox reports whether the Wallbox block stands in the
 // Jahresabrechnung. Eigennutzung: always. Vermietung: only with the flag
 // "Wallbox weiterberechnen".
 func (s Wohnungsregeln) AbrechnungWallbox() bool {
-	return !s.apartment.Vermietet() || s.haus.WallboxWeiterberechnen
+	h := s.flags()
+	return !s.apartment.Vermietet() || h.WallboxWeiterberechnen
 }
 
 // FixkostenAbschlagMiete reports whether the Fixkosten form shows and reads
@@ -51,7 +76,8 @@ func (s Wohnungsregeln) Mieteinnahmen() bool {
 // passed on ("Wallbox weiterberechnen" off) and whose amount is 0; the amount
 // stays an argument because it comes from the cost calculation.
 func (s Wohnungsregeln) JahreskarteWallboxZeile(betragEUR float64) bool {
-	return !(s.apartment.Vermietet() && !s.haus.WallboxWeiterberechnen && betragEUR == 0)
+	h := s.flags()
+	return !(s.apartment.Vermietet() && !h.WallboxWeiterberechnen && betragEUR == 0)
 }
 
 // AbrechnungPVGutschrift reports whether the PV-Gutschrift stands in the
