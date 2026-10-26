@@ -83,7 +83,7 @@ func handleWidgetJahressumme(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		dd, err := loadDashboardData(db)
+		dd, _, err := loadDashboardData(db)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -120,7 +120,7 @@ func handleWidgetVerbrauchswerte(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		dd, err := loadDashboardData(db)
+		dd, _, err := loadDashboardData(db)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -157,7 +157,7 @@ func handleWidgetUebersicht(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		dd, err := loadDashboardData(db)
+		dd, _, err := loadDashboardData(db)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

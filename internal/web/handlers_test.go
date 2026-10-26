@@ -1756,7 +1756,7 @@ func TestLoadDashboardData_ExcludesTeilstand(t *testing.T) {
 		t.Fatalf("CreatePeriod (Teilstand): %v", err)
 	}
 
-	dd, err := loadDashboardData(db)
+	dd, _, err := loadDashboardData(db)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
@@ -1785,7 +1785,7 @@ func TestLoadDashboardData_NurTeilstand_HasAnyDataFalse(t *testing.T) {
 		t.Fatalf("CreatePeriod (Teilstand): %v", err)
 	}
 
-	dd, err := loadDashboardData(db)
+	dd, _, err := loadDashboardData(db)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}

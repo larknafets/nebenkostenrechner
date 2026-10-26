@@ -149,10 +149,10 @@ type dashboardJahresCard struct {
 	Mieteinnahmen *float64
 }
 
-// mieteinnahmen sums the Miete of the apartment over every Fixkosten-Eingabe
+// mieteinnahmen sums the Miete of the apartment over every Miete projection
 // of jahr (the Abrechnungsmonat counts), rounded to the cent. Pure display
 // value, it enters no calculation.
-func mieteinnahmen(apartmentID int64, jahr int, eingaben []*store.FixkostenEingabeDetails) float64 {
+func mieteinnahmen(apartmentID int64, jahr int, eingaben []mieteMonat) float64 {
 	var summe float64
 	for _, e := range eingaben {
 		if y, ok := store.Abrechnungsmonat(e.Monat).Jahr(); ok && y == jahr {

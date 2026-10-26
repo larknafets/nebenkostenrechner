@@ -1,6 +1,9 @@
 package web
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
@@ -18,7 +21,7 @@ func TestSichtbareAnsicht_JeBetrachter(t *testing.T) {
 			{ID: 2, Name: "Wohnung 2", Status: store.StatusVermietet},
 		},
 	}
-	miete := []*store.FixkostenEingabeDetails{
+	miete := []mieteMonat{
 		{Monat: "2026-11-01", Miete: map[int64]float64{1: 300, 2: 712.34}},
 	}
 
@@ -57,5 +60,27 @@ func TestSichtbareAnsicht_JeBetrachter(t *testing.T) {
 				t.Errorf("Wallbox/PV present = %v/%v, want %v", v.Wallbox != nil, v.PV != nil, tt.wallboxPV)
 			}
 		})
+	}
+}
+
+// loadDashboardData hands the Miete over as a projection of the loaded
+// Datenstand (Abrechnungsmonat and Miete per apartment, #294), so the
+// dashboard needs no second query for it.
+func TestLoadDashboardData_LiefertMieteProjektion(t *testing.T) {
+	db := openTestDB(t)
+	row := strings.Replace(fixkostenCSVRow("2026-06-01", "100"), ";2;1;150;90;;800", ";2;1;150;;300;", 1)
+	csvText := strings.Join(fixkostenCsvHeader, ";") + "\n" + row + "\n"
+	w := httptest.NewRecorder()
+	handleImportFixkostenCSV()(w, requestWithDB(fixkostenCSVUploadRequest(t, csvText), db))
+	if w.Code != http.StatusFound {
+		t.Fatalf("import status %d (%s)", w.Code, w.Body.String())
+	}
+
+	_, miete, err := loadDashboardData(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(miete) != 1 || miete[0].Monat != "2026-06-01" || miete[0].Miete[1] != 300 {
+		t.Errorf("Miete projection = %+v, want one entry 2026-06-01 with Wohnung 1 = 300", miete)
 	}
 }

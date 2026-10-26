@@ -42,10 +42,10 @@ type ansicht struct {
 }
 
 // sichtbareAnsicht decides the visibility for b and calls the builders (kept
-// apart, ADR 0002) for what stays visible. mieteEingaben is read only for
+// apart, ADR 0002) for what stays visible. miete is read only for
 // betrachterAngemeldet (Mieteinnahmen, #278); it is ignored for the others, so
 // the caller may pass nil.
-func sichtbareAnsicht(b betrachter, dd dashboardData, mieteEingaben []*store.FixkostenEingabeDetails) ansicht {
+func sichtbareAnsicht(b betrachter, dd dashboardData, miete []mieteMonat) ansicht {
 	apartments := dd.Apartments
 	// Anonymous: only apartment 2 goes into the view at all (Ticket #112).
 	if b == betrachterAnonym {
@@ -63,7 +63,7 @@ func sichtbareAnsicht(b betrachter, dd dashboardData, mieteEingaben []*store.Fix
 		// Mieteinnahmen (#278): only for a rented apartment and a logged-in
 		// user, so the rent stays out of the view otherwise.
 		if b == betrachterAngemeldet && store.NewWohnungsregeln(a, store.Haus{}).Mieteinnahmen() {
-			summe := mieteinnahmen(a.ID, dd.Jahr, mieteEingaben)
+			summe := mieteinnahmen(a.ID, dd.Jahr, miete)
 			card.Mieteinnahmen = &summe
 		}
 		v.Cards = append(v.Cards, card)
