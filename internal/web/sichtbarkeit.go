@@ -41,42 +41,93 @@ type ansicht struct {
 	PV      *sichtbarerSimple
 }
 
+// entitaetArt is the kind of one entity of the Dashboard: an apartment or
+// one of the whole-house series.
+type entitaetArt int
+
+const (
+	// entitaetWohnung is an apartment, identified by entitaet.ApartmentID.
+	entitaetWohnung entitaetArt = iota
+	entitaetWallbox
+	entitaetPV
+)
+
+// entitaet names one of the 4 entities (Wohnung 1/2, Wallboxen, PV-Anlage).
+type entitaet struct {
+	Art         entitaetArt
+	ApartmentID int64 // only for entitaetWohnung
+}
+
+func wohnungEntitaet(id int64) entitaet {
+	return entitaet{Art: entitaetWohnung, ApartmentID: id}
+}
+
+// sichtbar is the visibility table (#293): whether b may see e at all. It is
+// the one place that table lives; both entry points below ask it.
+func (b betrachter) sichtbar(e entitaet) bool {
+	if b != betrachterAnonym {
+		return true
+	}
+	// Anonymous: only apartment 2 (Ticket #112); Wallboxen/PV-Anlage are
+	// whole-house entities, excluded like apartment 1 (Ticket #67).
+	return e.Art == entitaetWohnung && e.ApartmentID == 2
+}
+
 // sichtbareAnsicht decides the visibility for b and calls the builders (kept
 // apart, ADR 0002) for what stays visible. miete is read only for
 // betrachterAngemeldet (Mieteinnahmen, #278); it is ignored for the others, so
 // the caller may pass nil.
 func sichtbareAnsicht(b betrachter, dd dashboardData, miete []mieteMonat) ansicht {
-	apartments := dd.Apartments
-	// Anonymous: only apartment 2 goes into the view at all (Ticket #112).
-	if b == betrachterAnonym {
-		for _, a := range apartments {
-			if a.ID == 2 {
-				apartments = []store.Apartment{a}
-				break
-			}
-		}
-	}
-
 	var v ansicht
-	for _, a := range apartments {
-		card, verlauf := buildEntityView(dd, a.ID)
-		// Mieteinnahmen (#278): only for a rented apartment and a logged-in
-		// user, so the rent stays out of the view otherwise.
-		if b == betrachterAngemeldet && store.NewWohnungsregeln(a, store.Haus{}).Mieteinnahmen() {
-			summe := mieteinnahmen(a.ID, dd.Jahr, miete)
-			card.Mieteinnahmen = &summe
+	for _, a := range dd.Apartments {
+		if b.sichtbar(wohnungEntitaet(a.ID)) {
+			v.addWohnung(b, dd, a, miete)
 		}
-		v.Cards = append(v.Cards, card)
-		v.VerlaufSpalten = append(v.VerlaufSpalten, verlauf)
 	}
-
-	// Wallboxen/PV-Anlage (Ticket #67): whole-house entities, excluded for
-	// the anonymous betrachter like apartment 1.
-	if b != betrachterAnonym {
+	if b.sichtbar(entitaet{Art: entitaetWallbox}) {
 		v.Wallbox = buildSichtbarerSimple(wallboxSeries, dd)
+	}
+	if b.sichtbar(entitaet{Art: entitaetPV}) {
 		v.PV = buildSichtbarerSimple(pvSeries, dd)
 	}
 	return v
+}
+
+// sichtbareEntitaet is sichtbareAnsicht for a single entity: same visibility
+// table and same output for that entity, but only that entity is built. The
+// view stays empty if b may not see it or an apartment id is not in the data.
+func sichtbareEntitaet(b betrachter, dd dashboardData, e entitaet, miete []mieteMonat) ansicht {
+	var v ansicht
+	if !b.sichtbar(e) {
+		return v
+	}
+	switch e.Art {
+	case entitaetWohnung:
+		for _, a := range dd.Apartments {
+			if a.ID == e.ApartmentID {
+				v.addWohnung(b, dd, a, miete)
+				break
+			}
+		}
+	case entitaetWallbox:
+		v.Wallbox = buildSichtbarerSimple(wallboxSeries, dd)
+	case entitaetPV:
+		v.PV = buildSichtbarerSimple(pvSeries, dd)
+	}
+	return v
+}
+
+// addWohnung builds card and Verlauf of one visible apartment.
+func (v *ansicht) addWohnung(b betrachter, dd dashboardData, a store.Apartment, miete []mieteMonat) {
+	card, verlauf := buildEntityView(dd, a.ID)
+	// Mieteinnahmen (#278): only for a rented apartment and a logged-in
+	// user, so the rent stays out of the view otherwise.
+	if b == betrachterAngemeldet && store.NewWohnungsregeln(a, store.Haus{}).Mieteinnahmen() {
+		summe := mieteinnahmen(a.ID, dd.Jahr, miete)
+		card.Mieteinnahmen = &summe
+	}
+	v.Cards = append(v.Cards, card)
+	v.VerlaufSpalten = append(v.VerlaufSpalten, verlauf)
 }
 
 func buildSichtbarerSimple(s simpleSeries, dd dashboardData) *sichtbarerSimple {
