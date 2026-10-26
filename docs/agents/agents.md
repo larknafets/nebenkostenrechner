@@ -23,6 +23,7 @@ A prompt for an implementer subagent (one ticket, own worktree) points here inst
 - Start on the integration branch: `/usr/bin/git checkout -B ticket/<nr> <integration-branch>`. All git through `/usr/bin/git`.
 - Read the ticket with `gh issue view <nr> --json title,body,labels,comments` (see `issue-tracker.md`).
 - Write files with Write or Edit (see above).
+- Before naming a new type or module, search the spec, the map notes and the open tickets for that name: a ticket that comes later may reserve it. Say in the report which names you chose.
 - Build test-first with the `tdd` skill. A refactoring keeps the existing tests as its safety net: expectations never change, helpers and input fixtures may. Name every changed expectation in the report.
 - Commit in German as `<type>(<scope>): <Summary>`, subject at most 72 characters, no em dash, Umlaute as ä, ö, ü, ß (the commit-msg hook rejects longer subjects, em dashes and common ASCII spellings like `geaendert`). Rules: `git-commit-messages.md`.
 - Changelog line in the same commit as a `feat` or `fix` (`changelog.md`), none for a `refactor`.
