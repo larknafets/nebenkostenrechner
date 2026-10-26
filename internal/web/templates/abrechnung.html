@@ -212,12 +212,12 @@
         </tbody>
       </table>
 
-      {{if $ab.StromW2}}
-      <h3>Stromverbrauch Wohnung 2 <span class="muted">(laut Vereinbarung weiterberechnet)</span></h3>
+      {{if $ab.Strom}}
+      <h3>Stromverbrauch Wohnung {{$.ApartmentID}}{{if not .Eigennutzung}} <span class="muted">(laut Vereinbarung weiterberechnet)</span>{{end}}</h3>
       <table>
         <tbody><tr>
-          <td data-l="Verbrauch">{{de0 $ab.StromW2.VerbrauchKWh}}&nbsp;kWh</td>
-          <td class="r b" data-l="Betrag">{{deEUR $ab.StromW2.Kosten}}&nbsp;€</td>
+          <td data-l="Verbrauch">{{de0 $ab.Strom.VerbrauchKWh}}&nbsp;kWh</td>
+          <td class="r b" data-l="Betrag">{{deEUR $ab.Strom.Kosten}}&nbsp;€</td>
         </tr></tbody>
       </table>
       {{end}}
@@ -248,7 +248,7 @@
       <table>
         <tbody>
           <tr><td data-l="Betriebskosten">Betriebskosten</td><td class="r">{{deEUR $ab.Betriebskosten}}&nbsp;€</td></tr>
-          {{if $ab.StromW2}}<tr><td data-l="Strom Wohnung 2">Strom Wohnung 2</td><td class="r">{{deEUR $ab.StromW2.Kosten}}&nbsp;€</td></tr>{{end}}
+          {{if $ab.Strom}}<tr><td data-l="Strom Wohnung {{$.ApartmentID}}">Strom Wohnung {{$.ApartmentID}}</td><td class="r">{{deEUR $ab.Strom.Kosten}}&nbsp;€</td></tr>{{end}}
           {{if $ab.Wallbox}}<tr><td data-l="Wallbox">Wallbox</td><td class="r">{{deEUR $ab.Wallbox.Kosten}}&nbsp;€</td></tr>{{end}}
           {{if $ab.PVGutschrift}}<tr><td data-l="PV-Gutschrift">PV-Gutschrift</td><td class="r">- {{deEUR $ab.PVGutschrift.Betrag}}&nbsp;€</td></tr>{{end}}
           <tr><td data-l="Vorauszahlungen">Vorauszahlungen</td><td class="r">- {{deEUR $ab.Vorauszahlungen}}&nbsp;€</td></tr>
@@ -312,7 +312,7 @@
         </tr>
       </tbody>
     </table>
-    <p class="muted klein"><sup>1</sup> Heizung, Wasser und Abwasser{{if $ab.StromW2}} sowie der laut Vereinbarung weiterberechnete Strom Wohnung 2{{end}}{{if $ab.Wallbox}}{{if $ab.StromW2}} und{{else}} sowie{{end}} die Wallbox{{end}}. {{if $ab.PVGutschrift}}Die PV-Gutschrift erhöht den Saldo. {{end}}Fixkosten: nur umlagefähige Kostenpositionen, jeweils der Anteil der abgerechneten Wohnung.{{with $ab.Monatsverlauf.Uebertrag}}{{if .Vorhanden}} Übertrag Vorjahre: Saldo aus Nebenkostenabschlag minus Kosten der Monate {{monat .Von}} bis {{monat .Bis}}.{{end}}{{end}}</p>
+    <p class="muted klein"><sup>1</sup> Heizung, Wasser und Abwasser{{if $ab.Strom}} sowie der {{if not .Eigennutzung}}laut Vereinbarung weiterberechnete {{end}}Strom Wohnung {{$.ApartmentID}}{{end}}{{if $ab.Wallbox}}{{if $ab.Strom}} und{{else}} sowie{{end}} die Wallbox{{end}}. {{if $ab.PVGutschrift}}Die PV-Gutschrift erhöht den Saldo. {{end}}Fixkosten: nur umlagefähige Kostenpositionen, jeweils der Anteil der abgerechneten Wohnung.{{with $ab.Monatsverlauf.Uebertrag}}{{if .Vorhanden}} Übertrag Vorjahre: Saldo aus Nebenkostenabschlag minus Kosten der Monate {{monat .Von}} bis {{monat .Bis}}.{{end}}{{end}}</p>
     {{with $ab.Monatsverlauf.Uebertrag.Hinweis}}<p class="klein"><strong>{{.}}</strong></p>{{end}}
     </section>
 

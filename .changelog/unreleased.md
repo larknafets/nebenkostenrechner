@@ -38,6 +38,7 @@ Keep every section, an empty one included. Do not change the headings.
 - Die Jahreskarte einer vermieteten Wohnung zeigt unter Guthaben / Nachzahlung die Mieteinnahmen des Jahres. Sie erscheinen nur für angemeldete Nutzer, die Widgets zeigen sie nicht (#278)
 - Jahreskarten: PV-Gutschrift (Wohnung 1) und PV-Anteil (Wohnung 2) stehen jetzt auch mit 0. Die Wallbox-Zeile einer vermieteten Wohnung entfällt, wenn "Wallbox weiterberechnen" aus ist und der Betrag 0 ist (#276)
 - Strom von Wohnung 1: Der Rest des Netzbezugs nach Wohnung 2, Wärmepumpe und Wallboxen steht jetzt als Kategorie "Strom" in Jahreskarte, Monatsverlauf, Verbrauchswerten, Gesamt, Saldo und Widgets (#279)
+- Jahresabrechnung: Der Strom einer Wohnung steht bei Eigennutzung immer in der Abrechnung, bei Vermietung nur mit "Stromverbrauch weiterberechnen" (jetzt für Wohnung 1 und 2). Der Jahressaldo zählt ihn mit und gleicht damit wieder der Änderung im Dashboard (#280)
 - Zu beachten: Die Salden von Wohnung 1 sinken rückwirkend um die bisher aufgelaufenen Stromkosten, weil alles live berechnet wird (#279)
 
 ## Fehlerkorrekturen

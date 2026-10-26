@@ -34,8 +34,8 @@ type Zeile struct {
 	Geteilt bool
 }
 
-// Strom is the electricity consumption of Wohnung 2 passed on by
-// agreement (not a Betriebskostenart).
+// Strom is the household electricity of the settled apartment (#280), passed
+// on by agreement when rented (not a Betriebskostenart).
 type Strom struct {
 	VerbrauchKWh, Kosten float64
 }
@@ -186,9 +186,9 @@ type Jahresabrechnung struct {
 	Wasser    Zeile
 	// Betriebskosten is the sum of all three.
 	Betriebskosten float64
-	// StromW2 is nil unless Wohnung 2 is settled and the Stammdaten flag
-	// "Stromverbrauch weiterberechnen" is on.
-	StromW2 *Strom
+	// Strom is nil for a rented apartment unless the Stammdaten flag
+	// "Stromverbrauch weiterberechnen" is on (Eigennutzung always shows it).
+	Strom *Strom
 	// Wallbox is the apartment's Wallbox share (#228). It is nil unless the
 	// Wohnungsstatus table shows it (Eigennutzung always, Vermietung only
 	// with the flag "Wallbox weiterberechnen") and the costs are assigned to
@@ -338,7 +338,7 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	}
 
 	if p.strom {
-		ab.StromW2 = &Strom{VerbrauchKWh: strom.VerbrauchKWh, Kosten: calc.Round2(strom.Kosten)}
+		ab.Strom = &Strom{VerbrauchKWh: strom.VerbrauchKWh, Kosten: calc.Round2(strom.Kosten)}
 	}
 	if p.wallbox && wallboxVerteilt {
 		ab.Wallbox = &Wallbox{VerbrauchKWh: wallbox.VerbrauchKWh, Kosten: calc.Round2(wallbox.Kosten)}
@@ -355,8 +355,8 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	ab.Vorauszahlungen = calc.Round2(ab.Vorauszahlungen)
 	// The Jahressaldo is one period of the same fold the Monatsverlauf uses.
 	periode := calc.SaldoMonat{Abschlag: ab.Vorauszahlungen, Kosten: ab.Betriebskosten}
-	if ab.StromW2 != nil {
-		periode.Kosten += ab.StromW2.Kosten
+	if ab.Strom != nil {
+		periode.Kosten += ab.Strom.Kosten
 	}
 	if ab.Wallbox != nil {
 		periode.Kosten += ab.Wallbox.Kosten
@@ -408,14 +408,16 @@ type posten struct {
 	strom, wallbox, pvGutschrift bool
 }
 
-// postenFuer applies the table of the Wohnungsstatus. Eigennutzung: Wallbox
-// always (the flag does not apply) and the PV-Gutschrift (Wohnung 1 only,
-// the Gutschrift follows its assignment to Wohnung 1). Vermietung: Wallbox
-// only with the flag "Wallbox weiterberechnen", never the PV-Gutschrift.
+// postenFuer applies the table of the Wohnungsstatus. Eigennutzung: Strom and
+// Wallbox always (the flags do not apply) and the PV-Gutschrift (Wohnung 1
+// only, the Gutschrift follows its assignment to Wohnung 1). Vermietung: Strom
+// only with the flag "Stromverbrauch weiterberechnen", Wallbox only with
+// "Wallbox weiterberechnen", never the PV-Gutschrift. The Strom flag applies
+// to Wohnung 1 and 2 alike.
 func postenFuer(apartment store.Apartment, haus store.Haus) posten {
 	vermietet := apartment.Status == store.StatusVermietet
 	return posten{
-		strom:        apartment.ID == 2 && haus.StromWeiterberechnen,
+		strom:        !vermietet || haus.StromWeiterberechnen,
 		wallbox:      !vermietet || haus.WallboxWeiterberechnen,
 		pvGutschrift: apartment.ID == 1 && !vermietet,
 	}
