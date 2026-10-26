@@ -25,16 +25,30 @@ type dashboardData struct {
 	WallboxWeiterberechnen bool
 }
 
+// mieteMonat is the Miete projection of one Fixkosten-Eingabe: its
+// Abrechnungsmonat and the monthly Miete per apartment. It is returned next to
+// dashboardData, never inside it, so the Miete cannot reach a widget (#278).
+type mieteMonat struct {
+	Monat string
+	Miete map[int64]float64
+}
+
 // loadDashboardData runs the shared, DB-heavy first half of both
 // handleDashboard and the widget handlers: apartments, every period's
 // costs (stopping at the oldest period without a previous period, same as
 // before), every fixed-costs entry's result, and the auto-following
 // display year. HasAnyData=false (zero-value everything else) when
-// neither readings nor fixed-costs entries exist yet.
-func loadDashboardData(db *sql.DB) (dashboardData, error) {
+// neither readings nor fixed-costs entries exist yet. The second return value
+// is the Miete projection taken from the same Datenstand (no second query);
+// the widget handlers discard it.
+func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, error) {
 	ds, err := store.LadeDatenstand(db)
 	if err != nil {
-		return dashboardData{}, err
+		return dashboardData{}, nil, err
+	}
+	miete := make([]mieteMonat, len(ds.Eingaben))
+	for i, e := range ds.Eingaben {
+		miete[i] = mieteMonat{Monat: e.Monat, Miete: e.Miete}
 	}
 	apartments := ds.Apartments
 
@@ -57,7 +71,7 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 	}
 
 	if len(allPeriods) == 0 && len(fixkostenEingaben) == 0 {
-		return dashboardData{Apartments: apartments}, nil
+		return dashboardData{Apartments: apartments}, miete, nil
 	}
 
 	// Verbrauchskosten newest -> oldest. The very first period ever
@@ -80,7 +94,7 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 		FixkostenListe:         fixkostenListe,
 		Jahr:                   anzeigeJahr(allPeriods, fixkostenEingaben),
 		WallboxWeiterberechnen: ds.Haus.WallboxWeiterberechnen,
-	}, nil
+	}, miete, nil
 }
 
 // handleDashboard serves the redesigned Dashboard (Issue #60): yearly-
@@ -89,7 +103,7 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 // history (4 modes).
 func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		dd, err := loadDashboardData(dbFromContext(r.Context()))
+		dd, miete, err := loadDashboardData(dbFromContext(r.Context()))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -119,62 +133,22 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			}
 			return
 		}
-		apartments, periodenKosten, jahr := dd.Apartments, dd.PeriodenKosten, dd.Jahr
+		jahr := dd.Jahr
 
-		// Not logged in: only apartment 2 goes into the template data
-		// object at all (Ticket #112) - purely server-side hiding in the
-		// template would still leave apartment 1's data in the HTML
-		// source (finding from the login overlay prototype, Issue #113).
-		if !nav.IsLoggedIn {
-			for _, a := range apartments {
-				if a.ID == 2 {
-					apartments = []store.Apartment{a}
-					break
-				}
-			}
-		}
-
-		// The Miete is read only for a logged-in user (#278), it is no part
-		// of dashboardData, which the widgets share.
-		var mieteEingaben []*store.FixkostenEingabeDetails
+		b := betrachterAnonym
 		if nav.IsLoggedIn {
-			mieteEingaben, err = store.AllFixkostenEingabenDetails(dbFromContext(r.Context()))
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+			b = betrachterAngemeldet
 		}
 
-		var cards []dashboardJahresCard
-		var verlaufSpalten []dashboardVerlaufSpalte
-		for _, a := range apartments {
-			card, verlauf := buildEntityView(dd, a.ID)
-			// Mieteinnahmen (#278): only for a rented apartment and a
-			// logged-in user, so the rent stays out of the template data
-			// otherwise.
-			if nav.IsLoggedIn && a.Status == store.StatusVermietet {
-				summe := mieteinnahmen(a.ID, jahr, mieteEingaben)
-				card.Mieteinnahmen = &summe
-			}
-			cards = append(cards, card)
-			verlaufSpalten = append(verlaufSpalten, verlauf)
-		}
-
-		// Wallboxen/PV-Anlage (wallboxes/PV system, Ticket #67) - whole-
-		// house, purely informative entities alongside the apartment tabs,
-		// analogous to the prototype
-		// (docs/prototypes/fixkosten-prototype.html): own yearly total +
-		// monthly history, no fixed-costs share, no apartment allocation.
-		// Not logged in: stay completely excluded, like apartment 1 above
-		// - the same "only apartment 2 visible" rule applies to the whole
-		// house.
+		// What the viewer may see is decided in one place (#293).
+		view := sichtbareAnsicht(b, dd, miete)
 		var wallboxCard, pvCard dashboardSimpleCard
 		var wallboxVerlauf, pvVerlauf dashboardSimpleSpalte
-		if nav.IsLoggedIn {
-			wallboxCard = buildSimpleJahresCard(wallboxSeries, jahr, periodenKosten)
-			wallboxVerlauf = buildSimpleVerlauf(wallboxSeries, periodenKosten)
-			pvCard = buildSimpleJahresCard(pvSeries, jahr, periodenKosten)
-			pvVerlauf = buildSimpleVerlauf(pvSeries, periodenKosten)
+		if view.Wallbox != nil {
+			wallboxCard, wallboxVerlauf = view.Wallbox.Card, view.Wallbox.Verlauf
+		}
+		if view.PV != nil {
+			pvCard, pvVerlauf = view.PV.Card, view.PV.Verlauf
 		}
 
 		data := struct {
@@ -199,8 +173,8 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			HasAnyData:         true,
 			AnzeigeJahr:        jahr,
 			AnzeigeJahrLaufend: jahr == time.Now().Year(),
-			Cards:              cards,
-			VerlaufSpalten:     verlaufSpalten,
+			Cards:              view.Cards,
+			VerlaufSpalten:     view.VerlaufSpalten,
 			WallboxCard:        wallboxCard,
 			WallboxVerlauf:     wallboxVerlauf,
 			PVCard:             pvCard,

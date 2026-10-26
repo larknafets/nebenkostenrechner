@@ -52,7 +52,7 @@ func abrechnungJahre(d abr.Daten) []int {
 // the first apartment.
 func standardWohnung(apartments []store.Apartment) int64 {
 	for _, a := range apartments {
-		if a.Status == store.StatusVermietet {
+		if a.Vermietet() {
 			return a.ID
 		}
 	}
@@ -152,7 +152,7 @@ func handleAbrechnung(a auth) http.HandlerFunc {
 				data.Apartment = ap
 			}
 		}
-		data.Eigennutzung = data.Apartment.Status != store.StatusVermietet
+		data.Eigennutzung = !data.Apartment.Vermietet()
 
 		data.Jahr, err = standardJahr(daten.Pruef, data.Jahre, data.ApartmentID)
 		if err != nil {

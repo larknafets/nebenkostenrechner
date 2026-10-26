@@ -149,10 +149,10 @@ type dashboardJahresCard struct {
 	Mieteinnahmen *float64
 }
 
-// mieteinnahmen sums the Miete of the apartment over every Fixkosten-Eingabe
+// mieteinnahmen sums the Miete of the apartment over every Miete projection
 // of jahr (the Abrechnungsmonat counts), rounded to the cent. Pure display
 // value, it enters no calculation.
-func mieteinnahmen(apartmentID int64, jahr int, eingaben []*store.FixkostenEingabeDetails) float64 {
+func mieteinnahmen(apartmentID int64, jahr int, eingaben []mieteMonat) float64 {
 	var summe float64
 	for _, e := range eingaben {
 		if y, ok := store.Abrechnungsmonat(e.Monat).Jahr(); ok && y == jahr {
@@ -554,7 +554,8 @@ func buildEntityView(dd dashboardData, apartmentID int64) (dashboardJahresCard, 
 	// The Wohnungsstatus steers the display, too (#276): a rented apartment
 	// whose Wallbox is not passed on and costs nothing shows no Wallbox line
 	// and no bar segment. Totals and Saldo stay untouched (the segment is 0).
-	if a.Status == store.StatusVermietet && !dd.WallboxWeiterberechnen && card.WallboxEUR == 0 {
+	regeln := store.NewWohnungsregeln(a, store.Haus{WallboxWeiterberechnen: dd.WallboxWeiterberechnen})
+	if !regeln.JahreskarteWallboxZeile(card.WallboxEUR) {
 		card.Segmente = slices.DeleteFunc(card.Segmente, func(s dashboardSegment) bool { return s.Farbe == "wallbox" })
 	}
 	card.Saldo = verlauf.LatestSaldo

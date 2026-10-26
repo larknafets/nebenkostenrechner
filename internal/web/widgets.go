@@ -8,23 +8,22 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// widgetEntity resolves a widget route's {entity} path segment to either an
-// apartment id (Wohnung 1/2 - apartment 1/2) or one of the whole-house
-// simpleSeries (Wallboxen/PV-Anlage - wallboxes/PV system) - exactly the 4
-// entities the Dashboard's yearly-totals cards/apartment tabs already show.
-// "" for an unknown slug.
-func widgetEntity(slug string) (apartmentID int64, simple *simpleSeries) {
+// widgetEntity resolves a widget route's {entity} path segment to one of the
+// 4 entities (Wohnung 1/2 - apartment 1/2, Wallboxen/PV-Anlage - wallboxes/PV
+// system) the Dashboard's yearly-totals cards/apartment tabs already show.
+// ok is false for an unknown slug.
+func widgetEntity(slug string) (e entitaet, ok bool) {
 	switch slug {
 	case "wohnung-1":
-		return 1, nil
+		return wohnungEntitaet(1), true
 	case "wohnung-2":
-		return 2, nil
+		return wohnungEntitaet(2), true
 	case "wallboxen":
-		return 0, &wallboxSeries
+		return entitaet{Art: entitaetWallbox}, true
 	case "pv-anlage":
-		return 0, &pvSeries
+		return entitaet{Art: entitaetPV}, true
 	}
-	return 0, nil
+	return entitaet{}, false
 }
 
 // findApartment returns the apartment with the given id, or the zero value
@@ -52,18 +51,27 @@ type widgetView struct {
 	SimpleVerlauf *dashboardSimpleSpalte
 }
 
-// resolveWidgetView builds both the yearly-totals card and the Verlauf for
-// whichever entity matched (apartmentID xor simple) - shared by all 3
-// widget handlers instead of each hand-writing the same simple/apartment
-// branch.
-func resolveWidgetView(dd dashboardData, apartmentID int64, simple *simpleSeries) widgetView {
-	if simple != nil {
-		c := buildSimpleJahresCard(*simple, dd.Jahr, dd.PeriodenKosten)
-		v := buildSimpleVerlauf(*simple, dd.PeriodenKosten)
-		return widgetView{SimpleCard: &c, SimpleVerlauf: &v}
+// resolveWidgetView builds the Sichtbarkeit view of the one requested entity
+// for the widget betrachter - shared by all 3 widget handlers instead of each
+// hand-writing the same simple/apartment branch. An apartment id that is not
+// in the data yields an empty view.
+func resolveWidgetView(dd dashboardData, e entitaet) widgetView {
+	v := sichtbareEntitaet(betrachterWidget, dd, e, nil)
+	switch e.Art {
+	case entitaetWallbox:
+		if v.Wallbox != nil {
+			return widgetView{SimpleCard: &v.Wallbox.Card, SimpleVerlauf: &v.Wallbox.Verlauf}
+		}
+	case entitaetPV:
+		if v.PV != nil {
+			return widgetView{SimpleCard: &v.PV.Card, SimpleVerlauf: &v.PV.Verlauf}
+		}
+	default:
+		if w, ok := v.Wohnung(e.ApartmentID); ok {
+			return widgetView{Card: &w.Card, Verlauf: &w.Verlauf}
+		}
 	}
-	c, v := buildEntityView(dd, apartmentID)
-	return widgetView{Card: &c, Verlauf: &v}
+	return widgetView{}
 }
 
 // handleWidgetJahressumme serves the ingress-free HA widget route (Issue
@@ -72,13 +80,13 @@ func resolveWidgetView(dd dashboardData, apartmentID int64, simple *simpleSeries
 // is one of the 4 fixed apartment-tab entities (see widgetEntity).
 func handleWidgetJahressumme(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		apartmentID, simple := widgetEntity(r.PathValue("entity"))
-		if apartmentID == 0 && simple == nil {
+		entity, ok := widgetEntity(r.PathValue("entity"))
+		if !ok {
 			http.NotFound(w, r)
 			return
 		}
 
-		dd, err := loadDashboardData(db)
+		dd, _, err := loadDashboardData(db)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -93,7 +101,7 @@ func handleWidgetJahressumme(db *sql.DB) http.HandlerFunc {
 		}{HasAnyData: dd.HasAnyData, AnzeigeJahr: dd.Jahr, AnzeigeJahrLaufend: dd.Jahr == time.Now().Year()}
 
 		if dd.HasAnyData {
-			view := resolveWidgetView(dd, apartmentID, simple)
+			view := resolveWidgetView(dd, entity)
 			data.Card, data.SimpleCard = view.Card, view.SimpleCard
 		}
 
@@ -109,13 +117,13 @@ func handleWidgetJahressumme(db *sql.DB) http.HandlerFunc {
 // only the entity is fixed).
 func handleWidgetVerbrauchswerte(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		apartmentID, simple := widgetEntity(r.PathValue("entity"))
-		if apartmentID == 0 && simple == nil {
+		entity, ok := widgetEntity(r.PathValue("entity"))
+		if !ok {
 			http.NotFound(w, r)
 			return
 		}
 
-		dd, err := loadDashboardData(db)
+		dd, _, err := loadDashboardData(db)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -128,7 +136,7 @@ func handleWidgetVerbrauchswerte(db *sql.DB) http.HandlerFunc {
 		}{HasAnyData: dd.HasAnyData}
 
 		if dd.HasAnyData {
-			view := resolveWidgetView(dd, apartmentID, simple)
+			view := resolveWidgetView(dd, entity)
 			data.Verlauf, data.SimpleVerlauf = view.Verlauf, view.SimpleVerlauf
 		}
 
@@ -146,13 +154,13 @@ func handleWidgetVerbrauchswerte(db *sql.DB) http.HandlerFunc {
 // once.
 func handleWidgetUebersicht(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		apartmentID, simple := widgetEntity(r.PathValue("entity"))
-		if apartmentID == 0 && simple == nil {
+		entity, ok := widgetEntity(r.PathValue("entity"))
+		if !ok {
 			http.NotFound(w, r)
 			return
 		}
 
-		dd, err := loadDashboardData(db)
+		dd, _, err := loadDashboardData(db)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -169,7 +177,7 @@ func handleWidgetUebersicht(db *sql.DB) http.HandlerFunc {
 		}{HasAnyData: dd.HasAnyData, AnzeigeJahr: dd.Jahr, AnzeigeJahrLaufend: dd.Jahr == time.Now().Year()}
 
 		if dd.HasAnyData {
-			view := resolveWidgetView(dd, apartmentID, simple)
+			view := resolveWidgetView(dd, entity)
 			data.Card, data.SimpleCard = view.Card, view.SimpleCard
 			data.Verlauf, data.SimpleVerlauf = view.Verlauf, view.SimpleVerlauf
 		}

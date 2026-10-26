@@ -34,6 +34,12 @@ const (
 	StatusEigennutzung = "eigennutzung"
 )
 
+// Vermietet reports whether the apartment is rented out. Callers use it
+// instead of comparing Status; "not Vermietet" means Eigennutzung.
+func (a Apartment) Vermietet() bool {
+	return a.Status == StatusVermietet
+}
+
 // validStatus reports whether s is a known Wohnungsstatus.
 func validStatus(s string) bool {
 	return s == StatusVermietet || s == StatusEigennutzung
