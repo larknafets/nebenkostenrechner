@@ -129,7 +129,7 @@ Der einer Kostenposition für einen konkreten Monat tatsächlich zugerechnete Be
 Die Grundstücksgröße je Wohnung (`apartments.flurstueck_groesse`), Grundlage der Berechnungslogik "Je anteiliges Flurstück" (z.B. für Deichbeiträge). Wie die Wohnungsgröße ein aktueller Einzelwert, nicht historisiert - auf der Stammdaten-Seite gepflegt.
 
 **Nebenkostenabschlag**:
-Die monatliche Vorauszahlung je Wohnung (Tabelle `nebenkosten_abschlaege`), an der jeweiligen Fixkosten-Eingabe erfasst wie ein monatlich-typisierter Wert, aber keine Kostenposition - deckt Fixkosten UND Verbräuche gemeinsam ab, zählt nicht in die Fixkosten-Summen und hat keine Berechnungslogik (direkter Wert je Wohnung, kein Split).
+Die monatliche Vorauszahlung je Wohnung (Tabelle `nebenkosten_abschlaege`), an der jeweiligen Fixkosten-Eingabe erfasst wie ein monatlich-typisierter Wert, aber keine Kostenposition - deckt Fixkosten UND Verbräuche gemeinsam ab, zählt nicht in die Fixkosten-Summen und hat keine Berechnungslogik (direkter Wert je Wohnung, kein Split). Das Formular erfasst ihn nur für Wohnungen mit Status Vermietung (Pflicht, 0 erlaubt), bei Eigennutzung gibt es kein Feld: ein früher gespeicherter Wert bleibt erhalten und zählt weiter, ein fehlender zählt als 0.
 _Avoid_: Abschlag ohne "Nebenkosten"-Präfix (zu unspezifisch), Vorauszahlung
 
 **Miete / Mieteinnahmen**:
