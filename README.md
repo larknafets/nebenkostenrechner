@@ -3,6 +3,7 @@
 Web-App zur monatlichen Nebenkostenabrechnung für ein Zweifamilienhaus mit Wärmepumpe und PV-Anlage.
 Berechnet Strom-, Heizung/Warmwasser- und Wasserkosten je Wohnung aus monatlich erfassten Zählerständen, sowie Fixkosten/Grundgebühren (Grundsteuer, Versicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise, Wärmepumpenwartung, PV-Anlagenwartung).
 Zusätzlich können Nebenkostenabschläge eingetragen und gegengerechnet werden, so daß eine erfassungsaktuelle Guthaben/Nachzahlung Übersicht entsteht.
+Für vermietete Wohnungen kannst du außerdem die monatliche Miete erfassen: Sie erscheint als Mieteinnahmen auf der Jahreskarte (nur für angemeldete Nutzer) und geht in keine Berechnung ein.
 Angenommen wird, dass es Hauptzähler für die Gemeinschaft und separate Zwischenzähler für die Einliegerwohnung (Wohnung 2) und Wallboxen gibt.
 
 <p align="center">
@@ -339,6 +340,7 @@ fixkosten_eingaben(id, monat DATE)
 fixkosten_werte(id, fixkosten_eingabe_id -> fixkosten_eingaben.id, kostenposition_id -> kostenpositionen.id, wert, logik, typ, UNIQUE(fixkosten_eingabe_id, kostenposition_id))
 fixkosten_personen(id, fixkosten_eingabe_id -> fixkosten_eingaben.id, apartment_id -> apartments.id, personen, UNIQUE(fixkosten_eingabe_id, apartment_id))
 nebenkosten_abschlaege(id, fixkosten_eingabe_id -> fixkosten_eingaben.id, apartment_id -> apartments.id, wert, UNIQUE(fixkosten_eingabe_id, apartment_id))
+mieten(id, fixkosten_eingabe_id -> fixkosten_eingaben.id, apartment_id -> apartments.id, wert, UNIQUE(fixkosten_eingabe_id, apartment_id))
 ```
 
 Logik/Typ/Wert je Kostenposition liegen direkt an `fixkosten_werte` (nicht mehr jahresweise) - jede Fixkosten-Eingabe trägt ihren eigenen, unabhängigen Stand, wie Personen und der Nebenkostenabschlag.
