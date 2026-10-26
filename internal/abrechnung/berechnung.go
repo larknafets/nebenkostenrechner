@@ -264,7 +264,7 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	}
 
 	z := *pruefung.Zeitraum
-	p := postenFuer(apartment, haus)
+	p := store.NewSichtbarkeit(apartment, haus)
 	// The months of the period, oldest first.
 	f := faltMonate(d, z.ErsterMonat, z.LetzterMonat, apartmentID, p)
 
@@ -337,13 +337,13 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 		zeile.Prozent = prozent(zeile.Betrag, zeile.Gesamt)
 	}
 
-	if p.strom {
+	if p.AbrechnungStrom() {
 		ab.Strom = &Strom{VerbrauchKWh: strom.VerbrauchKWh, Kosten: calc.Round2(strom.Kosten)}
 	}
-	if p.wallbox && wallboxVerteilt {
+	if p.AbrechnungWallbox() && wallboxVerteilt {
 		ab.Wallbox = &Wallbox{VerbrauchKWh: wallbox.VerbrauchKWh, Kosten: calc.Round2(wallbox.Kosten)}
 	}
-	if p.pvGutschrift && pvGutschrift != 0 {
+	if p.AbrechnungPVGutschrift() && pvGutschrift != 0 {
 		ab.PVGutschrift = &PVGutschrift{Betrag: calc.Round2(pvGutschrift)}
 	}
 
@@ -399,33 +399,11 @@ type monatsfaltung struct {
 	werte      []calc.Monatswert
 }
 
-// posten says which optional items count for the settled apartment: the
-// passed-on electricity of Wohnung 2, the Wallbox block and the PV-Gutschrift
-// of Wohnung 1. The Jahressaldo, the Monatsverlauf and the Übertrag Vorjahre
-// all read the same posten, so they count exactly the items the Abrechnung
-// shows (#228).
-type posten struct {
-	strom, wallbox, pvGutschrift bool
-}
-
-// postenFuer applies the table of the Wohnungsstatus. Eigennutzung: Strom and
-// Wallbox always (the flags do not apply) and the PV-Gutschrift (Wohnung 1
-// only, the Gutschrift follows its assignment to Wohnung 1). Vermietung: Strom
-// only with the flag "Stromverbrauch weiterberechnen", Wallbox only with
-// "Wallbox weiterberechnen", never the PV-Gutschrift. The Strom flag applies
-// to Wohnung 1 and 2 alike.
-func postenFuer(apartment store.Apartment, haus store.Haus) posten {
-	vermietet := apartment.Vermietet()
-	return posten{
-		strom:        !vermietet || haus.StromWeiterberechnen,
-		wallbox:      !vermietet || haus.WallboxWeiterberechnen,
-		pvGutschrift: apartment.ID == 1 && !vermietet,
-	}
-}
-
 // faltMonate folds the months von to bis (first of month, both included) for
-// apartmentID.
-func faltMonate(d BerechnungsDaten, von, bis time.Time, apartmentID int64, p posten) monatsfaltung {
+// apartmentID. The Jahressaldo, the Monatsverlauf and the Übertrag Vorjahre
+// all read the same Sichtbarkeit s, so they count exactly the items the
+// Abrechnung shows (#228).
+func faltMonate(d BerechnungsDaten, von, bis time.Time, apartmentID int64, s store.Sichtbarkeit) monatsfaltung {
 	f := monatsfaltung{imBereich: map[string]bool{}}
 	for m := von; !m.After(bis); m = m.AddDate(0, 1, 0) {
 		key := m.Format("2006-01-02")
@@ -452,7 +430,7 @@ func faltMonate(d BerechnungsDaten, von, bis time.Time, apartmentID int64, p pos
 		umlagefaehig[kp.Key] = kp.Umlagefaehig
 	}
 	f.werte = calc.Monatswerte(apartmentID, kosten, fixkosten, calc.Posten{
-		Strom: p.strom, Wallbox: p.wallbox, PVGutschrift: p.pvGutschrift,
+		Strom: s.AbrechnungStrom(), Wallbox: s.AbrechnungWallbox(), PVGutschrift: s.AbrechnungPVGutschrift(),
 		Fixkosten: func(key string) bool { return umlagefaehig[key] },
 	})
 	return f
@@ -480,7 +458,7 @@ func fixkostenJeMonat(reihe *calc.Fixkostenreihe, monate []string) map[string]ca
 // why instead of a wrong number. The month range and the first month needing
 // a Fixkosten-Eingabe follow the same rules as the Zeitraum of the Prüfung
 // (Zeitraum.Vormonat, fixkostenBeginn).
-func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment, p posten) Uebertrag {
+func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment, p store.Sichtbarkeit) Uebertrag {
 	periods := d.Pruef.Periods
 	if len(periods) == 0 {
 		return Uebertrag{}
