@@ -30,6 +30,10 @@
       {{if eq .ApartmentID 2}}<span class="v-pv" title="Nicht dem Netzbezug zugeordnet (PV)">{{kategorieIcon "PV-Anteil"}}{{de0 .PVAnteilKWh}}&nbsp;kWh</span>{{end}}
     </div>
     {{with .Saldo}}{{template "abschlag-value" .}}{{end}}
+    {{with .Mieteinnahmen}}<div class="abschlag-value">
+      <div class="label">Mieteinnahmen</div>
+      <div class="amount">{{deEUR .}}&nbsp;€</div>
+    </div>{{end}}
   </div>
   {{end}}
   {{if .IsLoggedIn}}
