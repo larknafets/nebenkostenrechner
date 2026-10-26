@@ -35,3 +35,10 @@ fi
 if printf '%s\n' "$message" | grep -q $'\xe2\x80\x94'; then
   fail "message contains an em dash, use a comma, a colon or ' - '"
 fi
+
+# Umlaute are written as ä, ö, ü, ß, never as ae, oe, ue, ss. A general pattern
+# would hit "neue" or "Queue", so this is a list of the common stems.
+ascii_stems='aender|aendr|ergaenz|unveraender|entfaell|laed[te]|ueber|fuer|ausfuehr|hinzufuegen|zufuegen|pruef|rueck|oeffn|loesch|waehl|zaehl|groess|moeglich|noetig|koennen|muessen|waere|haette|eintraeg|betraeg|verlaeuf|faelle|fuehr|beruehr|spaet|fruehe'
+if hit=$(printf '%s\n' "$message" | grep -iEo "\\b[a-z]*($ascii_stems)[a-z]*" | head -3 | tr '\n' ' ') && [ -n "$hit" ]; then
+  fail "message spells Umlaute as ae, oe, ue (${hit% }), write ä, ö, ü, ß"
+fi

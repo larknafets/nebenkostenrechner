@@ -23,7 +23,7 @@ A prompt for an implementer subagent (one ticket, own worktree) points here inst
 - Start on the integration branch: `/usr/bin/git checkout -B ticket/<nr> <integration-branch>`. All git through `/usr/bin/git`.
 - Write files with Write or Edit (see above).
 - Build test-first with the `tdd` skill. A refactoring keeps the existing tests as its safety net: expectations never change, helpers and input fixtures may. Name every changed expectation in the report.
-- Commit in German as `<type>(<scope>): <Summary>`, subject at most 72 characters (the commit-msg hook rejects longer), no em dash. Rules: `git-commit-messages.md`.
+- Commit in German as `<type>(<scope>): <Summary>`, subject at most 72 characters, no em dash, Umlaute as ä, ö, ü, ß (the commit-msg hook rejects longer subjects, em dashes and common ASCII spellings like `geaendert`). Rules: `git-commit-messages.md`.
 - Changelog line in the same commit as a `feat` or `fix` (`changelog.md`), none for a `refactor`.
 - `scripts/check` green before every commit and again after the final merge of the integration branch into the ticket branch.
 - Do not push, open a PR or close an issue. The main agent merges the ticket branch into the integration branch.
