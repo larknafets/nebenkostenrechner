@@ -21,6 +21,7 @@ Subagents isolated in a git worktree must call `/usr/bin/git` instead of plain `
 A prompt for an implementer subagent (one ticket, own worktree) points here instead of repeating these rules. Name only the ticket, the integration branch and the context pointers (spec, neighbouring tickets, earlier commits).
 
 - Start on the integration branch: `/usr/bin/git checkout -B ticket/<nr> <integration-branch>`. All git through `/usr/bin/git`.
+- Read the ticket with `gh issue view <nr> --json title,body,labels,comments` (see `issue-tracker.md`).
 - Write files with Write or Edit (see above).
 - Build test-first with the `tdd` skill. A refactoring keeps the existing tests as its safety net: expectations never change, helpers and input fixtures may. Name every changed expectation in the report.
 - Commit in German as `<type>(<scope>): <Summary>`, subject at most 72 characters, no em dash, Umlaute as ä, ö, ü, ß (the commit-msg hook rejects longer subjects, em dashes and common ASCII spellings like `geaendert`). Rules: `git-commit-messages.md`.
