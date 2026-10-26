@@ -31,7 +31,9 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
-- Die Fixkosten-Eingabe erfasst Nebenkostenabschlag und Miete nur noch für vermietete Wohnungen (Pflichtfelder, 0 erlaubt), bei Eigennutzung gibt es kein Feld mehr. Bereits gespeicherte Abschläge zählen weiter, die Miete geht in keine Berechnung ein. Der CSV-Export enthält jetzt `miete_1` und `miete_2`, ältere Dateien bleiben importierbar (#277)
+- Miete: Je vermieteter Wohnung erfasst du die monatliche Miete in der Fixkosten-Eingabe (Pflichtfeld, 0 erlaubt). Sie erscheint als Mieteinnahmen auf der Jahreskarte (nur für angemeldete Nutzer) und auf der Detailseite der Eingabe. Sie geht in keine Berechnung, keinen Saldo und keine Abrechnung ein (#275)
+- Die Fixkosten-Eingabe erfasst den Nebenkostenabschlag nur noch für vermietete Wohnungen (Pflichtfeld, 0 erlaubt), bei Eigennutzung gibt es kein Feld mehr. Bereits gespeicherte Abschläge zählen weiter (#277)
+- Der CSV-Export der Fixkosten enthält jetzt `miete_1` und `miete_2`, ältere Dateien bleiben importierbar (#277)
 
 ## Verbesserungen
 
