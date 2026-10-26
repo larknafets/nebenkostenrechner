@@ -2,6 +2,7 @@ package web
 
 import (
 	"math"
+	"slices"
 	"sort"
 	"time"
 
@@ -140,6 +141,25 @@ type dashboardJahresCard struct {
 	// computed here in buildJahresCard. nil = no balance calculable (see
 	// AbschlagSaldo).
 	Saldo *calc.AbschlagSaldo
+
+	// Mieteinnahmen is the yearly sum of the Miete (#278), rounded to the
+	// cent, shown below the Saldo. nil = no block: set only by
+	// handleDashboard for a rented apartment and a logged-in user, so the
+	// rent never reaches the template otherwise (and never the widgets).
+	Mieteinnahmen *float64
+}
+
+// mieteinnahmen sums the Miete of the apartment over every Fixkosten-Eingabe
+// of jahr (the Abrechnungsmonat counts), rounded to the cent. Pure display
+// value, it enters no calculation.
+func mieteinnahmen(apartmentID int64, jahr int, eingaben []*store.FixkostenEingabeDetails) float64 {
+	var summe float64
+	for _, e := range eingaben {
+		if y, ok := store.Abrechnungsmonat(e.Monat).Jahr(); ok && y == jahr {
+			summe += e.Miete[apartmentID]
+		}
+	}
+	return calc.Round2(summe)
 }
 
 // buildJahresCard sums the given apartment's consumption and fixed costs
@@ -194,15 +214,13 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 	brutto := calc.Round2(verbrauch + fix)
 	gesamt := calc.Round2(brutto - gutschrift)
 
-	segs := []dashboardSegment{{Farbe: "fix", Label: "Fixkosten", Kosten: fix}}
-	if apartmentID == 2 {
-		segs = append(segs, dashboardSegment{Farbe: "strom", Label: "Strom", Kosten: strom})
+	segs := []dashboardSegment{
+		{Farbe: "fix", Label: "Fixkosten", Kosten: fix},
+		{Farbe: "strom", Label: "Strom", Kosten: strom},
+		{Farbe: "wallbox", Label: "Wallbox", Kosten: wallbox},
+		{Farbe: "heizung", Label: "Heizung/Ww", Kosten: heizung},
+		{Farbe: "wasser", Label: "Wasser", Kosten: wasser},
 	}
-	segs = append(segs,
-		dashboardSegment{Farbe: "wallbox", Label: "Wallbox", Kosten: wallbox},
-		dashboardSegment{Farbe: "heizung", Label: "Heizung/Ww", Kosten: heizung},
-		dashboardSegment{Farbe: "wasser", Label: "Wasser", Kosten: wasser},
-	)
 	// The bar shows the costs before the credit, so its segments add up to 100%.
 	setSegmentPct(segs, brutto)
 
@@ -533,6 +551,12 @@ func buildEntityView(dd dashboardData, apartmentID int64) (dashboardJahresCard, 
 	a := findApartment(dd.Apartments, apartmentID)
 	verlauf := buildDashboardVerlauf(a.ID, a.Name, dd.PeriodenKosten, dd.FixkostenListe)
 	card := buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, dd.Jahr, dd.PeriodenKosten, dd.FixkostenListe)
+	// The Wohnungsstatus steers the display, too (#276): a rented apartment
+	// whose Wallbox is not passed on and costs nothing shows no Wallbox line
+	// and no bar segment. Totals and Saldo stay untouched (the segment is 0).
+	if a.Status == store.StatusVermietet && !dd.WallboxWeiterberechnen && card.WallboxEUR == 0 {
+		card.Segmente = slices.DeleteFunc(card.Segmente, func(s dashboardSegment) bool { return s.Farbe == "wallbox" })
+	}
 	card.Saldo = verlauf.LatestSaldo
 	return card, verlauf
 }

@@ -113,7 +113,7 @@ func TestStammdaten_FlagsAnzeigenUndSpeichern(t *testing.T) {
 		t.Fatalf("GET status = %d, want %d", w.Code, http.StatusOK)
 	}
 	body := w.Body.String()
-	for _, want := range []string{"Streaming-Dienste", "Grundgebühr Strom", "Stromverbrauch Wohnung 2 weiterberechnen", `name="umlagefaehig_10" value="1" checked`} {
+	for _, want := range []string{"Streaming-Dienste", "Grundgebühr Strom", "Stromverbrauch weiterberechnen", `name="umlagefaehig_10" value="1" checked`} {
 		if !strings.Contains(body, want) {
 			t.Errorf("GET /stammdaten body does not contain %q", want)
 		}
@@ -308,7 +308,7 @@ func fixkostenForm(monat string) url.Values {
 	v := url.Values{
 		"monat":      {monat},
 		"personen_1": {"2"}, "personen_2": {"1"},
-		"abschlag_1": {"0"}, "abschlag_2": {"100"},
+		"abschlag_1": {"0"}, "abschlag_2": {"100"}, "miete_2": {"750"},
 	}
 	for _, kd := range store.KostenpositionDefaults {
 		id := strconv.FormatInt(kd.ID, 10)

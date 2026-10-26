@@ -26,10 +26,14 @@
     </div>
     <div class="muted stat-kategorien">
       {{range .Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{deEUR .Kosten}}&nbsp;€</span>{{end}}
-      {{if ne .PVGutschriftEUR 0.0}}<span class="v-pv" title="PV-Gutschrift">{{kategorieIcon "PV-Gutschrift"}}&minus;{{deEUR .PVGutschriftEUR}}&nbsp;€</span>{{end}}
-      {{if ne .PVAnteilKWh 0.0}}<span class="v-pv" title="Nicht dem Netzbezug zugeordnet (PV)">{{kategorieIcon "PV-Anteil"}}{{de0 .PVAnteilKWh}}&nbsp;kWh</span>{{end}}
+      {{if eq .ApartmentID 1}}<span class="v-pv" title="PV-Gutschrift">{{kategorieIcon "PV-Gutschrift"}}{{if ne .PVGutschriftEUR 0.0}}&minus;{{end}}{{deEUR .PVGutschriftEUR}}&nbsp;€</span>{{end}}
+      {{if eq .ApartmentID 2}}<span class="v-pv" title="Nicht dem Netzbezug zugeordnet (PV)">{{kategorieIcon "PV-Anteil"}}{{de0 .PVAnteilKWh}}&nbsp;kWh</span>{{end}}
     </div>
     {{with .Saldo}}{{template "abschlag-value" .}}{{end}}
+    {{with .Mieteinnahmen}}<div class="abschlag-value">
+      <div class="label">Mieteinnahmen</div>
+      <div class="amount">{{deEUR .}}&nbsp;€</div>
+    </div>{{end}}
   </div>
   {{end}}
   {{if .IsLoggedIn}}

@@ -230,8 +230,8 @@ func TestBerechneAbrechnung_VerbrauchVorauszahlungenUndSaldo(t *testing.T) {
 	if ab.Heizung.Schluessel != "70 % Wärmeverbrauch, 30 % Wohnfläche" {
 		t.Errorf("Heizung.Schluessel = %q", ab.Heizung.Schluessel)
 	}
-	if ab.StromW2 == nil || !near(ab.StromW2.Kosten, strom) {
-		t.Fatalf("StromW2 = %+v, want Kosten %v", ab.StromW2, strom)
+	if ab.Strom == nil || !near(ab.Strom.Kosten, strom) {
+		t.Fatalf("Strom = %+v, want Kosten %v", ab.Strom, strom)
 	}
 
 	// The Nebenkostenabschlag of December is missing and counts as 0.
@@ -246,7 +246,7 @@ func TestBerechneAbrechnung_VerbrauchVorauszahlungenUndSaldo(t *testing.T) {
 	if want := calc.Round2(fix + ab.Heizung.Betrag + ab.Wasser.Betrag); ab.Betriebskosten != want {
 		t.Errorf("Betriebskosten = %v, want %v (Fixkosten + Heizung + Wasser, without the Strom)", ab.Betriebskosten, want)
 	}
-	wantSaldo := calc.Round2(ab.Vorauszahlungen - ab.Betriebskosten - ab.StromW2.Kosten)
+	wantSaldo := calc.Round2(ab.Vorauszahlungen - ab.Betriebskosten - ab.Strom.Kosten)
 	got := ab.Saldo.Wert()
 	if got != wantSaldo {
 		t.Errorf("Saldo = %v, want %v (Vorauszahlungen - Betriebskosten - Strom)", got, wantSaldo)
@@ -261,20 +261,21 @@ func TestBerechneAbrechnung_VerbrauchVorauszahlungenUndSaldo(t *testing.T) {
 		if err != nil || erg.Abrechnung == nil {
 			t.Fatalf("berechneAbrechnung: err %v", err)
 		}
-		if erg.Abrechnung.StromW2 != nil {
-			t.Errorf("StromW2 = %+v, want nil with the flag off", erg.Abrechnung.StromW2)
+		if erg.Abrechnung.Strom != nil {
+			t.Errorf("Strom = %+v, want nil with the flag off", erg.Abrechnung.Strom)
 		}
-		if want := calc.Round2(ab.Saldo.Wert() + ab.StromW2.Kosten); !near(erg.Abrechnung.Saldo.Wert(), want) {
+		if want := calc.Round2(ab.Saldo.Wert() + ab.Strom.Kosten); !near(erg.Abrechnung.Saldo.Wert(), want) {
 			t.Errorf("Saldo = %v, want %v (the same without the Strom)", erg.Abrechnung.Saldo.Wert(), want)
 		}
 	})
-	t.Run("Wohnung 1 hat keinen Strom-Block", func(t *testing.T) {
-		erg1, err := berechneAbrechnungDB(db, 2026, 1)
+	t.Run("Wohnung 1 Eigennutzung hat immer den Strom-Block", func(t *testing.T) {
+		// #280: Eigennutzung shows the Strom whatever the flag says.
+		erg1, err := berechneAbrechnungDB(teiljahrDB(t, false), 2026, 1)
 		if err != nil || erg1.Abrechnung == nil {
 			t.Fatalf("abr.Berechne(Wohnung 1): err %v", err)
 		}
-		if erg1.Abrechnung.StromW2 != nil {
-			t.Errorf("StromW2 for Wohnung 1 = %+v, want nil", erg1.Abrechnung.StromW2)
+		if erg1.Abrechnung.Strom == nil || erg1.Abrechnung.Strom.Kosten <= 0 {
+			t.Errorf("Strom for Wohnung 1 = %+v, want a positive block even with the flag off", erg1.Abrechnung.Strom)
 		}
 		if erg1.Abrechnung.Vorauszahlungen != 600 {
 			t.Errorf("Vorauszahlungen Wohnung 1 = %v, want 600 (3 x 200)", erg1.Abrechnung.Vorauszahlungen)
@@ -303,7 +304,7 @@ func TestBerechneAbrechnung_Monatsverlauf(t *testing.T) {
 		}
 		verbrauch := ab.Heizung.Betrag + ab.Wasser.Betrag
 		if stromDazu {
-			verbrauch += ab.StromW2.Kosten
+			verbrauch += ab.Strom.Kosten
 		}
 		if !nah(v.Fixkosten, fix) {
 			t.Errorf("Summe Fixkosten = %v, want %v (the umlagefähige positions of the Abrechnung)", v.Fixkosten, fix)
@@ -373,7 +374,7 @@ func TestBerechneAbrechnung_Monatsverlauf(t *testing.T) {
 				t.Errorf("%s: Abschlag = %v, want 200", z.Monat, z.Abschlag)
 			}
 		}
-		pruefe(t, erg.Abrechnung, false)
+		pruefe(t, erg.Abrechnung, true) // #280: Wohnung 1 carries its Strom
 	})
 
 	t.Run("Teilzeitraum zählt die Monate davor als Übertrag", func(t *testing.T) {

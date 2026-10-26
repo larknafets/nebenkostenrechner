@@ -20,6 +20,9 @@ type dashboardData struct {
 	PeriodenKosten []periodKosten
 	FixkostenListe []fixkostenKosten
 	Jahr           int
+	// WallboxWeiterberechnen is the house flag of the same name; with the
+	// Wohnungsstatus it decides whether a zero Wallbox line is shown.
+	WallboxWeiterberechnen bool
 }
 
 // loadDashboardData runs the shared, DB-heavy first half of both
@@ -71,11 +74,12 @@ func loadDashboardData(db *sql.DB) (dashboardData, error) {
 	fixkostenListe := alleFixkostenKosten(calc.FixkostenreiheAus(ds))
 
 	return dashboardData{
-		HasAnyData:     true,
-		Apartments:     apartments,
-		PeriodenKosten: periodenKosten,
-		FixkostenListe: fixkostenListe,
-		Jahr:           anzeigeJahr(allPeriods, fixkostenEingaben),
+		HasAnyData:             true,
+		Apartments:             apartments,
+		PeriodenKosten:         periodenKosten,
+		FixkostenListe:         fixkostenListe,
+		Jahr:                   anzeigeJahr(allPeriods, fixkostenEingaben),
+		WallboxWeiterberechnen: ds.Haus.WallboxWeiterberechnen,
 	}, nil
 }
 
@@ -130,10 +134,28 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			}
 		}
 
+		// The Miete is read only for a logged-in user (#278), it is no part
+		// of dashboardData, which the widgets share.
+		var mieteEingaben []*store.FixkostenEingabeDetails
+		if nav.IsLoggedIn {
+			mieteEingaben, err = store.AllFixkostenEingabenDetails(dbFromContext(r.Context()))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
 		var cards []dashboardJahresCard
 		var verlaufSpalten []dashboardVerlaufSpalte
 		for _, a := range apartments {
 			card, verlauf := buildEntityView(dd, a.ID)
+			// Mieteinnahmen (#278): only for a rented apartment and a
+			// logged-in user, so the rent stays out of the template data
+			// otherwise.
+			if nav.IsLoggedIn && a.Status == store.StatusVermietet {
+				summe := mieteinnahmen(a.ID, jahr, mieteEingaben)
+				card.Mieteinnahmen = &summe
+			}
 			cards = append(cards, card)
 			verlaufSpalten = append(verlaufSpalten, verlauf)
 		}

@@ -13,10 +13,10 @@
 
 <div class="panel">
   <table class="letzte">
-    <thead><tr><th style="width:40%">Wohnung</th><th>Personen</th><th>Nebenkostenabschlag</th></tr></thead>
+    <thead><tr><th style="width:40%">Wohnung</th><th>Personen</th><th>Nebenkostenabschlag</th><th>Miete</th></tr></thead>
     <tbody>
-      {{range .Apartments}}
-      <tr><td>{{.Name}}</td><td>{{de (index $.Eingabe.Personen .ID)}}</td><td>{{deEUR (index $.Eingabe.Abschlag .ID)}}&nbsp;€</td></tr>
+      {{range .Wohnungen}}
+      <tr><td>{{.Name}}</td><td>{{de .Personen}}</td><td>{{deEUR .Abschlag}}&nbsp;€</td><td>{{if .Vermietet}}{{if .MieteErfasst}}{{deEUR .Miete}}&nbsp;€{{else}}–{{end}}{{end}}</td></tr>
       {{end}}
     </tbody>
   </table>

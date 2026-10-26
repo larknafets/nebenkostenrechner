@@ -25,9 +25,9 @@ type Kosten struct {
 // calc results belongs to which apartment. Dashboard (kategorien) and
 // Jahresabrechnung both read it.
 //
-// Apartment 1's Strom has no own cost position - its grid draw stays implicit
-// (see Strom) - so only apartment 2 has one (HatStrom). Frischwasser and
-// Abwasser are combined into one Wasser amount since they share one raw m³
+// Both apartments carry a Strom position (HatStrom): apartment 2 its submeter
+// share, apartment 1 the rest of the grid draw (see Strom, #279). Frischwasser
+// and Abwasser are combined into one Wasser amount since they share one raw m³
 // consumption (no separate wastewater meter, see Wasser).
 type Wohnungsanteil struct {
 	HatStrom      bool
@@ -66,6 +66,7 @@ func (k Kosten) Anteil(apartmentID int64) Wohnungsanteil {
 		a.WallboxKosten, a.WallboxKWh = k.Strom.KostenWallboxW2, k.Strom.WallboxW2KWh
 		return a
 	}
+	a.HatStrom, a.StromKosten, a.StromKWh = true, k.Strom.KostenW1, k.Strom.W1RestKWh
 	a.WallboxKosten, a.WallboxKWh = k.Strom.KostenWallboxW1, k.Strom.WallboxW1KWh
 	a.PVGutschrift = k.PVGutschriftW1
 	a.HeizungKosten, a.HeizungWPKWh, a.HeizungMWh = k.Heizung.KostenHeizungW1, k.Heizung.WPVerbrauchW1KWh, k.Heizung.WaermeW1MWh

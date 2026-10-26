@@ -189,12 +189,14 @@ Abrechnung 2023 Wohnung 1:
       Prozent: 62.88
       Geteilt: false
     Betriebskosten: 1068.50
-    StromW2: nil
+    Strom:
+      VerbrauchKWh: 1606.00
+      Kosten: 308.38
     Wallbox: nil
     PVGutschrift: nil
     Vorauszahlungen: 1300.00
     Saldo:
-      wert: 231.50
+      wert: -76.88
     Monatsverlauf:
       Zeilen: [5]
         [0]:
@@ -207,31 +209,31 @@ Abrechnung 2023 Wohnung 1:
         [1]:
           Monat: "2023-09-01"
           Fixkosten: 105.17
-          Verbrauch: 103.35
+          Verbrauch: 175.66
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 206.31
+          Saldo: 134.00
         [2]:
           Monat: "2023-10-01"
           Fixkosten: 105.17
-          Verbrauch: 118.24
+          Verbrauch: 193.15
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 242.90
+          Saldo: 95.68
         [3]:
           Monat: "2023-11-01"
           Fixkosten: 105.17
-          Verbrauch: 140.61
+          Verbrauch: 218.71
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 257.12
+          Saldo: 31.80
         [4]:
           Monat: "2023-12-01"
           Fixkosten: 105.17
-          Verbrauch: 180.45
+          Verbrauch: 263.51
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 231.50
+          Saldo: -76.88
       Uebertrag:
         Vorhanden: false
         Betrag: 0.00
@@ -239,10 +241,10 @@ Abrechnung 2023 Wohnung 1:
         Bis: ""
         Hinweis: ""
       Fixkosten: 525.85
-      Verbrauch: 542.65
+      Verbrauch: 851.03
       Abschlag: 1300.00
       Gutschrift: 0.00
-      Endsaldo: 231.50
+      Endsaldo: -76.88
     Zaehlerstaende:
       Spalten: [10]
         [0]:
@@ -868,7 +870,7 @@ Abrechnung 2023 Wohnung 2:
       Prozent: 37.12
       Geteilt: false
     Betriebskosten: 810.97
-    StromW2:
+    Strom:
       VerbrauchKWh: 712.50
       Kosten: 136.82
     Wallbox: nil
@@ -1549,109 +1551,111 @@ Abrechnung 2024 Wohnung 1:
       Prozent: 65.70
       Geteilt: false
     Betriebskosten: 2868.67
-    StromW2: nil
+    Strom:
+      VerbrauchKWh: 4752.00
+      Kosten: 942.11
     Wallbox: nil
     PVGutschrift: nil
     Vorauszahlungen: 3120.00
     Saldo:
-      wert: 251.33
+      wert: -690.78
     Monatsverlauf:
       Zeilen: [12]
         [0]:
           Monat: "2024-01-01"
           Fixkosten: 105.17
-          Verbrauch: 181.07
+          Verbrauch: 264.47
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 205.26
+          Saldo: -186.52
         [1]:
           Monat: "2024-02-01"
           Fixkosten: 105.17
-          Verbrauch: 182.58
+          Verbrauch: 266.32
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 177.51
+          Saldo: -298.01
         [2]:
           Monat: "2024-03-01"
           Fixkosten: 105.17
-          Verbrauch: 145.48
+          Verbrauch: 224.86
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 186.86
+          Saldo: -368.04
         [3]:
           Monat: "2024-04-01"
           Fixkosten: 105.17
-          Verbrauch: 125.78
+          Verbrauch: 202.54
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 215.91
+          Saldo: -415.75
         [4]:
           Monat: "2024-05-01"
           Fixkosten: 105.17
-          Verbrauch: 111.01
+          Verbrauch: 185.71
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 259.73
+          Saldo: -446.63
         [5]:
           Monat: "2024-06-01"
           Fixkosten: 105.17
-          Verbrauch: 98.25
+          Verbrauch: 171.47
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 316.31
+          Saldo: -463.27
         [6]:
           Monat: "2024-07-01"
           Fixkosten: 105.17
-          Verbrauch: 98.47
+          Verbrauch: 171.98
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 372.67
+          Saldo: -480.42
         [7]:
           Monat: "2024-08-01"
           Fixkosten: 105.17
-          Verbrauch: 95.96
+          Verbrauch: 169.77
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 431.54
+          Saldo: -495.36
         [8]:
           Monat: "2024-09-01"
           Fixkosten: 105.17
-          Verbrauch: 109.22
+          Verbrauch: 185.12
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 477.15
+          Saldo: -525.65
         [9]:
           Monat: "2024-10-01"
           Fixkosten: 105.17
-          Verbrauch: 124.99
+          Verbrauch: 203.60
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 506.99
+          Saldo: -574.42
         [10]:
           Monat: "2024-11-01"
           Fixkosten: 105.17
-          Verbrauch: 146.01
+          Verbrauch: 227.96
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 515.81
+          Saldo: -647.55
         [11]:
           Monat: "2024-12-01"
           Fixkosten: 105.17
-          Verbrauch: 187.81
+          Verbrauch: 274.94
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 482.83
+          Saldo: -767.66
       Uebertrag:
         Vorhanden: true
-        Betrag: 231.50
+        Betrag: -76.88
         Von: "2023-08-01"
         Bis: "2023-12-01"
         Hinweis: ""
       Fixkosten: 1262.04
-      Verbrauch: 1606.63
+      Verbrauch: 2548.74
       Abschlag: 3120.00
       Gutschrift: 0.00
-      Endsaldo: 482.83
+      Endsaldo: -767.66
     Zaehlerstaende:
       Spalten: [10]
         [0]:
@@ -2741,7 +2745,7 @@ Abrechnung 2024 Wohnung 2:
       Prozent: 34.30
       Geteilt: false
     Betriebskosten: 2104.02
-    StromW2:
+    Strom:
       VerbrauchKWh: 2110.00
       Kosten: 418.30
     Wallbox: nil
@@ -3935,111 +3939,113 @@ Abrechnung 2025 Wohnung 1:
       Prozent: 65.02
       Geteilt: false
     Betriebskosten: 2917.27
-    StromW2: nil
+    Strom:
+      VerbrauchKWh: 4752.00
+      Kosten: 987.13
     Wallbox:
       VerbrauchKWh: 81.00
       Kosten: 17.18
     PVGutschrift: nil
     Vorauszahlungen: 3120.00
     Saldo:
-      wert: 185.55
+      wert: -801.58
     Monatsverlauf:
       Zeilen: [12]
         [0]:
           Monat: "2025-01-01"
           Fixkosten: 105.17
-          Verbrauch: 188.42
+          Verbrauch: 275.89
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 449.24
+          Saldo: -888.72
         [1]:
           Monat: "2025-02-01"
           Fixkosten: 105.17
-          Verbrauch: 189.95
+          Verbrauch: 277.76
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 414.12
+          Saldo: -1011.65
         [2]:
           Monat: "2025-03-01"
           Fixkosten: 105.17
-          Verbrauch: 150.94
+          Verbrauch: 234.17
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 418.01
+          Saldo: -1090.99
         [3]:
           Monat: "2025-04-01"
           Fixkosten: 105.17
-          Verbrauch: 130.10
+          Verbrauch: 210.56
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 442.74
+          Saldo: -1146.72
         [4]:
           Monat: "2025-05-01"
           Fixkosten: 105.17
-          Verbrauch: 114.46
+          Verbrauch: 192.75
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 483.11
+          Saldo: -1184.64
         [5]:
           Monat: "2025-06-01"
           Fixkosten: 105.17
-          Verbrauch: 98.35
+          Verbrauch: 175.08
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 539.59
+          Saldo: -1204.89
         [6]:
           Monat: "2025-07-01"
           Fixkosten: 105.17
-          Verbrauch: 98.57
+          Verbrauch: 175.59
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 595.85
+          Saldo: -1225.65
         [7]:
           Monat: "2025-08-01"
           Fixkosten: 105.17
-          Verbrauch: 96.00
+          Verbrauch: 173.31
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 654.68
+          Saldo: -1244.13
         [8]:
           Monat: "2025-09-01"
           Fixkosten: 105.17
-          Verbrauch: 110.03
+          Verbrauch: 189.52
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 699.48
+          Saldo: -1278.82
         [9]:
           Monat: "2025-10-01"
           Fixkosten: 105.17
-          Verbrauch: 126.67
+          Verbrauch: 208.99
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 727.64
+          Saldo: -1332.98
         [10]:
           Monat: "2025-11-01"
           Fixkosten: 105.17
-          Verbrauch: 153.99
+          Verbrauch: 239.78
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 728.48
+          Saldo: -1417.93
         [11]:
           Monat: "2025-12-01"
           Fixkosten: 105.17
-          Verbrauch: 214.93
+          Verbrauch: 306.14
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 668.38
+          Saldo: -1569.24
       Uebertrag:
         Vorhanden: true
-        Betrag: 482.83
+        Betrag: -767.66
         Von: "2023-08-01"
         Bis: "2024-12-01"
         Hinweis: ""
       Fixkosten: 1262.04
-      Verbrauch: 1672.41
+      Verbrauch: 2659.54
       Abschlag: 3120.00
       Gutschrift: 0.00
-      Endsaldo: 668.38
+      Endsaldo: -1569.24
     Zaehlerstaende:
       Spalten: [12]
         [0]:
@@ -5259,7 +5265,7 @@ Abrechnung 2025 Wohnung 2:
       Prozent: 34.98
       Geteilt: false
     Betriebskosten: 2150.32
-    StromW2:
+    Strom:
       VerbrauchKWh: 2110.00
       Kosten: 438.33
     Wallbox:
@@ -6521,11 +6527,13 @@ Dashboard:
           W2AnteilKWh: 173.75
           WPAnteilKWh: 565.00
           WallboxAnteilKWh: 122.00
+          W1RestKWh: 391.00
           W2VerbrauchKWh: 173.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 38.23
+          KostenW1: 86.02
           KostenWPGesamtUnrounded: 124.30
           KostenWallbox: 26.84
           WallboxVerteilt: true
@@ -6578,11 +6586,13 @@ Dashboard:
           W2AnteilKWh: 168.75
           WPAnteilKWh: 385.00
           WallboxAnteilKWh: 118.00
+          W1RestKWh: 379.00
           W2VerbrauchKWh: 168.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 36.99
+          KostenW1: 83.08
           KostenWPGesamtUnrounded: 84.40
           KostenWallbox: 25.87
           WallboxVerteilt: true
@@ -6635,11 +6645,13 @@ Dashboard:
           W2AnteilKWh: 165.00
           WPAnteilKWh: 250.00
           WallboxAnteilKWh: 115.00
+          W1RestKWh: 370.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 36.04
+          KostenW1: 80.82
           KostenWPGesamtUnrounded: 54.61
           KostenWallbox: 25.12
           WallboxVerteilt: true
@@ -6692,11 +6704,13 @@ Dashboard:
           W2AnteilKWh: 165.00
           WPAnteilKWh: 250.00
           WallboxAnteilKWh: 115.00
+          W1RestKWh: 370.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 35.91
+          KostenW1: 80.52
           KostenWPGesamtUnrounded: 54.41
           KostenWallbox: 25.03
           WallboxVerteilt: true
@@ -6749,11 +6763,13 @@ Dashboard:
           W2AnteilKWh: 165.00
           WPAnteilKWh: 250.00
           WallboxAnteilKWh: 115.00
+          W1RestKWh: 370.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 35.78
+          KostenW1: 80.23
           KostenWPGesamtUnrounded: 54.21
           KostenWallbox: 24.94
           WallboxVerteilt: true
@@ -6806,11 +6822,13 @@ Dashboard:
           W2AnteilKWh: 168.75
           WPAnteilKWh: 385.00
           WallboxAnteilKWh: 118.00
+          W1RestKWh: 379.00
           W2VerbrauchKWh: 168.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 36.46
+          KostenW1: 81.88
           KostenWPGesamtUnrounded: 83.18
           KostenWallbox: 25.49
           WallboxVerteilt: true
@@ -6863,11 +6881,13 @@ Dashboard:
           W2AnteilKWh: 173.75
           WPAnteilKWh: 565.00
           WallboxAnteilKWh: 122.00
+          W1RestKWh: 391.00
           W2VerbrauchKWh: 173.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 37.40
+          KostenW1: 84.17
           KostenWPGesamtUnrounded: 121.62
           KostenWallbox: 26.26
           WallboxVerteilt: true
@@ -6920,11 +6940,13 @@ Dashboard:
           W2AnteilKWh: 180.00
           WPAnteilKWh: 790.00
           WallboxAnteilKWh: 127.00
+          W1RestKWh: 406.00
           W2VerbrauchKWh: 180.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 38.61
+          KostenW1: 87.08
           KostenWPGesamtUnrounded: 169.43
           KostenWallbox: 27.24
           WallboxVerteilt: true
@@ -6977,11 +6999,13 @@ Dashboard:
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
+          W1RestKWh: 430.00
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 40.60
+          KostenW1: 91.88
           KostenWPGesamtUnrounded: 245.74
           KostenWallbox: 28.85
           WallboxVerteilt: true
@@ -7034,11 +7058,13 @@ Dashboard:
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
+          W1RestKWh: 430.00
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 40.45
+          KostenW1: 91.54
           KostenWPGesamtUnrounded: 244.83
           KostenWallbox: 28.74
           WallboxVerteilt: true
@@ -7091,11 +7117,13 @@ Dashboard:
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
+          W1RestKWh: 430.00
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 40.30
+          KostenW1: 91.21
           KostenWPGesamtUnrounded: 243.92
           KostenWallbox: 28.63
           WallboxVerteilt: true
@@ -7148,11 +7176,13 @@ Dashboard:
           W2AnteilKWh: 180.00
           WPAnteilKWh: 790.00
           WallboxAnteilKWh: 127.00
+          W1RestKWh: 406.00
           W2VerbrauchKWh: 180.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 38.04
+          KostenW1: 85.79
           KostenWPGesamtUnrounded: 166.94
           KostenWallbox: 26.84
           WallboxVerteilt: false
@@ -7205,11 +7235,13 @@ Dashboard:
           W2AnteilKWh: 173.75
           WPAnteilKWh: 565.00
           WallboxAnteilKWh: 122.00
+          W1RestKWh: 391.00
           W2VerbrauchKWh: 173.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 36.58
+          KostenW1: 82.32
           KostenWPGesamtUnrounded: 118.95
           KostenWallbox: 25.68
           WallboxVerteilt: false
@@ -7262,11 +7294,13 @@ Dashboard:
           W2AnteilKWh: 168.75
           WPAnteilKWh: 385.00
           WallboxAnteilKWh: 118.00
+          W1RestKWh: 379.00
           W2VerbrauchKWh: 168.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 35.39
+          KostenW1: 79.49
           KostenWPGesamtUnrounded: 80.75
           KostenWallbox: 24.75
           WallboxVerteilt: false
@@ -7319,11 +7353,13 @@ Dashboard:
           W2AnteilKWh: 165.00
           WPAnteilKWh: 250.00
           WallboxAnteilKWh: 115.00
+          W1RestKWh: 370.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 34.48
+          KostenW1: 77.31
           KostenWPGesamtUnrounded: 52.24
           KostenWallbox: 24.03
           WallboxVerteilt: false
@@ -7376,11 +7412,13 @@ Dashboard:
           W2AnteilKWh: 165.00
           WPAnteilKWh: 250.00
           WallboxAnteilKWh: 115.00
+          W1RestKWh: 370.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 34.35
+          KostenW1: 77.02
           KostenWPGesamtUnrounded: 52.04
           KostenWallbox: 23.94
           WallboxVerteilt: false
@@ -7433,11 +7471,13 @@ Dashboard:
           W2AnteilKWh: 165.00
           WPAnteilKWh: 250.00
           WallboxAnteilKWh: 115.00
+          W1RestKWh: 370.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 34.22
+          KostenW1: 76.73
           KostenWPGesamtUnrounded: 51.84
           KostenWallbox: 23.85
           WallboxVerteilt: false
@@ -7490,11 +7530,13 @@ Dashboard:
           W2AnteilKWh: 168.75
           WPAnteilKWh: 385.00
           WallboxAnteilKWh: 118.00
+          W1RestKWh: 379.00
           W2VerbrauchKWh: 168.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 34.86
+          KostenW1: 78.29
           KostenWPGesamtUnrounded: 79.53
           KostenWallbox: 24.38
           WallboxVerteilt: false
@@ -7547,11 +7589,13 @@ Dashboard:
           W2AnteilKWh: 173.75
           WPAnteilKWh: 565.00
           WallboxAnteilKWh: 122.00
+          W1RestKWh: 391.00
           W2VerbrauchKWh: 173.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 35.76
+          KostenW1: 80.46
           KostenWPGesamtUnrounded: 116.27
           KostenWallbox: 25.11
           WallboxVerteilt: false
@@ -7604,11 +7648,13 @@ Dashboard:
           W2AnteilKWh: 180.00
           WPAnteilKWh: 790.00
           WallboxAnteilKWh: 127.00
+          W1RestKWh: 406.00
           W2VerbrauchKWh: 180.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 36.90
+          KostenW1: 83.23
           KostenWPGesamtUnrounded: 161.95
           KostenWallbox: 26.04
           WallboxVerteilt: false
@@ -7661,11 +7707,13 @@ Dashboard:
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
+          W1RestKWh: 430.00
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 38.80
+          KostenW1: 87.81
           KostenWPGesamtUnrounded: 234.84
           KostenWallbox: 27.57
           WallboxVerteilt: false
@@ -7718,11 +7766,13 @@ Dashboard:
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
+          W1RestKWh: 430.00
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 38.65
+          KostenW1: 87.47
           KostenWPGesamtUnrounded: 233.93
           KostenWallbox: 27.46
           WallboxVerteilt: false
@@ -7775,11 +7825,13 @@ Dashboard:
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
+          W1RestKWh: 430.00
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 38.50
+          KostenW1: 87.13
           KostenWPGesamtUnrounded: 233.03
           KostenWallbox: 27.36
           WallboxVerteilt: false
@@ -7832,11 +7884,13 @@ Dashboard:
           W2AnteilKWh: 180.00
           WPAnteilKWh: 790.00
           WallboxAnteilKWh: 127.00
+          W1RestKWh: 406.00
           W2VerbrauchKWh: 180.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 36.33
+          KostenW1: 81.95
           KostenWPGesamtUnrounded: 159.46
           KostenWallbox: 25.63
           WallboxVerteilt: false
@@ -7889,11 +7943,13 @@ Dashboard:
           W2AnteilKWh: 173.75
           WPAnteilKWh: 565.00
           WallboxAnteilKWh: 122.00
+          W1RestKWh: 391.00
           W2VerbrauchKWh: 173.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 34.93
+          KostenW1: 78.61
           KostenWPGesamtUnrounded: 113.59
           KostenWallbox: 24.53
           WallboxVerteilt: false
@@ -7946,11 +8002,13 @@ Dashboard:
           W2AnteilKWh: 168.75
           WPAnteilKWh: 385.00
           WallboxAnteilKWh: 118.00
+          W1RestKWh: 379.00
           W2VerbrauchKWh: 168.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 33.79
+          KostenW1: 75.90
           KostenWPGesamtUnrounded: 77.10
           KostenWallbox: 23.63
           WallboxVerteilt: false
@@ -8003,11 +8061,13 @@ Dashboard:
           W2AnteilKWh: 165.00
           WPAnteilKWh: 250.00
           WallboxAnteilKWh: 115.00
+          W1RestKWh: 370.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 32.91
+          KostenW1: 73.81
           KostenWPGesamtUnrounded: 49.87
           KostenWallbox: 22.94
           WallboxVerteilt: false
@@ -8060,11 +8120,13 @@ Dashboard:
           W2AnteilKWh: 165.00
           WPAnteilKWh: 250.00
           WallboxAnteilKWh: 115.00
+          W1RestKWh: 370.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 32.78
+          KostenW1: 73.51
           KostenWPGesamtUnrounded: 49.67
           KostenWallbox: 22.85
           WallboxVerteilt: false
@@ -8117,11 +8179,13 @@ Dashboard:
           W2AnteilKWh: 165.00
           WPAnteilKWh: 250.00
           WallboxAnteilKWh: 115.00
+          W1RestKWh: 370.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 32.65
+          KostenW1: 73.22
           KostenWPGesamtUnrounded: 49.47
           KostenWallbox: 22.76
           WallboxVerteilt: false
@@ -8174,11 +8238,13 @@ Dashboard:
           W2AnteilKWh: 168.75
           WPAnteilKWh: 385.00
           WallboxAnteilKWh: 118.00
+          W1RestKWh: 379.00
           W2VerbrauchKWh: 168.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 33.26
+          KostenW1: 74.70
           KostenWPGesamtUnrounded: 75.89
           KostenWallbox: 23.26
           WallboxVerteilt: false
@@ -8231,11 +8297,13 @@ Dashboard:
           W2AnteilKWh: 173.75
           WPAnteilKWh: 565.00
           WallboxAnteilKWh: 122.00
+          W1RestKWh: 391.00
           W2VerbrauchKWh: 173.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 34.11
+          KostenW1: 76.76
           KostenWPGesamtUnrounded: 110.92
           KostenWallbox: 23.95
           WallboxVerteilt: false
@@ -8288,11 +8356,13 @@ Dashboard:
           W2AnteilKWh: 180.00
           WPAnteilKWh: 790.00
           WallboxAnteilKWh: 127.00
+          W1RestKWh: 406.00
           W2VerbrauchKWh: 180.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 35.19
+          KostenW1: 79.38
           KostenWPGesamtUnrounded: 154.47
           KostenWallbox: 24.83
           WallboxVerteilt: false
@@ -8345,11 +8415,13 @@ Dashboard:
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
+          W1RestKWh: 430.00
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 37.00
+          KostenW1: 83.74
           KostenWPGesamtUnrounded: 223.95
           KostenWallbox: 26.29
           WallboxVerteilt: false
@@ -8402,11 +8474,13 @@ Dashboard:
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
+          W1RestKWh: 430.00
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 36.85
+          KostenW1: 83.40
           KostenWPGesamtUnrounded: 223.04
           KostenWallbox: 26.18
           WallboxVerteilt: false
@@ -8459,11 +8533,13 @@ Dashboard:
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
+          W1RestKWh: 430.00
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 36.70
+          KostenW1: 83.06
           KostenWPGesamtUnrounded: 222.13
           KostenWallbox: 26.08
           WallboxVerteilt: false
@@ -8516,11 +8592,13 @@ Dashboard:
           W2AnteilKWh: 180.00
           WPAnteilKWh: 790.00
           WallboxAnteilKWh: 127.00
+          W1RestKWh: 406.00
           W2VerbrauchKWh: 180.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 34.63
+          KostenW1: 78.10
           KostenWPGesamtUnrounded: 151.97
           KostenWallbox: 24.43
           WallboxVerteilt: false
@@ -8573,11 +8651,13 @@ Dashboard:
           W2AnteilKWh: 173.75
           WPAnteilKWh: 565.00
           WallboxAnteilKWh: 122.00
+          W1RestKWh: 391.00
           W2VerbrauchKWh: 173.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 33.29
+          KostenW1: 74.91
           KostenWPGesamtUnrounded: 108.24
           KostenWallbox: 23.37
           WallboxVerteilt: false
@@ -8630,11 +8710,13 @@ Dashboard:
           W2AnteilKWh: 168.75
           WPAnteilKWh: 385.00
           WallboxAnteilKWh: 118.00
+          W1RestKWh: 379.00
           W2VerbrauchKWh: 168.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 32.20
+          KostenW1: 72.31
           KostenWPGesamtUnrounded: 73.45
           KostenWallbox: 22.51
           WallboxVerteilt: false
@@ -14452,6 +14534,7 @@ Dashboard:
         1: 2.00
         2: 2.00
   Jahr: 2026
+  WallboxWeiterberechnen: true
 Fixkosten-Liste: [39]
   [0]:
     Monat: "2026-10-01"

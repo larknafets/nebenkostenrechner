@@ -195,6 +195,32 @@ func TestAblesungDetail_WallboxKostenJeWohnung(t *testing.T) {
 	})
 }
 
+func TestAblesungDetail_StromWohnung1(t *testing.T) {
+	db := openTestDB(t)
+	if _, err := store.CreatePeriod(db, seedPeriodInputAt("2026-10-01")); err != nil {
+		t.Fatalf("CreatePeriod: %v", err)
+	}
+	second := seedPeriodInputAt("2026-11-01")
+	second.Readings["strom_gesamt"] = 100
+	second.Readings["strom_wohnung2"] = 20
+	second.Readings["strom_waermepumpe"] = 30
+	second.Readings["strom_wallbox"] = 10
+	id, err := store.CreatePeriod(db, second)
+	if err != nil {
+		t.Fatalf("CreatePeriod: %v", err)
+	}
+	body := detailBody(t, db, id)
+	// Rest 100 - 20 - 30 - 10 = 40 kWh, 40 * 0,22 = 8,80 EUR.
+	for _, want := range []string{
+		"Wohnung 1 Anteil</td><td>40,00&nbsp;kWh",
+		"Kosten Wohnung 1</strong></td><td><strong>8,80&nbsp;EUR",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("Ablesungsseite ohne %q", want)
+		}
+	}
+}
+
 func TestAblesungDetail_PlausibilitaetsHinweis(t *testing.T) {
 	// Zwischenzähler: 40 kWh, Schwelle 2 kWh.
 	cases := []struct {

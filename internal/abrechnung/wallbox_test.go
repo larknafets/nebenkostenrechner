@@ -72,6 +72,11 @@ func TestBerechne_Statustabelle(t *testing.T) {
 			wantSaldo := 0.0 // Wohnung 1: no Abschlag, no Fixkosten
 			if tc.wohnung == 2 {
 				wantSaldo = 90*12 - 100*12
+			} else {
+				// #280: Wohnung 1's Strom (the rest of the Netzbezug,
+				// 13,20 EUR per month) is shown too; the fixture's flag
+				// is on. Wohnung 2 has no Zwischenzähler here, so 0.
+				wantSaldo -= 12 * 13.20
 			}
 			if tc.wantWallbox {
 				if ab.Wallbox == nil || ab.Wallbox.Kosten != 52.80 || ab.Wallbox.VerbrauchKWh != 240 {
@@ -98,6 +103,8 @@ func TestBerechne_Statustabelle(t *testing.T) {
 			wantUebertrag := 0.0
 			if tc.wohnung == 2 {
 				wantUebertrag = 2 * (90 - 100)
+			} else {
+				wantUebertrag -= 2 * 13.20
 			}
 			if tc.wantWallbox {
 				wantUebertrag -= 2 * 4.40
