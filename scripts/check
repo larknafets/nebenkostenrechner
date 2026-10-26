@@ -24,6 +24,17 @@ if [ -n "$dashes" ]; then
   exit 1
 fi
 
+step "conflict markers"
+# A merge that was resolved halfway leaves the marker lines in a file, and a
+# green build does not notice them in Markdown or a template. The script names
+# the markers itself, so it is the one exception.
+markers=$(git grep -nIE '^(<<<<<<<|>>>>>>>) ' -- . ':!scripts/check' || true)
+if [ -n "$markers" ]; then
+  echo "Merge conflict markers in committed files, resolve the conflict:"
+  echo "$markers"
+  exit 1
+fi
+
 step "stray copies"
 # A sync tool or Finder leaves "file 2.go" next to "file.go". They are not
 # ignored on purpose: this step has to see them, and a `git add -A` would
