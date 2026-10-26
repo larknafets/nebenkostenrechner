@@ -152,7 +152,7 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			// Mieteinnahmen (#278): only for a rented apartment and a
 			// logged-in user, so the rent stays out of the template data
 			// otherwise.
-			if nav.IsLoggedIn && a.Vermietet() {
+			if nav.IsLoggedIn && store.NewWohnungsregeln(a, store.Haus{}).Mieteinnahmen() {
 				summe := mieteinnahmen(a.ID, jahr, mieteEingaben)
 				card.Mieteinnahmen = &summe
 			}

@@ -554,7 +554,8 @@ func buildEntityView(dd dashboardData, apartmentID int64) (dashboardJahresCard, 
 	// The Wohnungsstatus steers the display, too (#276): a rented apartment
 	// whose Wallbox is not passed on and costs nothing shows no Wallbox line
 	// and no bar segment. Totals and Saldo stay untouched (the segment is 0).
-	if a.Vermietet() && !dd.WallboxWeiterberechnen && card.WallboxEUR == 0 {
+	regeln := store.NewWohnungsregeln(a, store.Haus{WallboxWeiterberechnen: dd.WallboxWeiterberechnen})
+	if !regeln.JahreskarteWallboxZeile(card.WallboxEUR) {
 		card.Segmente = slices.DeleteFunc(card.Segmente, func(s dashboardSegment) bool { return s.Farbe == "wallbox" })
 	}
 	card.Saldo = verlauf.LatestSaldo

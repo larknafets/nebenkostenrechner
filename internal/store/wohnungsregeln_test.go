@@ -2,6 +2,40 @@ package store
 
 import "testing"
 
+// TestWohnungsregeln_AnzeigeUndErfassung covers the display and capture
+// questions: status x Wallbox flag x Wallbox amount.
+func TestWohnungsregeln_AnzeigeUndErfassung(t *testing.T) {
+	for _, status := range []string{StatusEigennutzung, StatusVermietet} {
+		for _, wallbox := range []bool{false, true} {
+			for _, betrag := range []float64{0, 12.5} {
+				vermietet := status == StatusVermietet
+				// Written out from the table, not from the rule.
+				wantFormular := vermietet
+				wantMieteinnahmen := vermietet
+				wantDetailMiete := vermietet
+				wantWallboxZeile := !(vermietet && !wallbox && betrag == 0)
+
+				s := NewWohnungsregeln(
+					Apartment{ID: 1, Status: status},
+					Haus{WallboxWeiterberechnen: wallbox},
+				)
+				if got := s.FixkostenAbschlagMiete(); got != wantFormular {
+					t.Errorf("%s wallbox=%v: FixkostenAbschlagMiete=%v, want %v", status, wallbox, got, wantFormular)
+				}
+				if got := s.Mieteinnahmen(); got != wantMieteinnahmen {
+					t.Errorf("%s wallbox=%v: Mieteinnahmen=%v, want %v", status, wallbox, got, wantMieteinnahmen)
+				}
+				if got := s.FixkostenDetailMiete(); got != wantDetailMiete {
+					t.Errorf("%s wallbox=%v: FixkostenDetailMiete=%v, want %v", status, wallbox, got, wantDetailMiete)
+				}
+				if got := s.JahreskarteWallboxZeile(betrag); got != wantWallboxZeile {
+					t.Errorf("%s wallbox=%v betrag=%v: JahreskarteWallboxZeile=%v, want %v", status, wallbox, betrag, got, wantWallboxZeile)
+				}
+			}
+		}
+	}
+}
+
 // TestWohnungsregeln_Abrechnung is the Wohnungsstatus table of GLOSSARY.md at
 // the seam of Wohnungsregeln: status x both flags x apartment.
 func TestWohnungsregeln_Abrechnung(t *testing.T) {

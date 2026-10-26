@@ -90,7 +90,7 @@ type fixkostenMieteRow struct {
 func buildFixkostenMieteRows(apartments []store.Apartment, abschlag, miete map[int64]float64, hatVorlage bool) []fixkostenMieteRow {
 	var rows []fixkostenMieteRow
 	for _, a := range apartments {
-		if !a.Vermietet() {
+		if !store.NewWohnungsregeln(a, store.Haus{}).FixkostenAbschlagMiete() {
 			continue
 		}
 		row := fixkostenMieteRow{ID: a.ID, Name: a.Name}
@@ -285,7 +285,7 @@ func parseFixkostenInput(r *http.Request, apartments []store.Apartment) (store.F
 		// Only a rented apartment has the fields. For an owner-occupied one
 		// nothing is read: an Abschlag stored earlier stays as it is (the
 		// store leaves an apartment without an entry alone on update).
-		if !a.Vermietet() {
+		if !store.NewWohnungsregeln(a, store.Haus{}).FixkostenAbschlagMiete() {
 			continue
 		}
 		v, err := strconv.ParseFloat(r.FormValue("abschlag_"+idStr), 64)
@@ -535,7 +535,7 @@ func handleFixkostenDetail(a auth) http.HandlerFunc {
 				Name:      ap.Name,
 				Personen:  eingabe.Personen[ap.ID],
 				Abschlag:  eingabe.Abschlag[ap.ID],
-				Vermietet: ap.Vermietet(),
+				Vermietet: store.NewWohnungsregeln(ap, store.Haus{}).FixkostenDetailMiete(),
 			}
 			w.Miete, w.MieteErfasst = eingabe.Miete[ap.ID]
 			wohnungen = append(wohnungen, w)
