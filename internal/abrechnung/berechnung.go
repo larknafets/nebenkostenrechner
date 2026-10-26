@@ -264,7 +264,7 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	}
 
 	z := *pruefung.Zeitraum
-	p := store.NewSichtbarkeit(apartment, haus)
+	p := store.NewWohnungsregeln(apartment, haus)
 	// The months of the period, oldest first.
 	f := faltMonate(d, z.ErsterMonat, z.LetzterMonat, apartmentID, p)
 
@@ -401,9 +401,9 @@ type monatsfaltung struct {
 
 // faltMonate folds the months von to bis (first of month, both included) for
 // apartmentID. The Jahressaldo, the Monatsverlauf and the Übertrag Vorjahre
-// all read the same Sichtbarkeit s, so they count exactly the items the
+// all read the same Wohnungsregeln s, so they count exactly the items the
 // Abrechnung shows (#228).
-func faltMonate(d BerechnungsDaten, von, bis time.Time, apartmentID int64, s store.Sichtbarkeit) monatsfaltung {
+func faltMonate(d BerechnungsDaten, von, bis time.Time, apartmentID int64, s store.Wohnungsregeln) monatsfaltung {
 	f := monatsfaltung{imBereich: map[string]bool{}}
 	for m := von; !m.After(bis); m = m.AddDate(0, 1, 0) {
 		key := m.Format("2006-01-02")
@@ -458,7 +458,7 @@ func fixkostenJeMonat(reihe *calc.Fixkostenreihe, monate []string) map[string]ca
 // why instead of a wrong number. The month range and the first month needing
 // a Fixkosten-Eingabe follow the same rules as the Zeitraum of the Prüfung
 // (Zeitraum.Vormonat, fixkostenBeginn).
-func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment, p store.Sichtbarkeit) Uebertrag {
+func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment, p store.Wohnungsregeln) Uebertrag {
 	periods := d.Pruef.Periods
 	if len(periods) == 0 {
 		return Uebertrag{}

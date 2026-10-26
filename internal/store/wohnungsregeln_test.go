@@ -2,9 +2,9 @@ package store
 
 import "testing"
 
-// TestSichtbarkeit_Abrechnung is the Wohnungsstatus table of GLOSSARY.md at
-// the seam of Sichtbarkeit: status x both flags x apartment.
-func TestSichtbarkeit_Abrechnung(t *testing.T) {
+// TestWohnungsregeln_Abrechnung is the Wohnungsstatus table of GLOSSARY.md at
+// the seam of Wohnungsregeln: status x both flags x apartment.
+func TestWohnungsregeln_Abrechnung(t *testing.T) {
 	for _, status := range []string{StatusEigennutzung, StatusVermietet} {
 		for _, id := range []int64{1, 2} {
 			for _, strom := range []bool{false, true} {
@@ -15,7 +15,7 @@ func TestSichtbarkeit_Abrechnung(t *testing.T) {
 					wantWallbox := !vermietet || wallbox
 					wantPV := !vermietet && id == 1
 
-					s := NewSichtbarkeit(
+					s := NewWohnungsregeln(
 						Apartment{ID: id, Status: status},
 						Haus{StromWeiterberechnen: strom, WallboxWeiterberechnen: wallbox},
 					)
