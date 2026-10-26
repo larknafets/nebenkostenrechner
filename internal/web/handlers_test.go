@@ -70,15 +70,13 @@ func TestKategorien(t *testing.T) {
 		}
 	})
 
-	t.Run("Wohnung 1 has no eigene Strom-Position", func(t *testing.T) {
+	t.Run("Wohnung 1 hat immer eine Strom-Position, auch mit 0", func(t *testing.T) {
 		kats := kategorien(1, k)
-		for _, kat := range kats {
-			if kat.Label == "Strom" {
-				t.Fatalf("Wohnung 1 sollte keine Strom-Kategorie haben, got %+v", kat)
-			}
+		if len(kats) != 4 || kats[0].Label != "Strom" {
+			t.Fatalf("want 4 Kategorien (Strom, Wallbox, Heizung, Wasser), got %d: %+v", len(kats), kats)
 		}
-		if len(kats) != 3 {
-			t.Fatalf("want 3 Kategorien (Wallbox, Heizung, Wasser), got %d: %+v", len(kats), kats)
+		if kats[0].Kosten != 0 || kats[0].Verbrauch != 0 || kats[0].Einheit != "kWh" {
+			t.Errorf("Strom = %+v, want 0 EUR / 0 kWh (no rest in this fixture)", kats[0])
 		}
 	})
 
@@ -2071,7 +2069,7 @@ func TestInputNumber(t *testing.T) {
 
 func TestKostenAnteil(t *testing.T) {
 	k := calc.Kosten{
-		Strom: &calc.StromErgebnis{KostenW2: 7.5, W2VerbrauchKWh: 30},
+		Strom: &calc.StromErgebnis{KostenW2: 7.5, W2VerbrauchKWh: 30, KostenW1: 12.25, W1RestKWh: 55},
 		Wasser: &calc.WasserErgebnis{
 			KostenFrischwasserW1: 1.10, KostenAbwasserW1: 2.20, FrischwasserW1: 5,
 			KostenFrischwasserW2: 3.30, KostenAbwasserW2: 4.40, FrischwasserW2: 7,
@@ -2083,8 +2081,8 @@ func TestKostenAnteil(t *testing.T) {
 	}
 
 	w1 := k.Anteil(1)
-	if w1.HatStrom || w1.StromKosten != 0 || w1.StromKWh != 0 {
-		t.Errorf("Wohnung 1 has a Strom share: %+v", w1)
+	if !w1.HatStrom || w1.StromKosten != 12.25 || w1.StromKWh != 55 {
+		t.Errorf("Wohnung 1 Strom = %+v, want 12.25 EUR / 55 kWh (the rest of the grid draw)", w1)
 	}
 	if w1.HeizungKosten != 10 || w1.HeizungWPKWh != 100 || w1.HeizungMWh != 1 || w1.WasserKosten != 3.30 || w1.WasserM3 != 5 {
 		t.Errorf("Wohnung 1 Anteil = %+v, want its own Heizung/Wasser values", w1)

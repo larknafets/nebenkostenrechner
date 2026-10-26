@@ -56,6 +56,6 @@ Netzbezug Gesamt (netto)
    (kompletter verbleibender Netzbezug, kein eigener Zähler/PV-Anteil)
 ```
 
-**Kernidee:** Jede Stufe bekommt zuerst ihren vollen eigenen Verbrauch abgerechnet, solange Netzbezug reicht. Reicht er nicht, deckt PV die Lücke (`PV-Anteil`, angezeigt als "nicht dem Netzbezug zugeordnet (PV)", kostet nichts). Was nach allen 3 Stufen an Netzbezug übrig bleibt, geht implizit komplett an Wohnung 1 - dort gibt es keinen eigenen Zähler, also auch keinen sichtbaren PV-Anteil für Wohnung 1 selbst (der steckt bereits unsichtbar im Unterschied zwischen Netzbezug Gesamt und der Summe aller Rohverbräuche).
+**Kernidee:** Jede Stufe bekommt zuerst ihren vollen eigenen Verbrauch abgerechnet, solange Netzbezug reicht. Reicht er nicht, deckt PV die Lücke (`PV-Anteil`, angezeigt als "nicht dem Netzbezug zugeordnet (PV)", kostet nichts). Was nach allen 3 Stufen an Netzbezug übrig bleibt, geht komplett an Wohnung 1 (als deren Strom-Kostenposition) - dort gibt es keinen eigenen Zähler, also auch keinen sichtbaren PV-Anteil für Wohnung 1 selbst (der steckt bereits unsichtbar im Unterschied zwischen Netzbezug Gesamt und der Summe aller Rohverbräuche).
 
 Siehe `internal/calc/strom.go` für die Implementierung.
