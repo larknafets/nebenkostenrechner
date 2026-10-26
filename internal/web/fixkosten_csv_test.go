@@ -58,7 +58,7 @@ func fixkostenCSVRow(monat string, wert string) string {
 	for _, kd := range store.KostenpositionDefaults {
 		cells = append(cells, kd.Logik, kd.Typ, wert)
 	}
-	cells = append(cells, "2", "1", "150", "90")
+	cells = append(cells, "2", "1", "150", "90", "", "800")
 	return strings.Join(cells, ";")
 }
 
@@ -143,7 +143,7 @@ func TestHandleImportFixkostenCSV_BadRowRejectedWithoutPersisting(t *testing.T) 
 }
 
 func fixkostenCSVRowMitPersonen(monat, p1, p2 string) string {
-	return strings.TrimSuffix(fixkostenCSVRow(monat, "100"), "2;1;150;90") + p1 + ";" + p2 + ";150;90"
+	return strings.TrimSuffix(fixkostenCSVRow(monat, "100"), "2;1;150;90;;800") + p1 + ";" + p2 + ";150;90;;800"
 }
 
 func TestHandleImportFixkostenCSV_PersonenzahlDezimal(t *testing.T) {

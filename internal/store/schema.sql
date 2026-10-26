@@ -98,3 +98,13 @@ CREATE TABLE IF NOT EXISTS nebenkosten_abschlaege (
     wert                  REAL NOT NULL,
     UNIQUE(fixkosten_eingabe_id, apartment_id)
 );
+
+-- Monthly rent per apartment, recorded on the Fixkosten-Eingabe like the
+-- Abschlag. Income information only, it goes into no calculation.
+CREATE TABLE IF NOT EXISTS mieten (
+    id                    INTEGER PRIMARY KEY,
+    fixkosten_eingabe_id  INTEGER NOT NULL REFERENCES fixkosten_eingaben(id),
+    apartment_id          INTEGER NOT NULL REFERENCES apartments(id),
+    wert                  REAL NOT NULL,
+    UNIQUE(fixkosten_eingabe_id, apartment_id)
+);

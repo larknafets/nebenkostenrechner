@@ -226,6 +226,7 @@ func ResetDemoData(db *sql.DB, now time.Time) error {
 		`DELETE FROM fixkosten_werte`,
 		`DELETE FROM fixkosten_personen`,
 		`DELETE FROM nebenkosten_abschlaege`,
+		`DELETE FROM mieten`,
 		`DELETE FROM periods`,
 		`DELETE FROM fixkosten_eingaben`,
 	} {
@@ -271,6 +272,10 @@ var demoKostenpositionWerte = map[string]float64{
 // statement in real life.
 var demoAbschlag = map[int64]float64{1: 260, 2: 190}
 
+// demoMiete is the monthly rent of the rented demo apartment (Wohnung 2),
+// the owner-occupied one has none.
+var demoMiete = map[int64]float64{2: 720}
+
 // seedDemoFixkosten creates 39 monthly fixed-cost entries covering the same
 // range as seedDemoPeriods, so Dashboard/history show a complete record
 // instead of meter readings without a matching fixed-cost entry.
@@ -292,6 +297,7 @@ func seedDemoFixkosten(db *sql.DB, now time.Time) error {
 			Personen: map[int64]float64{1: 2, 2: 2},
 			Werte:    werte,
 			Abschlag: demoAbschlag,
+			Miete:    demoMiete,
 		}
 		if _, err := CreateFixkostenEingabe(db, in); err != nil {
 			return fmt.Errorf("fixkosten monat %s: %w", in.Monat, err)

@@ -193,6 +193,8 @@ Sind bei "Je anteiliges Flurstück", "Je anteilige Wohnungsgröße" oder "Je Anz
 
 Die monatliche Vorauszahlung je Wohnung, an der jeweiligen Fixkosteneingabe erfasst wie ein monatlich typisierter Wert (vorbelegt von der letzten Eingabe, frei überschreibbar) - deckt Fixkosten UND Verbräuche gemeinsam ab, ist selbst aber keine Kostenposition (keine Berechnungslogik, kein Split, direkter Wert je Wohnung).
 
+Abschlag und **Miete** (die monatliche Einnahme je Wohnung) fragt das Formular nur für Wohnungen mit dem Status Vermietung ab. Beide sind dort Pflichtfelder (0 ist erlaubt) und aus der letzten Eingabe vorbelegt. Bei Eigennutzung gibt es kein Feld: Ein früher gespeicherter Abschlag zählt weiter in Saldo, Übertrag und Abrechnung, und "Eingabe korrigieren" lässt ihn unverändert. Die Miete geht in keine Berechnung, keinen Saldo und keine Abrechnung ein. Im Fixkosten-CSV stehen immer `abschlag_1`, `abschlag_2`, `miete_1` und `miete_2` (leere Zelle = nicht erfasst). Der Import übernimmt die Werte unabhängig vom Status, ältere Dateien ohne die Miete-Spalten lassen sich weiter importieren. Die Demo hat eine Miete für die vermietete Wohnung.
+
 ```
 Saldo(Monat) = Saldo(Vormonat) + Abschlag(Monat) - (Fixkosten(Monat) + Verbrauch(Monat))
 ```
