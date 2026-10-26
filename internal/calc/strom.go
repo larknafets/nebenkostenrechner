@@ -10,14 +10,20 @@ import (
 // https://github.com/larknafets/nebenkostenrechner/issues/2 for the
 // formula: grid draw is allocated to apartment 2 first (capped at its own
 // consumption), then the heat pump against the remainder, then the wallboxes
-// against whatever remains after that (Ticket #67 follow-up) - whatever's
-// left after that implicitly counts toward apartment 1 (no cost position of
-// its own).
+// against whatever remains after that (Ticket #67 follow-up). Whatever's left
+// after that is apartment 1's household electricity (W1RestKWh, #279).
 type StromErgebnis struct {
 	NetzbezugGesamtKWh float64
 	W2AnteilKWh        float64
 	WPAnteilKWh        float64
 	WallboxAnteilKWh   float64
+
+	// W1RestKWh is what remains of the grid draw after apartment 2, the heat
+	// pump and the Wallboxen: apartment 1's household electricity (#279),
+	// never negative. Apartment 1's share of the Wallbox stays in the Wallbox
+	// position, so nothing is counted twice. There is no submeter for
+	// apartment 1, hence no PV share for it.
+	W1RestKWh float64
 
 	// W2VerbrauchKWh is apartment 2's actual (raw) submeter consumption,
 	// without the PV deduction - unlike W2AnteilKWh (the billed share, capped
@@ -36,6 +42,11 @@ type StromErgebnis struct {
 	// KostenW2 is the displayed cost position for apartment 2 - rounded to
 	// the cent using commercial rounding (Issue #8).
 	KostenW2 float64
+
+	// KostenW1 is apartment 1's household electricity, W1RestKWh times the
+	// Strompreis rounded to the cent per Ablesung (#279). No cent adjustment
+	// against NetzbezugGesamtKWh times the Strompreis.
+	KostenW1 float64
 
 	// KostenWPGesamtUnrounded is the (not yet rounded) total cost of the
 	// heat pump's electricity - it isn't a displayed position on its own,
@@ -105,17 +116,23 @@ func berechneStrom(in stromEingabe) *StromErgebnis {
 	wpAnteil := min(rest1, verbrauch["strom_waermepumpe"])
 	rest2 := rest1 - wpAnteil
 	wallboxAnteil := min(rest2, verbrauch["strom_wallbox"])
+	// Every stage is capped at the remainder before it, so the rest is never
+	// negative, also for a falling meter reading (only warned about on input,
+	// it reaches this point). No clamp needed (#279).
+	w1Rest := rest2 - wallboxAnteil
 
 	e := &StromErgebnis{
 		NetzbezugGesamtKWh:      netzbezugGesamt,
 		W2AnteilKWh:             w2Anteil,
 		WPAnteilKWh:             wpAnteil,
 		WallboxAnteilKWh:        wallboxAnteil,
+		W1RestKWh:               w1Rest,
 		W2VerbrauchKWh:          verbrauch["strom_wohnung2"],
 		PVAnteilW2KWh:           max(0, verbrauch["strom_wohnung2"]-w2Anteil),
 		PVAnteilWPKWh:           max(0, verbrauch["strom_waermepumpe"]-wpAnteil),
 		PVAnteilWallboxKWh:      max(0, verbrauch["strom_wallbox"]-wallboxAnteil),
 		KostenW2:                Round2(w2Anteil * in.Strompreis),
+		KostenW1:                Round2(w1Rest * in.Strompreis),
 		KostenWPGesamtUnrounded: wpAnteil * in.Strompreis,
 		KostenWallbox:           Round2(wallboxAnteil * in.Strompreis),
 	}

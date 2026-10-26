@@ -53,7 +53,7 @@ Die kWh-Differenz zwischen dem Verbrauch eines Zwischenzählers (Wohnung 2 oder 
 _Avoid_: PV-Anteil, PV-Ertrag (das ist die separate Einspeisevergütung, siehe unten)
 
 **Wohnung 1 / Wohnung 2**:
-Die zwei Hausparteien, auf die Kosten verteilt werden. Wohnung 1 trägt keine eigene Strom-Kostenposition - ihr Netzbezug bleibt implizit der Rest nach Wohnung 2 und Wärmepumpe.
+Die zwei Hausparteien, auf die Kosten verteilt werden. Wohnung 1 trägt als Strom-Kostenposition den Rest des Netzbezugs nach Wohnung 2, Wärmepumpe und Wallboxen (Haushaltsstrom, mal Strompreis der Ablesung, je Ablesung auf den Cent gerundet, nie negativ). Ihr Wallbox-Anteil bleibt in der Wallbox-Position, einen PV-Anteil gibt es für sie nicht (kein Zwischenzähler).
 
 ## Heizung & Warmwasser
 

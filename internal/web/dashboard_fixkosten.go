@@ -195,15 +195,13 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 	brutto := calc.Round2(verbrauch + fix)
 	gesamt := calc.Round2(brutto - gutschrift)
 
-	segs := []dashboardSegment{{Farbe: "fix", Label: "Fixkosten", Kosten: fix}}
-	if apartmentID == 2 {
-		segs = append(segs, dashboardSegment{Farbe: "strom", Label: "Strom", Kosten: strom})
+	segs := []dashboardSegment{
+		{Farbe: "fix", Label: "Fixkosten", Kosten: fix},
+		{Farbe: "strom", Label: "Strom", Kosten: strom},
+		{Farbe: "wallbox", Label: "Wallbox", Kosten: wallbox},
+		{Farbe: "heizung", Label: "Heizung/Ww", Kosten: heizung},
+		{Farbe: "wasser", Label: "Wasser", Kosten: wasser},
 	}
-	segs = append(segs,
-		dashboardSegment{Farbe: "wallbox", Label: "Wallbox", Kosten: wallbox},
-		dashboardSegment{Farbe: "heizung", Label: "Heizung/Ww", Kosten: heizung},
-		dashboardSegment{Farbe: "wasser", Label: "Wasser", Kosten: wasser},
-	)
 	// The bar shows the costs before the credit, so its segments add up to 100%.
 	setSegmentPct(segs, brutto)
 

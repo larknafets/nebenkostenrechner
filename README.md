@@ -80,7 +80,7 @@ Im CSV-Export stehen die zwei Einzelzähler und die zwei Schalter als letzte vie
 
 Personenzahlen (`personen_1`, `personen_2`) stehen in beiden CSV-Dateien (Ablesungen und Fixkosten) mit Komma, z. B. `1,25`; ein Punkt wird als Tausenderpunkt gelesen (`1.25` ergibt 125). Erlaubt sind 0 oder mehr mit höchstens 2 Nachkommastellen. Ein negativer Wert oder mehr Nachkommastellen brechen den Import mit der Zeilennummer ab, dabei wird nichts importiert. Alte CSV-Dateien mit ganzen Zahlen bleiben gültig.
 
-`strom_wallbox` fließt als dritte Zuteilungsstufe in die Strom-Netzbezug-Zuteilung ein (siehe unten) - sie wird vom nach Wohnung 2/Wärmepumpe verbleibenden Netzbezug abgezogen, bevor der Rest implizit Wohnung 1 zufällt. Kein eigener Wallbox-Tarif. Wie die Wallbox-Kosten auf die Wohnungen verteilt werden, steht unter "Strom" (Verteilung der Wallbox-Kosten).
+`strom_wallbox` fließt als dritte Zuteilungsstufe in die Strom-Netzbezug-Zuteilung ein (siehe unten) - sie wird vom nach Wohnung 2/Wärmepumpe verbleibenden Netzbezug abgezogen, bevor der Rest als Strom an Wohnung 1 geht. Kein eigener Wallbox-Tarif. Wie die Wallbox-Kosten auf die Wohnungen verteilt werden, steht unter "Strom" (Verteilung der Wallbox-Kosten).
 
 Visuelle Übersicht der Zählerverschachtelung (und der PV-Verrechnungskaskade): [docs/pv-verrechnung.md](docs/pv-verrechnung.md).
 
@@ -88,7 +88,7 @@ Visuelle Übersicht der Zählerverschachtelung (und der PV-Verrechnungskaskade):
 
 ### Strom (PV-Netzbezug-Zuteilung)
 
-Netzbezug wird sequenziell zugeteilt: zuerst Wohnung 2 (gedeckelt auf ihren eigenen Verbrauch), dann die Wärmepumpe auf den verbleibenden Netzbezug, dann die Wallboxen auf den danach noch verbleibenden Netzbezug (keine eigene Wohnungs-Zuteilung, kein eigener Wallbox-Tarif, aber dieselbe Deckelung wie Wohnung 2/Wärmepumpe). Der Rest zählt implizit zu Wohnung 1 (keine eigene Kostenposition).
+Netzbezug wird sequenziell zugeteilt: zuerst Wohnung 2 (gedeckelt auf ihren eigenen Verbrauch), dann die Wärmepumpe auf den verbleibenden Netzbezug, dann die Wallboxen auf den danach noch verbleibenden Netzbezug (keine eigene Wohnungs-Zuteilung, kein eigener Wallbox-Tarif, aber dieselbe Deckelung wie Wohnung 2/Wärmepumpe). Der Rest ist der Haushaltsstrom von Wohnung 1 und ihre Strom-Kostenposition.
 
 ```
 Netzbezug_Gesamt = Verbrauch(strom_gesamt)
@@ -98,13 +98,15 @@ Rest1              = Netzbezug_Gesamt - W2_Anteil_kWh
 WP_Anteil_kWh      = min(Rest1, Verbrauch(strom_waermepumpe))
 Rest2              = Rest1 - WP_Anteil_kWh
 Wallbox_Anteil_kWh = min(Rest2, Verbrauch(strom_wallbox))
+Rest_W1_kWh        = Rest2 - Wallbox_Anteil_kWh
 
 Kosten_Strom_W2  = W2_Anteil_kWh * Strompreis
+Kosten_Strom_W1  = Round2(Rest_W1_kWh * Strompreis)   (je Ablesung auf den Cent gerundet)
 Kosten_WP_gesamt = WP_Anteil_kWh * Strompreis        (Basis für Heizungskosten, siehe unten)
 Kosten_Wallbox   = Wallbox_Anteil_kWh * Strompreis
 ```
 
-Bei PV-Überschuss (`Netzbezug_Gesamt = 0`) sind alle 3 Kosten 0. Alle Anteile über `min()` gedeckelt, nie negativ.
+Bei PV-Überschuss (`Netzbezug_Gesamt = 0`) sind alle Kosten 0. Alle Anteile über `min()` gedeckelt, nie negativ, auch der Rest von Wohnung 1 (ein sinkender Zählerstand wird bei der Eingabe nur gewarnt, nicht gesperrt). Der Wallbox-Anteil von Wohnung 1 bleibt in der Wallbox-Position und wird im Rest nicht doppelt gezählt. Es gibt keinen Cent-Abgleich mit `Netzbezug_Gesamt * Strompreis` und keinen PV-Anteil für Wohnung 1 (kein Zwischenzähler).
 
 **Verteilung der Wallbox-Kosten auf die Wohnungen.** `Kosten_Wallbox` sind die Kosten des Zwischenzählers (auf den Cent gerundet). Auf der Ablesungsseite werden sie so auf Wohnung 1 und Wohnung 2 verteilt:
 
@@ -197,9 +199,9 @@ Die monatliche Vorauszahlung je Wohnung, an der jeweiligen Fixkosteneingabe erfa
 Saldo(Monat) = Saldo(Vormonat) + Abschlag(Monat) - (Fixkosten(Monat) + Verbrauch(Monat))
 ```
 
-Der Verbrauch enthält die **Wallbox**-Kosten der Wohnung (siehe Strom). Bei Wohnung 1 kommt die **PV-Gutschrift** des Monats als Gutschrift dazu: `Saldo(Monat) = Saldo(Vormonat) + Abschlag + PV-Gutschrift - (Fixkosten + Verbrauch)`, ohne Deckel.
+Der Verbrauch enthält den **Strom** (Wohnung 1: Rest des Netzbezugs, Wohnung 2: Zwischenzähler) und die **Wallbox**-Kosten der Wohnung (siehe Strom). Die Salden von Wohnung 1 sinken damit rückwirkend um die bisher aufgelaufenen Stromkosten. Bei Wohnung 1 kommt die **PV-Gutschrift** des Monats als Gutschrift dazu: `Saldo(Monat) = Saldo(Vormonat) + Abschlag + PV-Gutschrift - (Fixkosten + Verbrauch)`, ohne Deckel.
 
-**Dashboard und Widgets:** Die Jahreskarte und der Monatsverlauf beider Wohnungen zeigen die Kategorie **Wallbox** auch mit 0 EUR. Einzige Ausnahme ist die Jahreskarte einer vermieteten Wohnung bei ausgeschaltetem "Wallbox weiterberechnen" und Betrag 0: Dort entfallen Zeile und Balkensegment (bei Betrag ungleich 0 bleibt sie), Gesamt und Saldo ändern sich nicht. "Strom" bleibt der Haushaltsstrom von Wohnung 2, "Verbrauchswerte" zeigen die zugeordneten Netzbezug-kWh. Wohnung 1 bekommt in der Jahreskarte die Zeile **PV-Gutschrift** (auch mit 0,00, dann ohne Minus; Wohnung 2 zeigt entsprechend den PV-Anteil in kWh auch mit 0): Sie senkt die Gesamtkosten, aber nicht die Verbrauchskosten und ist kein Balkensegment. Im Monatsverlauf steht sie nur in "Kombiniert" (Gesamt abzüglich Gutschrift) und fließt in den Saldo ein, nicht in "Verbrauch" und "Verbrauchswerte". Die haus-weiten Karten "Wallboxen" und "PV-Anlage" bleiben unverändert. Die Widget-Routen zeigen dieselben Posten, ohne neue Routen.
+**Dashboard und Widgets:** Die Jahreskarte und der Monatsverlauf beider Wohnungen zeigen die Kategorie **Wallbox** auch mit 0 EUR. Einzige Ausnahme ist die Jahreskarte einer vermieteten Wohnung bei ausgeschaltetem "Wallbox weiterberechnen" und Betrag 0: Dort entfallen Zeile und Balkensegment (bei Betrag ungleich 0 bleibt sie), Gesamt und Saldo ändern sich nicht. "Strom" steht für beide Wohnungen immer in der Jahreskarte (auch mit 0,00), im Balken und im Monatsverlauf (Wohnung 1: Rest des Netzbezugs, Wohnung 2: Haushaltsstrom), "Verbrauchswerte" zeigen die zugeordneten Netzbezug-kWh (bei Wohnung 1 die Rest-kWh). Wohnung 1 bekommt in der Jahreskarte die Zeile **PV-Gutschrift** (auch mit 0,00, dann ohne Minus; Wohnung 2 zeigt entsprechend den PV-Anteil in kWh auch mit 0): Sie senkt die Gesamtkosten, aber nicht die Verbrauchskosten und ist kein Balkensegment. Im Monatsverlauf steht sie nur in "Kombiniert" (Gesamt abzüglich Gutschrift) und fließt in den Saldo ein, nicht in "Verbrauch" und "Verbrauchswerte". Die haus-weiten Karten "Wallboxen" und "PV-Anlage" bleiben unverändert. Die Widget-Routen zeigen dieselben Posten, ohne neue Routen.
 
 Fortlaufend seit Erfassungsbeginn kumuliert, kein Reset zum Jahreswechsel. Positiv heißt Guthaben, negativ Nachzahlung, exakt 0 Ausgeglichen. Ein Monat ohne Fixkosteneingabe lässt den Saldo unverändert, statt ihn verschwinden zu lassen.
 
