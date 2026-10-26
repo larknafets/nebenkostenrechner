@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Starts the app for a manual look: a real (not demo) database filled with the
+# demo data and a login password, so both views can be checked in the browser:
+# anonymous (a private window, or a browser without the cookie) and logged in.
+# Stop it with Ctrl-C, the temp directory goes with it.
+#   scripts/dev-server            port 18080, password "dev"
+#   DEV_PORT=9000 DEV_PASSWORD=x scripts/dev-server
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+dir=$(mktemp -d)
+pid=""
+cleanup() {
+  if [ -n "$pid" ]; then kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; fi
+  rm -rf "$dir"
+}
+trap cleanup EXIT
+
+port=${DEV_PORT:-18080}
+password=${DEV_PASSWORD:-dev}
+go build -o "$dir/app" ./cmd/nebenkostenrechner
+
+start() {
+  DB_PATH="$dir/nk.db" LOGIN_PASSWORD="$1" LISTEN_ADDR="127.0.0.1:$port" WIDGET_LISTEN_ADDR="127.0.0.1:$((port + 1))" "$dir/app" >"$dir/log" 2>&1 &
+  pid=$!
+  for _ in $(seq 50); do
+    curl -s -o /dev/null "127.0.0.1:$port/health" && return 0
+    kill -0 "$pid" 2>/dev/null || { cat "$dir/log"; echo "dev-server: app exited on start" >&2; exit 1; }
+    sleep 0.2
+  done
+  echo "dev-server: app did not answer on port $port" >&2
+  exit 1
+}
+stop() { kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; pid=""; }
+
+# The first start fills demo.db with the demo data (main.go). Its files then
+# become the real database, so the data is behind the password and not behind
+# the demo login.
+start ""
+stop
+for suffix in "" "-wal" "-shm"; do
+  [ -e "$dir/demo.db$suffix" ] && cp "$dir/demo.db$suffix" "$dir/nk.db$suffix"
+done
+start "$password"
+
+echo "dev-server: http://127.0.0.1:$port/  (password: $password, widgets on port $((port + 1)))"
+echo "dev-server: anonymous = private window or a browser without the login cookie, Ctrl-C stops"
+wait "$pid"
