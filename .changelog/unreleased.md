@@ -31,7 +31,11 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
+- Dashboard: neue Jahreskarte "Wärmepumpe" mit Stromkosten und PV-Anteil, auch ohne Anmeldung sichtbar (#296)
+
 ## Verbesserungen
+
+- Dashboard: Die Karte "Wallboxen" erscheint nur, wenn eine Wohnung die Wallbox in der Abrechnung trägt (Eigennutzung oder weiterberechnet) (#297)
 
 ## Fehlerkorrekturen
 

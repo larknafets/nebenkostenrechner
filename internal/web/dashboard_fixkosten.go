@@ -715,6 +715,23 @@ var wallboxSeries = simpleSeries{
 	},
 }
 
+// wpSeries reads the heat pump's grid-draw share from StromErgebnis, shaped
+// like wallboxSeries: "Stromkosten" (WPAnteilKWh, the billed share) and
+// "PV-Anteil" (PVAnteilWPKWh, the gap to the sub-meter consumption).
+var wpSeries = simpleSeries{
+	ID: "waermepumpe", Name: "Wärmepumpe", IstErtrag: false,
+	Wert: func(k calc.Kosten) (segs []dashboardSegment, eur float64, ok bool) {
+		if k.Strom == nil {
+			return nil, 0, false
+		}
+		kosten := calc.Round2(k.Strom.KostenWPGesamtUnrounded)
+		return []dashboardSegment{
+			{Farbe: "strom", Label: "Stromkosten", Kosten: kosten, Verbrauch: k.Strom.WPAnteilKWh, Einheit: "kWh"},
+			{Farbe: "pv", Label: "PV-Anteil", Verbrauch: k.Strom.PVAnteilWPKWh, Einheit: "kWh"},
+		}, kosten, true
+	},
+}
+
 var pvSeries = simpleSeries{
 	ID: "pv", Name: "PV-Anlage", IstErtrag: true,
 	Wert: func(k calc.Kosten) (segs []dashboardSegment, eur float64, ok bool) {
