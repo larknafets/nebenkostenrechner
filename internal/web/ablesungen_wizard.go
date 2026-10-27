@@ -431,6 +431,17 @@ func wizardEingabeFehler(err error, apartments []store.Apartment) error {
 	return err
 }
 
+// ablesungStoreFehler words a *store.EingabeFehler that CreatePeriod or
+// UpdatePeriod returned (a caller that skipped parsePeriodInput). It returns
+// nil for every other error.
+func ablesungStoreFehler(err error, apartments []store.Apartment) error {
+	var ef *store.EingabeFehler
+	if !errors.As(err, &ef) {
+		return nil
+	}
+	return wizardEingabeFehler(ef, apartments)
+}
+
 // badRequestParse answers a parsePeriodInput error with 400, with the field
 // name if the error carries one.
 func badRequestParse(w http.ResponseWriter, err error) {
@@ -475,6 +486,10 @@ func handleCreateAblesung() http.HandlerFunc {
 			}
 			if msg, feld, ok := reiheFehler(err); ok {
 				badRequestFeld(w, msg, feld)
+				return
+			}
+			if mapped := ablesungStoreFehler(err, apartments); mapped != nil {
+				badRequestParse(w, mapped)
 				return
 			}
 			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
@@ -529,6 +544,8 @@ func handleUpdateAblesung() http.HandlerFunc {
 		if err := store.UpdatePeriod(db, periodID, in); err != nil {
 			if msg, feld, ok := reiheFehler(err); ok {
 				badRequestFeld(w, msg, feld)
+			} else if mapped := ablesungStoreFehler(err, apartments); mapped != nil {
+				badRequestParse(w, mapped)
 			} else {
 				http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
 			}
