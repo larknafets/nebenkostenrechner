@@ -376,7 +376,7 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 		}
 		p, err := strconv.ParseFloat(raw, 64)
 		if err != nil {
-			return store.PeriodInput{}, fmt.Errorf("ungültige Personenzahl für %s: Personenzahl muss eine Zahl sein", a.Name)
+			return store.PeriodInput{}, personenKeineZahl(a.Name)
 		}
 		personen[a.ID] = p
 	}
@@ -396,7 +396,7 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 		*s.Input(&in) = r.FormValue(s.FormName) != ""
 	}
 	if err := in.Validate(); err != nil {
-		return store.PeriodInput{}, wizardEingabeFehler(err, apartments)
+		return store.PeriodInput{}, ablesungFormularFehler(err, apartments)
 	}
 	return in, nil
 }
@@ -407,9 +407,9 @@ type ablesungFormFehler struct{ msg, feld string }
 
 func (e *ablesungFormFehler) Error() string { return e.msg }
 
-// wizardEingabeFehler turns the *store.EingabeFehler of PeriodInput.Validate
+// ablesungFormularFehler turns the *store.EingabeFehler of PeriodInput.Validate
 // into the German form message. Personenzahl keeps its message without a field.
-func wizardEingabeFehler(err error, apartments []store.Apartment) error {
+func ablesungFormularFehler(err error, apartments []store.Apartment) error {
 	var ef *store.EingabeFehler
 	if !errors.As(err, &ef) {
 		return err
@@ -439,7 +439,7 @@ func ablesungStoreFehler(err error, apartments []store.Apartment) error {
 	if !errors.As(err, &ef) {
 		return nil
 	}
-	return wizardEingabeFehler(ef, apartments)
+	return ablesungFormularFehler(ef, apartments)
 }
 
 // badRequestParse answers a parsePeriodInput error with 400, with the field
