@@ -39,6 +39,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Verbesserungen
 
+- Dashboard: Die Monatsübersicht wählst du jetzt in einem Dropdown statt über Buttons, bei nur einer Auswahl entfällt es (#306)
+
 - Dashboard: Der Balken der Jahreskarte zeigt nur noch den Verbrauch, die Fixkosten stehen weiter als Zeile und im Gesamtbetrag (#302)
 
 - Dashboard: Die Karte "Wallboxen" erscheint nur, wenn eine Wohnung die Wallbox in der Abrechnung trägt (Eigennutzung oder weiterberechnet) (#297)

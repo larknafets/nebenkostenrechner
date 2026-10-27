@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -127,5 +128,36 @@ func TestLoadDashboardData_LiefertMieteProjektion(t *testing.T) {
 	}
 	if len(miete) != 1 || miete[0].Monat != "2026-06-01" || miete[0].Miete[1] != 300 {
 		t.Errorf("Miete projection = %+v, want one entry 2026-06-01 with Wohnung 1 = 300", miete)
+	}
+}
+
+// The dropdown of the Monatsverlauf lists what the viewer sees, in panel
+// order; with one entry only the template shows no dropdown (#306).
+func TestVerlaufAuswahl(t *testing.T) {
+	dd := dashboardData{
+		HasAnyData:             true,
+		Jahr:                   2026,
+		WallboxWeiterberechnen: true,
+		Apartments: []store.Apartment{
+			{ID: 1, Name: "Wohnung 1", Status: store.StatusVermietet},
+			{ID: 2, Name: "Wohnung 2", Status: store.StatusVermietet},
+		},
+	}
+	ids := func(b betrachter) []string {
+		var out []string
+		for _, o := range verlaufAuswahl(sichtbareAnsicht(b, dd, nil)) {
+			out = append(out, o.ID)
+		}
+		return out
+	}
+	if got, want := ids(betrachterAngemeldet), []string{"1", "2", "wallbox", "waermepumpe", "pv"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("angemeldet = %v, want %v", got, want)
+	}
+	if got, want := ids(betrachterAnonym), []string{"2", "waermepumpe"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("anonym = %v, want %v", got, want)
+	}
+	dd.Apartments = nil
+	if got, want := ids(betrachterAnonym), []string{"waermepumpe"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("anonym ohne Wohnungen = %v, want %v", got, want)
 	}
 }

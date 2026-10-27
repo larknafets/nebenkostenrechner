@@ -94,18 +94,14 @@
   {{if .IsLoggedIn}}<a href="{{.Base}}/fixkosten/neu" class="button success">Neue Fixkosteneingabe</a>{{end}}
 </div>
 
-<div class="wohnung-tabs" id="wohnung-tabs">
-  {{range .Cards}}
-  <button type="button" class="wohnung-tab" data-wohnung="{{.ApartmentID}}">{{.ApartmentName}}</button>
-  {{end}}
-  {{if .ShowWallbox}}
-  <button type="button" class="wohnung-tab" data-wohnung="{{.WallboxVerlauf.ID}}">{{.WallboxVerlauf.Name}}</button>
-  {{end}}
-  <button type="button" class="wohnung-tab" data-wohnung="{{.WPVerlauf.ID}}">{{.WPVerlauf.Name}}</button>
-  {{if .IsLoggedIn}}
-  <button type="button" class="wohnung-tab" data-wohnung="{{.PVVerlauf.ID}}">{{.PVVerlauf.Name}}</button>
-  {{end}}
+{{if gt (len .VerlaufAuswahl) 1}}
+<div class="wohnung-auswahl">
+  <label for="wohnung-select" class="muted">Monatsübersicht</label>
+  <select id="wohnung-select">
+    {{range .VerlaufAuswahl}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+  </select>
 </div>
+{{end}}
 
 {{range $i, $card := .Cards}}
 {{$spalte := index $.VerlaufSpalten $i}}
@@ -171,34 +167,35 @@
     });
   })();
 
-  // Wohnung-Umschalter (Ticket #60 Story 23) - beide Wohnungen sind
-  // serverseitig gerendert, JS blendet nur die gewählte ein.
+  // Monatsübersicht-Auswahl (Ticket #60 Story 23, Dropdown seit #306) - alle
+  // Verläufe sind serverseitig gerendert, JS blendet nur den gewählten ein.
+  // Mit nur einer Auswahl gibt es kein Dropdown, das erste Panel bleibt aktiv.
   (function () {
     var STORAGE_KEY = "dashboardWohnung";
-    var tabs = document.querySelectorAll(".wohnung-tab");
+    var select = document.getElementById("wohnung-select");
     var panels = document.querySelectorAll(".wohnung-panel");
-    if (!tabs.length) return;
+    if (!panels.length) return;
 
     function applyWohnung(id) {
-      tabs.forEach(function (btn) { btn.classList.toggle("active", btn.getAttribute("data-wohnung") === id); });
+      if (select) select.value = id;
       panels.forEach(function (p) { p.classList.toggle("active", p.getAttribute("data-wohnung") === id); });
       fitVerlaufBarText();
     }
 
-    var id = tabs[0].getAttribute("data-wohnung");
+    var id = panels[0].getAttribute("data-wohnung");
     try {
       var saved = localStorage.getItem(STORAGE_KEY);
-      if (saved && document.querySelector('.wohnung-tab[data-wohnung="' + saved + '"]')) id = saved;
+      if (saved && document.querySelector('.wohnung-panel[data-wohnung="' + saved + '"]')) id = saved;
     } catch (e) {}
     applyWohnung(id);
 
-    tabs.forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        id = btn.getAttribute("data-wohnung");
+    if (select) {
+      select.addEventListener("change", function () {
+        id = select.value;
         applyWohnung(id);
         try { localStorage.setItem(STORAGE_KEY, id); } catch (e) {}
       });
-    });
+    }
   })();
 
   // Dashboard-Interaktion (Modus-/Wohnung-Wechsel) stoesst zusaetzlich zum
@@ -220,9 +217,11 @@
         dot.hidden = false;
       }).catch(function () {});
     }
-    document.querySelectorAll("[data-modus-btn], .wohnung-tab").forEach(function (btn) {
+    document.querySelectorAll("[data-modus-btn]").forEach(function (btn) {
       btn.addEventListener("click", pingUpdateCheck);
     });
+    var auswahl = document.getElementById("wohnung-select");
+    if (auswahl) auswahl.addEventListener("change", pingUpdateCheck);
   })();
 </script>
 {{end}}
