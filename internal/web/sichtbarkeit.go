@@ -2,45 +2,6 @@ package web
 
 import "github.com/larknafets/nebenkostenrechner/internal/store"
 
-// betrachter says who looks at the Dashboard: the role of the visitor. It is
-// the only input, besides the saved Berechtigungen, that decides what is
-// visible (#293).
-type betrachter int
-
-const (
-	// betrachterNichtAngemeldet is a visitor who is not logged in
-	// (VERMIETER_PASSWORD set): what the Berechtigungen grant to Nicht
-	// angemeldet.
-	betrachterNichtAngemeldet betrachter = iota
-	// betrachterMieter is a logged-in Mieter: what the Berechtigungen grant to
-	// the Mieter.
-	betrachterMieter
-	// betrachterVermieter is the Vermieter (or the demo session): everything,
-	// with Miete.
-	betrachterVermieter
-)
-
-// betrachterVon maps the Zugriff of a request to the role whose view applies
-// (until the Dashboard asks the Zugriff directly).
-func betrachterVon(z Zugriff) betrachter {
-	switch {
-	case z.Vermieter:
-		return betrachterVermieter
-	case z.Rolle == store.RolleMieter:
-		return betrachterMieter
-	}
-	return betrachterNichtAngemeldet
-}
-
-// rolle returns the role whose Berechtigungen apply to b; the Vermieter has
-// none to look up, he has every right.
-func (b betrachter) rolle() store.Rolle {
-	if b == betrachterMieter {
-		return store.RolleMieter
-	}
-	return store.RolleNichtAngemeldet
-}
-
 // sichtbareWohnung is one visible apartment: its Jahreskarte and Verlauf.
 type sichtbareWohnung struct {
 	Card    dashboardJahresCard
@@ -53,14 +14,14 @@ type sichtbarerSimple struct {
 	Verlauf dashboardSimpleSpalte
 }
 
-// ansicht is the fully filtered view for one betrachter: what is not
+// ansicht is the fully filtered view for one Zugriff: what is not
 // visible to them is not in it, so the rest of the data never reaches a
 // template (server-side hiding in the template would leave it in the HTML).
 type ansicht struct {
 	// Cards and VerlaufSpalten hold the visible apartments in the same order.
 	Cards          []dashboardJahresCard
 	VerlaufSpalten []dashboardVerlaufSpalte
-	// Wallbox, WP and PV are nil for a betrachter who does not see them.
+	// Wallbox, WP and PV are nil for a role that does not see them.
 	Wallbox *sichtbarerSimple
 	WP      *sichtbarerSimple
 	PV      *sichtbarerSimple
@@ -109,29 +70,15 @@ func (e entitaet) rechtFuer() (recht store.Recht, ok bool) {
 	return "", false
 }
 
-// orDefaults returns b, or the defaults when b is nil (a database that never
-// saved any, tests).
-func orDefaults(b store.Berechtigungen) store.Berechtigungen {
-	if b == nil {
-		return store.DefaultBerechtigungen()
-	}
-	return b
-}
-
-// sichtbar is the visibility table (#293, #311): whether b may see e at all.
-// It is the one place that table lives; both entry points below ask it. The
-// Vermieter sees everything; the others see what the saved Berechtigungen
-// (ber, nil for the defaults) grant. The Wallboxen card exists for nobody
-// unless a Wohnung carries the Wallbox in its Abrechnung (#297).
-func (b betrachter) sichtbar(e entitaet, dd dashboardData, ber store.Berechtigungen) bool {
+// sichtbar is the visibility table (#293, #311): whether z may see e at all.
+// Who sees what is the Zugriff's business (Zugriff.Sichtbar); what exists is
+// the Dashboard's: the Wallboxen card exists for nobody unless a Wohnung
+// carries the Wallbox in its Abrechnung (#297).
+func (dd dashboardData) sichtbar(z Zugriff, e entitaet) bool {
 	if e.Art == entitaetWallbox && !dd.wallboxInAbrechnung() {
 		return false
 	}
-	if b == betrachterVermieter {
-		return true
-	}
-	recht, ok := e.rechtFuer()
-	return ok && orDefaults(ber).Erlaubt(b.rolle(), recht)
+	return z.Sichtbar(e)
 }
 
 // wallboxInAbrechnung reports whether at least one Wohnung carries the
@@ -146,35 +93,34 @@ func (dd dashboardData) wallboxInAbrechnung() bool {
 	return false
 }
 
-// sichtbareAnsicht decides the visibility for b and calls the builders (kept
-// apart, ADR 0002) for what stays visible. miete is read only for a betrachter
-// who may see the Miete (#278); it is ignored for the others, so the caller may
-// pass nil.
-func sichtbareAnsicht(b betrachter, dd dashboardData, ber store.Berechtigungen, miete []mieteMonat) ansicht {
+// sichtbareAnsicht decides the visibility for z and calls the builders (kept
+// apart, ADR 0002) for what stays visible. miete is read only when z may see
+// the Miete (#278); it is ignored otherwise, so the caller may pass nil.
+func sichtbareAnsicht(z Zugriff, dd dashboardData, miete []mieteMonat) ansicht {
 	var v ansicht
 	for _, a := range dd.Apartments {
-		if b.sichtbar(wohnungEntitaet(a.ID), dd, ber) {
-			v.addWohnung(b, dd, ber, a, miete)
+		if dd.sichtbar(z, wohnungEntitaet(a.ID)) {
+			v.addWohnung(z, dd, a, miete)
 		}
 	}
-	if b.sichtbar(entitaet{Art: entitaetWallbox}, dd, ber) {
+	if dd.sichtbar(z, entitaet{Art: entitaetWallbox}) {
 		v.Wallbox = buildSichtbarerSimple(wallboxSeries, dd)
 	}
-	if b.sichtbar(entitaet{Art: entitaetWP}, dd, ber) {
+	if dd.sichtbar(z, entitaet{Art: entitaetWP}) {
 		v.WP = buildSichtbarerSimple(wpSeries, dd)
 	}
-	if b.sichtbar(entitaet{Art: entitaetPV}, dd, ber) {
+	if dd.sichtbar(z, entitaet{Art: entitaetPV}) {
 		v.PV = buildSichtbarerSimple(pvSeries, dd)
 	}
 	return v
 }
 
 // addWohnung builds card and Verlauf of one visible apartment.
-func (v *ansicht) addWohnung(b betrachter, dd dashboardData, ber store.Berechtigungen, a store.Apartment, miete []mieteMonat) {
+func (v *ansicht) addWohnung(z Zugriff, dd dashboardData, a store.Apartment, miete []mieteMonat) {
 	card, verlauf := buildEntityView(dd, a.ID)
-	// Miete (#278, #311): only for a rented apartment and a betrachter who has
-	// the right, so the rent stays out of the view otherwise.
-	if store.NewWohnungsregelnOhneHaus(a).Mieteinnahmen() && (b == betrachterVermieter || orDefaults(ber).Erlaubt(b.rolle(), store.RechtMiete)) {
+	// Miete (#278, #311): only for a rented apartment and a role that has the
+	// right, so the rent stays out of the view otherwise.
+	if store.NewWohnungsregelnOhneHaus(a).Mieteinnahmen() && z.Darf(store.RechtMiete) {
 		summe := mieteinnahmen(a.ID, dd.Jahr, miete)
 		card.Mieteinnahmen = &summe
 	}
