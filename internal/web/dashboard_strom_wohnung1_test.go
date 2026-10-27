@@ -11,7 +11,7 @@ import (
 
 // dashboard_strom_wohnung1_test.go covers Wohnung 1's Strom position (#279):
 // the rest of the grid draw after Wohnung 2, heat pump and Wallboxen, priced
-// per Ablesung. Data seam for the numbers, HTTP seam (Dashboard and widget)
+// per Ablesung. Data seam for the numbers, HTTP seam (Dashboard)
 // for the visibility.
 
 const titelStrom = `title="Strom"`
@@ -102,11 +102,6 @@ func TestStromWohnung1_ImmerSichtbarAuchMitNull(t *testing.T) {
 				t.Error("Monatsverlauf zeigt Strom nicht")
 			}
 
-			for _, route := range []string{"jahressumme", "uebersicht"} {
-				if !strings.Contains(widgetHTML(t, db, route, "wohnung-1"), titelStrom) {
-					t.Errorf("Widget %s Wohnung 1: Strom fehlt", route)
-				}
-			}
 			if n := strings.Count(dashboardHTML(t, db), titelStrom); n < 2 {
 				t.Errorf("Dashboard: Strom %d mal in den Jahreskarten, want mindestens 2 (Wohnung 1 und 2)", n)
 			}

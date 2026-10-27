@@ -132,22 +132,6 @@ func main() {
 		addr = ":8080"
 	}
 
-	// widgetAddr serves NewWidgetMux's 2 read-only HA widget routes
-	// (Issue #77 ff.) on a 2nd, ingress-free port - meant for a Lovelace
-	// "Webpage card" iframe, which can't reliably embed HA ingress sessions.
-	// Always runs alongside the main server, own default port analogous to
-	// LISTEN_ADDR.
-	widgetAddr := os.Getenv("WIDGET_LISTEN_ADDR")
-	if widgetAddr == "" {
-		widgetAddr = ":8081"
-	}
-	go func() {
-		log.Printf("widget routes listening on %s", widgetAddr)
-		if err := http.ListenAndServe(widgetAddr, web.NewWidgetMux(db)); err != nil {
-			log.Fatalf("widget serve: %v", err)
-		}
-	}()
-
 	log.Printf("listening on %s (db: %s)", addr, dbPath)
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Fatalf("serve: %v", err)

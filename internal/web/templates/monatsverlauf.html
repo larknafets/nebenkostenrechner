@@ -1,7 +1,6 @@
 {{/* monatsverlauf-wohnung-body rendert eine Wohnung's 5-Modi-Monatsverlauf-
      Panel (Verbrauch/Verbrauchswerte/Fixkosten/Kombiniert/Abschlag) - geteilt
-     von dashboard.html (je Wohnung, innerhalb des wohnung-panel-Tab-Wrappers)
-     und widget_layout.html (einzelne Entity, ohne Tab-Wrapper). Dot ist die
+     von dashboard.html (je Wohnung, innerhalb des wohnung-panel-Tab-Wrappers). Dot ist die
      dashboardVerlaufSpalte selbst; die Fixkosten-Legende holt sich ihre
      Logik-Optionen über die logikOptions-Funktion statt über ein zusätzliches
      Datenfeld, damit der Aufrufer nichts weiter mitgeben muss. */}}
@@ -99,10 +98,8 @@
 {{end}}
 
 {{/* monatsverlauf-fit-script ist die geteilte Balkentext-Fit-/Tooltip-Logik
-     (Ticket #19 AC3) - identisch für Dashboard und Widgets. Der Modus-
-     Umschalter (MODI-Array/localStorage-Key) bleibt bewusst je Seite
-     getrennt, weil Dashboard und Widget unterschiedliche, nicht gekoppelte
-     Voreinstellungen behalten sollen (Architektur-Review Kandidat 2). */}}
+     (Ticket #19 AC3). Der Modus-Umschalter (MODI-Array/localStorage-Key)
+     steht in dashboard.html. */}}
 {{define "monatsverlauf-fit-script"}}
   function fitVerlaufBarText() {
     document.querySelectorAll(".bar-track > div").forEach(function (seg) {
@@ -159,9 +156,7 @@
 {{end}}
 
 {{/* abschlag-value rendert eine Jahressummen-Karte's Guthaben/Nachzahlung-
-     Zeile - geteilt von dashboard.html und widget_layout.html (#104, Rest
-     aus Kandidat 1/2 - der Rest der beiden Karten bleibt bewusst getrennt,
-     nur dieser Block war wortgleich dupliziert). Dot ist der *AbschlagSaldo
+     Zeile (#104). Dot ist der *AbschlagSaldo
      selbst (Aufrufer wrapped mit {{with .Saldo}}). */}}
 {{define "abschlag-value"}}
 <div class="abschlag-value {{.CSSClass}}">

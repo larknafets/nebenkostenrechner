@@ -35,7 +35,6 @@ func TestSichtbareAnsicht_JeBetrachter(t *testing.T) {
 	}{
 		{"Anonym", betrachterAnonym, []int64{2}, false, nil},
 		{"Angemeldet", betrachterAngemeldet, []int64{1, 2}, true, map[int64]float64{1: 300, 2: 712.34}},
-		{"Widget", betrachterWidget, []int64{1, 2}, true, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

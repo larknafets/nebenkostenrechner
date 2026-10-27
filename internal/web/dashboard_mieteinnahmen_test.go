@@ -94,14 +94,3 @@ func TestDashboard_MieteinnahmenNurMitLogin(t *testing.T) {
 		t.Error("ohne Passwort fehlen die Mieteinnahmen")
 	}
 }
-
-func TestWidget_KeineMieteinnahmen(t *testing.T) {
-	db := openTestDB(t)
-	mieteEingabe(t, db, "2026-01-01", map[int64]float64{2: 712.34})
-	for _, route := range []string{"jahressumme", "uebersicht"} {
-		body := widgetHTML(t, db, route, "wohnung-2")
-		if strings.Contains(body, "Mieteinnahmen") || strings.Contains(body, "712,34") {
-			t.Errorf("Widget %s zeigt Mieteinnahmen", route)
-		}
-	}
-}

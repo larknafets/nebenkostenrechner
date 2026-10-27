@@ -11,7 +11,7 @@ import (
 // dashboard_nullwerte_test.go covers the display rules of the Jahreskarten
 // (#276): zero values of PV-Gutschrift and PV-Anteil stay visible, the
 // Wallbox line of a rented apartment disappears when it is not passed on and
-// 0. Everything goes through the HTTP seam (Dashboard and widget), except
+// 0. Everything goes through the HTTP seam (Dashboard), except
 // the unchanged totals, which read the card data.
 
 const (
@@ -24,21 +24,6 @@ func TestJahreskarte_PVZeilenAuchMitNull(t *testing.T) {
 	db := openTestDB(t)
 	// No PV switch, no feed-in: both PV values are 0.
 	wallboxAblesungen(t, db, nil, nil, false)
-
-	for _, route := range []string{"jahressumme", "uebersicht"} {
-		w1 := widgetHTML(t, db, route, "wohnung-1")
-		if !strings.Contains(w1, titelPVGutschrift) {
-			t.Errorf("Widget %s Wohnung 1: PV-Gutschrift mit 0 fehlt", route)
-		}
-		if strings.Contains(w1, titelPVAnteil) {
-			t.Errorf("Widget %s Wohnung 1: PV-Anteil gehört nur zu Wohnung 2", route)
-		}
-		// The widgets never showed the PV-Anteil, that stays.
-		w2 := widgetHTML(t, db, route, "wohnung-2")
-		if strings.Contains(w2, titelPVGutschrift) {
-			t.Errorf("Widget %s Wohnung 2: PV-Gutschrift gehört nur zu Wohnung 1", route)
-		}
-	}
 
 	body := dashboardHTML(t, db)
 	if !strings.Contains(body, titelPVGutschrift) || !strings.Contains(body, titelPVAnteil) {
@@ -71,16 +56,6 @@ func TestJahreskarte_WallboxZeileJeStatusFlagUndBetrag(t *testing.T) {
 				s.Flags.WallboxWeiterberechnen = c.weiter
 				s.Wohnungen = map[int64]store.WohnungDetails{2: {Status: c.w2Status}}
 			})
-
-			for _, route := range []string{"jahressumme", "uebersicht"} {
-				if got := strings.Contains(widgetHTML(t, db, route, "wohnung-2"), titelWallbox); got != c.wantWallbox2 {
-					t.Errorf("Widget %s Wohnung 2: Wallbox sichtbar = %v, want %v", route, got, c.wantWallbox2)
-				}
-				// Wohnung 1 is in Eigennutzung: always visible.
-				if !strings.Contains(widgetHTML(t, db, route, "wohnung-1"), titelWallbox) {
-					t.Errorf("Widget %s Wohnung 1: Wallbox fehlt", route)
-				}
-			}
 
 			// Dashboard: the house-wide card stays, only the line of
 			// Wohnung 2 may go.

@@ -1,8 +1,0 @@
-{{define "content"}}
-{{if not .HasAnyData}}
-<p class="muted">Noch keine Ablesung oder Fixkosten-Eingabe erfasst.</p>
-{{else}}
-{{template "widget-verbrauchswerte-body" .}}
-{{end}}
-{{template "widget-verlauf-script"}}
-{{end}}

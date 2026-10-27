@@ -31,6 +31,6 @@ A wrong tag that is not pushed yet is deleted locally (`git tag -d`). A pushed t
 - **Release** is a tag `v*`: `release.yml` builds the image and creates the GitHub release from `CHANGELOG.md`, `ha-addon.yml` mirrors the version into `larknafets/ha-addons`, folder `nebenkostenrechner`.
 - **Nightly** is `main` from the last night: `nightly.yml` (02:17 UTC, skipped without a commit in the last 24 hours, or started by hand for any branch) pushes the image tags `nightly` and `nightly.YYYYMMDD-<sha7>` and writes the dated version into `larknafets/ha-addons`, folder `nebenkostenrechner-nightly`. Only the newest 7 dated images are kept.
 - No separate nightly or release branch: `main` is the nightly, a tag is the release.
-- The nightly add-on has its own slug, its own data and the host port 8082 for the widget routes (release: 8081).
+- The nightly add-on has its own slug and its own data.
 
 Changelog rules and release notes: `changelog.md`.

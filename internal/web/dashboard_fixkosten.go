@@ -145,7 +145,7 @@ type dashboardJahresCard struct {
 	// Mieteinnahmen is the yearly sum of the Miete (#278), rounded to the
 	// cent, shown below the Saldo. nil = no block: set only by
 	// handleDashboard for a rented apartment and a logged-in user, so the
-	// rent never reaches the template otherwise (and never the widgets).
+	// rent never reaches the template otherwise.
 	Mieteinnahmen *float64
 }
 
@@ -537,12 +537,22 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 	}
 }
 
-// buildEntityView bundles what every apartmentID-based Dashboard/widget
-// route needs in one place anyway: the yearly-totals card, the monthly
+// findApartment returns the apartment with the given id, or the zero value
+// if absent (only reachable if the DB's fixed 2-apartment seed data was
+// somehow removed).
+func findApartment(apartments []store.Apartment, id int64) store.Apartment {
+	for _, a := range apartments {
+		if a.ID == id {
+			return a
+		}
+	}
+	return store.Apartment{}
+}
+
+// buildEntityView bundles what every apartmentID-based Dashboard
+// view needs in one place anyway: the yearly-totals card, the monthly
 // history, and the balance wired consistently between both (#99,
-// candidate 3) - replaces 3 call sites that used to rebuild this manually
-// (dashboard.go handleDashboard, widgets.go handleWidgetJahressumme/
-// handleWidgetUebersicht). Always builds the full history, even when a
+// candidate 3). Always builds the full history, even when a
 // caller only needs the card (#101: no card-only mode, avoiding
 // speculative generality). Only intended for the 2 apartments - Wallboxen/
 // PV-Anlage have no balance concept and run via buildSimpleJahresCard/

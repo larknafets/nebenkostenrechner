@@ -77,9 +77,6 @@ func TestDashboard_PersonenSchnittDezimal(t *testing.T) {
 	if got := badge(dashboardHTML(t, db)); !reflect.DeepEqual(got, []string{"1,25", "2"}) {
 		t.Errorf("Dashboard-Badges = %q, want [1,25 2]", got)
 	}
-	if got := badge(widgetHTML(t, db, "jahressumme", "wohnung-1")); !reflect.DeepEqual(got, []string{"1,25"}) {
-		t.Errorf("Widget-Badges = %q, want [1,25]", got)
-	}
 }
 
 func TestAbrechnungSeite_Anlage4_PersonenDezimal(t *testing.T) {
