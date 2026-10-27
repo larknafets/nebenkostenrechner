@@ -30,10 +30,12 @@ func (e *PeriodOpenTeilstandError) Error() string {
 }
 
 // ImportRowError is returned by ImportPeriods when an input breaks an
-// Ablesungsreihe rule: the store knows no CSV line numbers, so the error
-// names the input's reading date. Err is the rule's own error.
+// Ablesungsreihe rule or the field rules (PeriodInput.Validate): the store
+// knows no CSV line numbers, so the error names the input's position in the
+// list (Index, 0-based) and its reading date. Err is the rule's own error.
 type ImportRowError struct {
 	ReadingDate string
+	Index       int
 	Err         error
 }
 
