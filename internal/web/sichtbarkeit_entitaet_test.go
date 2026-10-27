@@ -12,8 +12,9 @@ import (
 // card and Verlauf.
 func TestSichtbareEntitaet_JeBetrachterUndEntitaet(t *testing.T) {
 	dd := dashboardData{
-		HasAnyData: true,
-		Jahr:       2026,
+		HasAnyData:             true,
+		Jahr:                   2026,
+		WallboxWeiterberechnen: true,
 		Apartments: []store.Apartment{
 			{ID: 1, Name: "Wohnung 1", Status: store.StatusVermietet},
 			{ID: 2, Name: "Wohnung 2", Status: store.StatusVermietet},
@@ -32,6 +33,7 @@ func TestSichtbareEntitaet_JeBetrachterUndEntitaet(t *testing.T) {
 		{"Anonym Wohnung 1", betrachterAnonym, wohnungEntitaet(1), false},
 		{"Anonym Wohnung 2", betrachterAnonym, wohnungEntitaet(2), true},
 		{"Anonym Wallboxen", betrachterAnonym, entitaet{Art: entitaetWallbox}, false},
+		{"Anonym Wärmepumpe", betrachterAnonym, entitaet{Art: entitaetWP}, true},
 		{"Anonym PV", betrachterAnonym, entitaet{Art: entitaetPV}, false},
 		{"Angemeldet Wohnung 1", betrachterAngemeldet, wohnungEntitaet(1), true},
 		{"Angemeldet Wallboxen", betrachterAngemeldet, entitaet{Art: entitaetWallbox}, true},
@@ -61,6 +63,11 @@ func TestSichtbareEntitaet_JeBetrachterUndEntitaet(t *testing.T) {
 					t.Fatalf("view = %+v, want only Wallbox, visible=%v", got, tt.sichtbar)
 				}
 				want, have = full.Wallbox, got.Wallbox
+			case entitaetWP:
+				if (got.WP != nil) != tt.sichtbar || got.Wallbox != nil || got.PV != nil || len(got.Cards) != 0 {
+					t.Fatalf("view = %+v, want only WP, visible=%v", got, tt.sichtbar)
+				}
+				want, have = full.WP, got.WP
 			case entitaetPV:
 				if (got.PV != nil) != tt.sichtbar || got.Wallbox != nil || len(got.Cards) != 0 {
 					t.Fatalf("view = %+v, want only PV, visible=%v", got, tt.sichtbar)

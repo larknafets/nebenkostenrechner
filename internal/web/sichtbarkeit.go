@@ -36,8 +36,9 @@ type ansicht struct {
 	// Cards and VerlaufSpalten hold the visible apartments in the same order.
 	Cards          []dashboardJahresCard
 	VerlaufSpalten []dashboardVerlaufSpalte
-	// Wallbox and PV are nil for a betrachter who does not see them.
+	// Wallbox, WP and PV are nil for a betrachter who does not see them.
 	Wallbox *sichtbarerSimple
+	WP      *sichtbarerSimple
 	PV      *sichtbarerSimple
 }
 
@@ -49,10 +50,11 @@ const (
 	// entitaetWohnung is an apartment, identified by entitaet.ApartmentID.
 	entitaetWohnung entitaetArt = iota
 	entitaetWallbox
+	entitaetWP
 	entitaetPV
 )
 
-// entitaet names one of the 4 entities (Wohnung 1/2, Wallboxen, PV-Anlage).
+// entitaet names one of the 5 entities (Wohnung 1/2, Wallboxen, Wärmepumpe, PV-Anlage).
 type entitaet struct {
 	Art         entitaetArt
 	ApartmentID int64 // only for entitaetWohnung
@@ -63,14 +65,43 @@ func wohnungEntitaet(id int64) entitaet {
 }
 
 // sichtbar is the visibility table (#293): whether b may see e at all. It is
-// the one place that table lives; both entry points below ask it.
-func (b betrachter) sichtbar(e entitaet) bool {
+// the one place that table lives; both entry points below ask it. dd decides
+// whether the Wallboxen card exists for a logged-in user (#297).
+func (b betrachter) sichtbar(e entitaet, dd dashboardData) bool {
+	switch e.Art {
+	case entitaetWP:
+		// The heat pump card has no condition, not even a login (#296).
+		return true
+	case entitaetWallbox:
+		// Anonymous: no whole-house Wallboxen (Ticket #67). Logged in: only
+		// when a Wohnung carries the Wallbox in its Abrechnung (#297). The
+		// widget route stays unconditional.
+		switch b {
+		case betrachterAnonym:
+			return false
+		case betrachterAngemeldet:
+			return dd.wallboxInAbrechnung()
+		}
+		return true
+	}
 	if b != betrachterAnonym {
 		return true
 	}
-	// Anonymous: only apartment 2 (Ticket #112); Wallboxen/PV-Anlage are
-	// whole-house entities, excluded like apartment 1 (Ticket #67).
+	// Anonymous: only apartment 2 (Ticket #112); PV-Anlage is a whole-house
+	// entity, excluded like apartment 1 (Ticket #67).
 	return e.Art == entitaetWohnung && e.ApartmentID == 2
+}
+
+// wallboxInAbrechnung reports whether at least one Wohnung carries the
+// Wallbox in its Jahresabrechnung (Wohnungsregeln.AbrechnungWallbox).
+func (dd dashboardData) wallboxInAbrechnung() bool {
+	haus := store.Haus{WallboxWeiterberechnen: dd.WallboxWeiterberechnen}
+	for _, a := range dd.Apartments {
+		if store.NewWohnungsregeln(a, haus).AbrechnungWallbox() {
+			return true
+		}
+	}
+	return false
 }
 
 // sichtbareAnsicht decides the visibility for b and calls the builders (kept
@@ -80,14 +111,17 @@ func (b betrachter) sichtbar(e entitaet) bool {
 func sichtbareAnsicht(b betrachter, dd dashboardData, miete []mieteMonat) ansicht {
 	var v ansicht
 	for _, a := range dd.Apartments {
-		if b.sichtbar(wohnungEntitaet(a.ID)) {
+		if b.sichtbar(wohnungEntitaet(a.ID), dd) {
 			v.addWohnung(b, dd, a, miete)
 		}
 	}
-	if b.sichtbar(entitaet{Art: entitaetWallbox}) {
+	if b.sichtbar(entitaet{Art: entitaetWallbox}, dd) {
 		v.Wallbox = buildSichtbarerSimple(wallboxSeries, dd)
 	}
-	if b.sichtbar(entitaet{Art: entitaetPV}) {
+	if b.sichtbar(entitaet{Art: entitaetWP}, dd) {
+		v.WP = buildSichtbarerSimple(wpSeries, dd)
+	}
+	if b.sichtbar(entitaet{Art: entitaetPV}, dd) {
 		v.PV = buildSichtbarerSimple(pvSeries, dd)
 	}
 	return v
@@ -98,7 +132,7 @@ func sichtbareAnsicht(b betrachter, dd dashboardData, miete []mieteMonat) ansich
 // view stays empty if b may not see it or an apartment id is not in the data.
 func sichtbareEntitaet(b betrachter, dd dashboardData, e entitaet, miete []mieteMonat) ansicht {
 	var v ansicht
-	if !b.sichtbar(e) {
+	if !b.sichtbar(e, dd) {
 		return v
 	}
 	switch e.Art {
@@ -111,6 +145,8 @@ func sichtbareEntitaet(b betrachter, dd dashboardData, e entitaet, miete []miete
 		}
 	case entitaetWallbox:
 		v.Wallbox = buildSichtbarerSimple(wallboxSeries, dd)
+	case entitaetWP:
+		v.WP = buildSichtbarerSimple(wpSeries, dd)
 	case entitaetPV:
 		v.PV = buildSichtbarerSimple(pvSeries, dd)
 	}

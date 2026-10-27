@@ -14,8 +14,9 @@ import (
 // viewer may see them.
 func TestSichtbareAnsicht_JeBetrachter(t *testing.T) {
 	dd := dashboardData{
-		HasAnyData: true,
-		Jahr:       2026,
+		HasAnyData:             true,
+		Jahr:                   2026,
+		WallboxWeiterberechnen: true,
 		Apartments: []store.Apartment{
 			{ID: 1, Name: "Wohnung 1", Status: store.StatusVermietet},
 			{ID: 2, Name: "Wohnung 2", Status: store.StatusVermietet},
@@ -58,6 +59,51 @@ func TestSichtbareAnsicht_JeBetrachter(t *testing.T) {
 			}
 			if (v.Wallbox != nil) != tt.wallboxPV || (v.PV != nil) != tt.wallboxPV {
 				t.Errorf("Wallbox/PV present = %v/%v, want %v", v.Wallbox != nil, v.PV != nil, tt.wallboxPV)
+			}
+			// The heat pump card has no condition, not even a login (#296).
+			if v.WP == nil {
+				t.Error("Wärmepumpe fehlt")
+			}
+		})
+	}
+}
+
+// The Wallboxen card for a logged-in user follows the Abrechnung rule (#297):
+// Eigennutzung always, Vermietung only with "Wallbox weiterberechnen".
+func TestSichtbareAnsicht_WallboxKarteNachWohnungsstatus(t *testing.T) {
+	eigen, miet := store.StatusEigennutzung, store.StatusVermietet
+	tests := []struct {
+		name     string
+		w1, w2   string
+		flag     bool
+		sichtbar bool
+	}{
+		{"beide vermietet, Flag aus", miet, miet, false, false},
+		{"beide vermietet, Flag an", miet, miet, true, true},
+		{"Wohnung 1 Eigennutzung, Flag aus", eigen, miet, false, true},
+		{"Wohnung 2 Eigennutzung, Flag aus", miet, eigen, false, true},
+		{"beide Eigennutzung, Flag aus", eigen, eigen, false, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dd := dashboardData{
+				HasAnyData:             true,
+				Jahr:                   2026,
+				WallboxWeiterberechnen: tt.flag,
+				Apartments: []store.Apartment{
+					{ID: 1, Name: "Wohnung 1", Status: tt.w1},
+					{ID: 2, Name: "Wohnung 2", Status: tt.w2},
+				},
+			}
+			got := sichtbareAnsicht(betrachterAngemeldet, dd, nil)
+			if (got.Wallbox != nil) != tt.sichtbar {
+				t.Errorf("Wallbox sichtbar = %v, want %v", got.Wallbox != nil, tt.sichtbar)
+			}
+			if got.WP == nil || got.PV == nil {
+				t.Errorf("WP/PV present = %v/%v, want both", got.WP != nil, got.PV != nil)
+			}
+			if anon := sichtbareAnsicht(betrachterAnonym, dd, nil); anon.Wallbox != nil || anon.WP == nil {
+				t.Errorf("anonym Wallbox/WP = %v/%v, want nil/present", anon.Wallbox != nil, anon.WP != nil)
 			}
 		})
 	}

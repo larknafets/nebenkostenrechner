@@ -28,6 +28,9 @@ func TestDashboard_AnonymNurWohnung2(t *testing.T) {
 	if !strings.Contains(anon, "<strong>Wohnung 2</strong>") {
 		t.Fatal("Wohnung 2 fehlt für Anonyme")
 	}
+	if !strings.Contains(anon, "<strong>Wärmepumpe</strong>") {
+		t.Error("Wärmepumpe fehlt für Anonyme")
+	}
 	// The bare text "Wohnung 1" also occurs in the static Fixkosten legend,
 	// so the check targets the card and the tab of Wohnung 1.
 	for _, s := range []string{
@@ -46,7 +49,7 @@ func TestDashboard_EingeloggtZeigtAlles(t *testing.T) {
 	for _, s := range []string{
 		"<strong>Wohnung 1</strong>", "<strong>Wohnung 2</strong>",
 		`data-wohnung="1"`, ">Wohnung 1</button>",
-		"<strong>Wallboxen</strong>", "<strong>PV-Anlage</strong>",
+		"<strong>Wallboxen</strong>", "<strong>Wärmepumpe</strong>", "<strong>PV-Anlage</strong>",
 		"Mieteinnahmen", "712,34",
 	} {
 		if !strings.Contains(voll, s) {

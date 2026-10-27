@@ -36,7 +36,7 @@
     </div>{{end}}
   </div>
   {{end}}
-  {{if .IsLoggedIn}}
+  {{if .ShowWallbox}}
   <div class="panel stat-card">
     <div class="muted"><strong>Wallboxen</strong></div>
     <div class="stat-value">{{deEUR .WallboxCard.GesamtEUR}}&nbsp;€</div>
@@ -49,6 +49,20 @@
       {{range .WallboxCard.Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{de0 .Verbrauch}}&nbsp;{{.Einheit}}</span>{{end}}
     </div>
   </div>
+  {{end}}
+  <div class="panel stat-card">
+    <div class="muted"><strong>Wärmepumpe</strong></div>
+    <div class="stat-value">{{deEUR .WPCard.GesamtEUR}}&nbsp;€</div>
+    <div class="stat-bar-track">
+      {{range .WPCard.Segmente}}
+      <div class="stat-bar-seg cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%"></div>
+      {{end}}
+    </div>
+    <div class="muted stat-kategorien">
+      {{range .WPCard.Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{de0 .Verbrauch}}&nbsp;{{.Einheit}}</span>{{end}}
+    </div>
+  </div>
+  {{if .IsLoggedIn}}
   <div class="panel stat-card">
     <div class="muted"><strong>PV-Anlage</strong></div>
     <div class="stat-value" style="color:var(--success)">+{{deEUR .PVCard.GesamtEUR}}&nbsp;€</div>
@@ -73,8 +87,10 @@
   {{range .Cards}}
   <button type="button" class="wohnung-tab" data-wohnung="{{.ApartmentID}}">{{.ApartmentName}}</button>
   {{end}}
-  {{if .IsLoggedIn}}
+  {{if .ShowWallbox}}
   <button type="button" class="wohnung-tab" data-wohnung="{{.WallboxVerlauf.ID}}">{{.WallboxVerlauf.Name}}</button>
+  {{end}}
+  {{if .IsLoggedIn}}
   <button type="button" class="wohnung-tab" data-wohnung="{{.PVVerlauf.ID}}">{{.PVVerlauf.Name}}</button>
   {{end}}
 </div>
@@ -86,12 +102,15 @@
 </div>
 {{end}}
 
-{{if .IsLoggedIn}}
+{{if .ShowWallbox}}
 {{with $.WallboxVerlauf}}
 <div class="wohnung-panel" data-wohnung="{{.ID}}">
   {{template "monatsverlauf-simple-body" .}}
 </div>
 {{end}}
+{{end}}
+
+{{if .IsLoggedIn}}
 
 {{with $.PVVerlauf}}
 <div class="wohnung-panel" data-wohnung="{{.ID}}">
