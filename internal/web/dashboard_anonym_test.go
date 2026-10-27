@@ -16,9 +16,9 @@ func anonymesDashboardSetup(t *testing.T) (anon, eingeloggt string) {
 	wallboxPVAblesungen(t, db, true)
 	mieteEingabe(t, db, "2026-11-01", map[int64]float64{1: 300, 2: 712.34})
 
-	anon = dashboardHTMLMitAuth(t, db, newAuth("geheim", nil))
+	anon = dashboardHTMLMitAuth(t, db, newZugang("geheim", nil))
 	// Without LOGIN_PASSWORD everyone counts as logged in.
-	eingeloggt = dashboardHTMLMitAuth(t, db, newAuth("", nil))
+	eingeloggt = dashboardHTMLMitAuth(t, db, newZugang("", nil))
 	return anon, eingeloggt
 }
 

@@ -25,7 +25,7 @@ func mieteEingabe(t *testing.T, db *sql.DB, monat string, miete map[int64]float6
 	}
 }
 
-func dashboardHTMLMitAuth(t *testing.T, db *sql.DB, a auth) string {
+func dashboardHTMLMitAuth(t *testing.T, db *sql.DB, a *Zugang) string {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
@@ -85,7 +85,7 @@ func TestDashboard_MieteinnahmenNurMitLogin(t *testing.T) {
 	db := openTestDB(t)
 	mieteEingabe(t, db, "2026-01-01", map[int64]float64{2: 712.34})
 
-	anon := dashboardHTMLMitAuth(t, db, newAuth("geheim", nil))
+	anon := dashboardHTMLMitAuth(t, db, newZugang("geheim", nil))
 	if !strings.Contains(anon, "<strong>Wohnung 2</strong>") {
 		t.Fatal("Wohnung 2 fehlt für Anonyme, Test prüft nichts")
 	}
@@ -93,7 +93,7 @@ func TestDashboard_MieteinnahmenNurMitLogin(t *testing.T) {
 		t.Error("Mieteinnahmen im HTML ohne Login")
 	}
 	// Without LOGIN_PASSWORD everyone is logged in.
-	if !strings.Contains(dashboardHTMLMitAuth(t, db, newAuth("", nil)), "712,34") {
+	if !strings.Contains(dashboardHTMLMitAuth(t, db, newZugang("", nil)), "712,34") {
 		t.Error("ohne Passwort fehlen die Mieteinnahmen")
 	}
 }

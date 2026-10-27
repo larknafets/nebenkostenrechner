@@ -6,7 +6,7 @@ package store
 // already-hydrated *LatestPeriod instead of every view re-deriving its own
 // nil-checks against Strompreis/Readings/PersonenByApartment.
 // PeriodComplete answers the same question for callers that only hold a bare
-// periodID (e.g. requireLoginUnlessTeilstand) by loading the period and
+// periodID (e.g. teilstandAnspruch) by loading the period and
 // asking Teilstand, so there is only one rule.
 type TeilstandStatus struct {
 	MonatErfasst            bool

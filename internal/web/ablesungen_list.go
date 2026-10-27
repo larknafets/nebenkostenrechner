@@ -80,7 +80,7 @@ func periodOverviewGroups(periods []store.PeriodSummary, teilstandID int64) []pe
 // first, linking each to its detail view. ImportedCount/Warnings surface the
 // CSV import's result (Ticket #54) - passed via query params since the app
 // has no session/flash mechanism.
-func handleAblesungenListe(a auth) http.HandlerFunc {
+func handleAblesungenListe(z *Zugang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 		periods, err := store.AllPeriods(db)
@@ -106,7 +106,7 @@ func handleAblesungenListe(a auth) http.HandlerFunc {
 			ImportedCount int
 			Warnings      []string
 		}{
-			navData:       a.NavData(r),
+			navData:       z.NavData(r),
 			Aktuell:       "ablesungen",
 			MonatGruppen:  periodOverviewGroups(periods, teilstandID),
 			ImportedCount: importedCount,

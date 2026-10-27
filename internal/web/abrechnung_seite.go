@@ -118,9 +118,9 @@ type abrechnungSeite struct {
 }
 
 // handleAbrechnung serves GET /abrechnung?jahr=&wohnung= (Issue #167). It
-// sits behind RequireLogin: the Abrechnung carries names, addresses and the
+// sits behind NurVermieter: the Abrechnung carries names, addresses and the
 // IBAN. An invalid or missing jahr/wohnung falls back to the preselection.
-func handleAbrechnung(a auth) http.HandlerFunc {
+func handleAbrechnung(z *Zugang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 
@@ -131,7 +131,7 @@ func handleAbrechnung(a auth) http.HandlerFunc {
 		}
 		apartments, haus := daten.Pruef.Apartments, daten.Pruef.Haus
 
-		data := abrechnungSeite{navData: a.NavData(r), Aktuell: "abrechnung", Apartments: apartments, Haus: haus}
+		data := abrechnungSeite{navData: z.NavData(r), Aktuell: "abrechnung", Apartments: apartments, Haus: haus}
 		data.Jahre = abrechnungJahre(daten.Pruef)
 		if len(data.Jahre) == 0 {
 			data.KeineDaten = true

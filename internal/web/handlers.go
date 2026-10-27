@@ -119,35 +119,36 @@ var templateFuncs = template.FuncMap{
 func NewMux(db, demoDB *sql.DB, version, buildDate string) *http.ServeMux {
 	vermieter, mieter := ladeKennwoerter()
 	a := auth{vermieter: vermieter, mieter: mieter, demoDB: demoDB}
+	z := zugangFuer(a)
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", handleIndex())
-	mux.HandleFunc("POST /login", a.HandleLogin())
-	mux.HandleFunc("POST /logout", a.HandleLogout())
-	mux.HandleFunc("GET /ablesungen", withDB(db, demoDB, a.RequireRecht(store.RechtAblesungenAnsehen, handleAblesungenListe(a))))
-	mux.HandleFunc("GET /ablesungen/export.csv", withDB(db, demoDB, a.RequireLogin(handleExportCSV())))
-	mux.HandleFunc("GET /ablesungen/neu", withDB(db, demoDB, a.RequireRecht(store.RechtAblesungAnlegen, handleWizardForm(a))))
-	mux.HandleFunc("POST /ablesungen", withDB(db, demoDB, a.RequireRecht(store.RechtAblesungAnlegen, handleCreateAblesung())))
-	mux.HandleFunc("POST /ablesungen/import", withDB(db, demoDB, a.RequireLogin(handleImportCSV())))
-	mux.HandleFunc("GET /ablesungen/{id}", withDB(db, demoDB, a.RequireRecht(store.RechtAblesungenAnsehen, handleAblesungDetail(a))))
-	mux.HandleFunc("GET /ablesungen/{id}/bearbeiten", withDB(db, demoDB, requireLoginUnlessTeilstand(a, handleEditWizardForm(a))))
-	mux.HandleFunc("POST /ablesungen/{id}", withDB(db, demoDB, requireLoginUnlessTeilstand(a, handleUpdateAblesung())))
-	mux.HandleFunc("POST /ablesungen/{id}/loeschen", withDB(db, demoDB, a.RequireLogin(handleDeleteAblesung())))
-	mux.HandleFunc("GET /dashboard", withDB(db, demoDB, handleDashboard(version, buildDate, a)))
-	mux.HandleFunc("GET /update-check", handleUpdateCheck(version))
-	mux.HandleFunc("GET /berechnungslogik", withDB(db, demoDB, handleBerechnungslogik(a)))
-	mux.HandleFunc("GET /abrechnung", withDB(db, demoDB, a.RequireLogin(handleAbrechnung(a))))
-	mux.HandleFunc("GET /stammdaten", withDB(db, demoDB, a.RequireRecht(store.RechtStammdatenAnsehen, handleStammdatenForm(a))))
-	mux.HandleFunc("POST /stammdaten", withDB(db, demoDB, a.RequireLogin(handleUpdateStammdaten())))
-	mux.HandleFunc("POST /stammdaten/sortierung", withDB(db, demoDB, a.RequireLogin(handleMoveKostenposition())))
-	mux.HandleFunc("GET /fixkosten", withDB(db, demoDB, a.RequireRecht(store.RechtFixkostenAnsehen, handleFixkostenListe(a))))
-	mux.HandleFunc("GET /fixkosten/export.csv", withDB(db, demoDB, a.RequireLogin(handleExportFixkostenCSV())))
-	mux.HandleFunc("GET /fixkosten/neu", withDB(db, demoDB, a.RequireLogin(handleFixkostenForm(a))))
-	mux.HandleFunc("POST /fixkosten", withDB(db, demoDB, a.RequireLogin(handleCreateFixkosten())))
-	mux.HandleFunc("POST /fixkosten/import", withDB(db, demoDB, a.RequireLogin(handleImportFixkostenCSV())))
-	mux.HandleFunc("GET /fixkosten/{id}", withDB(db, demoDB, a.RequireRecht(store.RechtFixkostenAnsehen, handleFixkostenDetail(a))))
-	mux.HandleFunc("GET /fixkosten/{id}/bearbeiten", withDB(db, demoDB, a.RequireLogin(handleFixkostenEditForm(a))))
-	mux.HandleFunc("POST /fixkosten/{id}", withDB(db, demoDB, a.RequireLogin(handleUpdateFixkosten())))
-	mux.HandleFunc("POST /fixkosten/{id}/loeschen", withDB(db, demoDB, a.RequireLogin(handleDeleteFixkosten())))
+	mux.HandleFunc("GET /", withDB(db, demoDB, handleIndex()))
+	mux.HandleFunc("POST /login", withDB(db, demoDB, a.HandleLogin()))
+	mux.HandleFunc("POST /logout", withDB(db, demoDB, a.HandleLogout()))
+	mux.HandleFunc("GET /ablesungen", withDB(db, demoDB, z.Recht(store.RechtAblesungenAnsehen, handleAblesungenListe(z))))
+	mux.HandleFunc("GET /ablesungen/export.csv", withDB(db, demoDB, z.NurVermieter(handleExportCSV())))
+	mux.HandleFunc("GET /ablesungen/neu", withDB(db, demoDB, z.Recht(store.RechtAblesungAnlegen, handleWizardForm(z))))
+	mux.HandleFunc("POST /ablesungen", withDB(db, demoDB, z.Recht(store.RechtAblesungAnlegen, handleCreateAblesung())))
+	mux.HandleFunc("POST /ablesungen/import", withDB(db, demoDB, z.NurVermieter(handleImportCSV())))
+	mux.HandleFunc("GET /ablesungen/{id}", withDB(db, demoDB, z.Recht(store.RechtAblesungenAnsehen, handleAblesungDetail(z))))
+	mux.HandleFunc("GET /ablesungen/{id}/bearbeiten", withDB(db, demoDB, z.GateAus(teilstandAnspruch, handleEditWizardForm(z))))
+	mux.HandleFunc("POST /ablesungen/{id}", withDB(db, demoDB, z.GateAus(teilstandAnspruch, handleUpdateAblesung())))
+	mux.HandleFunc("POST /ablesungen/{id}/loeschen", withDB(db, demoDB, z.NurVermieter(handleDeleteAblesung())))
+	mux.HandleFunc("GET /dashboard", withDB(db, demoDB, handleDashboard(version, buildDate, z)))
+	mux.HandleFunc("GET /update-check", withDB(db, demoDB, handleUpdateCheck(version)))
+	mux.HandleFunc("GET /berechnungslogik", withDB(db, demoDB, handleBerechnungslogik(z)))
+	mux.HandleFunc("GET /abrechnung", withDB(db, demoDB, z.NurVermieter(handleAbrechnung(z))))
+	mux.HandleFunc("GET /stammdaten", withDB(db, demoDB, z.Recht(store.RechtStammdatenAnsehen, handleStammdatenForm(z))))
+	mux.HandleFunc("POST /stammdaten", withDB(db, demoDB, z.NurVermieter(handleUpdateStammdaten())))
+	mux.HandleFunc("POST /stammdaten/sortierung", withDB(db, demoDB, z.NurVermieter(handleMoveKostenposition())))
+	mux.HandleFunc("GET /fixkosten", withDB(db, demoDB, z.Recht(store.RechtFixkostenAnsehen, handleFixkostenListe(z))))
+	mux.HandleFunc("GET /fixkosten/export.csv", withDB(db, demoDB, z.NurVermieter(handleExportFixkostenCSV())))
+	mux.HandleFunc("GET /fixkosten/neu", withDB(db, demoDB, z.NurVermieter(handleFixkostenForm(z))))
+	mux.HandleFunc("POST /fixkosten", withDB(db, demoDB, z.NurVermieter(handleCreateFixkosten())))
+	mux.HandleFunc("POST /fixkosten/import", withDB(db, demoDB, z.NurVermieter(handleImportFixkostenCSV())))
+	mux.HandleFunc("GET /fixkosten/{id}", withDB(db, demoDB, z.Recht(store.RechtFixkostenAnsehen, handleFixkostenDetail(z))))
+	mux.HandleFunc("GET /fixkosten/{id}/bearbeiten", withDB(db, demoDB, z.NurVermieter(handleFixkostenEditForm(z))))
+	mux.HandleFunc("POST /fixkosten/{id}", withDB(db, demoDB, z.NurVermieter(handleUpdateFixkosten())))
+	mux.HandleFunc("POST /fixkosten/{id}/loeschen", withDB(db, demoDB, z.NurVermieter(handleDeleteFixkosten())))
 	return mux
 }
 
@@ -176,12 +177,12 @@ func handleIndex() http.HandlerFunc {
 // any period's data. Not Ablesungen- or Fixkosten-specific (Berechnungslogik
 // as a concept spans both, see GLOSSARY.md), so it stays here rather than in
 // either concept's own file.
-func handleBerechnungslogik(a auth) http.HandlerFunc {
+func handleBerechnungslogik(z *Zugang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data := struct {
 			navData
 			Aktuell string
-		}{navData: a.NavData(r), Aktuell: "berechnungslogik"}
+		}{navData: z.NavData(r), Aktuell: "berechnungslogik"}
 		if err := berechnungslogikTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}

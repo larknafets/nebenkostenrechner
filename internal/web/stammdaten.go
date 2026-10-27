@@ -114,7 +114,7 @@ func berechtigungenAusFormular(r *http.Request, gespeichert store.Berechtigungen
 // handleStammdatenForm serves the /stammdaten page (Issue #61): each
 // apartment's current Wohnungsgröße/Flurstücksgröße, editable as live
 // values - not historized per Ablesung like the rest of the monthly form.
-func handleStammdatenForm(a auth) http.HandlerFunc {
+func handleStammdatenForm(z *Zugang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 		apartments, err := store.Apartments(db)
@@ -134,8 +134,8 @@ func handleStammdatenForm(a auth) http.HandlerFunc {
 			return
 		}
 
-		nav := a.NavData(r)
-		if !nav.IsLoggedIn {
+		nav := z.NavData(r)
+		if !nav.Personenbezug() {
 			// Personal data never leaves the server for visitors who are not
 			// logged in (Issue #164) - blank it here instead of relying on
 			// the template alone. The Wohnungsstatus is no personal data and

@@ -32,9 +32,9 @@ func TestFehlerOverlay_FormulareMarkiertUndDialogImLayout(t *testing.T) {
 		h      http.HandlerFunc
 		anzahl int
 	}{
-		{"/fixkosten/neu", handleFixkostenForm(newAuth("", nil)), 2}, // Eingabe + CSV-Import
-		{"/ablesungen/neu", handleWizardForm(newAuth("", nil)), 2},   // Wizard + CSV-Import
-		{"/stammdaten", handleStammdatenForm(newAuth("", nil)), 1},
+		{"/fixkosten/neu", handleFixkostenForm(newZugang("", nil)), 2}, // Eingabe + CSV-Import
+		{"/ablesungen/neu", handleWizardForm(newZugang("", nil)), 2},   // Wizard + CSV-Import
+		{"/stammdaten", handleStammdatenForm(newZugang("", nil)), 1},
 	}
 	for _, s := range seiten {
 		body := getPage(t, s.h, s.pfad)

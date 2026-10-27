@@ -257,17 +257,6 @@ func (a auth) resolveSession(r *http.Request) string {
 	return sitzungKeine
 }
 
-// istVermieter reports whether r counts as Vermieter - always true when no
-// Vermieter password is configured (the "login system disabled" case from
-// Ticket #112), or when resolveSession finds a demo or Vermieter session.
-func (a auth) istVermieter(r *http.Request) bool {
-	if a.vermieter == "" {
-		return true
-	}
-	kind := a.resolveSession(r)
-	return kind == sitzungVermieter || kind == sitzungDemo
-}
-
 // loginOption is one entry of the login form's "Anmelden als" select.
 type loginOption struct {
 	Wert  string
@@ -287,178 +276,33 @@ func (a auth) loginOptionen() []loginOption {
 	return append(out, loginOption{rolleFormDemo, "Demo"})
 }
 
-// navData is every page's shared nav facts - Base plus the 3 login/demo
-// facts, computed once per request instead of separately in each of the 9
-// page-handlers. Embedded (anonymous field) in every page's template-data
-// struct: text/template promotes embedded-struct fields for dot-access, so
-// layout.html keeps reading .Base/.IsLoggedIn/.IsDemoSession/.ShowLoginEntry
-// unchanged, whether they come directly from a struct or via this embed.
-// Aktuell (the active nav tab) deliberately stays out - each handler names
-// its own page, a constructor here can't derive that for it.
+// navData is every page's shared nav facts: Base, the Zugriff of the request
+// and the login/demo entries, computed once per request by Zugang.NavData.
+// Embedded (anonymous field) in every page's template-data struct:
+// text/template promotes embedded-struct fields for dot-access, so layout.html
+// reads .Base/.Vermieter/.IsDemoSession/.ShowLoginEntry/.Kann* unchanged,
+// whether they come directly from a struct or via this embed. Aktuell (the
+// active nav tab) deliberately stays out - each handler names its own page, a
+// constructor here can't derive that for it.
 type navData struct {
-	Base string
-	// IsLoggedIn is true for the Vermieter (and the demo session, which
-	// shows the Vermieter's view); the templates gate everything reserved for
-	// the Vermieter on it.
-	IsLoggedIn      bool
+	Zugriff
+	Base            string
 	IsDemoSession   bool
 	ShowLoginEntry  bool
 	ShowLogoutEntry bool
 	LoginOptionen   []loginOption
 	// HatMieter is true when the Mieter login exists (see mieterAktiv).
 	HatMieter bool
-	// The rights that decide which pages and buttons the nav and the pages
-	// show (#311). The Vermieter has all of them.
-	KannAblesungenAnsehen bool
-	KannAblesungAnlegen   bool
-	KannFixkostenAnsehen  bool
-	KannStammdatenAnsehen bool
 }
 
-// auth bundles what every login-related decision needs: the two configured
-// passwords and the demo database (needed to reset it on a successful demo
-// login). Built once in NewMux and passed along ever since, instead of the
-// password as a bare string through ~13 route registrations and 11 handler
-// constructors - architecture review after demo mode (#118), candidate 2.
+// auth bundles what logging in and out needs: the two configured passwords
+// and the demo database (needed to reset it on a successful demo login). It
+// is also the cookie adapter of Sitzungen (see Rolle), Zugang answers every
+// question about access.
 type auth struct {
 	vermieter string
 	mieter    string
 	demoDB    *sql.DB
-}
-
-// newAuth builds an auth with a Vermieter password only (no Mieter login).
-func newAuth(vermieter string, demoDB *sql.DB) auth {
-	return auth{vermieter: vermieter, demoDB: demoDB}
-}
-
-// NavData builds navData for the current request - the single place
-// requestBase/session resolution are called together, replacing what used to
-// be duplicated across all 9 page-handlers.
-//
-// The login entry shows for everybody but the Vermieter and the demo
-// session, so a Mieter can switch to the Vermieter and the (otherwise open)
-// app keeps a visible path to the demo login (Issue #122). The logout entry
-// needs a real session to end: with no Vermieter password everyone counts as
-// Vermieter, but there is no session to log out of.
-func (a auth) NavData(r *http.Request) navData {
-	kind := a.resolveSession(r)
-	rechte := a.rechte(r)
-	return navData{
-		Base:            requestBase(r),
-		IsLoggedIn:      a.istVermieter(r),
-		IsDemoSession:   kind == sitzungDemo,
-		ShowLoginEntry:  kind != sitzungDemo && kind != sitzungVermieter,
-		ShowLogoutEntry: kind != sitzungKeine,
-		LoginOptionen:   a.loginOptionen(),
-		HatMieter:       a.mieterAktiv(),
-
-		KannAblesungenAnsehen: rechte.darf(store.RechtAblesungenAnsehen),
-		KannAblesungAnlegen:   rechte.darf(store.RechtAblesungAnlegen),
-		KannFixkostenAnsehen:  rechte.darf(store.RechtFixkostenAnsehen),
-		KannStammdatenAnsehen: rechte.darf(store.RechtStammdatenAnsehen),
-	}
-}
-
-// RequireLogin gates a mutating or create-only route behind the Vermieter
-// (Ticket #112's enforcement matrix): with no Vermieter password configured
-// every route stays open (istVermieter always true). Otherwise an
-// unauthenticated request bounces to the login overlay (Ticket #113), and a
-// logged-in Mieter gets the page "Nur für den Vermieter" (ADR 0003).
-//
-// The bounce always lands on the Dashboard, never back on the gated URL
-// itself - a fully gated GET page (e.g. /ablesungen/neu) is itself wrapped
-// in RequireLogin, so redirecting to itself with ?login=1 would just hit
-// RequireLogin again and loop forever, since a query param alone never
-// grants access. The Dashboard is the one page never behind RequireLogin,
-// so it's always safe to land on; the originally attempted URL travels
-// along as "next" and is where a *successful* login lands instead (see
-// loginRedirectTarget).
-func (a auth) RequireLogin(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if a.istVermieter(r) {
-			next(w, r)
-			return
-		}
-		wantedPath := r.URL.Path
-		if r.URL.RawQuery != "" {
-			wantedPath += "?" + r.URL.RawQuery
-		}
-		if r.Method != http.MethodGet {
-			// A gated POST (e.g. .../loeschen) is never itself worth
-			// landing on after login - fall back to the page the form was
-			// submitted from, if any.
-			wantedPath = refererPath(r)
-		}
-		if a.resolveSession(r) == sitzungMieter {
-			a.keineBerechtigungSeite(w, r, wantedPath, "Nur für den Vermieter", "Diese Seite ist dem Vermieter vorbehalten. Als Mieter hast du hier keinen Zugriff.")
-			return
-		}
-		redirectToLoginOverlay(w, r, wantedPath, "", false)
-	}
-}
-
-// rechteSicht is what the role of one request may do: the Vermieter everything,
-// the others what the saved Berechtigungen grant.
-type rechteSicht struct {
-	vermieter bool
-	erlaubt   map[store.Recht]bool
-}
-
-func (s rechteSicht) darf(recht store.Recht) bool {
-	return s.vermieter || s.erlaubt[recht]
-}
-
-// betrachter maps the session of r to the role whose view applies.
-func (a auth) betrachter(r *http.Request) betrachter {
-	switch {
-	case a.istVermieter(r):
-		return betrachterVermieter
-	case a.resolveSession(r) == sitzungMieter:
-		return betrachterMieter
-	}
-	return betrachterNichtAngemeldet
-}
-
-// rechte reads the rights of the role of r. Without a database in the context
-// or on a read error the defaults apply, a Berechtigung read must not take a
-// page down.
-func (a auth) rechte(r *http.Request) rechteSicht {
-	b := a.betrachter(r)
-	if b == betrachterVermieter {
-		return rechteSicht{vermieter: true}
-	}
-	berechtigungen := store.DefaultBerechtigungen()
-	if db := dbFromContextOptional(r.Context()); db != nil {
-		if gelesen, err := store.GetBerechtigungen(db); err != nil {
-			log.Printf("berechtigungen: %v", err)
-		} else {
-			berechtigungen = gelesen
-		}
-	}
-	return rechteSicht{erlaubt: berechtigungen[b.rolle()]}
-}
-
-// RequireRecht gates a route behind a right (#311): the Vermieter and whoever
-// has the right pass. Without the right a Mieter gets the page "Nicht
-// freigegeben" and a visitor who is not logged in is bounced to the login
-// overlay, as for the pages reserved for the Vermieter. Only for routes
-// wrapped in withDB (the rights come from its database).
-func (a auth) RequireRecht(recht store.Recht, next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if a.rechte(r).darf(recht) {
-			next(w, r)
-			return
-		}
-		wantedPath := r.URL.Path
-		if r.URL.RawQuery != "" {
-			wantedPath += "?" + r.URL.RawQuery
-		}
-		if a.resolveSession(r) == sitzungMieter {
-			a.keineBerechtigungSeite(w, r, wantedPath, "Nicht freigegeben", "Der Vermieter hat diese Seite für dich nicht freigegeben.")
-			return
-		}
-		redirectToLoginOverlay(w, r, wantedPath, "", false)
-	}
 }
 
 // refererPath extracts just the path(+query) off the Referer header - never
@@ -491,26 +335,6 @@ func redirectToLoginOverlay(w http.ResponseWriter, r *http.Request, next, rolle 
 		target += "&fehler=1"
 	}
 	http.Redirect(w, r, target, http.StatusFound)
-}
-
-// keineBerechtigungSeite answers a logged-in Mieter who asked for a page
-// reserved for the Vermieter or not granted to him: 403 with a link that opens
-// the login as Vermieter and leads back to the wanted page.
-func (a auth) keineBerechtigungSeite(w http.ResponseWriter, r *http.Request, wanted, titel, text string) {
-	if wanted == "" || !strings.HasPrefix(wanted, "/") || strings.HasPrefix(wanted, "//") {
-		wanted = "/dashboard"
-	}
-	data := struct {
-		navData
-		Aktuell string
-		Next    string
-		Titel   string
-		Text    string
-	}{navData: a.NavData(r), Next: wanted, Titel: titel, Text: text}
-	w.WriteHeader(http.StatusForbidden)
-	if err := keineBerechtigungTemplate.ExecuteTemplate(w, "layout", data); err != nil {
-		log.Printf("keine berechtigung: %v", err)
-	}
 }
 
 // loginRedirectTarget resolves where to send the browser after a

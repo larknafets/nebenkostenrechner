@@ -20,6 +20,18 @@ const (
 	betrachterVermieter
 )
 
+// betrachterVon maps the Zugriff of a request to the role whose view applies
+// (until the Dashboard asks the Zugriff directly).
+func betrachterVon(z Zugriff) betrachter {
+	switch {
+	case z.Vermieter:
+		return betrachterVermieter
+	case z.Rolle == store.RolleMieter:
+		return betrachterMieter
+	}
+	return betrachterNichtAngemeldet
+}
+
 // rolle returns the role whose Berechtigungen apply to b; the Vermieter has
 // none to look up, he has every right.
 func (b betrachter) rolle() store.Rolle {

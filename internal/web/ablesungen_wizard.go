@@ -113,7 +113,7 @@ func redirectIfOpenTeilstand(w http.ResponseWriter, r *http.Request, db *sql.DB)
 	return true
 }
 
-func handleWizardForm(a auth) http.HandlerFunc {
+func handleWizardForm(z *Zugang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 
@@ -147,7 +147,7 @@ func handleWizardForm(a auth) http.HandlerFunc {
 		}
 
 		data := wizardData{
-			navData:     a.NavData(r),
+			navData:     z.NavData(r),
 			Aktuell:     "ablesungen",
 			FormAction:  requestBase(r) + "/ablesungen",
 			ReadingDate: time.Now().Format("2006-01-02"),
@@ -199,38 +199,35 @@ func (d *wizardData) prefill(src *store.LatestPeriod, apartments []store.Apartme
 	d.PVGutschriftW1 = src.PVGutschriftW1
 }
 
-// requireLoginUnlessTeilstand wraps next with a's login gate, except when
-// the request's {id} path value names a Teilstand (partial reading,
-// Ticket #130) - completing an open reading needs no login, just as
-// little as creating it in the first place (Ticket #129). An already
-// complete reading stays gated as before. An id that doesn't (or no
-// longer) exist returns 404 directly instead of a login redirect - its
-// existence isn't information worth protecting here. Only intended for
-// routes with a numeric {id} path parameter that are also already behind
-// withDB (dbFromContext needs its DB in the context).
-func requireLoginUnlessTeilstand(a auth, next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		db := dbFromContext(r.Context())
-		periodID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-		if err != nil {
-			http.Error(w, "invalid period id", http.StatusBadRequest)
-			return
-		}
-		complete, err := store.PeriodComplete(db, periodID)
-		if err != nil {
-			if errors.Is(err, store.ErrPeriodNotFound) {
-				http.NotFound(w, r)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if !complete {
-			a.RequireRecht(store.RechtAblesungAnlegen, next)(w, r)
-			return
-		}
-		a.RequireLogin(next)(w, r)
+// teilstandAnspruch is the Anspruch of the routes that correct a reading (for
+// Gate form GateAus): completing a Teilstand (partial reading, Ticket #130)
+// needs only the right to create a reading, just as creating it in the first
+// place (Ticket #129). An already complete reading stays reserved for the
+// Vermieter. An id that doesn't (or no longer) exist returns 404 directly
+// instead of a login redirect - its existence isn't information worth
+// protecting here. Only intended for routes with a numeric {id} path
+// parameter that are also already behind withDB (dbFromContext needs its DB in
+// the context).
+func teilstandAnspruch(w http.ResponseWriter, r *http.Request) (Anspruch, bool) {
+	db := dbFromContext(r.Context())
+	periodID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "invalid period id", http.StatusBadRequest)
+		return Anspruch{}, false
 	}
+	complete, err := store.PeriodComplete(db, periodID)
+	if err != nil {
+		if errors.Is(err, store.ErrPeriodNotFound) {
+			http.NotFound(w, r)
+			return Anspruch{}, false
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return Anspruch{}, false
+	}
+	if !complete {
+		return Braucht(store.RechtAblesungAnlegen), true
+	}
+	return NurVermieter, true
 }
 
 // handleEditWizardForm serves the "korrigieren" (correcting) form for an
@@ -240,7 +237,7 @@ func requireLoginUnlessTeilstand(a auth, next http.HandlerFunc) http.HandlerFunc
 // the genuine previous period - the one chronologically before the
 // reading being edited, regardless of whether newer readings exist after
 // it.
-func handleEditWizardForm(a auth) http.HandlerFunc {
+func handleEditWizardForm(z *Zugang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 		periodID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -272,7 +269,7 @@ func handleEditWizardForm(a auth) http.HandlerFunc {
 		}
 
 		data := wizardData{
-			navData:             a.NavData(r),
+			navData:             z.NavData(r),
 			Aktuell:             "ablesungen",
 			FormAction:          fmt.Sprintf("%s/ablesungen/%d", requestBase(r), target.ID),
 			IsEdit:              true,

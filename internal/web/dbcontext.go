@@ -37,10 +37,12 @@ func withDB(db, demoDB *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 }
 
 // requestWithDB returns a copy of r carrying db in its context - the same
-// mechanism withDB uses, exposed directly for tests that call a handler
-// without going through NewMux/withDB.
+// mechanism withDB uses (the db and a fresh per-request cache for the Zugriff),
+// exposed directly for tests that call a handler without going through
+// NewMux/withDB.
 func requestWithDB(r *http.Request, db *sql.DB) *http.Request {
-	return r.WithContext(context.WithValue(r.Context(), dbContextKey{}, db))
+	ctx := context.WithValue(r.Context(), dbContextKey{}, db)
+	return r.WithContext(context.WithValue(ctx, zugriffCacheKey{}, &zugriffCache{}))
 }
 
 // dbFromContext returns the request's *sql.DB, set by withDB. Panics if
@@ -51,12 +53,5 @@ func dbFromContext(ctx context.Context) *sql.DB {
 	if !ok {
 		panic("web: no *sql.DB in request context - handler not wrapped in withDB")
 	}
-	return db
-}
-
-// dbFromContextOptional is dbFromContext for callers that may run without
-// withDB (nil then).
-func dbFromContextOptional(ctx context.Context) *sql.DB {
-	db, _ := ctx.Value(dbContextKey{}).(*sql.DB)
 	return db
 }

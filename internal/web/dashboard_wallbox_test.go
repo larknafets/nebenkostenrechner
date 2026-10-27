@@ -213,7 +213,7 @@ func dashboardHTML(t *testing.T, db *sql.DB) string {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
-	handleDashboard("v0", "", newAuth("", nil))(w, requestWithDB(req, db))
+	handleDashboard("v0", "", newZugang("", nil))(w, requestWithDB(req, db))
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", w.Code)
 	}

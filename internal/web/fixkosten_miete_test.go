@@ -34,10 +34,10 @@ func getFixkostenForm(t *testing.T, db *sql.DB, edit string) string {
 	req := httptest.NewRequest(http.MethodGet, "/fixkosten/neu", nil)
 	w := httptest.NewRecorder()
 	if edit == "" {
-		handleFixkostenForm(newAuth("", nil))(w, requestWithDB(req, db))
+		handleFixkostenForm(newZugang("", nil))(w, requestWithDB(req, db))
 	} else {
 		req.SetPathValue("id", edit)
-		handleFixkostenEditForm(newAuth("", nil))(w, requestWithDB(req, db))
+		handleFixkostenEditForm(newZugang("", nil))(w, requestWithDB(req, db))
 	}
 	if w.Code != http.StatusOK {
 		t.Fatalf("GET status = %d, body %s", w.Code, w.Body.String())

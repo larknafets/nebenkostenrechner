@@ -11,15 +11,15 @@
     {{range .Apartments}}
     <div class="panel">
       <h3>{{.Name}}</h3>
-      <div class="field"><label>Wohnungsgröße (m²)</label><input type="number" step="any" name="qm_{{.ID}}" value="{{.QM}}" required {{if not $.IsLoggedIn}}disabled{{end}}></div>
-      <div class="field"><label>Flurstücksgröße (m²)</label><input type="number" step="any" name="flurstueck_groesse_{{.ID}}" value="{{.FlurstueckGroesse}}" required {{if not $.IsLoggedIn}}disabled{{end}}></div>
+      <div class="field"><label>Wohnungsgröße (m²)</label><input type="number" step="any" name="qm_{{.ID}}" value="{{.QM}}" required {{if not $.Vermieter}}disabled{{end}}></div>
+      <div class="field"><label>Flurstücksgröße (m²)</label><input type="number" step="any" name="flurstueck_groesse_{{.ID}}" value="{{.FlurstueckGroesse}}" required {{if not $.Vermieter}}disabled{{end}}></div>
       <div class="field"><label>Wohnungsstatus</label>
-        <select name="status_{{.ID}}" {{if not $.IsLoggedIn}}disabled{{end}}>
+        <select name="status_{{.ID}}" {{if not $.Vermieter}}disabled{{end}}>
           <option value="vermietet" {{if .Vermietet}}selected{{end}}>Vermietung</option>
           <option value="eigennutzung" {{if not .Vermietet}}selected{{end}}>Eigennutzung</option>
         </select>
       </div>
-      {{if $.IsLoggedIn}}
+      {{if $.Vermieter}}
       <div class="field"><label>Name des Mieters bzw. Bewohners</label><input type="text" name="mieter_name_{{.ID}}" value="{{.MieterName}}"></div>
       <div class="field"><label>Zustellanschrift</label><textarea name="mieter_anschrift_{{.ID}}" rows="3">{{.MieterAnschrift}}</textarea></div>
       <div class="field mieter-seit" {{if not .Vermietet}}hidden{{end}}><label>Mieter seit (Einzugsmonat)</label><input type="month" name="mieter_seit_{{.ID}}" value="{{mieterSeit .MieterSeit}}"><p class="muted klein">Leer: ab Erfassungsbeginn. Der Übertrag in der Abrechnung zählt erst ab diesem Monat.</p></div>
@@ -28,7 +28,7 @@
     {{end}}
   </div>
 
-  {{if .IsLoggedIn}}
+  {{if .Vermieter}}
   <div class="panel">
     <h3>Vermieter und Objekt</h3>
     <p class="muted">Erscheinen im Kopf der Jahresabrechnung. Die IBAN ist optional und erscheint nur bei einer Nachzahlung.</p>
@@ -47,7 +47,7 @@
       <label>Heizung/Warmwasser-Gewichtung (Wärmeverbrauch / Wohnungsgröße)</label>
       <div class="radio-options">
         {{range .GewichtungOpts}}
-        <label class="radio-option"><input type="radio" name="heizung_gewichtung" value="{{.Value}}" {{if .Selected}}checked{{end}} {{if not $.IsLoggedIn}}disabled{{end}}> {{.Label}}</label>
+        <label class="radio-option"><input type="radio" name="heizung_gewichtung" value="{{.Value}}" {{if .Selected}}checked{{end}} {{if not $.Vermieter}}disabled{{end}}> {{.Label}}</label>
         {{end}}
       </div>
     </div>
@@ -57,20 +57,20 @@
     <h3>Jahresabrechnung</h3>
     <p class="muted">Gilt für alle Monate und Jahre. Dashboard und Verlauf zeigen weiterhin alle Positionen.</p>
     <div class="field">
-      <label><input type="checkbox" name="strom_weiterberechnen" value="1" {{if .Haus.StromWeiterberechnen}}checked{{end}} {{if not .IsLoggedIn}}disabled{{end}}> Stromverbrauch weiterberechnen (Haushaltsstrom)</label>
+      <label><input type="checkbox" name="strom_weiterberechnen" value="1" {{if .Haus.StromWeiterberechnen}}checked{{end}} {{if not .Vermieter}}disabled{{end}}> Stromverbrauch weiterberechnen (Haushaltsstrom)</label>
       <p class="muted klein">Gilt für eine vermietete Wohnung: ohne Haken steht ihr Haushaltsstrom nicht in der Abrechnung. Bei Eigennutzung steht der Strom immer in der Abrechnung.</p>
     </div>
     <div class="field">
-      <label><input type="checkbox" name="wallbox_weiterberechnen" value="1" {{if .Haus.WallboxWeiterberechnen}}checked{{end}} {{if not .IsLoggedIn}}disabled{{end}}> Wallbox weiterberechnen</label>
+      <label><input type="checkbox" name="wallbox_weiterberechnen" value="1" {{if .Haus.WallboxWeiterberechnen}}checked{{end}} {{if not .Vermieter}}disabled{{end}}> Wallbox weiterberechnen</label>
       <p class="muted klein">Gilt für eine vermietete Wohnung: ohne Haken steht ihr Wallbox-Anteil nicht in der Abrechnung. Bei Eigennutzung steht die Wallbox immer in der Abrechnung.</p>
     </div>
     <h3>Umlagefähige Kostenpositionen</h3>
     {{range .Kostenpositionen}}
-    <div class="field"><label><input type="checkbox" name="umlagefaehig_{{.ID}}" value="1" {{if .Umlagefaehig}}checked{{end}} {{if not $.IsLoggedIn}}disabled{{end}}> {{.Label}}</label></div>
+    <div class="field"><label><input type="checkbox" name="umlagefaehig_{{.ID}}" value="1" {{if .Umlagefaehig}}checked{{end}} {{if not $.Vermieter}}disabled{{end}}> {{.Label}}</label></div>
     {{end}}
   </div>
 
-  {{if .IsLoggedIn}}
+  {{if .Vermieter}}
   <div class="panel" id="berechtigungen">
     <h3>Berechtigungen</h3>
     <p class="muted">Was {{if .HatMieter}}Nicht angemeldete und der Mieter{{else}}Nicht angemeldete{{end}} sehen und tun dürfen. Der Vermieter darf immer alles.</p>
@@ -97,7 +97,7 @@
   {{end}}
 </form>
 
-{{if .IsLoggedIn}}
+{{if .Vermieter}}
 <div class="panel" id="reihenfolge" style="margin-top:1rem">
   <h3>Reihenfolge der Kostenpositionen</h3>
   <p class="muted">Gilt für Fixkosten-Eingabe, Fixkosten-Anzeige und Abrechnung. Ungespeicherte Änderungen im Formular oben gehen beim Verschieben verloren.</p>
