@@ -25,7 +25,10 @@
       {{end}}{{end}}
     </div>
     <div class="muted stat-kategorien">
-      {{range .Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{deEUR .Kosten}}&nbsp;€</span>{{end}}
+      {{range .Segmente}}{{if ne .Farbe "fix"}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{deEUR .Kosten}}&nbsp;€</span>{{end}}{{end}}
+    </div>
+    <div class="muted stat-kategorien">
+      <span class="v-fix" title="Fixkosten">{{kategorieIcon "Fixkosten"}}{{deEUR .FixkostenEUR}}&nbsp;€</span>
       {{if eq .ApartmentID 1}}<span class="v-pv" title="PV-Gutschrift">{{kategorieIcon "PV-Gutschrift"}}{{if ne .PVGutschriftEUR 0.0}}&minus;{{end}}{{deEUR .PVGutschriftEUR}}&nbsp;€</span>{{end}}
       {{if eq .ApartmentID 2}}<span class="v-pv" title="Nicht dem Netzbezug zugeordnet (PV)">{{kategorieIcon "PV-Anteil"}}{{de0 .PVAnteilKWh}}&nbsp;kWh</span>{{end}}
     </div>
@@ -37,7 +40,7 @@
         {{end}}
       </div>
       <div class="muted stat-kategorien">
-        {{range .Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{deEUR .Kosten}}&nbsp;€ · {{de0 .Verbrauch}}&nbsp;{{.Einheit}}</span>{{end}}
+        {{range .Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon "Wallbox"}}{{deEUR .Kosten}}&nbsp;€ · {{de0 .Verbrauch}}&nbsp;{{.Einheit}}</span>{{end}}
       </div>
     </div>{{end}}
     {{with .Saldo}}{{template "abschlag-value" .}}{{end}}
