@@ -16,7 +16,7 @@ trap cleanup EXIT
 
 port=${SMOKE_PORT:-18090}
 go build -o "$dir/app" ./cmd/nebenkostenrechner
-DB_PATH="$dir/nk.db" LISTEN_ADDR=":$port" WIDGET_LISTEN_ADDR=":$((port + 1))" "$dir/app" >"$dir/log" 2>&1 &
+DB_PATH="$dir/nk.db" LISTEN_ADDR=":$port" "$dir/app" >"$dir/log" 2>&1 &
 pid=$!
 
 for _ in $(seq 50); do

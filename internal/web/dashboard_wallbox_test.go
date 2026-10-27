@@ -12,7 +12,7 @@ import (
 )
 
 // dashboard_wallbox_test.go covers the category "Wallbox" and the negative
-// line "PV-Gutschrift" in Dashboard and widgets (#227) through the data and
+// line "PV-Gutschrift" in the Dashboard (#227) through the data and
 // HTTP seams.
 
 func segmentByLabel(segs []dashboardSegment, label string) *dashboardSegment {
@@ -214,17 +214,6 @@ func dashboardHTML(t *testing.T, db *sql.DB) string {
 	return w.Body.String()
 }
 
-func widgetHTML(t *testing.T, db *sql.DB, route, entity string) string {
-	t.Helper()
-	req := httptest.NewRequest(http.MethodGet, "/widget/"+route+"/"+entity, nil)
-	w := httptest.NewRecorder()
-	NewWidgetMux(db).ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
-	}
-	return w.Body.String()
-}
-
 func TestDashboardHTML_WallboxUndPVGutschrift(t *testing.T) {
 	db := openTestDB(t)
 	wallboxPVAblesungen(t, db, true)
@@ -253,30 +242,5 @@ func TestDashboardHTML_OhneSchalterGutschriftNurMitNull(t *testing.T) {
 	}
 	if strings.Contains(body, "&minus;4,20") {
 		t.Error("Gutschrift 4,20 ohne Schalter")
-	}
-}
-
-func TestWidgets_ZeigenWallboxUndPVGutschrift(t *testing.T) {
-	db := openTestDB(t)
-	wallboxPVAblesungen(t, db, true)
-
-	for _, route := range []string{"jahressumme", "uebersicht"} {
-		body := widgetHTML(t, db, route, "wohnung-1")
-		if !strings.Contains(body, `title="Wallbox"`) || !strings.Contains(body, `title="PV-Gutschrift"`) {
-			t.Errorf("Widget %s Wohnung 1 ohne Wallbox oder PV-Gutschrift", route)
-		}
-		body2 := widgetHTML(t, db, route, "wohnung-2")
-		if !strings.Contains(body2, `title="Wallbox"`) || strings.Contains(body2, `title="PV-Gutschrift"`) {
-			t.Errorf("Widget %s Wohnung 2: Wallbox erwartet, PV-Gutschrift nicht", route)
-		}
-	}
-	for _, route := range []string{"verbrauchswerte", "uebersicht"} {
-		body := widgetHTML(t, db, route, "wohnung-1")
-		if !strings.Contains(body, "Wallbox <span") {
-			t.Errorf("Widget %s Wohnung 1: Verbrauchswert Wallbox fehlt", route)
-		}
-		if !strings.Contains(body, "PV-Gutschrift") {
-			t.Errorf("Widget %s Wohnung 1: PV-Gutschrift im Kombiniert-Modus fehlt", route)
-		}
 	}
 }

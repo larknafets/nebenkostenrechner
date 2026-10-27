@@ -33,13 +33,6 @@ var (
 	fixkostenListeTemplate  = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten.html"))
 	fixkostenFormTemplate   = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_form.html"))
 	fixkostenDetailTemplate = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_detail.html"))
-
-	// widget-layout templates (Issue #77 ff.) - own shell instead of
-	// "layout", only shares "styles" (layout.html) with the rest of the
-	// app.
-	widgetJahressummeTemplate     = template.Must(template.New("widget_layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/monatsverlauf.html", "templates/widget_layout.html", "templates/widget_jahressumme.html"))
-	widgetVerbrauchswerteTemplate = template.Must(template.New("widget_layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/monatsverlauf.html", "templates/widget_layout.html", "templates/widget_verbrauchswerte.html"))
-	widgetUebersichtTemplate      = template.Must(template.New("widget_layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/monatsverlauf.html", "templates/widget_layout.html", "templates/widget_uebersicht.html"))
 )
 
 // kategorieIconPaths maps a yearly-totals card category row's exact Label

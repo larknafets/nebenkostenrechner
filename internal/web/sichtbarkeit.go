@@ -2,8 +2,8 @@ package web
 
 import "github.com/larknafets/nebenkostenrechner/internal/store"
 
-// betrachter says who looks at the Dashboard or a widget route. It is the
-// only input that decides what is visible (#293).
+// betrachter says who looks at the Dashboard. It is the only input that
+// decides what is visible (#293).
 type betrachter int
 
 const (
@@ -12,9 +12,6 @@ const (
 	betrachterAnonym betrachter = iota
 	// betrachterAngemeldet is a logged-in user: everything, with Mieteinnahmen.
 	betrachterAngemeldet
-	// betrachterWidget is an HA widget route (no auth, own port): everything,
-	// without Mieteinnahmen.
-	betrachterWidget
 )
 
 // sichtbareWohnung is one visible apartment: its Jahreskarte and Verlauf.
@@ -74,15 +71,8 @@ func (b betrachter) sichtbar(e entitaet, dd dashboardData) bool {
 		return true
 	case entitaetWallbox:
 		// Anonymous: no whole-house Wallboxen (Ticket #67). Logged in: only
-		// when a Wohnung carries the Wallbox in its Abrechnung (#297). The
-		// widget route stays unconditional.
-		switch b {
-		case betrachterAnonym:
-			return false
-		case betrachterAngemeldet:
-			return dd.wallboxInAbrechnung()
-		}
-		return true
+		// when a Wohnung carries the Wallbox in its Abrechnung (#297).
+		return b == betrachterAngemeldet && dd.wallboxInAbrechnung()
 	}
 	if b != betrachterAnonym {
 		return true
@@ -122,32 +112,6 @@ func sichtbareAnsicht(b betrachter, dd dashboardData, miete []mieteMonat) ansich
 		v.WP = buildSichtbarerSimple(wpSeries, dd)
 	}
 	if b.sichtbar(entitaet{Art: entitaetPV}, dd) {
-		v.PV = buildSichtbarerSimple(pvSeries, dd)
-	}
-	return v
-}
-
-// sichtbareEntitaet is sichtbareAnsicht for a single entity: same visibility
-// table and same output for that entity, but only that entity is built. The
-// view stays empty if b may not see it or an apartment id is not in the data.
-func sichtbareEntitaet(b betrachter, dd dashboardData, e entitaet, miete []mieteMonat) ansicht {
-	var v ansicht
-	if !b.sichtbar(e, dd) {
-		return v
-	}
-	switch e.Art {
-	case entitaetWohnung:
-		for _, a := range dd.Apartments {
-			if a.ID == e.ApartmentID {
-				v.addWohnung(b, dd, a, miete)
-				break
-			}
-		}
-	case entitaetWallbox:
-		v.Wallbox = buildSichtbarerSimple(wallboxSeries, dd)
-	case entitaetWP:
-		v.WP = buildSichtbarerSimple(wpSeries, dd)
-	case entitaetPV:
 		v.PV = buildSichtbarerSimple(pvSeries, dd)
 	}
 	return v

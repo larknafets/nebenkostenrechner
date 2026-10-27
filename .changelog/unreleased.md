@@ -40,3 +40,5 @@ Keep every section, an empty one included. Do not change the headings.
 ## Fehlerkorrekturen
 
 ## Wartung
+
+- Die Widget-Routen und der zweite Port (`WIDGET_LISTEN_ADDR`, Host-Port 8081 beim Release, 8082 beim Nightly) entfallen, Lovelace-Karten mit Webpage-Card auf diese Routen funktionieren nicht mehr (#301)

@@ -236,11 +236,8 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
 {{end}}
 {{end}}
 
-{{/* styles is the full shared CSS, split out of "layout" so the widget
-     shell (widget_layout.html) can reuse every component style (badges,
-     Kategorie-/Legend-Farben, stat-card layout, ...) without duplicating
-     ~135 lines - only the <head>/<body> wrapper and the theme-toggle/nav/
-     footer differ between the two shells. */}}
+{{/* styles is the full shared CSS (badges, Kategorie-/Legend-Farben,
+     stat-card layout, ...), split out of "layout". */}}
 {{define "styles"}}
   :root {
     color-scheme: light;

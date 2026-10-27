@@ -92,7 +92,7 @@ Mieter-/Bewohnername, Zustellanschrift, Vermieter, Objektanschrift und IBAN sind
 
 **Wohnungsstatus**:
 Je Wohnung "Vermietung" oder "Eigennutzung" (Stammdaten, Startwert Wohnung 1 Eigennutzung, Wohnung 2 Vermietung).
-Steuert die Jahresabrechnung (Mieter-Block, Rechtshinweise, Pflichtfelder und welche Posten darin stehen) und auf dem Dashboard und in den Widgets nur die Wallbox-Zeile der Jahreskarte (bei Vermietung, ausgeschaltetem Flag "Wallbox weiterberechnen" und Betrag 0 entfällt sie samt Balkensegment), nie die Summen, den fortlaufenden Saldo, die Kostenberechnung oder die Heizungs-Gewichtung.
+Steuert die Jahresabrechnung (Mieter-Block, Rechtshinweise, Pflichtfelder und welche Posten darin stehen) und auf dem Dashboard nur die Wallbox-Zeile der Jahreskarte (bei Vermietung, ausgeschaltetem Flag "Wallbox weiterberechnen" und Betrag 0 entfällt sie samt Balkensegment), nie die Summen, den fortlaufenden Saldo, die Kostenberechnung oder die Heizungs-Gewichtung.
 Welche Posten in der Abrechnung einer Wohnung stehen:
 
 | Status der Wohnung | Block "Strom" (ihr Haushaltsstrom) | Block "Wallbox" (ihr Anteil) | Block "PV-Gutschrift" (nur Wohnung 1, wenn der Schalter der Ablesung an ist) |
@@ -164,7 +164,7 @@ Das Formularfeld heißt "Miete", die Anzeige (Jahressumme) "Mieteinnahmen".
 Wie der Abschlag nur für Wohnungen mit Status Vermietung erfasst (Pflicht, 0 erlaubt, vorbelegt aus der letzten Eingabe), bei Eigennutzung gibt es kein Feld.
 Ein früher gespeicherter Abschlag einer inzwischen eigengenutzten Wohnung zählt weiter und bleibt beim Korrigieren unverändert.
 Im CSV immer `abschlag_1`, `abschlag_2`, `miete_1`, `miete_2`, eine leere Zelle heißt nicht erfasst, der Import übernimmt Werte unabhängig vom Status.
-Sichtbarkeit: Die Detailseite der Fixkosten-Eingabe zeigt die Miete je vermieteter Wohnung ohne Berechtigungsprüfung (auch ohne Login, wie den Abschlag; bewusste Entscheidung des Eigentümers), die Mieteinnahmen der Jahreskarte nur für angemeldete Nutzer, die Widgets, die Liste der Eingaben und der Monatsverlauf zeigen keine Miete.
+Sichtbarkeit: Die Detailseite der Fixkosten-Eingabe zeigt die Miete je vermieteter Wohnung ohne Berechtigungsprüfung (auch ohne Login, wie den Abschlag; bewusste Entscheidung des Eigentümers), die Mieteinnahmen der Jahreskarte nur für angemeldete Nutzer, die Liste der Eingaben und der Monatsverlauf zeigen keine Miete.
 _Avoid_: Kaltmiete, Mietzahlung
 
 **Abrechnungszeitraum**:

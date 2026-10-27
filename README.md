@@ -246,16 +246,14 @@ Saldo(Monat) = Saldo(Vormonat) + Abschlag(Monat) - (Fixkosten(Monat) + Verbrauch
 
 Der Verbrauch enthält den **Strom** (Wohnung 1: Rest des Netzbezugs, Wohnung 2: Zwischenzähler) und die **Wallbox**-Kosten der Wohnung (siehe Strom). Die Salden von Wohnung 1 sinken damit rückwirkend um die bisher aufgelaufenen Stromkosten. Bei Wohnung 1 kommt die **PV-Gutschrift** des Monats als Gutschrift dazu: `Saldo(Monat) = Saldo(Vormonat) + Abschlag + PV-Gutschrift - (Fixkosten + Verbrauch)`, ohne Deckel.
 
-**Dashboard und Widgets:** Die Jahreskarte und der Monatsverlauf beider Wohnungen zeigen die Kategorie **Wallbox** auch mit 0 EUR.
+**Dashboard:** Die Jahreskarte und der Monatsverlauf beider Wohnungen zeigen die Kategorie **Wallbox** auch mit 0 EUR.
 Einzige Ausnahme ist die Jahreskarte einer vermieteten Wohnung bei ausgeschaltetem "Wallbox weiterberechnen" und Betrag 0: Dort entfallen Zeile und Balkensegment (bei Betrag ungleich 0 bleibt sie), Gesamt und Saldo ändern sich nicht.
 "Strom" steht für beide Wohnungen immer in der Jahreskarte (auch mit 0,00), im Balken und im Monatsverlauf (Wohnung 1: Rest des Netzbezugs, Wohnung 2: Haushaltsstrom), "Verbrauchswerte" zeigen die zugeordneten Netzbezug-kWh (bei Wohnung 1 die Rest-kWh).
 Wohnung 1 bekommt in der Jahreskarte die Zeile **PV-Gutschrift** (auch mit 0,00, dann ohne Minus; Wohnung 2 zeigt entsprechend den PV-Anteil in kWh auch mit 0): Sie senkt die Gesamtkosten, aber nicht die Verbrauchskosten und ist kein Balkensegment.
 Im Monatsverlauf steht sie nur in "Kombiniert" (Gesamt abzüglich Gutschrift) und fließt in den Saldo ein, nicht in "Verbrauch" und "Verbrauchswerte".
 Die haus-weiten Karten "Wallboxen" und "PV-Anlage" bleiben unverändert.
-Die Widget-Routen zeigen dieselben Posten, ohne neue Routen.
 Die Jahreskarte der vermieteten Wohnung zeigt unter Guthaben / Nachzahlung die **Mieteinnahmen** des Anzeigejahres (Summe der Miete aller Fixkosten-Eingaben des Jahres, auch mit 0,00; bei Eigennutzung nie).
 Der Block erscheint nur für angemeldete Nutzer und steht ohne Login nicht im HTML-Quelltext.
-Die Widgets zeigen keine Mieteinnahmen, weil ihre Routen bewusst ohne Login erreichbar sind.
 
 Fortlaufend seit Erfassungsbeginn kumuliert, kein Reset zum Jahreswechsel. Positiv heißt Guthaben, negativ Nachzahlung, exakt 0 Ausgeglichen. Ein Monat ohne Fixkosteneingabe lässt den Saldo unverändert, statt ihn verschwinden zu lassen.
 
@@ -376,7 +374,6 @@ Danach erreichbar unter `http://localhost:8080`, Health-Check unter `/healthz`. 
 |---|---|---|
 | `DB_PATH` | `/data/nebenkosten.db` | Pfad zur SQLite-Datenbankdatei |
 | `LISTEN_ADDR` | `:8080` | Listen-Adresse des HTTP-Servers |
-| `WIDGET_LISTEN_ADDR` | `:8081` | Listen-Adresse der Widget-Routen (siehe unten) |
 | `LOGIN_PASSWORD` | *(leer)* | Optionales Kennwort. Leer = alles offen wie bisher. Gesetzt: nicht angemeldete Besucher sehen nur eingeschränkte, lesende Ansichten (z. B. nur Wohnung 2 auf dem Dashboard), alle Eingabe-/Änderungsaktionen sind gesperrt - mit Ausnahme einer neuen Ablesung bzw. dem Vervollständigen eines bestehenden Teilstands, siehe oben - "Login"-Link in der Navigation öffnet ein Overlay zur Anmeldung. |
 
 ### Demo-Modus
@@ -396,20 +393,7 @@ Ein manueller Reset (z. B. nach einem Bug) ist ohne eigene Route möglich: `demo
 Für den Betrieb als Home Assistant Add-on (inkl. Ingress-Integration) siehe das Add-on-Repository [`larknafets/ha-addons`](https://github.com/larknafets/ha-addons).
 
 Das Repository enthält zwei Add-ons zur Wahl: **Nebenkosten** (Release, aktualisiert sich bei jedem Tag `v*`) und **Nebenkosten (Nightly)** (täglicher Stand von `main`, `stage: experimental`).
-Der Nightly hat eigene Daten und einen eigenen Port (8082 statt 8081 für die Widget-Routen), beide Add-ons können gleichzeitig installiert sein.
+Der Nightly hat eigene Daten, beide Add-ons können gleichzeitig installiert sein.
 Ein Wechsel nimmt die Daten nicht mit, und der Nightly kann Datenbank-Migrationen enthalten, die der Release nicht kennt - nie die Datenbank vom Nightly zurück in den Release kopieren.
 Der Workflow `nightly.yml` baut jede Nacht (nur wenn es in den letzten 24 Stunden einen Commit gab), behält die letzten 7 Images und lässt sich manuell für einen beliebigen Branch starten.
 
-### Dashboard-Widgets (Home Assistant Lovelace)
-
-Für einzelne, kleine Karten im eigenen Dashboard - statt der ganzen App über Ingress - stellt der Server auf einem eigenen, 2.
-Port (`WIDGET_LISTEN_ADDR`) 3 zusätzliche, read-only Routen bereit, gedacht für ein Lovelace "Webpage card"/Iframe.
-HA-Ingress-URLs lassen sich nicht zuverlässig in ein beliebiges Iframe einbetten (Ingress-Session muss erst durch Besuch des Addon-Panels geprimt werden), deshalb ein eigener, Ingress-freier Port - bewusst ohne Login und ohne jede mutierende Route, kleinstmögliche Angriffsfläche.
-
-| Route | Inhalt |
-|---|---|
-| `GET /widget/jahressumme/{entity}` | nur die Jahressummen-Karte |
-| `GET /widget/verbrauchswerte/{entity}` | nur das Verbrauchswerte-Panel (Verbrauch/Verbrauchswerte/Fixkosten/Kombiniert bleibt umschaltbar) |
-| `GET /widget/uebersicht/{entity}` | beide Ansichten untereinander |
-
-`{entity}` ist eine von: `wohnung-1`, `wohnung-2`, `wallboxen`, `pv-anlage`. Jede Route zeigt ohne Nav/Footer/Theme-Toggle immer das laufende Jahr, folgt nur `prefers-color-scheme` (kein Toggle-Button).

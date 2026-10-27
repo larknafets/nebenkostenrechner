@@ -9,11 +9,8 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// dashboardData is every piece of already-computed data the Dashboard and
-// the HA widget routes (Issue #77 ff.) build their views from - factored
-// out of handleDashboard so both share one implementation of "walk every
-// period/fixed-costs entry and compute this year's costs" instead of
-// diverging copies.
+// dashboardData is every piece of already-computed data the Dashboard builds
+// its views from: every period's and fixed-costs entry's costs, walked once.
 type dashboardData struct {
 	HasAnyData     bool
 	Apartments     []store.Apartment
@@ -27,20 +24,19 @@ type dashboardData struct {
 
 // mieteMonat is the Miete projection of one Fixkosten-Eingabe: its
 // Abrechnungsmonat and the monthly Miete per apartment. It is returned next to
-// dashboardData, never inside it, so the Miete cannot reach a widget (#278).
+// dashboardData, never inside it, so the Miete cannot reach a view by accident (#278).
 type mieteMonat struct {
 	Monat string
 	Miete map[int64]float64
 }
 
-// loadDashboardData runs the shared, DB-heavy first half of both
-// handleDashboard and the widget handlers: apartments, every period's
+// loadDashboardData runs the DB-heavy first half of handleDashboard:
+// apartments, every period's
 // costs (stopping at the oldest period without a previous period, same as
 // before), every fixed-costs entry's result, and the auto-following
 // display year. HasAnyData=false (zero-value everything else) when
 // neither readings nor fixed-costs entries exist yet. The second return value
-// is the Miete projection taken from the same Datenstand (no second query);
-// the widget handlers discard it.
+// is the Miete projection taken from the same Datenstand (no second query).
 func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, error) {
 	ds, err := store.LadeDatenstand(db)
 	if err != nil {
