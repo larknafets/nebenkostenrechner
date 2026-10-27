@@ -31,13 +31,13 @@ type verlaufOption struct {
 }
 
 // verlaufAuswahl lists the dropdown entries of the visible Verläufe in the
-// order of the panels: apartments, Wallboxen, Wärmepumpe, PV-Anlage.
+// order of the cards: apartments, Wärmepumpe, Wallboxen, PV-Anlage.
 func verlaufAuswahl(v ansicht) []verlaufOption {
 	var out []verlaufOption
 	for _, c := range v.Cards {
 		out = append(out, verlaufOption{ID: strconv.FormatInt(c.ApartmentID, 10), Name: c.ApartmentName})
 	}
-	for _, s := range []*sichtbarerSimple{v.Wallbox, v.WP, v.PV} {
+	for _, s := range []*sichtbarerSimple{v.WP, v.Wallbox, v.PV} {
 		if s != nil {
 			out = append(out, verlaufOption{ID: s.Verlauf.ID, Name: s.Verlauf.Name})
 		}
