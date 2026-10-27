@@ -248,6 +248,7 @@ Der Verbrauch enthält den **Strom** (Wohnung 1: Rest des Netzbezugs, Wohnung 2:
 
 **Dashboard:** Die Jahreskarte und der Monatsverlauf beider Wohnungen zeigen die Kategorie **Wallbox** auch mit 0 EUR.
 Einzige Ausnahme ist die Jahreskarte einer vermieteten Wohnung bei ausgeschaltetem "Wallbox weiterberechnen" und Betrag 0: Dort entfallen Zeile und Balkensegment (bei Betrag ungleich 0 bleibt sie), Gesamt und Saldo ändern sich nicht.
+Der Balken der Jahreskarte zeigt nur die Verbrauchskategorien (Strom, Wallbox, Heizung/Ww, Wasser), die Fixkosten stehen als Zeile und im Gesamtbetrag, aber nicht im Balken.
 "Strom" steht für beide Wohnungen immer in der Jahreskarte (auch mit 0,00), im Balken und im Monatsverlauf (Wohnung 1: Rest des Netzbezugs, Wohnung 2: Haushaltsstrom), "Verbrauchswerte" zeigen die zugeordneten Netzbezug-kWh (bei Wohnung 1 die Rest-kWh).
 Wohnung 1 bekommt in der Jahreskarte die Zeile **PV-Gutschrift** (auch mit 0,00, dann ohne Minus; Wohnung 2 zeigt entsprechend den PV-Anteil in kWh auch mit 0): Sie senkt die Gesamtkosten, aber nicht die Verbrauchskosten und ist kein Balkensegment.
 Im Monatsverlauf steht sie nur in "Kombiniert" (Gesamt abzüglich Gutschrift) und fließt in den Saldo ein, nicht in "Verbrauch" und "Verbrauchswerte".

@@ -221,8 +221,11 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 		{Farbe: "heizung", Label: "Heizung/Ww", Kosten: heizung},
 		{Farbe: "wasser", Label: "Wasser", Kosten: wasser},
 	}
-	// The bar shows the costs before the credit, so its segments add up to 100%.
-	setSegmentPct(segs, brutto)
+	// The bar shows the consumption categories only: the Fixkosten grow too
+	// fast and crowd out the consumption (they stay a chip and in the total).
+	// Its segments add up to 100% of the consumption, the Fixkosten segment
+	// (first) gets no width.
+	setSegmentPct(segs[1:], verbrauch)
 
 	return dashboardJahresCard{
 		ApartmentID: apartmentID, ApartmentName: apartmentName, ApartmentQM: apartmentQM,
