@@ -34,12 +34,12 @@ func TestSichtbareAnsicht_JeBetrachter(t *testing.T) {
 		wallboxPV    bool
 		mieteinnahme map[int64]float64 // apartment id -> expected sum, absent = nil
 	}{
-		{"Anonym", betrachterAnonym, []int64{2}, false, nil},
-		{"Angemeldet", betrachterAngemeldet, []int64{1, 2}, true, map[int64]float64{1: 300, 2: 712.34}},
+		{"Anonym", betrachterNichtAngemeldet, []int64{2}, false, nil},
+		{"Angemeldet", betrachterVermieter, []int64{1, 2}, true, map[int64]float64{1: 300, 2: 712.34}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v := sichtbareAnsicht(tt.betrachter, dd, miete)
+			v := sichtbareAnsicht(tt.betrachter, dd, nil, miete)
 
 			if len(v.Cards) != len(tt.wohnungen) || len(v.VerlaufSpalten) != len(tt.wohnungen) {
 				t.Fatalf("Cards/Verlauf = %d/%d, want %d each", len(v.Cards), len(v.VerlaufSpalten), len(tt.wohnungen))
@@ -95,14 +95,14 @@ func TestSichtbareAnsicht_WallboxKarteNachWohnungsstatus(t *testing.T) {
 					{ID: 2, Name: "Wohnung 2", Status: tt.w2},
 				},
 			}
-			got := sichtbareAnsicht(betrachterAngemeldet, dd, nil)
+			got := sichtbareAnsicht(betrachterVermieter, dd, nil, nil)
 			if (got.Wallbox != nil) != tt.sichtbar {
 				t.Errorf("Wallbox sichtbar = %v, want %v", got.Wallbox != nil, tt.sichtbar)
 			}
 			if got.WP == nil || got.PV == nil {
 				t.Errorf("WP/PV present = %v/%v, want both", got.WP != nil, got.PV != nil)
 			}
-			if anon := sichtbareAnsicht(betrachterAnonym, dd, nil); anon.Wallbox != nil || anon.WP == nil {
+			if anon := sichtbareAnsicht(betrachterNichtAngemeldet, dd, nil, nil); anon.Wallbox != nil || anon.WP == nil {
 				t.Errorf("anonym Wallbox/WP = %v/%v, want nil/present", anon.Wallbox != nil, anon.WP != nil)
 			}
 		})
@@ -145,19 +145,19 @@ func TestVerlaufAuswahl(t *testing.T) {
 	}
 	ids := func(b betrachter) []string {
 		var out []string
-		for _, o := range verlaufAuswahl(sichtbareAnsicht(b, dd, nil)) {
+		for _, o := range verlaufAuswahl(sichtbareAnsicht(b, dd, nil, nil)) {
 			out = append(out, o.ID)
 		}
 		return out
 	}
-	if got, want := ids(betrachterAngemeldet), []string{"1", "2", "waermepumpe", "wallbox", "pv"}; !reflect.DeepEqual(got, want) {
+	if got, want := ids(betrachterVermieter), []string{"1", "2", "waermepumpe", "wallbox", "pv"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("angemeldet = %v, want %v", got, want)
 	}
-	if got, want := ids(betrachterAnonym), []string{"2", "waermepumpe"}; !reflect.DeepEqual(got, want) {
+	if got, want := ids(betrachterNichtAngemeldet), []string{"2", "waermepumpe"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("anonym = %v, want %v", got, want)
 	}
 	dd.Apartments = nil
-	if got, want := ids(betrachterAnonym), []string{"waermepumpe"}; !reflect.DeepEqual(got, want) {
+	if got, want := ids(betrachterNichtAngemeldet), []string{"waermepumpe"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("anonym ohne Wohnungen = %v, want %v", got, want)
 	}
 }

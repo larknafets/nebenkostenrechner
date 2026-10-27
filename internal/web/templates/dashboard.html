@@ -5,8 +5,10 @@
 {{if not .HasAnyData}}
 {{if .IsLoggedIn}}
 <p class="muted">Noch keine Ablesung oder Fixkosten-Eingabe erfasst. <a href="{{.Base}}/ablesungen/neu">Ablesung erfassen</a> oder <a href="{{.Base}}/fixkosten/neu">Fixkosten-Eingabe erfassen</a>.</p>
-{{else}}
+{{else if .KannAblesungAnlegen}}
 <p class="muted">Noch keine Ablesung oder Fixkosten-Eingabe erfasst. <a href="{{.Base}}/ablesungen/neu">Ablesung erfassen</a>.</p>
+{{else}}
+<p class="muted">Noch keine Ablesung oder Fixkosten-Eingabe erfasst.</p>
 {{end}}
 {{else}}
 <h2>Jahressummen {{.AnzeigeJahr}}{{if .AnzeigeJahrLaufend}} <span class="badge">laufend</span>{{end}}</h2>
@@ -50,6 +52,7 @@
     </div>{{end}}
   </div>
   {{end}}
+  {{if .ShowWP}}
   <div class="panel stat-card">
     <div class="muted"><strong>Wärmepumpe</strong></div>
     <div class="stat-value">{{deEUR .WPCard.GesamtEUR}}&nbsp;€</div>
@@ -62,6 +65,7 @@
       {{range .WPCard.Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{de0 .Verbrauch}}&nbsp;{{.Einheit}}</span>{{end}}
     </div>
   </div>
+  {{end}}
   {{if .ShowWallbox}}
   <div class="panel stat-card">
     <div class="muted"><strong>Wallboxen</strong></div>
@@ -76,7 +80,7 @@
     </div>
   </div>
   {{end}}
-  {{if .IsLoggedIn}}
+  {{if .ShowPV}}
   <div class="panel stat-card">
     <div class="muted"><strong>PV-Anlage</strong></div>
     <div class="stat-value" style="color:var(--success)">+{{deEUR .PVCard.GesamtEUR}}&nbsp;€</div>
@@ -93,9 +97,12 @@
 </div>
 
 <div class="btn-row">
-  <a href="{{.Base}}/ablesungen/neu" class="button success">Neue Ablesung</a>
+  {{if .KannAblesungAnlegen}}<a href="{{.Base}}/ablesungen/neu" class="button success">Neue Ablesung</a>{{end}}
   {{if .IsLoggedIn}}<a href="{{.Base}}/fixkosten/neu" class="button success">Neue Fixkosteneingabe</a>{{end}}
 </div>
+{{if not .VerlaufAuswahl}}
+<p class="muted">Für dich ist hier noch nichts freigegeben. Der Vermieter stellt das in den Stammdaten unter "Berechtigungen" ein.</p>
+{{end}}
 
 {{if gt (len .VerlaufAuswahl) 1}}
 <div class="wohnung-auswahl">
@@ -121,11 +128,13 @@
 {{end}}
 {{end}}
 
+{{if .ShowWP}}
 <div class="wohnung-panel" data-wohnung="{{.WPVerlauf.ID}}">
   {{template "monatsverlauf-simple-body" .WPVerlauf}}
 </div>
+{{end}}
 
-{{if .IsLoggedIn}}
+{{if .ShowPV}}
 {{with $.PVVerlauf}}
 <div class="wohnung-panel" data-wohnung="{{.ID}}">
   {{template "monatsverlauf-simple-body" .}}

@@ -154,13 +154,14 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 		}
 		jahr := dd.Jahr
 
-		b := betrachterAnonym
-		if nav.IsLoggedIn {
-			b = betrachterAngemeldet
+		berechtigungen, err := store.GetBerechtigungen(dbFromContext(r.Context()))
+		if err != nil {
+			http.Error(w, "berechtigungen: "+err.Error(), http.StatusInternalServerError)
+			return
 		}
 
-		// What the viewer may see is decided in one place (#293).
-		view := sichtbareAnsicht(b, dd, miete)
+		// What the viewer may see is decided in one place (#293, #311).
+		view := sichtbareAnsicht(a.betrachter(r), dd, berechtigungen, miete)
 		var wallboxCard, wpCard, pvCard dashboardSimpleCard
 		var wallboxVerlauf, wpVerlauf, pvVerlauf dashboardSimpleSpalte
 		if view.Wallbox != nil {
@@ -185,6 +186,8 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			VerlaufAuswahl     []verlaufOption
 			WallboxVerlauf     dashboardSimpleSpalte
 			ShowWallbox        bool
+			ShowWP             bool
+			ShowPV             bool
 			WPCard             dashboardSimpleCard
 			WPVerlauf          dashboardSimpleSpalte
 			PVCard             dashboardSimpleCard
@@ -205,6 +208,8 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			VerlaufAuswahl:     verlaufAuswahl(view),
 			WallboxVerlauf:     wallboxVerlauf,
 			ShowWallbox:        view.Wallbox != nil,
+			ShowWP:             view.WP != nil,
+			ShowPV:             view.PV != nil,
 			WPCard:             wpCard,
 			WPVerlauf:          wpVerlauf,
 			PVCard:             pvCard,

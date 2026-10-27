@@ -32,6 +32,7 @@ Keep every section, an empty one included. Do not change the headings.
 ## Neue Funktionen
 
 - Stammdaten: In der neuen Tabelle "Berechtigungen" stellt der Vermieter je Recht Häkchen für Nicht angemeldet und Mieter ein (Standard wie bisher, dazu die Wärmepumpe). (#310)
+- Die Berechtigungen wirken: Dashboard-Karten und Monatsübersichten, Ablesungen, Fixkosten und Stammdaten sowie die Menüpunkte und Buttons zum Anlegen folgen den Häkchen. Ohne Recht landet ein nicht angemeldeter Besucher im Anmelde-Overlay, ein Mieter auf der Seite "Nicht freigegeben" (#311)
 
 - Anmeldung mit zwei Rollen: Neben dem Vermieter gibt es einen Mieter-Login mit eigenem Kennwort, das Anmeldeformular hat ein Auswahlfeld (Mieter, Vermieter, Demo), die Demo braucht kein Kennwort mehr (#309)
 

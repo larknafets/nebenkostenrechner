@@ -307,6 +307,12 @@ type navData struct {
 	LoginOptionen   []loginOption
 	// HatMieter is true when the Mieter login exists (see mieterAktiv).
 	HatMieter bool
+	// The rights that decide which pages and buttons the nav and the pages
+	// show (#311). The Vermieter has all of them.
+	KannAblesungenAnsehen bool
+	KannAblesungAnlegen   bool
+	KannFixkostenAnsehen  bool
+	KannStammdatenAnsehen bool
 }
 
 // auth bundles what every login-related decision needs: the two configured
@@ -336,6 +342,7 @@ func newAuth(vermieter string, demoDB *sql.DB) auth {
 // Vermieter, but there is no session to log out of.
 func (a auth) NavData(r *http.Request) navData {
 	kind := a.resolveSession(r)
+	rechte := a.rechte(r)
 	return navData{
 		Base:            requestBase(r),
 		IsLoggedIn:      a.istVermieter(r),
@@ -344,6 +351,11 @@ func (a auth) NavData(r *http.Request) navData {
 		ShowLogoutEntry: kind != sitzungKeine,
 		LoginOptionen:   a.loginOptionen(),
 		HatMieter:       a.mieterAktiv(),
+
+		KannAblesungenAnsehen: rechte.darf(store.RechtAblesungenAnsehen),
+		KannAblesungAnlegen:   rechte.darf(store.RechtAblesungAnlegen),
+		KannFixkostenAnsehen:  rechte.darf(store.RechtFixkostenAnsehen),
+		KannStammdatenAnsehen: rechte.darf(store.RechtStammdatenAnsehen),
 	}
 }
 
@@ -378,7 +390,71 @@ func (a auth) RequireLogin(next http.HandlerFunc) http.HandlerFunc {
 			wantedPath = refererPath(r)
 		}
 		if a.resolveSession(r) == sitzungMieter {
-			a.nurVermieterSeite(w, r, wantedPath)
+			a.keineBerechtigungSeite(w, r, wantedPath, "Nur für den Vermieter", "Diese Seite ist dem Vermieter vorbehalten. Als Mieter hast du hier keinen Zugriff.")
+			return
+		}
+		redirectToLoginOverlay(w, r, wantedPath, "", false)
+	}
+}
+
+// rechteSicht is what the role of one request may do: the Vermieter everything,
+// the others what the saved Berechtigungen grant.
+type rechteSicht struct {
+	vermieter bool
+	erlaubt   map[store.Recht]bool
+}
+
+func (s rechteSicht) darf(recht store.Recht) bool {
+	return s.vermieter || s.erlaubt[recht]
+}
+
+// betrachter maps the session of r to the role whose view applies.
+func (a auth) betrachter(r *http.Request) betrachter {
+	switch {
+	case a.istVermieter(r):
+		return betrachterVermieter
+	case a.resolveSession(r) == sitzungMieter:
+		return betrachterMieter
+	}
+	return betrachterNichtAngemeldet
+}
+
+// rechte reads the rights of the role of r. Without a database in the context
+// or on a read error the defaults apply, a Berechtigung read must not take a
+// page down.
+func (a auth) rechte(r *http.Request) rechteSicht {
+	b := a.betrachter(r)
+	if b == betrachterVermieter {
+		return rechteSicht{vermieter: true}
+	}
+	berechtigungen := store.DefaultBerechtigungen()
+	if db := dbFromContextOptional(r.Context()); db != nil {
+		if gelesen, err := store.GetBerechtigungen(db); err != nil {
+			log.Printf("berechtigungen: %v", err)
+		} else {
+			berechtigungen = gelesen
+		}
+	}
+	return rechteSicht{erlaubt: berechtigungen[b.rolle()]}
+}
+
+// RequireRecht gates a route behind a right (#311): the Vermieter and whoever
+// has the right pass. Without the right a Mieter gets the page "Nicht
+// freigegeben" and a visitor who is not logged in is bounced to the login
+// overlay, as for the pages reserved for the Vermieter. Only for routes
+// wrapped in withDB (the rights come from its database).
+func (a auth) RequireRecht(recht store.Recht, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if a.rechte(r).darf(recht) {
+			next(w, r)
+			return
+		}
+		wantedPath := r.URL.Path
+		if r.URL.RawQuery != "" {
+			wantedPath += "?" + r.URL.RawQuery
+		}
+		if a.resolveSession(r) == sitzungMieter {
+			a.keineBerechtigungSeite(w, r, wantedPath, "Nicht freigegeben", "Der Vermieter hat diese Seite für dich nicht freigegeben.")
 			return
 		}
 		redirectToLoginOverlay(w, r, wantedPath, "", false)
@@ -417,10 +493,10 @@ func redirectToLoginOverlay(w http.ResponseWriter, r *http.Request, next, rolle 
 	http.Redirect(w, r, target, http.StatusFound)
 }
 
-// nurVermieterSeite answers a logged-in Mieter who asked for a page reserved
-// for the Vermieter: 403 with a link that opens the login as Vermieter and
-// leads back to the wanted page.
-func (a auth) nurVermieterSeite(w http.ResponseWriter, r *http.Request, wanted string) {
+// keineBerechtigungSeite answers a logged-in Mieter who asked for a page
+// reserved for the Vermieter or not granted to him: 403 with a link that opens
+// the login as Vermieter and leads back to the wanted page.
+func (a auth) keineBerechtigungSeite(w http.ResponseWriter, r *http.Request, wanted, titel, text string) {
 	if wanted == "" || !strings.HasPrefix(wanted, "/") || strings.HasPrefix(wanted, "//") {
 		wanted = "/dashboard"
 	}
@@ -428,10 +504,12 @@ func (a auth) nurVermieterSeite(w http.ResponseWriter, r *http.Request, wanted s
 		navData
 		Aktuell string
 		Next    string
-	}{navData: a.NavData(r), Next: wanted}
+		Titel   string
+		Text    string
+	}{navData: a.NavData(r), Next: wanted, Titel: titel, Text: text}
 	w.WriteHeader(http.StatusForbidden)
-	if err := nurVermieterTemplate.ExecuteTemplate(w, "layout", data); err != nil {
-		log.Printf("nur vermieter: %v", err)
+	if err := keineBerechtigungTemplate.ExecuteTemplate(w, "layout", data); err != nil {
+		log.Printf("keine berechtigung: %v", err)
 	}
 }
 
