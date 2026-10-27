@@ -71,7 +71,7 @@ const click = (sel, text) => `(() => { const el = [...document.querySelectorAll(
 
 // Demo login: the cookie lands on the origin, every later page is the demo database.
 await go('/dashboard');
-await evalJs(`fetch('/login',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({password:'demo',next:'/dashboard'}),credentials:'include',redirect:'manual'}).then(r=>r.type)`);
+await evalJs(`fetch('/login',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({rolle:'demo',next:'/dashboard'}),credentials:'include',redirect:'manual'}).then(r=>r.type)`);
 
 const firstId = (listPath, prefix) => evalJs(`fetch('${listPath}').then(r=>r.text()).then(t=>{const m=t.match(/href="[^"]*\\/${prefix}\\/(\\d+)"/);return m&&m[1]})`);
 await go('/ablesungen');
