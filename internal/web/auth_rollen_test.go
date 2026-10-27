@@ -1,8 +1,11 @@
 package web
 
 import (
+	"bytes"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
@@ -67,6 +70,35 @@ func TestKennwoerterLaden(t *testing.T) {
 			v, m := ladeKennwoerter()
 			if v != c.wantVermieter || m != c.wantMieter {
 				t.Errorf("ladeKennwoerter() = %q, %q, want %q, %q", v, m, c.wantVermieter, c.wantMieter)
+			}
+		})
+	}
+}
+
+// The old LOGIN_PASSWORD is not read any more; a log line tells the operator
+// why the app is open, but only while no Vermieter password is set.
+func TestKennwoerterLaden_WarntBeiAltemLoginPassword(t *testing.T) {
+	for _, c := range []struct {
+		name     string
+		env      map[string]string
+		wantWarn bool
+	}{
+		{"altes Kennwort ohne neues", map[string]string{"LOGIN_PASSWORD": "alt"}, true},
+		{"altes und neues Kennwort", map[string]string{"LOGIN_PASSWORD": "alt", "VERMIETER_PASSWORD": "v"}, false},
+		{"kein altes Kennwort", map[string]string{}, false},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			for _, k := range []string{"VERMIETER_PASSWORD", "MIETER_PASSWORD", "LOGIN_PASSWORD", "SUPERVISOR_TOKEN"} {
+				t.Setenv(k, c.env[k])
+			}
+			var buf bytes.Buffer
+			log.SetOutput(&buf)
+			t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+			ladeKennwoerter()
+
+			if got := strings.Contains(buf.String(), "LOGIN_PASSWORD wird nicht mehr gelesen"); got != c.wantWarn {
+				t.Errorf("Warnung = %v, want %v (Log: %q)", got, c.wantWarn, buf.String())
 			}
 		})
 	}
