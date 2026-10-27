@@ -33,6 +33,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Verbesserungen
 
+- Dashboard: Die Badges für Fläche, Flurstück und Personen bei den Jahressummen sind kleiner und passen häufiger in eine Zeile.
+
 ## Fehlerkorrekturen
 
 ## Wartung
