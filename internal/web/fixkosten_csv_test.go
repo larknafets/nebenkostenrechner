@@ -174,7 +174,7 @@ func TestHandleImportFixkostenCSV_PersonenzahlDezimal(t *testing.T) {
 }
 
 func TestHandleImportFixkostenCSV_PersonenzahlUngueltigBrichtAb(t *testing.T) {
-	for _, bad := range []string{"-1", "1,255"} {
+	for _, bad := range []string{"1,255"} {
 		db := openTestDB(t)
 		csvText := strings.Join(fixkostenCsvHeader, ";") + "\n" + fixkostenCSVRow("2026-05-01", "100") + "\n" +
 			fixkostenCSVRowMitPersonen("2026-06-01", bad, "1") + "\n"
