@@ -35,7 +35,7 @@ Je Wohnung gibt es außerdem einen **Wohnungsstatus** ("Vermietung" oder "Eigenn
 Für das Haus gibt es Vermieter-Name, Vermieter-Anschrift, Objektanschrift und eine optionale IBAN mit optionalem Kontoinhaber (leer = Vermieter).
 Diese Angaben füllen die künftige Jahresabrechnung.
 Die personenbezogenen Felder (Namen, Anschriften, "Mieter seit", IBAN) sind nur für angemeldete Nutzer sichtbar und änderbar, der Wohnungsstatus ist für alle sichtbar.
-Ohne gesetztes `LOGIN_PASSWORD` ist jeder angemeldet.
+Ohne gesetztes `VERMIETER_PASSWORD` ist jeder angemeldet (Vermieter).
 
 Dazu kommt die **Heizung/Warmwasser-Gewichtung** (siehe [Heizung](#heizungwarmwasser-konfigurierbarer-split-default-7030)), die im Gegensatz zu den beiden folgenden Schaltern auch Dashboard und Verlauf beeinflusst. Außerdem stehen hier drei Schalter für die Jahresabrechnung. Sie wirken auf alle Monate und Jahre, Dashboard und Monatsverlauf zeigen weiterhin alle Positionen und ändern sich nicht:
 
@@ -82,7 +82,7 @@ Ableserhythmus: 1x/Monat. Verbrauch = aktueller Zählerstand minus Stand der chr
 Eine Ablesung darf auch nur teilweise ausgefüllt gespeichert werden (**Teilstand**) - einzelne Zählerstände, Preise, Personenzahl oder der Abrechnungsmonat können fehlen und später nachgetragen werden (nur das Ablesedatum ist immer zwingend).
 Ein Teilstand fließt nicht in die Berechnung ein (Dashboard, Verbrauch) und ist in der Ablesungen-Liste/-Detailansicht als "unvollständig" markiert.
 Nur die jeweils neueste Ablesung darf ein Teilstand sein - solange sie es ist, führt "Neue Ablesung" stattdessen zu ihrer Vervollständigung.
-Anlegen und Vervollständigen sind beide auch ohne Login möglich, siehe `LOGIN_PASSWORD` unten.
+Anlegen und Vervollständigen sind beide auch ohne Login möglich, siehe `VERMIETER_PASSWORD` unten.
 
 Unter den Wallboxen lassen sich zwei **optionale Einzelzähler** erfassen: `strom_wallbox_wohnung1` (Wallbox Wohnung 1) und `strom_wallbox_wohnung2` (Wallbox Wohnung 2), jeweils in kWh und nur nachrichtlich vom Wallbox-Display abzulesen.
 Beide Felder dürfen leer bleiben, auch nur eines von beiden: Die Ablesung bleibt vollständig (kein Teilstand) und der Zähler gilt als "nicht erfasst".
@@ -378,11 +378,20 @@ Danach erreichbar unter `http://localhost:8080`, Health-Check unter `/healthz`. 
 |---|---|---|
 | `DB_PATH` | `/data/nebenkosten.db` | Pfad zur SQLite-Datenbankdatei |
 | `LISTEN_ADDR` | `:8080` | Listen-Adresse des HTTP-Servers |
-| `LOGIN_PASSWORD` | *(leer)* | Optionales Kennwort. Leer = alles offen wie bisher. Gesetzt: nicht angemeldete Besucher sehen nur eingeschränkte, lesende Ansichten (z. B. nur Wohnung 2 auf dem Dashboard), alle Eingabe-/Änderungsaktionen sind gesperrt - mit Ausnahme einer neuen Ablesung bzw. dem Vervollständigen eines bestehenden Teilstands, siehe oben - "Login"-Link in der Navigation öffnet ein Overlay zur Anmeldung. |
+| `VERMIETER_PASSWORD` | *(leer)* | Optionales Kennwort des Vermieters (ersetzt `LOGIN_PASSWORD`, das nicht mehr gelesen wird). Leer = alles offen, jeder ist Vermieter. Gesetzt: nicht angemeldete Besucher sehen nur eingeschränkte, lesende Ansichten (z. B. nur Wohnung 2 auf dem Dashboard), alle Eingabe-/Änderungsaktionen sind gesperrt - mit Ausnahme einer neuen Ablesung bzw. dem Vervollständigen eines bestehenden Teilstands, siehe oben - "Anmelden" in der Navigation öffnet ein Overlay zur Anmeldung. |
+| `MIETER_PASSWORD` | *(leer)* | Optionales Kennwort des Mieters. Leer = es gibt keinen Mieter-Login. Wirkt nur zusammen mit `VERMIETER_PASSWORD`, ohne dieses wird es ignoriert. Der Mieter sieht, was für ihn freigegeben ist, und bekommt auf Seiten nur für den Vermieter (z. B. Abrechnung) einen Hinweis. |
+
+> **Update von früheren Versionen:** `LOGIN_PASSWORD` (im Add-on `login_password`) heißt jetzt `VERMIETER_PASSWORD` (`vermieter_password`) und muss nach dem Update neu gesetzt werden. Bis dahin ist die App offen und jeder Besucher ist Vermieter.
+
+### Anmeldung und Rollen
+
+Das Overlay "Anmelden" hat ein Auswahlfeld "Anmelden als" mit **Mieter**, **Vermieter** und **Demo** und ein Kennwortfeld. Die Auswahl bestimmt die Rolle, das Kennwort wird gegen das der gewählten Rolle geprüft. "Mieter" erscheint nur mit gesetztem `MIETER_PASSWORD`, "Vermieter" nur mit gesetztem `VERMIETER_PASSWORD`, "Demo" immer (ohne Kennwort).
+Der Vermieter sieht und darf alles. Wer nicht angemeldet ist und der Mieter sehen die eingeschränkten Ansichten. Öffnet ein angemeldeter Mieter eine Seite nur für den Vermieter, erscheint der Hinweis "Nur für den Vermieter" mit dem Weg zur Anmeldung als Vermieter, ein nicht angemeldeter Besucher landet im Anmelde-Overlay.
+Jede Rolle hat ein eigenes Sitzungs-Cookie, signiert mit ihrem Kennwort: Ein geändertes Kennwort meldet nur diese Rolle ab.
 
 ### Demo-Modus
 
-Login mit dem Kennwort `demo` funktioniert immer, unabhängig davon ob `LOGIN_PASSWORD` gesetzt ist - er meldet in einer komplett separaten, eigenen Datenbank (`demo.db`, im selben Verzeichnis wie `DB_PATH`) an, gefüllt mit 39 Monaten realitätsnahen Testdaten.
+Die Anmeldung als **Demo** (Auswahl "Demo", kein Kennwort) funktioniert immer, unabhängig davon ob Kennwörter gesetzt sind - sie meldet in einer komplett separaten, eigenen Datenbank (`demo.db`, im selben Verzeichnis wie `DB_PATH`) an, gefüllt mit 39 Monaten realitätsnahen Testdaten.
 Änderungen im Demo-Modus (Ablesungen, Fixkosten-Eingaben, Stammdaten) landen ausschließlich in dieser Demo-Datenbank, nie in den echten Daten.
 Jeder erneute Demo-Login setzt die Demo-Datenbank vollständig auf ihren frischen Ausgangszustand zurück - keine Isolation zwischen gleichzeitigen Demo-Besuchern.
 

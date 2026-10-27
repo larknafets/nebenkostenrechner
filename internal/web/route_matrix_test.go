@@ -63,7 +63,7 @@ var routeMatrix = []struct {
 // is enough to reliably check a gated route's redirect without creating any
 // real data.
 func TestRouteMatrix_RequireLoginCoverage(t *testing.T) {
-	t.Setenv("LOGIN_PASSWORD", "geheim")
+	t.Setenv("VERMIETER_PASSWORD", "geheim")
 	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
 
 	for _, rc := range routeMatrix {
@@ -96,7 +96,7 @@ func bouncedToLogin(w *httptest.ResponseRecorder) bool {
 // expressed as a fixed gated bool, because it depends on the target
 // reading's completeness state instead of just the path.
 func TestBearbeitenUndUpdate_TeilstandUngatedVollstaendigGated(t *testing.T) {
-	t.Setenv("LOGIN_PASSWORD", "geheim")
+	t.Setenv("VERMIETER_PASSWORD", "geheim")
 	db := openTestDB(t)
 	mux := NewMux(db, openTestDB(t), "", "")
 

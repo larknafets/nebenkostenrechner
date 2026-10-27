@@ -181,7 +181,9 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
     <h3 style="margin-top:0">Anmelden</h3>
     <form method="post" action="{{.Base}}/login" id="login-form">
       <input type="hidden" name="next" id="login-next">
-      <div class="field"><label>Kennwort</label><input type="password" name="password" id="login-password" autocomplete="current-password"></div>
+      <div class="field"><label for="login-rolle">Anmelden als</label>
+        <select name="rolle" id="login-rolle">{{range .LoginOptionen}}<option value="{{.Wert}}">{{.Label}}</option>{{end}}</select></div>
+      <div class="field" id="login-password-field"><label for="login-password">Kennwort</label><input type="password" name="password" id="login-password" autocomplete="current-password"></div>
       <div class="login-error" id="login-error" hidden>Falsches Kennwort.</div>
       <div class="btn-row" style="margin-top:0;justify-content:flex-end">
         <button type="button" class="secondary" id="login-cancel">Abbrechen</button>
@@ -198,12 +200,23 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   var errorBox = document.getElementById("login-error");
   var nextField = document.getElementById("login-next");
   var pwField = document.getElementById("login-password");
+  var pwWrap = document.getElementById("login-password-field");
+  var rolleField = document.getElementById("login-rolle");
+
+  // The demo login needs no password.
+  function applyRolle() {
+    var demo = rolleField.value === "demo";
+    pwWrap.hidden = demo;
+    pwField.disabled = demo;
+  }
+  rolleField.addEventListener("change", applyRolle);
 
   function currentPath() {
     var params = new URLSearchParams(window.location.search);
     params.delete("login");
     params.delete("fehler");
     params.delete("next");
+    params.delete("rolle");
     var qs = params.toString();
     return window.location.pathname + (qs ? "?" + qs : "");
   }
@@ -215,7 +228,8 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   function open(explicitNext) {
     nextField.value = explicitNext || currentPath();
     overlay.hidden = false;
-    pwField.focus();
+    applyRolle();
+    (pwField.disabled ? rolleField : pwField).focus();
   }
   function close() {
     overlay.hidden = true;
@@ -228,6 +242,8 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
 
   var params = new URLSearchParams(window.location.search);
   if (params.get("login") === "1") {
+    var gewuenscht = params.get("rolle");
+    if (gewuenscht && rolleField.querySelector('option[value="' + gewuenscht + '"]')) rolleField.value = gewuenscht;
     open(params.get("next"));
     if (params.get("fehler") === "1") errorBox.hidden = false;
   }

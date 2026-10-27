@@ -26,6 +26,7 @@ var (
 	ablesungenTemplate = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/ablesungen.html"))
 	dashboardTemplate  = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/monatsverlauf.html", "templates/dashboard.html"))
 
+	nurVermieterTemplate     = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/nur_vermieter.html"))
 	berechnungslogikTemplate = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/berechnungslogik.html"))
 	stammdatenTemplate       = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/stammdaten.html"))
 	abrechnungTemplate       = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/abrechnung.html"))
@@ -116,7 +117,8 @@ var templateFuncs = template.FuncMap{
 // which picks db or demoDB per request depending on whether the visitor
 // carries a demo session cookie.
 func NewMux(db, demoDB *sql.DB, version, buildDate string) *http.ServeMux {
-	a := newAuth(resolveLoginPassword(), demoDB)
+	vermieter, mieter := ladeKennwoerter()
+	a := auth{vermieter: vermieter, mieter: mieter, demoDB: demoDB}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", handleIndex())
 	mux.HandleFunc("POST /login", a.HandleLogin())

@@ -7,7 +7,8 @@ import "github.com/larknafets/nebenkostenrechner/internal/store"
 type betrachter int
 
 const (
-	// betrachterAnonym is a visitor who is not logged in (LOGIN_PASSWORD set):
+	// betrachterAnonym is a visitor who is not logged in (VERMIETER_PASSWORD set),
+	// or a Mieter until the Berechtigungen exist:
 	// only Wohnung 2, no Wallboxen/PV-Anlage, no Mieteinnahmen.
 	betrachterAnonym betrachter = iota
 	// betrachterAngemeldet is a logged-in user: everything, with Mieteinnahmen.
