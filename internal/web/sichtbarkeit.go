@@ -25,6 +25,10 @@ type ansicht struct {
 	Wallbox *sichtbarerSimple
 	WP      *sichtbarerSimple
 	PV      *sichtbarerSimple
+	// Haus lists the visible whole-house entries in the order of the cards
+	// and the dropdown (after the apartments): Wärmepumpe, Wallboxen, PV-Anlage.
+	// The order is set only in sichtbareAnsicht.
+	Haus []sichtbarerSimple
 }
 
 // entitaetArt is the kind of one entity of the Dashboard: an apartment or
@@ -60,12 +64,7 @@ func (e entitaet) rechtFuer() (recht store.Recht, ok bool) {
 	case entitaetPV:
 		return store.RechtPVAnlage, true
 	case entitaetWohnung:
-		switch e.ApartmentID {
-		case 1:
-			return store.RechtWohnung1, true
-		case 2:
-			return store.RechtWohnung2, true
-		}
+		return store.WohnungRecht(e.ApartmentID)
 	}
 	return "", false
 }
@@ -111,6 +110,13 @@ func sichtbareAnsicht(z Zugriff, dd dashboardData, miete []mieteMonat) ansicht {
 	}
 	if dd.sichtbar(z, entitaet{Art: entitaetPV}) {
 		v.PV = buildSichtbarerSimple(pvSeries, dd)
+	}
+	// The one place that fixes the order of the whole-house cards and dropdown
+	// entries.
+	for _, s := range []*sichtbarerSimple{v.WP, v.Wallbox, v.PV} {
+		if s != nil {
+			v.Haus = append(v.Haus, *s)
+		}
 	}
 	return v
 }

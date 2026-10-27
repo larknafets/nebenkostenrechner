@@ -51,6 +51,11 @@ type Wohnungsanteil struct {
 	// only with the switch on. Kept apart from the costs: it lowers the balance,
 	// not the consumption costs.
 	PVGutschrift float64
+
+	// PVAnteilKWh is the part of this apartment's submeter consumption not
+	// allocated to grid draw (PV), see StromErgebnis.PVAnteilW2KWh. Only set
+	// for apartment 2: apartment 1 has no own electricity meter.
+	PVAnteilKWh float64
 }
 
 // Anteil returns apartmentID's share of these Kosten.
@@ -64,6 +69,7 @@ func (k Kosten) Anteil(apartmentID int64) Wohnungsanteil {
 		a.HeizungKosten, a.HeizungWPKWh, a.HeizungMWh = k.Heizung.KostenHeizungW2, k.Heizung.WPVerbrauchW2KWh, k.Heizung.WaermeW2MWh
 		a.WasserKosten, a.WasserM3 = Round2(k.Wasser.KostenFrischwasserW2+k.Wasser.KostenAbwasserW2), k.Wasser.FrischwasserW2
 		a.WallboxKosten, a.WallboxKWh = k.Strom.KostenWallboxW2, k.Strom.WallboxW2KWh
+		a.PVAnteilKWh = k.Strom.PVAnteilW2KWh
 		return a
 	}
 	a.HatStrom, a.StromKosten, a.StromKWh = true, k.Strom.KostenW1, k.Strom.W1RestKWh

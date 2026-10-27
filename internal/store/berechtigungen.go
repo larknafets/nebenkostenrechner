@@ -59,6 +59,20 @@ var Rechte = []RechtInfo{
 	{RechtMiete, "Miete (Block in der Jahreskarte)", false, false},
 }
 
+// wohnungRechte maps an apartment id to the right that shows it, next to the
+// rights themselves. An apartment without an entry has no right.
+var wohnungRechte = map[int64]Recht{
+	1: RechtWohnung1,
+	2: RechtWohnung2,
+}
+
+// WohnungRecht returns the right that lets a role see the apartment with the
+// given id; ok is false for an apartment no right exists for.
+func WohnungRecht(apartmentID int64) (recht Recht, ok bool) {
+	recht, ok = wohnungRechte[apartmentID]
+	return recht, ok
+}
+
 // Default returns the default of the right for the role.
 func (i RechtInfo) Default(r Rolle) bool {
 	if r == RolleMieter {
