@@ -3,20 +3,34 @@ package web
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
+	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
+// formularFehler is a user-facing problem with the submitted form (a field
+// that does not parse). stammdatenFehler answers it with 400 and its text.
+type formularFehler struct{ err error }
+
+func (e *formularFehler) Error() string { return e.err.Error() }
+func (e *formularFehler) Unwrap() error { return e.err }
+
+func formFehler(format string, args ...any) error {
+	return &formularFehler{err: fmt.Errorf(format, args...)}
+}
+
 // parseFormFloat reads and parses one form field, returning a German
 // user-facing error naming fieldLabel/apartmentID on failure - shared by
 // /stammdaten's per-apartment Wohnungsgröße/Flurstücksgröße fields.
-func parseFormFloat(r *http.Request, name, fieldLabel, apartmentID string) (float64, error) {
-	v, err := strconv.ParseFloat(r.FormValue(name), 64)
+func parseFormFloat(form url.Values, name, fieldLabel, apartmentID string) (float64, error) {
+	v, err := strconv.ParseFloat(form.Get(name), 64)
 	if err != nil {
-		return 0, fmt.Errorf("ungültiger Wert für %s bei Wohnung %s", fieldLabel, apartmentID)
+		return 0, formFehler("ungültiger Wert für %s bei Wohnung %s", fieldLabel, apartmentID)
 	}
 	return v, nil
 }
@@ -61,15 +75,15 @@ func heizungGewichtungFehler(raw string) error {
 func parseHeizungGewichtung(raw string) (float64, error) {
 	v, err := strconv.ParseFloat(raw, 64)
 	if err != nil {
-		return 0, heizungGewichtungFehler(raw)
+		return 0, &formularFehler{err: heizungGewichtungFehler(raw)}
 	}
 	return v, nil
 }
 
 // formText reads a free-text form field: surrounding whitespace is trimmed
 // and line breaks are normalized to \n (a textarea submits \r\n).
-func formText(r *http.Request, name string) string {
-	return strings.TrimSpace(strings.ReplaceAll(r.FormValue(name), "\r\n", "\n"))
+func formText(form url.Values, name string) string {
+	return strings.TrimSpace(strings.ReplaceAll(form.Get(name), "\r\n", "\n"))
 }
 
 // berechtigungZeile is one row of the Berechtigungen table on /stammdaten: a
@@ -95,20 +109,128 @@ func berechtigungZeilen(b store.Berechtigungen) []berechtigungZeile {
 }
 
 // berechtigungenAusFormular overlays the checkboxes of the form onto the saved
-// rights. The form names the role columns it contains in the hidden fields
-// "berechtigung_rolle" (the Mieter column is missing without a Mieter login),
-// the other columns keep their saved values. An unchecked checkbox is absent
-// from the form, so a missing field in a shown column means "No".
-func berechtigungenAusFormular(r *http.Request, gespeichert store.Berechtigungen) store.Berechtigungen {
-	for _, rolle := range r.Form["berechtigung_rolle"] {
+// rights (which it leaves untouched, it works on a copy). The form names the
+// role columns it contains in the hidden fields "berechtigung_rolle" (the
+// Mieter column is missing without a Mieter login), the other columns keep
+// their saved values. An unchecked checkbox is absent from the form, so a
+// missing field in a shown column means "No".
+func berechtigungenAusFormular(form url.Values, gespeichert store.Berechtigungen) store.Berechtigungen {
+	neu := make(store.Berechtigungen, len(gespeichert))
+	for rolle, rechte := range gespeichert {
+		neu[rolle] = maps.Clone(rechte)
+	}
+	for _, rolle := range form["berechtigung_rolle"] {
 		for _, info := range store.Rechte {
-			if _, bekannt := gespeichert[store.Rolle(rolle)]; !bekannt {
+			if _, bekannt := neu[store.Rolle(rolle)]; !bekannt {
 				continue
 			}
-			gespeichert[store.Rolle(rolle)][info.Recht] = r.FormValue("recht_"+rolle+"_"+string(info.Recht)) == "1"
+			neu[store.Rolle(rolle)][info.Recht] = form.Get("recht_"+rolle+"_"+string(info.Recht)) == "1"
 		}
 	}
-	return gespeichert
+	return neu
+}
+
+// stammdatenAusFormular turns the submitted /stammdaten form into what the
+// store saves, without HTTP and database: the caller hands in the apartments,
+// the Kostenpositionen and the saved Berechtigungen. Only a form that carries
+// the Berechtigungen table touches them (nil leaves them untouched). Whether
+// a Wohnungsstatus, "Mieter seit" or Gewichtung is allowed is decided by
+// store.SaveStammdaten.
+func stammdatenAusFormular(form url.Values, wohnungen []store.Apartment, kostenpositionen []store.Kostenposition, gespeichert store.Berechtigungen) (store.StammdatenSave, error) {
+	in := make(map[int64]store.StammdatenInput, len(wohnungen))
+	details := make(map[int64]store.WohnungDetails, len(wohnungen))
+	for _, a := range wohnungen {
+		idStr := strconv.FormatInt(a.ID, 10)
+		qm, err := parseFormFloat(form, "qm_"+idStr, "Wohnungsgröße", idStr)
+		if err != nil {
+			return store.StammdatenSave{}, err
+		}
+		flurstueckGroesse, err := parseFormFloat(form, "flurstueck_groesse_"+idStr, "Flurstücksgröße", idStr)
+		if err != nil {
+			return store.StammdatenSave{}, err
+		}
+		in[a.ID] = store.StammdatenInput{QM: qm, FlurstueckGroesse: flurstueckGroesse}
+		details[a.ID] = store.WohnungDetails{
+			MieterName:      formText(form, "mieter_name_"+idStr),
+			MieterAnschrift: formText(form, "mieter_anschrift_"+idStr),
+			Status:          form.Get("status_" + idStr),
+			MieterSeit:      monatInput(form.Get("mieter_seit_" + idStr)).toStored(),
+		}
+	}
+
+	// An unchecked checkbox is simply absent from the form, so a missing
+	// field means "No".
+	flags := store.StammdatenFlags{
+		Umlagefaehig:           make(map[int64]bool, len(kostenpositionen)),
+		StromWeiterberechnen:   form.Get("strom_weiterberechnen") == "1",
+		WallboxWeiterberechnen: form.Get("wallbox_weiterberechnen") == "1",
+	}
+	for _, kp := range kostenpositionen {
+		flags.Umlagefaehig[kp.ID] = form.Get("umlagefaehig_"+strconv.FormatInt(kp.ID, 10)) == "1"
+	}
+
+	gewichtung, err := parseHeizungGewichtung(form.Get("heizung_gewichtung"))
+	if err != nil {
+		return store.StammdatenSave{}, err
+	}
+	var berechtigungen store.Berechtigungen
+	if len(form["berechtigung_rolle"]) > 0 {
+		berechtigungen = berechtigungenAusFormular(form, gespeichert)
+	}
+	return store.StammdatenSave{
+		Berechtigungen:          berechtigungen,
+		Apartments:              in,
+		Flags:                   flags,
+		HeizungWaermeGewichtung: gewichtung,
+		Wohnungen:               details,
+		Haus: store.HausDetails{
+			VermieterName:      formText(form, "vermieter_name"),
+			VermieterAnschrift: formText(form, "vermieter_anschrift"),
+			ObjektAnschrift:    formText(form, "objekt_anschrift"),
+			IBAN:               formText(form, "iban"),
+			Kontoinhaber:       formText(form, "kontoinhaber"),
+		},
+	}, nil
+}
+
+// stammdatenFehler maps an error of stammdatenAusFormular or of
+// store.SaveStammdaten to the HTTP status and the German text of the answer:
+// 400 for a form error and for the three errors of saving, 500 for the rest.
+// rohGewichtung is the Heizungs-Gewichtung as submitted, for its message.
+func stammdatenFehler(err error, rohGewichtung string) (status int, text string) {
+	var form *formularFehler
+	var wohnungsstatus *store.InvalidStatusError
+	var mieterSeit *store.InvalidMieterSeitError
+	var ungueltigeGewichtung *store.InvalidHeizungGewichtungError
+	switch {
+	case errors.As(err, &form):
+		return http.StatusBadRequest, form.Error()
+	case errors.As(err, &wohnungsstatus):
+		return http.StatusBadRequest, "ungültiger Wohnungsstatus für Wohnung " + strconv.FormatInt(wohnungsstatus.ApartmentID, 10)
+	case errors.As(err, &mieterSeit):
+		return http.StatusBadRequest, "ungültiges Datum für \"Mieter seit\" bei Wohnung " + strconv.FormatInt(mieterSeit.ApartmentID, 10)
+	case errors.As(err, &ungueltigeGewichtung):
+		return http.StatusBadRequest, heizungGewichtungFehler(rohGewichtung).Error()
+	}
+	return http.StatusInternalServerError, "save: " + err.Error()
+}
+
+// stammdatenSicht is what the viewer of z gets to see on /stammdaten: without
+// Personenbezug the names, addresses, "Mieter seit" and bank details are
+// blanked (Issue #164). The Wohnungsstatus is no personal data and stays.
+// The arguments are left untouched.
+func stammdatenSicht(z Zugriff, wohnungen []store.Apartment, haus store.Haus) ([]store.Apartment, store.Haus) {
+	if z.Personenbezug() {
+		return wohnungen, haus
+	}
+	sicht := slices.Clone(wohnungen)
+	for i := range sicht {
+		sicht[i].MieterName = ""
+		sicht[i].MieterAnschrift = ""
+		sicht[i].MieterSeit = ""
+	}
+	haus.VermieterName, haus.VermieterAnschrift, haus.ObjektAnschrift, haus.IBAN, haus.Kontoinhaber = "", "", "", "", ""
+	return sicht, haus
 }
 
 // handleStammdatenForm serves the /stammdaten page (Issue #61): each
@@ -135,18 +257,10 @@ func handleStammdatenForm(z *Zugang) http.HandlerFunc {
 		}
 
 		nav := z.NavData(r)
-		if !nav.Personenbezug() {
-			// Personal data never leaves the server for visitors who are not
-			// logged in (Issue #164) - blank it here instead of relying on
-			// the template alone. The Wohnungsstatus is no personal data and
-			// stays.
-			for i := range apartments {
-				apartments[i].MieterName = ""
-				apartments[i].MieterAnschrift = ""
-				apartments[i].MieterSeit = ""
-			}
-			haus.VermieterName, haus.VermieterAnschrift, haus.ObjektAnschrift, haus.IBAN, haus.Kontoinhaber = "", "", "", "", ""
-		}
+		// Personal data never leaves the server for visitors who are not
+		// logged in (Issue #164) - blanked here instead of relying on the
+		// template alone.
+		apartments, haus = stammdatenSicht(nav.Zugriff, apartments, haus)
 
 		berechtigungen, err := store.GetBerechtigungen(db)
 		if err != nil {
@@ -196,90 +310,24 @@ func handleUpdateStammdaten() http.HandlerFunc {
 			return
 		}
 
-		in := make(map[int64]store.StammdatenInput, len(apartments))
-		wohnungen := make(map[int64]store.WohnungDetails, len(apartments))
-		for _, a := range apartments {
-			idStr := strconv.FormatInt(a.ID, 10)
-			qm, err := parseFormFloat(r, "qm_"+idStr, "Wohnungsgröße", idStr)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			flurstueckGroesse, err := parseFormFloat(r, "flurstueck_groesse_"+idStr, "Flurstücksgröße", idStr)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			in[a.ID] = store.StammdatenInput{QM: qm, FlurstueckGroesse: flurstueckGroesse}
-
-			wohnungen[a.ID] = store.WohnungDetails{
-				MieterName:      formText(r, "mieter_name_"+idStr),
-				MieterAnschrift: formText(r, "mieter_anschrift_"+idStr),
-				Status:          r.FormValue("status_" + idStr),
-				MieterSeit:      monatInput(r.FormValue("mieter_seit_" + idStr)).toStored(),
-			}
-		}
-
 		kostenpositionen, err := store.Kostenpositionen(db)
 		if err != nil {
 			http.Error(w, "kostenpositionen: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		// An unchecked checkbox is simply absent from the form, so a
-		// missing field means "No".
-		flags := store.StammdatenFlags{
-			Umlagefaehig:           make(map[int64]bool, len(kostenpositionen)),
-			StromWeiterberechnen:   r.FormValue("strom_weiterberechnen") == "1",
-			WallboxWeiterberechnen: r.FormValue("wallbox_weiterberechnen") == "1",
-		}
-		for _, kp := range kostenpositionen {
-			flags.Umlagefaehig[kp.ID] = r.FormValue("umlagefaehig_"+strconv.FormatInt(kp.ID, 10)) == "1"
-		}
-
-		rohGewichtung := r.FormValue("heizung_gewichtung")
-		gewichtung, err := parseHeizungGewichtung(rohGewichtung)
+		gespeichert, err := store.GetBerechtigungen(db)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, "berechtigungen: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		// Only a form that carries the Berechtigungen table touches them.
-		var berechtigungen store.Berechtigungen
-		if len(r.Form["berechtigung_rolle"]) > 0 {
-			gespeichert, err := store.GetBerechtigungen(db)
-			if err != nil {
-				http.Error(w, "berechtigungen: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			berechtigungen = berechtigungenAusFormular(r, gespeichert)
+
+		save, err := stammdatenAusFormular(r.Form, apartments, kostenpositionen, gespeichert)
+		if err == nil {
+			err = store.SaveStammdaten(db, save)
 		}
-		save := store.StammdatenSave{
-			Berechtigungen:          berechtigungen,
-			Apartments:              in,
-			Flags:                   flags,
-			HeizungWaermeGewichtung: gewichtung,
-			Wohnungen:               wohnungen,
-			Haus: store.HausDetails{
-				VermieterName:      formText(r, "vermieter_name"),
-				VermieterAnschrift: formText(r, "vermieter_anschrift"),
-				ObjektAnschrift:    formText(r, "objekt_anschrift"),
-				IBAN:               formText(r, "iban"),
-				Kontoinhaber:       formText(r, "kontoinhaber"),
-			},
-		}
-		if err := store.SaveStammdaten(db, save); err != nil {
-			var status *store.InvalidStatusError
-			var mieterSeit *store.InvalidMieterSeitError
-			var ungueltigeGewichtung *store.InvalidHeizungGewichtungError
-			switch {
-			case errors.As(err, &status):
-				http.Error(w, "ungültiger Wohnungsstatus für Wohnung "+strconv.FormatInt(status.ApartmentID, 10), http.StatusBadRequest)
-			case errors.As(err, &mieterSeit):
-				http.Error(w, "ungültiges Datum für \"Mieter seit\" bei Wohnung "+strconv.FormatInt(mieterSeit.ApartmentID, 10), http.StatusBadRequest)
-			case errors.As(err, &ungueltigeGewichtung):
-				http.Error(w, heizungGewichtungFehler(rohGewichtung).Error(), http.StatusBadRequest)
-			default:
-				http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
-			}
+		if err != nil {
+			status, text := stammdatenFehler(err, r.Form.Get("heizung_gewichtung"))
+			http.Error(w, text, status)
 			return
 		}
 
