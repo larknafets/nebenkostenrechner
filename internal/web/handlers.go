@@ -103,52 +103,22 @@ var templateFuncs = template.FuncMap{
 	"logikOptions": func() []logikOption { return logikOptions },
 }
 
-// NewMux wires up the wizard and read routes. Every mutating or create-only
-// route is wrapped in a.RequireLogin (Ticket #112's enforcement matrix) -
-// harmless no-ops when secret == "" (no login password configured) - with
-// deliberate exceptions for Teilstände/partial readings (Ticket #129/#130):
-// GET /ablesungen/neu and POST /ablesungen are always ungated, creating a
-// new reading is possible without login too. GET /ablesungen/{id}/bearbeiten
-// and POST /ablesungen/{id} are only ungated via requireLoginUnlessTeilstand
-// when the target reading itself is still a Teilstand - completing it
-// without login, correcting an already-complete reading stays gated.
-// Deleting always stays gated for every reading.
-// Every route that touches the DB is wrapped in withDB (Ticket #119/#120),
-// which picks db or demoDB per request depending on whether the visitor
-// carries a demo session cookie.
+// NewMux builds the server's mux from the table routen: every row is
+// registered here, with withDB (picks db or demoDB per request, Ticket
+// #119/#120) around the Gate of its Anspruch. This is the only place that
+// registers a route of this package (TestRegistrierungNurInNewMux).
 func NewMux(db, demoDB *sql.DB, version, buildDate string) *http.ServeMux {
 	vermieter, mieter := ladeKennwoerter()
 	a := auth{vermieter: vermieter, mieter: mieter, demoDB: demoDB}
-	z := zugangFuer(a)
+	return muxFuer(zugangFuer(a), db, demoDB, version, buildDate)
+}
+
+// muxFuer is NewMux for a given Zugang, so tests can fix the role.
+func muxFuer(z *Zugang, db, demoDB *sql.DB, version, buildDate string) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", withDB(db, demoDB, handleIndex()))
-	mux.HandleFunc("POST /login", withDB(db, demoDB, a.HandleLogin()))
-	mux.HandleFunc("POST /logout", withDB(db, demoDB, a.HandleLogout()))
-	mux.HandleFunc("GET /ablesungen", withDB(db, demoDB, z.Recht(store.RechtAblesungenAnsehen, handleAblesungenListe(z))))
-	mux.HandleFunc("GET /ablesungen/export.csv", withDB(db, demoDB, z.NurVermieter(handleExportCSV())))
-	mux.HandleFunc("GET /ablesungen/neu", withDB(db, demoDB, z.Recht(store.RechtAblesungAnlegen, handleWizardForm(z))))
-	mux.HandleFunc("POST /ablesungen", withDB(db, demoDB, z.Recht(store.RechtAblesungAnlegen, handleCreateAblesung())))
-	mux.HandleFunc("POST /ablesungen/import", withDB(db, demoDB, z.NurVermieter(handleImportCSV())))
-	mux.HandleFunc("GET /ablesungen/{id}", withDB(db, demoDB, z.Recht(store.RechtAblesungenAnsehen, handleAblesungDetail(z))))
-	mux.HandleFunc("GET /ablesungen/{id}/bearbeiten", withDB(db, demoDB, z.GateAus(teilstandAnspruch, handleEditWizardForm(z))))
-	mux.HandleFunc("POST /ablesungen/{id}", withDB(db, demoDB, z.GateAus(teilstandAnspruch, handleUpdateAblesung())))
-	mux.HandleFunc("POST /ablesungen/{id}/loeschen", withDB(db, demoDB, z.NurVermieter(handleDeleteAblesung())))
-	mux.HandleFunc("GET /dashboard", withDB(db, demoDB, handleDashboard(version, buildDate, z)))
-	mux.HandleFunc("GET /update-check", withDB(db, demoDB, handleUpdateCheck(version)))
-	mux.HandleFunc("GET /berechnungslogik", withDB(db, demoDB, handleBerechnungslogik(z)))
-	mux.HandleFunc("GET /abrechnung", withDB(db, demoDB, z.NurVermieter(handleAbrechnung(z))))
-	mux.HandleFunc("GET /stammdaten", withDB(db, demoDB, z.Recht(store.RechtStammdatenAnsehen, handleStammdatenForm(z))))
-	mux.HandleFunc("POST /stammdaten", withDB(db, demoDB, z.NurVermieter(handleUpdateStammdaten())))
-	mux.HandleFunc("POST /stammdaten/sortierung", withDB(db, demoDB, z.NurVermieter(handleMoveKostenposition())))
-	mux.HandleFunc("GET /fixkosten", withDB(db, demoDB, z.Recht(store.RechtFixkostenAnsehen, handleFixkostenListe(z))))
-	mux.HandleFunc("GET /fixkosten/export.csv", withDB(db, demoDB, z.NurVermieter(handleExportFixkostenCSV())))
-	mux.HandleFunc("GET /fixkosten/neu", withDB(db, demoDB, z.NurVermieter(handleFixkostenForm(z))))
-	mux.HandleFunc("POST /fixkosten", withDB(db, demoDB, z.NurVermieter(handleCreateFixkosten())))
-	mux.HandleFunc("POST /fixkosten/import", withDB(db, demoDB, z.NurVermieter(handleImportFixkostenCSV())))
-	mux.HandleFunc("GET /fixkosten/{id}", withDB(db, demoDB, z.Recht(store.RechtFixkostenAnsehen, handleFixkostenDetail(z))))
-	mux.HandleFunc("GET /fixkosten/{id}/bearbeiten", withDB(db, demoDB, z.NurVermieter(handleFixkostenEditForm(z))))
-	mux.HandleFunc("POST /fixkosten/{id}", withDB(db, demoDB, z.NurVermieter(handleUpdateFixkosten())))
-	mux.HandleFunc("POST /fixkosten/{id}/loeschen", withDB(db, demoDB, z.NurVermieter(handleDeleteFixkosten())))
+	for _, r := range routen(z, version, buildDate) {
+		mux.HandleFunc(r.Methode+" "+r.Pfad, withDB(db, demoDB, z.Gate(r.Anspruch, r.Handler)))
+	}
 	return mux
 }
 
