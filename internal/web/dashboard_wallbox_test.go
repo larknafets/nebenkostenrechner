@@ -261,21 +261,21 @@ func TestMonatsverlauf_Waermepumpe(t *testing.T) {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
 	v := sichtbareAnsicht(zugriffMitDefaults(store.RolleNichtAngemeldet), dd, nil)
-	if v.WP == nil {
+	if v.haus("waermepumpe") == nil {
 		t.Fatal("Wärmepumpe fehlt in der anonymen Ansicht")
 	}
-	if v.WP.Verlauf.ID != "waermepumpe" || v.WP.Verlauf.Name != "Wärmepumpe" || len(v.WP.Verlauf.Eintraege) == 0 {
-		t.Fatalf("Verlauf = %+v, want ID waermepumpe, Name Wärmepumpe und Einträge", v.WP.Verlauf)
+	if v.haus("waermepumpe").Verlauf.ID != "waermepumpe" || v.haus("waermepumpe").Verlauf.Name != "Wärmepumpe" || len(v.haus("waermepumpe").Verlauf.Eintraege) == 0 {
+		t.Fatalf("Verlauf = %+v, want ID waermepumpe, Name Wärmepumpe und Einträge", v.haus("waermepumpe").Verlauf)
 	}
 	var monat *dashboardSimpleMonat
-	for _, e := range v.WP.Verlauf.Eintraege {
+	for _, e := range v.haus("waermepumpe").Verlauf.Eintraege {
 		if e.Monat != nil {
 			monat = e.Monat
 			break
 		}
 	}
 	if monat == nil || !monat.HasWert {
-		t.Fatalf("keine Monatszeile mit Wert: %+v", v.WP.Verlauf.Eintraege)
+		t.Fatalf("keine Monatszeile mit Wert: %+v", v.haus("waermepumpe").Verlauf.Eintraege)
 	}
 	// 50 kWh Wärmepumpe of 100 kWh grid draw (Wohnung 2 30 kWh) are billed.
 	if seg := segmentByLabel(monat.Segmente, "Stromkosten"); seg == nil || seg.Verbrauch != 50 || seg.Einheit != "kWh" {

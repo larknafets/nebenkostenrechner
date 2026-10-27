@@ -21,13 +21,10 @@ type ansicht struct {
 	// Cards and VerlaufSpalten hold the visible apartments in the same order.
 	Cards          []dashboardJahresCard
 	VerlaufSpalten []dashboardVerlaufSpalte
-	// Wallbox, WP and PV are nil for a role that does not see them.
-	Wallbox *sichtbarerSimple
-	WP      *sichtbarerSimple
-	PV      *sichtbarerSimple
 	// Haus lists the visible whole-house entries in the order of the cards
 	// and the dropdown (after the apartments): Wärmepumpe, Wallboxen, PV-Anlage.
-	// The order is set only in sichtbareAnsicht.
+	// What a role does not see is not in it. The order is set only in
+	// sichtbareAnsicht.
 	Haus []sichtbarerSimple
 }
 
@@ -102,20 +99,14 @@ func sichtbareAnsicht(z Zugriff, dd dashboardData, miete []mieteMonat) ansicht {
 			v.addWohnung(z, dd, a, miete)
 		}
 	}
-	if dd.sichtbar(z, entitaet{Art: entitaetWallbox}) {
-		v.Wallbox = buildSichtbarerSimple(wallboxSeries, dd)
-	}
-	if dd.sichtbar(z, entitaet{Art: entitaetWP}) {
-		v.WP = buildSichtbarerSimple(wpSeries, dd)
-	}
-	if dd.sichtbar(z, entitaet{Art: entitaetPV}) {
-		v.PV = buildSichtbarerSimple(pvSeries, dd)
-	}
 	// The one place that fixes the order of the whole-house cards and dropdown
 	// entries.
-	for _, s := range []*sichtbarerSimple{v.WP, v.Wallbox, v.PV} {
-		if s != nil {
-			v.Haus = append(v.Haus, *s)
+	for _, h := range []struct {
+		art    entitaetArt
+		series simpleSeries
+	}{{entitaetWP, wpSeries}, {entitaetWallbox, wallboxSeries}, {entitaetPV, pvSeries}} {
+		if dd.sichtbar(z, entitaet{Art: h.art}) {
+			v.Haus = append(v.Haus, buildSichtbarerSimple(h.series, dd))
 		}
 	}
 	return v
@@ -134,8 +125,8 @@ func (v *ansicht) addWohnung(z Zugriff, dd dashboardData, a store.Apartment, mie
 	v.VerlaufSpalten = append(v.VerlaufSpalten, verlauf)
 }
 
-func buildSichtbarerSimple(s simpleSeries, dd dashboardData) *sichtbarerSimple {
-	return &sichtbarerSimple{
+func buildSichtbarerSimple(s simpleSeries, dd dashboardData) sichtbarerSimple {
+	return sichtbarerSimple{
 		Card:    buildSimpleJahresCard(s, dd.Jahr, dd.PeriodenKosten),
 		Verlauf: buildSimpleVerlauf(s, dd.PeriodenKosten),
 	}
