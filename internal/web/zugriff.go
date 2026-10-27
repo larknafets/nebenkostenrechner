@@ -126,8 +126,9 @@ func (l *matrixLauf) get() (store.Berechtigungen, error) {
 // templates read directly ({{if .Vermieter}}). It has no error to handle:
 // when the Berechtigungen cannot be loaded, every right of a non-Vermieter is
 // false (fail closed) and Fehler names the cause for the callers that answer
-// with an error page. The Berechtigungen are loaded lazily, at most once per
-// request, and never for the Vermieter.
+// with an error page. The Berechtigungen are loaded at most once per request
+// and never for the Vermieter. A non-Vermieter Zugriff loads them while it is
+// built (the Kann* fields ask Darf), Darf and Fehler then reuse that result.
 type Zugriff struct {
 	Rolle store.Rolle
 	// Vermieter is true for the Vermieter role, the demo session and every
@@ -138,7 +139,8 @@ type Zugriff struct {
 	Demo       bool
 	HatSitzung bool
 	// The rights that decide which pages and buttons the navigation and the
-	// pages show (#311). The Vermieter has all of them.
+	// pages show (#311), computed once when the Zugriff is built (not on
+	// demand). The Vermieter has all of them.
 	KannAblesungenAnsehen bool
 	KannAblesungAnlegen   bool
 	KannFixkostenAnsehen  bool
@@ -147,8 +149,10 @@ type Zugriff struct {
 	lade *matrixLauf
 }
 
-// Darf reports whether the role may use recht. The Vermieter rule lives here
-// and nowhere else: the Vermieter may do everything and triggers no query.
+// Darf reports whether the role may use recht. The Vermieter may do
+// everything and triggers no query. The Vermieter flag is decided once, in
+// bauen; Darf is the only place that turns it into a Recht, Erfuellt
+// (NurVermieter) and Personenbezug read the flag for what is no Recht.
 func (z Zugriff) Darf(recht store.Recht) bool {
 	if z.Vermieter {
 		return true
@@ -189,14 +193,15 @@ func (z Zugriff) Erfuellt(a Anspruch) bool {
 func (z Zugriff) Personenbezug() bool { return z.Vermieter }
 
 // Sichtbar reports whether the role may see e on the Dashboard: the
-// Vermieter everything, the others what the right for e grants. Whether e
+// Vermieter everything, the others what the right for e grants (nothing for an
+// entity without a right). Whether e
 // exists at all (the Wallboxen card) is up to the Dashboard.
 func (z Zugriff) Sichtbar(e entitaet) bool {
-	if z.Vermieter {
-		return true
-	}
 	recht, ok := e.rechtFuer()
-	return ok && z.Darf(recht)
+	if !ok {
+		return z.Vermieter
+	}
+	return z.Darf(recht)
 }
 
 // zugriffCacheKey carries a zugriffCache in the request context (set by
@@ -251,16 +256,6 @@ func (a auth) Rolle(r *http.Request) (rolle store.Rolle, demo, hatSitzung bool) 
 		return store.RolleMieter, demo, hatSitzung
 	}
 	return store.RolleNichtAngemeldet, demo, hatSitzung
-}
-
-// NurVermieter gates next behind the Vermieter role.
-func (z *Zugang) NurVermieter(next http.HandlerFunc) http.HandlerFunc {
-	return z.Gate(NurVermieter, next)
-}
-
-// Recht gates next behind the right r.
-func (z *Zugang) Recht(r store.Recht, next http.HandlerFunc) http.HandlerFunc {
-	return z.Gate(Braucht(r), next)
 }
 
 // Gate gates next behind a. Without it a Mieter gets the page "Nur für den
