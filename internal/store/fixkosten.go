@@ -178,16 +178,6 @@ func (in FixkostenInput) Validate() error {
 	return nil
 }
 
-// idsAufsteigend returns the keys of m in ascending order.
-func idsAufsteigend[V any](m map[int64]V) []int64 {
-	ids := make([]int64, 0, len(m))
-	for id := range m {
-		ids = append(ids, id)
-	}
-	slices.Sort(ids)
-	return ids
-}
-
 // FixkostenImportError is returned by ImportFixkostenEingaben when one input
 // is invalid: the store knows no CSV line numbers, so the error names the
 // input's position in the list (0-based). Err is the rule's own error.
