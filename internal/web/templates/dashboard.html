@@ -101,6 +101,7 @@
   {{if .ShowWallbox}}
   <button type="button" class="wohnung-tab" data-wohnung="{{.WallboxVerlauf.ID}}">{{.WallboxVerlauf.Name}}</button>
   {{end}}
+  <button type="button" class="wohnung-tab" data-wohnung="{{.WPVerlauf.ID}}">{{.WPVerlauf.Name}}</button>
   {{if .IsLoggedIn}}
   <button type="button" class="wohnung-tab" data-wohnung="{{.PVVerlauf.ID}}">{{.PVVerlauf.Name}}</button>
   {{end}}
@@ -121,8 +122,11 @@
 {{end}}
 {{end}}
 
-{{if .IsLoggedIn}}
+<div class="wohnung-panel" data-wohnung="{{.WPVerlauf.ID}}">
+  {{template "monatsverlauf-simple-body" .WPVerlauf}}
+</div>
 
+{{if .IsLoggedIn}}
 {{with $.PVVerlauf}}
 <div class="wohnung-panel" data-wohnung="{{.ID}}">
   {{template "monatsverlauf-simple-body" .}}

@@ -31,6 +31,12 @@ func TestDashboard_AnonymNurWohnung2(t *testing.T) {
 	if !strings.Contains(anon, "<strong>Wärmepumpe</strong>") {
 		t.Error("Wärmepumpe fehlt für Anonyme")
 	}
+	// The Wärmepumpe has a tab and a Monatsverlauf panel, too (#305).
+	for _, s := range []string{">Wärmepumpe</button>", `<div class="wohnung-panel" data-wohnung="waermepumpe">`} {
+		if !strings.Contains(anon, s) {
+			t.Errorf("%q fehlt für Anonyme", s)
+		}
+	}
 	// The bare text "Wohnung 1" also occurs in the static Fixkosten legend,
 	// so the check targets the card and the tab of Wohnung 1.
 	for _, s := range []string{
@@ -50,6 +56,7 @@ func TestDashboard_EingeloggtZeigtAlles(t *testing.T) {
 		"<strong>Wohnung 1</strong>", "<strong>Wohnung 2</strong>",
 		`data-wohnung="1"`, ">Wohnung 1</button>",
 		"<strong>Wallboxen</strong>", "<strong>Wärmepumpe</strong>", "<strong>PV-Anlage</strong>",
+		">Wärmepumpe</button>", `data-wohnung="waermepumpe"`,
 		"Mieteinnahmen", "712,34",
 	} {
 		if !strings.Contains(voll, s) {

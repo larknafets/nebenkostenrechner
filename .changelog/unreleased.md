@@ -31,6 +31,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
+- Dashboard: Die Wärmepumpe hat einen eigenen Monatsverlauf wie die Wallboxen, auch ohne Anmeldung sichtbar (#305)
+
 - Dashboard: Die Jahreskarte jeder Wohnung zeigt die Wallbox in einem eigenen Block mit Stromkosten in EUR und kWh, statt im Hauptbalken (#304)
 
 - Dashboard: neue Jahreskarte "Wärmepumpe" mit Stromkosten und PV-Anteil, auch ohne Anmeldung sichtbar (#296)
