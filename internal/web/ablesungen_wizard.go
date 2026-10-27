@@ -199,8 +199,8 @@ func (d *wizardData) prefill(src *store.LatestPeriod, apartments []store.Apartme
 	d.PVGutschriftW1 = src.PVGutschriftW1
 }
 
-// teilstandAnspruch is the Anspruch of the routes that correct a reading (for
-// Gate form GateAus): completing a Teilstand (partial reading, Ticket #130)
+// teilstandAnspruch resolves AnlegenOderVermieter for the request (called by
+// Gate): the Anspruch of the routes that correct a reading. Completing a Teilstand (partial reading, Ticket #130)
 // needs only the right to create a reading, just as creating it in the first
 // place (Ticket #129). An already complete reading stays reserved for the
 // Vermieter. An id that doesn't (or no longer) exist returns 404 directly

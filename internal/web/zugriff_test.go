@@ -260,20 +260,6 @@ func TestNavData_Einstiegspunkte(t *testing.T) {
 	}
 }
 
-func TestGateAus_AnspruchAusDerAnfrage(t *testing.T) {
-	zugang := NewZugang(festeRolle{rolle: store.RolleNichtAngemeldet}, matrixAus{b: berechtigtMit(store.RolleNichtAngemeldet)})
-	// The Anspruch func answers itself: neither gate nor handler run.
-	h := zugang.GateAus(func(w http.ResponseWriter, r *http.Request) (Anspruch, bool) {
-		http.NotFound(w, r)
-		return Anspruch{}, false
-	}, func(http.ResponseWriter, *http.Request) { t.Error("handler reached") })
-	w := httptest.NewRecorder()
-	h(w, neueAnfrage(http.MethodGet, "/x"))
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status %d, want 404", w.Code)
-	}
-}
-
 func TestSitzungenCookieAdapter_Rolle(t *testing.T) {
 	vermieter := &http.Cookie{Name: sessionCookieName, Value: signSession("v", farFuture())}
 	mieter := &http.Cookie{Name: mieterSessionCookieName, Value: signSession("m", farFuture())}
