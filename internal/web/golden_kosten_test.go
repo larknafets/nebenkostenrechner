@@ -17,7 +17,8 @@ import (
 // goldenFile holds the characterization of the demo database's costs: what
 // the Abrechnung, the Dashboard and the Fixkosten list compute today. It is
 // rewritten only with UPDATE_GOLDEN=1, so any change of an amount shows up
-// as a failing test and a reviewable diff.
+// as a failing test and a reviewable diff. A refactoring must never need
+// UPDATE_GOLDEN=1: if it does, it changed a behavior.
 const goldenFile = "testdata/kosten_demo.golden"
 
 var timeType = reflect.TypeOf(time.Time{})
