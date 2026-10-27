@@ -63,7 +63,7 @@ func ladeKennwoerter() (vermieter, mieter string) {
 	vermieter = os.Getenv("VERMIETER_PASSWORD")
 	mieter = os.Getenv("MIETER_PASSWORD")
 	if os.Getenv("LOGIN_PASSWORD") != "" && vermieter == "" {
-		log.Print("login: LOGIN_PASSWORD wird nicht mehr gelesen, das Vermieter-Kennwort heisst jetzt VERMIETER_PASSWORD - die App ist ohne Vermieter-Kennwort offen")
+		log.Print("login: LOGIN_PASSWORD wird nicht mehr gelesen, das Kennwort der Vermieter:innen heisst jetzt VERMIETER_PASSWORD - die App ist ohne dieses Kennwort offen")
 	}
 	if token := os.Getenv("SUPERVISOR_TOKEN"); token != "" && (vermieter == "" || mieter == "") {
 		v, m, err := fetchSupervisorKennwoerter(token)
@@ -82,7 +82,7 @@ func ladeKennwoerter() (vermieter, mieter string) {
 		log.Print("login: MIETER_PASSWORD ohne VERMIETER_PASSWORD wird ignoriert, die App bleibt offen")
 		mieter = ""
 	}
-	log.Printf("login: Vermieter-Kennwort (Laenge %d), Mieter-Kennwort (Laenge %d)", len(vermieter), len(mieter))
+	log.Printf("login: Kennwort der Vermieter:innen (Laenge %d), Kennwort der Mieter:innen (Laenge %d)", len(vermieter), len(mieter))
 	return vermieter, mieter
 }
 
@@ -268,10 +268,10 @@ type loginOption struct {
 func (a auth) loginOptionen() []loginOption {
 	var out []loginOption
 	if a.mieterAktiv() {
-		out = append(out, loginOption{rolleFormMieter, "Mieter"})
+		out = append(out, loginOption{rolleFormMieter, "Mieter:in"})
 	}
 	if a.vermieter != "" {
-		out = append(out, loginOption{rolleFormVermieter, "Vermieter"})
+		out = append(out, loginOption{rolleFormVermieter, "Vermieter:in"})
 	}
 	return append(out, loginOption{rolleFormDemo, "Demo"})
 }

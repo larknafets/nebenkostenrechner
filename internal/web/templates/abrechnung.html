@@ -114,7 +114,7 @@
       </select>
     </div>
     <div class="field">
-      <label><input type="checkbox" name="teil" value="1" {{if .Teilzeitraum}}checked{{end}} onchange="document.getElementById('zeitraum-felder').hidden=!this.checked"> Abweichender Zeitraum (z. B. Mieterwechsel)</label>
+      <label><input type="checkbox" name="teil" value="1" {{if .Teilzeitraum}}checked{{end}} onchange="document.getElementById('zeitraum-felder').hidden=!this.checked"> Abweichender Zeitraum (z. B. Wechsel der Mietpartei)</label>
     </div>
     <div class="zeitraum-felder" id="zeitraum-felder" {{if not .Teilzeitraum}}hidden{{end}}>
       <div class="field"><label>Von Monat</label>
@@ -154,7 +154,7 @@
 
   <div class="abr-parteien">
     <div>
-      <strong>Vermieter</strong>
+      <strong>Vermieter:innen</strong>
       <p style="white-space:pre-line">{{.Haus.VermieterName}}
 {{.Haus.VermieterAnschrift}}</p>
     </div>
@@ -162,7 +162,7 @@
       {{if .Eigennutzung}}
       <strong>{{.Apartment.Name}} (Eigennutzung)</strong>
       {{else}}
-      <strong>Mieter</strong>
+      <strong>Mieter:innen</strong>
       <p style="white-space:pre-line">{{.Apartment.MieterName}}
 {{.Apartment.MieterAnschrift}}</p>
       {{end}}

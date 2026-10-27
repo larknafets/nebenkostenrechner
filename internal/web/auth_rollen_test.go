@@ -109,7 +109,7 @@ func TestLoginFormular_ZeigtAuswahlJeNachKennwoertern(t *testing.T) {
 	body := getMitCookies(t, mux, "/dashboard", nil).Body.String()
 	for _, s := range []string{
 		`<select name="rolle" id="login-rolle">`,
-		`<option value="mieter">Mieter</option>`, `<option value="vermieter">Vermieter</option>`, `<option value="demo">Demo</option>`,
+		`<option value="mieter">Mieter:in</option>`, `<option value="vermieter">Vermieter:in</option>`, `<option value="demo">Demo</option>`,
 	} {
 		if !strings.Contains(body, s) {
 			t.Errorf("Login-Formular ohne %q", s)
@@ -191,7 +191,7 @@ func TestGate_JeRolle(t *testing.T) {
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("Mieter auf /abrechnung: status %d, want 403", w.Code)
 	}
-	for _, s := range []string{"Nur für den Vermieter", "login=1&amp;rolle=vermieter&amp;next=%2fabrechnung"} {
+	for _, s := range []string{"Nur für Vermieter:innen", "login=1&amp;rolle=vermieter&amp;next=%2fabrechnung"} {
 		if !strings.Contains(strings.ToLower(w.Body.String()), strings.ToLower(s)) {
 			t.Errorf("403-Seite ohne %q", s)
 		}

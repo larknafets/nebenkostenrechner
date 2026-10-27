@@ -103,7 +103,7 @@ func TestBerechne_Uebertrag(t *testing.T) {
 		{
 			name:        "Mieter seit nach Beginn des Zeitraums: Hinweis statt Übertrag",
 			ablesungVon: oktober2026, status: store.StatusVermietet, mieterSeit: "2027-03-01",
-			want: Uebertrag{Hinweis: "Kein Übertrag: Mieter seit März 2027, also nach dem Beginn dieses Zeitraums."},
+			want: Uebertrag{Hinweis: "Kein Übertrag: Mieter:innen seit März 2027, also nach dem Beginn dieses Zeitraums."},
 		},
 		{
 			name:        "Mieter seit am Beginn des Zeitraums: nichts davor",

@@ -136,7 +136,7 @@ func TestAbrechnungSeite_Eigennutzung(t *testing.T) {
 	_, body := getAbrechnung(t, mux, "?jahr=2024&wohnung=1", nil)
 	mustContain(t, body, "Interne Übersicht, keine Betriebskostenabrechnung", "(Eigennutzung)", "Rundungsdifferenzen")
 	// No tenant block, no legal notes, no screen notes for the own use.
-	mustNotContain(t, body, "<strong>Mieter</strong>", "Belege können auf Verlangen", "Einwendungen", "Hinweise zur Abrechnung", "Bankverbindung")
+	mustNotContain(t, body, "<strong>Mieter:innen</strong>", "Belege können auf Verlangen", "Einwendungen", "Hinweise zur Abrechnung", "Bankverbindung")
 }
 
 func TestAbrechnungSeite_Hinweise(t *testing.T) {
@@ -153,7 +153,7 @@ func TestAbrechnungSeite_Hinweise(t *testing.T) {
 		}
 		mustContain(t, body,
 			`betrag nachzahlung">- `,
-			"Frist: Die Abrechnung muss dem Mieter bis zum 31.12.2027 zugehen",
+			"Frist: Die Abrechnung muss den Mieter:innen bis zum 31.12.2027 zugehen",
 			"Aufbewahrung: Den verschickten Stand als PDF aufbewahren",
 			"Wechsel des Verteilerschlüssels im Jahr bei: Wohngebäudeversicherung",
 			"§ 556a Abs. 2 BGB",
@@ -320,15 +320,15 @@ func TestAbrechnungSeite_Teilzeitraum(t *testing.T) {
 	t.Run("Standard: Jahr, Felder verborgen", func(t *testing.T) {
 		_, body := getAbrechnung(t, mux, "?jahr=2026&wohnung=2", nil)
 		mustContain(t, body, "Nebenkostenabrechnung 2026", `id="zeitraum-felder" hidden`, ".zeitraum-felder[hidden] { display: none; }")
-		mustNotContain(t, body, "Mieterwechsel: Ein Monat gehört")
+		mustNotContain(t, body, "Wechsel der Mietpartei: Ein Monat gehört")
 	})
 	t.Run("Haken: Zeitraum, Titel, Frist, Hinweis", func(t *testing.T) {
 		_, body := getAbrechnung(t, mux, "?jahr=2026&wohnung=2&teil=1&von=10&bis=11", nil)
 		mustContain(t, body,
 			"Nebenkostenabrechnung Oktober 2026 bis November 2026",
 			"Zeitraum: 01.10.2026 bis 30.11.2026",
-			"Frist: Die Abrechnung muss dem Mieter bis zum 30.11.2027 zugehen",
-			"Mieterwechsel: Ein Monat gehört ganz zu dem Zeitraum",
+			"Frist: Die Abrechnung muss den Mieter:innen bis zum 30.11.2027 zugehen",
+			"Wechsel der Mietpartei: Ein Monat gehört ganz zu dem Zeitraum",
 			`name="teil" value="1" checked`,
 			`<option value="10" selected>Oktober`, `<option value="11" selected>November`)
 		mustNotContain(t, body, `id="zeitraum-felder" hidden`)

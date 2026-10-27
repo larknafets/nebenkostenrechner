@@ -315,9 +315,9 @@ func TestPruefeAbrechnung_Stammdaten(t *testing.T) {
 			a[1].MieterName, a[1].MieterAnschrift = "", ""
 		}, 2)
 		want := []string{
-			"Name des Vermieters fehlt", "Anschrift des Vermieters fehlt", "Anschrift des Objekts fehlt",
+			"Name der Vermieter:innen fehlt", "Anschrift der Vermieter:innen fehlt", "Anschrift des Objekts fehlt",
 			"Wohnungsgröße von Wohnung 1 fehlt (muss größer als 0 sein)", "Wohnungsgröße von Wohnung 2 fehlt (muss größer als 0 sein)",
-			"Name des Mieters von Wohnung 2 fehlt", "Zustellanschrift des Mieters von Wohnung 2 fehlt",
+			"Name der Mieter:innen von Wohnung 2 fehlt", "Zustellanschrift der Mieter:innen von Wohnung 2 fehlt",
 		}
 		if fmt.Sprint(got) != fmt.Sprint(want) {
 			t.Errorf("Maengel = %v, want %v", got, want)
@@ -325,7 +325,7 @@ func TestPruefeAbrechnung_Stammdaten(t *testing.T) {
 	})
 	t.Run("nur Leerzeichen zaehlt als leer", func(t *testing.T) {
 		got := run(func(a []store.Apartment, h *store.Haus) { h.VermieterName = "   \n " }, 2)
-		if fmt.Sprint(got) != "[Name des Vermieters fehlt]" {
+		if fmt.Sprint(got) != "[Name der Vermieter:innen fehlt]" {
 			t.Errorf("Maengel = %v, want only the Vermieter name", got)
 		}
 	})

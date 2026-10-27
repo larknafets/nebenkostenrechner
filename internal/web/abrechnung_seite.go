@@ -223,10 +223,10 @@ func abrechnungHinweise(ab *abr.Jahresabrechnung, eigennutzung bool) []string {
 	var out []string
 	if ab.Saldo.Nachzahlung() {
 		frist := time.Date(ab.Zeitraum.Bis.Year()+1, ab.Zeitraum.Bis.Month()+1, 0, 0, 0, 0, 0, time.UTC)
-		out = append(out, fmt.Sprintf("Frist: Die Abrechnung muss dem Mieter bis zum %s zugehen, sonst ist eine Nachforderung ausgeschlossen (§ 556 Abs. 3 BGB).", frist.Format("02.01.2006")))
+		out = append(out, fmt.Sprintf("Frist: Die Abrechnung muss den Mieter:innen bis zum %s zugehen, sonst ist eine Nachforderung ausgeschlossen (§ 556 Abs. 3 BGB).", frist.Format("02.01.2006")))
 	}
 	if ab.Zeitraum.Teilzeitraum {
-		out = append(out, "Mieterwechsel: Ein Monat gehört ganz zu dem Zeitraum, in den die Ablesung seines Abrechnungsmonats fällt, auch bei einem Wechsel mitten im Monat. Mieter und Anschrift kommen aus den Stammdaten: den Stand vor dem Umschreiben als PDF sichern.")
+		out = append(out, "Wechsel der Mietpartei: Ein Monat gehört ganz zu dem Zeitraum, in den die Ablesung seines Abrechnungsmonats fällt, auch bei einem Wechsel mitten im Monat. Mieter:innen und Anschrift kommen aus den Stammdaten: den Stand vor dem Umschreiben als PDF sichern.")
 	}
 	out = append(out, "Aufbewahrung: Den verschickten Stand als PDF aufbewahren, die App speichert nichts.")
 
@@ -237,7 +237,7 @@ func abrechnungHinweise(ab *abr.Jahresabrechnung, eigennutzung bool) []string {
 		}
 	}
 	if len(geteilt) > 0 {
-		out = append(out, fmt.Sprintf("Wechsel des Verteilerschlüssels im Jahr bei: %s. Ein anderer Umlageschlüssel muss dem Mieter in Textform vor Beginn des Abrechnungszeitraums erklärt werden (§ 556a Abs. 2 BGB).", joinDE(geteilt)))
+		out = append(out, fmt.Sprintf("Wechsel des Verteilerschlüssels im Jahr bei: %s. Ein anderer Umlageschlüssel muss den Mieter:innen in Textform vor Beginn des Abrechnungszeitraums erklärt werden (§ 556a Abs. 2 BGB).", joinDE(geteilt)))
 	}
 	return out
 }

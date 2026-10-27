@@ -472,7 +472,7 @@ func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment
 		seit, err := time.Parse("2006-01-02", apartment.MieterSeit)
 		if err == nil {
 			if seit.After(z.ErsterMonat) {
-				return Uebertrag{Hinweis: "Kein Übertrag: Mieter seit " + store.MonatLabel(apartment.MieterSeit) + ", also nach dem Beginn dieses Zeitraums."}
+				return Uebertrag{Hinweis: "Kein Übertrag: Mieter:innen seit " + store.MonatLabel(apartment.MieterSeit) + ", also nach dem Beginn dieses Zeitraums."}
 			}
 			if seit.After(start) {
 				start = seit

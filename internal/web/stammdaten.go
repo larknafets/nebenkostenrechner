@@ -208,7 +208,7 @@ func stammdatenFehler(err error, rohGewichtung string) (status int, text string)
 	case errors.As(err, &wohnungsstatus):
 		return http.StatusBadRequest, "ungültiger Wohnungsstatus für Wohnung " + strconv.FormatInt(wohnungsstatus.ApartmentID, 10)
 	case errors.As(err, &mieterSeit):
-		return http.StatusBadRequest, "ungültiges Datum für \"Mieter seit\" bei Wohnung " + strconv.FormatInt(mieterSeit.ApartmentID, 10)
+		return http.StatusBadRequest, "ungültiges Datum für \"Mieter:innen seit\" bei Wohnung " + strconv.FormatInt(mieterSeit.ApartmentID, 10)
 	case errors.As(err, &ungueltigeGewichtung):
 		return http.StatusBadRequest, heizungGewichtungFehler(rohGewichtung).Error()
 	}

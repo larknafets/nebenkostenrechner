@@ -348,10 +348,10 @@ func pruefeStammdaten(d Daten, apartment store.Apartment) []Mangel {
 	}
 
 	if leer(d.Haus.VermieterName) {
-		add("Name des Vermieters fehlt")
+		add("Name der Vermieter:innen fehlt")
 	}
 	if leer(d.Haus.VermieterAnschrift) {
-		add("Anschrift des Vermieters fehlt")
+		add("Anschrift der Vermieter:innen fehlt")
 	}
 	if leer(d.Haus.ObjektAnschrift) {
 		add("Anschrift des Objekts fehlt")
@@ -363,10 +363,10 @@ func pruefeStammdaten(d Daten, apartment store.Apartment) []Mangel {
 	}
 	if apartment.Vermietet() {
 		if leer(apartment.MieterName) {
-			add(fmt.Sprintf("Name des Mieters von %s fehlt", apartment.Name))
+			add(fmt.Sprintf("Name der Mieter:innen von %s fehlt", apartment.Name))
 		}
 		if leer(apartment.MieterAnschrift) {
-			add(fmt.Sprintf("Zustellanschrift des Mieters von %s fehlt", apartment.Name))
+			add(fmt.Sprintf("Zustellanschrift der Mieter:innen von %s fehlt", apartment.Name))
 		}
 	}
 	return out
