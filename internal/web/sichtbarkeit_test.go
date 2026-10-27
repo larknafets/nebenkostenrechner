@@ -58,11 +58,11 @@ func TestSichtbareAnsicht_JeBetrachter(t *testing.T) {
 					t.Errorf("Wohnung %d: Mieteinnahmen = %v, want %v", id, c.Mieteinnahmen, want)
 				}
 			}
-			if (v.Wallbox != nil) != tt.wallboxPV || (v.PV != nil) != tt.wallboxPV {
-				t.Errorf("Wallbox/PV present = %v/%v, want %v", v.Wallbox != nil, v.PV != nil, tt.wallboxPV)
+			if (v.haus("wallbox") != nil) != tt.wallboxPV || (v.haus("pv") != nil) != tt.wallboxPV {
+				t.Errorf("Wallbox/PV present = %v/%v, want %v", v.haus("wallbox") != nil, v.haus("pv") != nil, tt.wallboxPV)
 			}
 			// The heat pump card has no condition, not even a login (#296).
-			if v.WP == nil {
+			if v.haus("waermepumpe") == nil {
 				t.Error("Wärmepumpe fehlt")
 			}
 		})
@@ -97,14 +97,14 @@ func TestSichtbareAnsicht_WallboxKarteNachWohnungsstatus(t *testing.T) {
 				},
 			}
 			got := sichtbareAnsicht(zugriffMitDefaults(RolleVermieter), dd, nil)
-			if (got.Wallbox != nil) != tt.sichtbar {
-				t.Errorf("Wallbox sichtbar = %v, want %v", got.Wallbox != nil, tt.sichtbar)
+			if (got.haus("wallbox") != nil) != tt.sichtbar {
+				t.Errorf("Wallbox sichtbar = %v, want %v", got.haus("wallbox") != nil, tt.sichtbar)
 			}
-			if got.WP == nil || got.PV == nil {
-				t.Errorf("WP/PV present = %v/%v, want both", got.WP != nil, got.PV != nil)
+			if got.haus("waermepumpe") == nil || got.haus("pv") == nil {
+				t.Errorf("WP/PV present = %v/%v, want both", got.haus("waermepumpe") != nil, got.haus("pv") != nil)
 			}
-			if anon := sichtbareAnsicht(zugriffMitDefaults(store.RolleNichtAngemeldet), dd, nil); anon.Wallbox != nil || anon.WP == nil {
-				t.Errorf("anonym Wallbox/WP = %v/%v, want nil/present", anon.Wallbox != nil, anon.WP != nil)
+			if anon := sichtbareAnsicht(zugriffMitDefaults(store.RolleNichtAngemeldet), dd, nil); anon.haus("wallbox") != nil || anon.haus("waermepumpe") == nil {
+				t.Errorf("anonym Wallbox/WP = %v/%v, want nil/present", anon.haus("wallbox") != nil, anon.haus("waermepumpe") != nil)
 			}
 		})
 	}
@@ -161,6 +161,17 @@ func TestVerlaufAuswahl(t *testing.T) {
 	if got, want := ids(store.RolleNichtAngemeldet), []string{"waermepumpe"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("anonym ohne Wohnungen = %v, want %v", got, want)
 	}
+}
+
+// haus returns the whole-house entry with the Verlauf id ("waermepumpe",
+// "wallbox", "pv"), nil when the view does not carry it.
+func (v ansicht) haus(id string) *sichtbarerSimple {
+	for i := range v.Haus {
+		if v.Haus[i].Verlauf.ID == id {
+			return &v.Haus[i]
+		}
+	}
+	return nil
 }
 
 // zugriffMitDefaults is the Zugriff of rolle on a database with the default
