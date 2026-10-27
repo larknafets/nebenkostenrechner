@@ -276,25 +276,6 @@ func (a auth) loginOptionen() []loginOption {
 	return append(out, loginOption{rolleFormDemo, "Demo"})
 }
 
-// navData is every page's shared nav facts: Base, the Zugriff of the request
-// and the login/demo entries, computed once per request by Zugang.NavData.
-// Embedded (anonymous field) in every page's template-data struct:
-// text/template promotes embedded-struct fields for dot-access, so layout.html
-// reads .Base/.Vermieter/.IsDemoSession/.ShowLoginEntry/.Kann* unchanged,
-// whether they come directly from a struct or via this embed. Aktuell (the
-// active nav tab) deliberately stays out - each handler names its own page, a
-// constructor here can't derive that for it.
-type navData struct {
-	Zugriff
-	Base            string
-	IsDemoSession   bool
-	ShowLoginEntry  bool
-	ShowLogoutEntry bool
-	LoginOptionen   []loginOption
-	// HatMieter is true when the Mieter login exists (see mieterAktiv).
-	HatMieter bool
-}
-
 // auth bundles what logging in and out needs: the two configured passwords
 // and the demo database (needed to reset it on a successful demo login). It
 // is also the cookie adapter of Sitzungen (see Rolle), Zugang answers every
