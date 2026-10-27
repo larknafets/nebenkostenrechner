@@ -3,7 +3,7 @@
 Web-App zur monatlichen Nebenkostenabrechnung für ein Zweifamilienhaus mit Wärmepumpe und PV-Anlage.
 Berechnet Strom-, Heizung/Warmwasser- und Wasserkosten je Wohnung aus monatlich erfassten Zählerständen, sowie Fixkosten/Grundgebühren (Grundsteuer, Versicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise, Wärmepumpenwartung, PV-Anlagenwartung).
 Zusätzlich können Nebenkostenabschläge eingetragen und gegengerechnet werden, so daß eine erfassungsaktuelle Guthaben/Nachzahlung Übersicht entsteht.
-Für vermietete Wohnungen kannst du außerdem die monatliche Miete erfassen: Sie erscheint als "Miete" auf der Jahreskarte (nur für den Vermieter) und geht in keine Berechnung ein.
+Für vermietete Wohnungen kannst du außerdem die monatliche Miete erfassen: Sie erscheint als "Miete" auf der Jahreskarte (nur für die Vermieter:innen) und geht in keine Berechnung ein.
 Angenommen wird, dass es Hauptzähler für die Gemeinschaft und separate Zwischenzähler für die Einliegerwohnung (Wohnung 2) und Wallboxen gibt.
 
 <p align="center">
@@ -31,11 +31,11 @@ Auf der `/stammdaten`-Seite gepflegt werden folgende Daten gepflegt. und gelten 
 | Wohnung 1 | 116,23 m² | - |
 | Wohnung 2 | 86 m² | - |
 
-Je Wohnung gibt es außerdem einen **Wohnungsstatus** ("Vermietung" oder "Eigennutzung", vorbelegt Wohnung 1 Eigennutzung, Wohnung 2 Vermietung), den Namen des Mieters bzw. Bewohners, die Zustellanschrift und bei Vermietung den Einzugsmonat ("Mieter seit", leer = ab Erfassungsbeginn).
-Für das Haus gibt es Vermieter-Name, Vermieter-Anschrift, Objektanschrift und eine optionale IBAN mit optionalem Kontoinhaber (leer = Vermieter).
+Je Wohnung gibt es außerdem einen **Wohnungsstatus** ("Vermietung" oder "Eigennutzung", vorbelegt Wohnung 1 Eigennutzung, Wohnung 2 Vermietung), den Namen der Mieter:innen bzw. Bewohner:innen, die Zustellanschrift und bei Vermietung den Einzugsmonat ("Mieter:innen seit", leer = ab Erfassungsbeginn).
+Für das Haus gibt es Name und Anschrift der Vermieter:innen, Objektanschrift und eine optionale IBAN mit optionalem Kontoinhaber (leer = Vermieter:innen).
 Diese Angaben füllen die künftige Jahresabrechnung.
-Die personenbezogenen Felder (Namen, Anschriften, "Mieter seit", IBAN) sind nur für angemeldete Nutzer sichtbar und änderbar, der Wohnungsstatus ist für alle sichtbar.
-Ohne gesetztes `VERMIETER_PASSWORD` ist jeder angemeldet (Vermieter).
+Die personenbezogenen Felder (Namen, Anschriften, "Mieter:innen seit", IBAN) sind nur für angemeldete Personen sichtbar und änderbar, der Wohnungsstatus ist für alle sichtbar.
+Ohne gesetztes `VERMIETER_PASSWORD` sind alle angemeldet (als Vermieter:in).
 
 Dazu kommt die **Heizung/Warmwasser-Gewichtung** (siehe [Heizung](#heizungwarmwasser-konfigurierbarer-split-default-7030)), die im Gegensatz zu den beiden folgenden Schaltern auch Dashboard und Verlauf beeinflusst. Außerdem stehen hier drei Schalter für die Jahresabrechnung. Sie wirken auf alle Monate und Jahre, Dashboard und Monatsverlauf zeigen weiterhin alle Positionen und ändern sich nicht:
 
@@ -257,7 +257,7 @@ Im Monatsverlauf steht sie nur in "Kombiniert" (Gesamt abzüglich Gutschrift) un
 Die haus-weiten Karten "Wärmepumpe", "Wallboxen" und "PV-Anlage" zeigen ihre Werte für das ganze Haus. Die Wärmepumpe (Stromkosten und PV-Anteil) ist immer sichtbar, auch ohne Login, und hat wie die Wallboxen einen eigenen Monatsverlauf.
 Welcher Monatsverlauf unter den Karten steht (Wohnungen, Wärmepumpe, Wallboxen, PV-Anlage), wählst du in einem Dropdown "Monatsübersicht"; gibt es nur eine Auswahl, entfällt das Dropdown. Die Auswahl merkt sich der Browser.
 Die Jahreskarte der vermieteten Wohnung zeigt unter Guthaben / Nachzahlung die **Miete** des Anzeigejahres (Summe der Miete aller Fixkosten-Eingaben des Jahres, auch mit 0,00; bei Eigennutzung nie).
-Der Block erscheint nur für angemeldete Nutzer und steht ohne Login nicht im HTML-Quelltext.
+Der Block erscheint nur für angemeldete Personen und steht ohne Login nicht im HTML-Quelltext.
 
 Fortlaufend seit Erfassungsbeginn kumuliert, kein Reset zum Jahreswechsel. Positiv heißt Guthaben, negativ Nachzahlung, exakt 0 Ausgeglichen. Ein Monat ohne Fixkosteneingabe lässt den Saldo unverändert, statt ihn verschwinden zu lassen.
 
@@ -267,12 +267,12 @@ Die Seite `/abrechnung?jahr=2027&wohnung=2` zeigt die Betriebskostenabrechnung e
 
 - **Auswahl:** Die Jahresliste enthält alle Jahre mit Ablesungen oder Fixkosten-Eingaben, die Wohnung wählst du über zwei Schaltflächen mit Name und Wohnungsstatus. Vorbelegt sind das neueste Jahr, das vollständig ist (sonst das neueste), und die erste vermietete Wohnung. Ein ungültiges Jahr oder eine ungültige Wohnung in der URL fällt auf diese Vorbelegung zurück.
 - **Nicht abrechenbar:** Fehlen Daten, zeigt die Seite statt der Abrechnung die Liste aller Mängel mit je einem Link zum Beheben (fehlende oder unvollständige Ablesung, fehlende oder doppelte Fixkosten-Eingabe, fehlende Pflicht-Stammdaten). Im ersten Erfassungsjahr beginnt der Zeitraum mit dem Datum der ersten Ablesung (Ausgangsstand), Fixkosten und Vorauszahlungen gelten dort ab dem Folgemonat.
-- **Mieterwechsel unterjährig:** Das Häkchen "Abweichender Zeitraum" blendet Von- und Bis-Monat ein (`?teil=1&von=3&bis=7`), die Abrechnung gilt dann für diese vollen Monate innerhalb des Jahres, Standard ist das Kalenderjahr.
+- **Wechsel der Mietpartei unterjährig:** Das Häkchen "Abweichender Zeitraum" blendet Von- und Bis-Monat ein (`?teil=1&von=3&bis=7`), die Abrechnung gilt dann für diese vollen Monate innerhalb des Jahres, Standard ist das Kalenderjahr.
   Ein Monat gehört ganz zu dem Zeitraum, in den die Ablesung seines Abrechnungsmonats fällt.
-  Mieter und Anschrift kommen aus den Stammdaten, die App speichert keine Abrechnung: den Stand als PDF sichern, bevor die Stammdaten für den neuen Mieter umgeschrieben werden.
-  Beim Einzug eines neuen Mieters trägst du in den Stammdaten den Einzugsmonat unter "Mieter seit" ein: Der Übertrag in der Monatstabelle (Anlage 1) zählt dann erst ab diesem Monat, auch in den Folgejahren.
-- **Inhalt:** Kopf mit Vermieter, Mieter und Zeitraum, Ergebnis (Guthaben, Nachzahlung mit vorangestelltem Minus), Kostenübersicht je Position (Gesamtkosten, Verteilerschlüssel, Anteil, Betrag), bei Bedarf der Strom der Wohnung, Vorauszahlungen, Saldo, Hinweise, eine Anlagenliste und der Anhang mit sieben nummerierten Anlagen: 1 Monatsverlauf und Saldo, 2 Heizung und Warmwasser je Monat, 3 Bezugsgrößen, 4 Personenzahl je Monat, 5 Verteilerschlüssel, 6 Verbrauchsübersicht, 7 Zählerstände.
-  Bei Eigennutzung steht oben "Interne Übersicht, keine Betriebskostenabrechnung", ohne Mieter-Block und Rechtshinweise.
+  Mieter:innen und Anschrift kommen aus den Stammdaten, die App speichert keine Abrechnung: den Stand als PDF sichern, bevor die Stammdaten für die neuen Mieter:innen umgeschrieben werden.
+  Beim Einzug neuer Mieter:innen trägst du in den Stammdaten den Einzugsmonat unter "Mieter:innen seit" ein: Der Übertrag in der Monatstabelle (Anlage 1) zählt dann erst ab diesem Monat, auch in den Folgejahren.
+- **Inhalt:** Kopf mit Vermieter:innen, Mieter:innen und Zeitraum, Ergebnis (Guthaben, Nachzahlung mit vorangestelltem Minus), Kostenübersicht je Position (Gesamtkosten, Verteilerschlüssel, Anteil, Betrag), bei Bedarf der Strom der Wohnung, Vorauszahlungen, Saldo, Hinweise, eine Anlagenliste und der Anhang mit sieben nummerierten Anlagen: 1 Monatsverlauf und Saldo, 2 Heizung und Warmwasser je Monat, 3 Bezugsgrößen, 4 Personenzahl je Monat, 5 Verteilerschlüssel, 6 Verbrauchsübersicht, 7 Zählerstände.
+  Bei Eigennutzung steht oben "Interne Übersicht, keine Betriebskostenabrechnung", ohne Block der Mieter:innen und Rechtshinweise.
 - **Wallbox und PV-Gutschrift:** Der Wohnungsstatus bestimmt, welche Posten in der Abrechnung einer Wohnung stehen:
 
   | Status der Wohnung | Block "Wallbox" (ihr Anteil) | Block "PV-Gutschrift" (nur Wohnung 1, wenn der Schalter der Ablesung an ist) |
@@ -289,17 +289,17 @@ Die Seite `/abrechnung?jahr=2027&wohnung=2` zeigt die Betriebskostenabrechnung e
   Summen, Saldo und Kostenberechnung bleiben unberührt.
 - **Monatsverlauf und Saldo (Anlage 1):** Je Abrechnungsmonat Fixkosten (nur umlagefähig), Verbrauchskosten (Heizung, Wasser/Abwasser, der Strom der Wohnung (bei Vermietung nur mit "Stromverbrauch weiterberechnen"), die Wallbox, wenn sie in der Abrechnung steht), bei Wohnung 1 in Eigennutzung eine Spalte PV-Gutschrift, Nebenkostenabschlag und der kumulierte Saldo, darunter die Summe und der Jahressaldo der Saldoberechnung.
   Oben steht, wenn es etwas zu übertragen gibt, der **Übertrag Vorjahre**: der Saldo (Abschlag minus Kosten) aller Monate vom Startmonat bis zum Monat vor dem Zeitraum.
-  Startmonat ist der spätere von "Mieter seit" (nur bei Vermietung) und dem Beginn der Erfassung.
+  Startmonat ist der spätere von "Mieter:innen seit" (nur bei Vermietung) und dem Beginn der Erfassung.
   Ein eingegrenzter Zeitraum zählt die Monate davor mit.
   Hat einer dieser Monate einen Mangel, entfällt der Übertrag mit dem Hinweis "Übertrag nicht berechenbar" und dem ersten betroffenen Monat.
-  Liegt "Mieter seit" nach dem Beginn des Zeitraums, gibt es keinen Übertrag.
+  Liegt "Mieter:innen seit" nach dem Beginn des Zeitraums, gibt es keinen Übertrag.
   Der Übertrag ist nicht der Dashboard-Saldo, weil das Dashboard auch nicht umlagefähige Positionen zählt.
 - **Zählerstände (Anlage 7):** Eine Zeile je Ablesung mit Ablesedatum, zugeordnetem Abrechnungsmonat und allen Zählerständen, die erste Zeile ist der Ausgangsstand.
   Die Einzelzähler Wallbox Wohnung 1 und 2 stehen direkt hinter dem Zwischenzähler "Wallboxen", ein fehlender Stand als "-".
   Liegt im Zeitraum für einen Einzelzähler kein Stand vor, entfällt seine Spalte (so auch seine Zeile in Anlage 6, Verbrauchsübersicht).
   Fehlende Einzelzähler sind nie ein Mangel.
   Am Bildschirm scrollt die Tabelle waagerecht.
-- **Layout:** Der Kopf zeigt Titel, Objekt, Zeitraum, Vermieter und Mieter und das Ergebnis in einer Box.
+- **Layout:** Der Kopf zeigt Titel, Objekt, Zeitraum, Vermieter:innen und Mieter:innen und das Ergebnis in einer Box.
   Darunter stehen links die Kostenblöcke "Fixkosten" und "Verbrauchsabhängig" (mit dem Strom der Wohnung) und rechts eine Seitenleiste mit der Saldoberechnung und den Hinweisen.
   Der Anhang beginnt auf einer eigenen Seite und läuft über die volle Breite, die Werte der abgerechneten Wohnung stehen dort fett.
   Jede Anlage bricht im Druck nicht um und rückt als Ganzes auf die nächste Seite, wenn sie nicht mehr passt.
@@ -378,36 +378,36 @@ Danach erreichbar unter `http://localhost:8080`, Health-Check unter `/healthz`. 
 |---|---|---|
 | `DB_PATH` | `/data/nebenkosten.db` | Pfad zur SQLite-Datenbankdatei |
 | `LISTEN_ADDR` | `:8080` | Listen-Adresse des HTTP-Servers |
-| `VERMIETER_PASSWORD` | *(leer)* | Optionales Kennwort des Vermieters (ersetzt `LOGIN_PASSWORD`, das nicht mehr gelesen wird). Leer = alles offen, jeder ist Vermieter. Gesetzt: nicht angemeldete Besucher sehen nur eingeschränkte, lesende Ansichten (z. B. nur Wohnung 2 auf dem Dashboard), alle Eingabe-/Änderungsaktionen sind gesperrt - mit Ausnahme einer neuen Ablesung bzw. dem Vervollständigen eines bestehenden Teilstands, siehe oben - "Anmelden" in der Navigation öffnet ein Overlay zur Anmeldung. |
-| `MIETER_PASSWORD` | *(leer)* | Optionales Kennwort des Mieters. Leer = es gibt keinen Mieter-Login. Wirkt nur zusammen mit `VERMIETER_PASSWORD`, ohne dieses wird es ignoriert. Der Mieter sieht, was für ihn freigegeben ist, und bekommt auf Seiten nur für den Vermieter (z. B. Abrechnung) einen Hinweis. |
+| `VERMIETER_PASSWORD` | *(leer)* | Optionales Kennwort der Vermieter:innen (ersetzt `LOGIN_PASSWORD`, das nicht mehr gelesen wird). Leer = alles offen, alle sind Vermieter:innen. Gesetzt: nicht angemeldete Personen sehen nur eingeschränkte, lesende Ansichten (z. B. nur Wohnung 2 auf dem Dashboard), alle Eingabe-/Änderungsaktionen sind gesperrt - mit Ausnahme einer neuen Ablesung bzw. dem Vervollständigen eines bestehenden Teilstands, siehe oben - "Anmelden" in der Navigation öffnet ein Overlay zur Anmeldung. |
+| `MIETER_PASSWORD` | *(leer)* | Optionales Kennwort der Mieter:innen. Leer = es gibt keinen Login für Mieter:innen. Wirkt nur zusammen mit `VERMIETER_PASSWORD`, ohne dieses wird es ignoriert. Mieter:innen sehen, was für sie freigegeben ist, und bekommen auf Seiten nur für Vermieter:innen (z. B. Abrechnung) einen Hinweis. |
 
-> **Update von früheren Versionen:** `LOGIN_PASSWORD` (im Add-on `login_password`) heißt jetzt `VERMIETER_PASSWORD` (`vermieter_password`) und muss nach dem Update neu gesetzt werden. Bis dahin ist die App offen und jeder Besucher ist Vermieter.
+> **Update von früheren Versionen:** `LOGIN_PASSWORD` (im Add-on `login_password`) heißt jetzt `VERMIETER_PASSWORD` (`vermieter_password`) und muss nach dem Update neu gesetzt werden. Bis dahin ist die App offen und alle Besuchenden sind Vermieter:innen.
 
 ### Anmeldung und Rollen
 
-Das Overlay "Anmelden" hat ein Auswahlfeld "Anmelden als" mit **Mieter**, **Vermieter** und **Demo** und ein Kennwortfeld. Die Auswahl bestimmt die Rolle, das Kennwort wird gegen das der gewählten Rolle geprüft. "Mieter" erscheint nur mit gesetztem `MIETER_PASSWORD`, "Vermieter" nur mit gesetztem `VERMIETER_PASSWORD`, "Demo" immer (ohne Kennwort).
-Der Vermieter sieht und darf alles. Wer nicht angemeldet ist und der Mieter sehen die eingeschränkten Ansichten. Öffnet ein angemeldeter Mieter eine Seite nur für den Vermieter, erscheint der Hinweis "Nur für den Vermieter" mit dem Weg zur Anmeldung als Vermieter, ein nicht angemeldeter Besucher landet im Anmelde-Overlay.
+Das Overlay "Anmelden" hat ein Auswahlfeld "Anmelden als" mit **Mieter:in**, **Vermieter:in** und **Demo** und ein Kennwortfeld. Die Auswahl bestimmt die Rolle, das Kennwort wird gegen das der gewählten Rolle geprüft. "Mieter:in" erscheint nur mit gesetztem `MIETER_PASSWORD`, "Vermieter:in" nur mit gesetztem `VERMIETER_PASSWORD`, "Demo" immer (ohne Kennwort).
+Die Vermieter:innen sehen und dürfen alles. Wer nicht angemeldet ist und die Mieter:innen sehen die eingeschränkten Ansichten. Öffnet eine angemeldete Mieter:in eine Seite nur für Vermieter:innen, erscheint der Hinweis "Nur für Vermieter:innen" mit dem Weg zur Anmeldung als Vermieter:in, eine nicht angemeldete Person landet im Anmelde-Overlay.
 Jede Rolle hat ein eigenes Sitzungs-Cookie, signiert mit ihrem Kennwort: Ein geändertes Kennwort meldet nur diese Rolle ab.
 
 #### Berechtigungen
 
-Auf der Seite Stammdaten stellt der Vermieter in der Tabelle **Berechtigungen** je Recht ein Häkchen für **Nicht angemeldet** und **Mieter** ein (die Mieter-Spalte gibt es nur mit Mieter-Login). Der Vermieter darf immer alles.
+Auf der Seite Stammdaten stellen die Vermieter:innen in der Tabelle **Berechtigungen** je Recht ein Häkchen für **Nicht angemeldet** und **Mieter:in** ein (die Spalte Mieter:in gibt es nur mit Login für Mieter:innen). Die Vermieter:innen dürfen immer alles.
 
-| Recht | Nicht angemeldet | Mieter |
+| Recht | Nicht angemeldet | Mieter:in |
 |---|---|---|
 | Wohnung 1, Wohnung 2, Wärmepumpe, Wallboxen, PV-Anlage (Karte und Monatsübersicht) | nur Wohnung 2 und Wärmepumpe | nur Wohnung 2 und Wärmepumpe |
 | Ablesungen ansehen, Ablesung anlegen und Teilstand vervollständigen | an | an |
 | Stammdaten ansehen (ohne Personenbezug), Fixkosten ansehen | an | an |
 | Miete (Block in der Jahreskarte) | aus | aus |
 
-Die Standardwerte entsprechen dem Verhalten vor den Berechtigungen, dazu die Wärmepumpe. Nur der Vermieter darf, ohne Häkchen: Fixkosten erfassen und ändern, Abrechnung, personenbezogene Stammdaten, Stammdaten und Berechtigungen ändern, Ablesungen bearbeiten und löschen, CSV-Export und -Import. Die Seite "Wie wird gerechnet?" sehen alle.
-Ohne ein Recht fehlen Karte, Menüpunkt oder Button. Ruft jemand die Seite trotzdem per Adresse auf, landet ein nicht angemeldeter Besucher im Anmelde-Overlay und ein Mieter auf der Seite "Nicht freigegeben". Sind für jemanden gar keine Karten freigegeben, steht auf dem Dashboard ein Hinweis.
+Die Standardwerte entsprechen dem Verhalten vor den Berechtigungen, dazu die Wärmepumpe. Nur die Vermieter:innen dürfen, ohne Häkchen: Fixkosten erfassen und ändern, Abrechnung, personenbezogene Stammdaten, Stammdaten und Berechtigungen ändern, Ablesungen bearbeiten und löschen, CSV-Export und -Import. Die Seite "Wie wird gerechnet?" sehen alle.
+Ohne ein Recht fehlen Karte, Menüpunkt oder Button. Ruft jemand die Seite trotzdem per Adresse auf, landet eine nicht angemeldete Person im Anmelde-Overlay und eine Mieter:in auf der Seite "Nicht freigegeben". Sind für jemanden gar keine Karten freigegeben, steht auf dem Dashboard ein Hinweis.
 
 ### Demo-Modus
 
 Die Anmeldung als **Demo** (Auswahl "Demo", kein Kennwort) funktioniert immer, unabhängig davon ob Kennwörter gesetzt sind - sie meldet in einer komplett separaten, eigenen Datenbank (`demo.db`, im selben Verzeichnis wie `DB_PATH`) an, gefüllt mit 39 Monaten realitätsnahen Testdaten.
 Änderungen im Demo-Modus (Ablesungen, Fixkosten-Eingaben, Stammdaten) landen ausschließlich in dieser Demo-Datenbank, nie in den echten Daten.
-Jeder erneute Demo-Login setzt die Demo-Datenbank vollständig auf ihren frischen Ausgangszustand zurück - keine Isolation zwischen gleichzeitigen Demo-Besuchern.
+Jeder erneute Demo-Login setzt die Demo-Datenbank vollständig auf ihren frischen Ausgangszustand zurück - keine Isolation zwischen gleichzeitig Besuchenden der Demo.
 
 Ein manueller Reset (z. B. nach einem Bug) ist ohne eigene Route möglich: `demo.db` löschen und den Server neu starten - die Datei entsteht beim nächsten Start automatisch neu, wieder mit einem frischen 39-Monats-Datensatz.
 

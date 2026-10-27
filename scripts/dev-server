@@ -43,6 +43,6 @@ for suffix in "" "-wal" "-shm"; do
 done
 start "$password"
 
-echo "dev-server: http://127.0.0.1:$port/  (Vermieter: $password, Mieter: ${DEV_MIETER_PASSWORD:-mieter})"
+echo "dev-server: http://127.0.0.1:$port/  (Vermieter:in: $password, Mieter:in: ${DEV_MIETER_PASSWORD:-mieter})"
 echo "dev-server: anonymous = private window or a browser without the login cookie, Ctrl-C stops"
 wait "$pid"

@@ -24,3 +24,7 @@ Bisher gab es ein Kennwort (`LOGIN_PASSWORD`, im Add-on `login_password`): Wer e
 - Die Namen der Variablen und Optionen sind von außen sichtbar und nur mit einem weiteren Bruch änderbar, deshalb ein ADR.
 - Der Code unterscheidet nicht mehr "angemeldet oder nicht", sondern die Rolle (Zugriff). Routen, die dem Vermieter vorbehalten sind, antworten dem Mieter mit einer Hinweisseite.
 - Die Kennwörter bleiben einfache gemeinsame Geheimnisse ohne Benutzerkonten, Passwortwechsel und Mehrfaktor. Wer mehr braucht, setzt die App hinter einen Reverse Proxy.
+
+## Nachtrag: Schreibweise
+
+Anzeigetexte, README und GLOSSARY gendern die Rollen mit Doppelpunkt (Mieter:in, Vermieter:in, Mehrzahl Mieter:innen). Code, Umgebungsvariablen (`VERMIETER_PASSWORD`, `MIETER_PASSWORD`) und URL-Parameter behalten die kurze Form, damit bestehende Installationen weiterlaufen. Der Text oben bleibt als damalige Entscheidung unverändert.

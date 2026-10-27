@@ -24,7 +24,7 @@ func TestHandleUpdateStammdaten_UngueltigeEingabe(t *testing.T) {
 		want   string
 	}{
 		{"Wohnungsstatus", func(f url.Values) { f.Set("status_2", "leer") }, "ungültiger Wohnungsstatus für Wohnung 2"},
-		{"Mieter seit", func(f url.Values) { f.Set("mieter_seit_1", "2026-13") }, "ungültiges Datum für \"Mieter seit\" bei Wohnung 1"},
+		{"Mieter seit", func(f url.Values) { f.Set("mieter_seit_1", "2026-13") }, "ungültiges Datum für \"Mieter:innen seit\" bei Wohnung 1"},
 		{"Heizungs-Gewichtung", func(f url.Values) { f.Set("heizung_gewichtung", "0.8") }, "ungültige Heizungs-Gewichtung \"0.8\" (muss 0.7, 0.6 oder 0.5 sein)"},
 		{"Heizungs-Gewichtung keine Zahl", func(f url.Values) { f.Set("heizung_gewichtung", "abc") }, "ungültige Heizungs-Gewichtung \"abc\""},
 	}

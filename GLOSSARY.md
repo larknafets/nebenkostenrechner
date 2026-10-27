@@ -70,25 +70,26 @@ _Avoid_: PV-Anteil, PV-Ertrag (das ist die separate Einspeisevergütung, siehe u
 Die zwei Hausparteien, auf die Kosten verteilt werden. Wohnung 1 trägt als Strom-Kostenposition den Rest des Netzbezugs nach Wohnung 2, Wärmepumpe und Wallboxen (Haushaltsstrom, mal Strompreis der Ablesung, je Ablesung auf den Cent gerundet, nie negativ). Ihr Wallbox-Anteil bleibt in der Wallbox-Position, einen PV-Anteil gibt es für sie nicht (kein Zwischenzähler).
 
 **Rolle**:
-Wer die App benutzt: **Nicht angemeldet**, **Mieter** oder **Vermieter**. Der Vermieter sieht und darf alles, für Nicht angemeldete und Mieter bestimmen Häkchen, was sie sehen und tun dürfen; einiges bleibt fest beim Vermieter.
+Wer die App benutzt: **Nicht angemeldet**, **Mieter:in** oder **Vermieter:in**. Die Vermieter:innen sehen und dürfen alles, für Nicht angemeldete und Mieter:innen bestimmen Häkchen, was sie sehen und tun dürfen; einiges bleibt fest bei den Vermieter:innen.
+Im Code und in Umgebungsvariablen bleibt die kurze Form (`Vermieter`, `VERMIETER_PASSWORD`), Anzeigetexte und Doku gendern mit Doppelpunkt.
 Die Rolle ergibt sich aus der Anmeldung. Eine Rolle ist keine Person: Es gibt kein Benutzerkonto, nur ein gemeinsames Kennwort je Rolle.
 _Avoid_: Anonym (heißt Nicht angemeldet), Benutzer, Konto
 
 **Nicht angemeldet**:
-Die Rolle eines Besuchers ohne Anmeldung (früher "Anonym"). Er sieht nur, was für ihn freigegeben ist, und darf nur, was für ihn freigegeben ist. Fehlt ihm ein Recht, führt die Seite ins Anmelde-Overlay.
+Die Rolle einer Person ohne Anmeldung (früher "Anonym"). Sie sieht nur, was für sie freigegeben ist, und darf nur, was für sie freigegeben ist. Fehlt ein Recht, führt die Seite ins Anmelde-Overlay.
 
 **Recht (Berechtigung)**:
-Etwas, das die Rollen Nicht angemeldet und Mieter nur mit gesetztem Häkchen sehen oder tun dürfen, zum Beispiel "Wohnung 1 ansehen" oder "Ablesung anlegen". Die Häkchen stehen auf der Stammdatenseite, nur der Vermieter ändert sie.
-Was dort kein Häkchen hat (Fixkosten ändern, Abrechnung, Berechtigungen ändern, ...), ist dem Vermieter fest vorbehalten. Der Vermieter hat immer jedes Recht.
+Etwas, das die Rollen Nicht angemeldet und Mieter:in nur mit gesetztem Häkchen sehen oder tun dürfen, zum Beispiel "Wohnung 1 ansehen" oder "Ablesung anlegen". Die Häkchen stehen auf der Stammdatenseite, nur die Vermieter:innen ändern sie.
+Was dort kein Häkchen hat (Fixkosten ändern, Abrechnung, Berechtigungen ändern, ...), ist den Vermieter:innen fest vorbehalten. Die Vermieter:innen haben immer jedes Recht.
 _Avoid_: Freigabe, Rolle (die Rolle ist, wer jemand ist, das Recht, was er darf)
 
-**Vermieter-Login**:
-Die Anmeldung als Vermieter mit dem Vermieter-Kennwort (früher "Login"). Ist kein Vermieter-Kennwort gesetzt, ist jeder angemeldet und die App offen.
+**Login für Vermieter:innen**:
+Die Anmeldung als Vermieter:in mit dem Kennwort der Vermieter:innen (früher "Login"). Ist dieses Kennwort nicht gesetzt, sind alle angemeldet und die App offen.
 Dasselbe Kennwort gilt für das ganze Haus.
 
-**Mieter-Login**:
-Die Anmeldung als Mieter mit dem Mieter-Kennwort, ein Login für das ganze Haus (nicht je Wohnung). Ihn gibt es nur, wenn ein Mieter-Kennwort und ein Vermieter-Kennwort gesetzt sind.
-Nicht zu verwechseln mit den **Mieter-Angaben** (Name, Anschrift je Wohnung, siehe Wohnungsstatus).
+**Login für Mieter:innen**:
+Die Anmeldung als Mieter:in mit dem Kennwort der Mieter:innen, ein Login für das ganze Haus (nicht je Wohnung). Ihn gibt es nur, wenn beide Kennwörter (Mieter:innen und Vermieter:innen) gesetzt sind.
+Nicht zu verwechseln mit den **Angaben zu den Mieter:innen** (Name, Anschrift je Wohnung, siehe Wohnungsstatus).
 
 ## Heizung & Warmwasser
 
@@ -113,13 +114,13 @@ Die ins Netz eingespeiste PV-Überschussmenge (Zähler `strom_einspeisung`) und 
 ## Fixkosten
 
 **Stammdaten** (`/stammdaten`):
-Die Seite für Werte, die sich selten ändern und nicht Teil einer monatlichen Erfassung sind: Wohnungsgröße/Flurstücksgröße je Wohnung, Wohnungsstatus, Mieter- und Vermieter-Angaben, das Umlagefähig-Flag je Kostenposition und die Flags "Stromverbrauch weiterberechnen" und "Wallbox weiterberechnen" (aktuelle Einzelwerte).
-Mieter-/Bewohnername, Zustellanschrift, Vermieter, Objektanschrift und IBAN sind personenbezogen: sie sind nur für angemeldete Nutzer sichtbar und änderbar (ohne gesetztes Vermieter-Kennwort ist jeder angemeldet).
+Die Seite für Werte, die sich selten ändern und nicht Teil einer monatlichen Erfassung sind: Wohnungsgröße/Flurstücksgröße je Wohnung, Wohnungsstatus, Angaben zu Mieter:innen und Vermieter:innen, das Umlagefähig-Flag je Kostenposition und die Flags "Stromverbrauch weiterberechnen" und "Wallbox weiterberechnen" (aktuelle Einzelwerte).
+Name der Mieter:innen bzw. Bewohner:innen, Zustellanschrift, Vermieter:innen, Objektanschrift und IBAN sind personenbezogen: sie sind nur für angemeldete Personen sichtbar und änderbar (ohne gesetztes Kennwort der Vermieter:innen sind alle angemeldet).
 Änderungen wirken sofort auf alle Monate, nicht eingefroren wie ein Ablesungs- oder Fixkosten-Eingabe-Wert.
 
 **Wohnungsstatus**:
 Je Wohnung "Vermietung" oder "Eigennutzung" (Stammdaten, Startwert Wohnung 1 Eigennutzung, Wohnung 2 Vermietung).
-Steuert die Jahresabrechnung (Mieter-Block, Rechtshinweise, Pflichtfelder und welche Posten darin stehen) und auf dem Dashboard nur den Wallbox-Block der Jahreskarte (bei Vermietung und ausgeschaltetem Flag "Wallbox weiterberechnen" entfällt er), nie die Summen, den fortlaufenden Saldo, die Kostenberechnung oder die Heizungs-Gewichtung.
+Steuert die Jahresabrechnung (Block der Mieter:innen, Rechtshinweise, Pflichtfelder und welche Posten darin stehen) und auf dem Dashboard nur den Wallbox-Block der Jahreskarte (bei Vermietung und ausgeschaltetem Flag "Wallbox weiterberechnen" entfällt er), nie die Summen, den fortlaufenden Saldo, die Kostenberechnung oder die Heizungs-Gewichtung.
 Welche Posten in der Abrechnung einer Wohnung stehen:
 
 | Status der Wohnung | Block "Strom" (ihr Haushaltsstrom) | Block "Wallbox" (ihr Anteil) | Block "PV-Gutschrift" (nur Wohnung 1, wenn der Schalter der Ablesung an ist) |
@@ -130,10 +131,10 @@ Welche Posten in der Abrechnung einer Wohnung stehen:
 Sind beide Wohnungen vermietet und die Flags sind aus, stehen Strom und Wallbox in keiner Abrechnung und die PV-Gutschrift nirgends. Die PV-Gutschrift folgt ihrer Zuordnung zu Wohnung 1, auch wenn Wohnung 1 vermietet und Wohnung 2 Eigennutzung ist. Kein Personenbezug, deshalb auch ohne Anmeldung sichtbar (nicht änderbar).
 _Avoid_: Vermietungsstatus, Nutzungsart
 
-**Mieter seit**:
-Ein Monat-Feld je Wohnung in den Stammdaten: der Monat, in dem der aktuelle Mieter eingezogen ist.
+**Mieter:innen seit**:
+Ein Monat-Feld je Wohnung in den Stammdaten: der Monat, in dem die aktuellen Mieter:innen eingezogen sind.
 Nur bei Wohnungsstatus "Vermietung" sichtbar und wirksam, leer heißt "ab Erfassungsbeginn".
-Ein einzelner aktueller Wert wie der Mietername, nicht historisiert; als Mieter-Angabe personenbezogen und nur für angemeldete Nutzer sichtbar und änderbar.
+Ein einzelner aktueller Wert wie der Mietername, nicht historisiert; als Angabe zu den Mieter:innen personenbezogen und nur für angemeldete Personen sichtbar und änderbar.
 Bestimmt den Startmonat für den **Übertrag Vorjahre** der Monatstabelle in der Jahresabrechnung.
 Wer die Abrechnung des Vormieters nach dem Eintragen noch braucht, sichert sie vorher als PDF.
 _Avoid_: Mietbeginn, Einzugsdatum (das Feld hat nur den Monat)
@@ -142,7 +143,7 @@ _Avoid_: Mietbeginn, Einzugsdatum (das Feld hat nur den Monat)
 Ein Ja/Nein-Flag je Kostenposition in den Stammdaten: Nur umlagefähige Positionen erscheinen in der Jahresabrechnung.
 Ein einzelner aktueller Wert ohne Jahresbezug, wirkt rückwirkend auf alle Jahre.
 Dashboard, Monatsverlauf und Jahreskarten ignorieren das Flag und zeigen weiterhin alle Positionen.
-Es ersetzt nicht die Berechnungslogik: Eine teilweise umlagefähige Position teilt der Nutzer über die Logik der Fixkosten-Eingabe auf.
+Es ersetzt nicht die Berechnungslogik: Eine teilweise umlagefähige Position teilen die Vermieter:innen über die Logik der Fixkosten-Eingabe auf.
 Keine Abweichung von ADR 0001, der nur einen jahresweisen Stammdaten-Block für Logik/Typ/Wert verworfen hat.
 _Avoid_: umlegbar, abrechenbar (das ist die Vollständigkeit eines Abrechnungsjahres)
 
@@ -191,15 +192,15 @@ Das Formularfeld und die Anzeige (Jahressumme in der Jahreskarte) heißen "Miete
 Wie der Abschlag nur für Wohnungen mit Status Vermietung erfasst (Pflicht, 0 erlaubt, vorbelegt aus der letzten Eingabe), bei Eigennutzung gibt es kein Feld.
 Ein früher gespeicherter Abschlag einer inzwischen eigengenutzten Wohnung zählt weiter und bleibt beim Korrigieren unverändert.
 Im CSV immer `abschlag_1`, `abschlag_2`, `miete_1`, `miete_2`, eine leere Zelle heißt nicht erfasst, der Import übernimmt Werte unabhängig vom Status.
-Sichtbarkeit: Die Detailseite der Fixkosten-Eingabe zeigt die Miete je vermieteter Wohnung ohne Berechtigungsprüfung (auch ohne Login, wie den Abschlag; bewusste Entscheidung des Eigentümers), die Mieteinnahmen der Jahreskarte nur für angemeldete Nutzer, die Liste der Eingaben und der Monatsverlauf zeigen keine Miete.
+Sichtbarkeit: Die Detailseite der Fixkosten-Eingabe zeigt die Miete je vermieteter Wohnung ohne Berechtigungsprüfung (auch ohne Login, wie den Abschlag; bewusste Entscheidung des Eigentums), die Mieteinnahmen der Jahreskarte nur für angemeldete Personen, die Liste der Eingaben und der Monatsverlauf zeigen keine Miete.
 _Avoid_: Kaltmiete, Mietzahlung
 
 **Abrechnungszeitraum**:
 Der Zeitraum einer Jahresabrechnung: das Kalenderjahr, im ersten Erfassungsjahr ab dem Datum der ersten Ablesung (dem Ausgangsstand, der selbst keinen Verbrauch liefert) bis 31.12. Fixkosten-Eingaben und Nebenkostenabschläge sind dort erst ab dem Folgemonat des Ausgangsstands nötig. Der Verbrauch jeder späteren Ablesung ist die Differenz zur vorherigen, deshalb ist er im Zeitraum immer berechenbar.
 
-Auf der Abrechnungsseite lässt sich der Zeitraum per Häkchen auf volle Monate eines Jahres eingrenzen (Mieterwechsel unterjährig, Von-/Bis-Monat); der Standard bleibt das Kalenderjahr.
+Auf der Abrechnungsseite lässt sich der Zeitraum per Häkchen auf volle Monate eines Jahres eingrenzen (Wechsel der Mietpartei unterjährig, Von-/Bis-Monat); der Standard bleibt das Kalenderjahr.
 Ein Monat gehört ganz in den Zeitraum, in den die Ablesung seines Abrechnungsmonats fällt, auch bei einem Wechsel mitten im Monat.
-Mieter und Anschrift kommen immer aus den aktuellen Stammdaten, die App speichert keine Abrechnung: den Stand vor dem Umschreiben als PDF sichern.
+Mieter:innen und Anschrift kommen immer aus den aktuellen Stammdaten, die App speichert keine Abrechnung: den Stand vor dem Umschreiben als PDF sichern.
 Die Frist nach § 556 Abs. 3 BGB endet am Ende des zwölften Monats nach dem Zeitraumende.
 Ein Zeitraum liegt immer innerhalb eines Kalenderjahres.
 
@@ -216,7 +217,7 @@ Eine Position, für die die abgerechnete Wohnung nichts zahlt (z. B. voll der an
 
 **Übertrag Vorjahre**:
 Der Saldo (Nebenkostenabschlag minus Kosten nach Abrechnungs-Logik) aller Monate vom Startmonat bis zum Monat vor dem Zeitraum der Jahresabrechnung, Anfangswert des kumulierten Saldos der Monatstabelle.
-Startmonat ist der spätere von "Mieter seit" (nur bei Vermietung) und dem Monat der ersten Ablesung.
+Startmonat ist der spätere von "Mieter:innen seit" (nur bei Vermietung) und dem Monat der ersten Ablesung.
 Hat ein Monat dieses Bereichs einen Mangel, ist er nicht berechenbar und entfällt mit Hinweis.
 Nicht der Dashboard-Saldo: Der zählt auch nicht umlagefähige Positionen.
 Im Code `abrechnung.Berechne` (`internal/abrechnung/berechnung.go`): Übertrag und Jahresabrechnung falten ihre Monate gleich (`calc.Monatswerte`) und summieren mit `calc.Verlauf`, der Übertrag ist dessen Startwert.

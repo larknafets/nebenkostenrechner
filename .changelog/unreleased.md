@@ -33,6 +33,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Verbesserungen
 
+- Geschlechtergerechte Sprache: Rollen und Felder heißen jetzt Mieter:in/Mieter:innen und Vermieter:in/Vermieter:innen (Anmeldung, Stammdaten, Berechtigungen, Jahresabrechnung). Die Kennwort-Variablen `VERMIETER_PASSWORD` und `MIETER_PASSWORD` bleiben unverändert.
+
 - Dashboard: Die Badges für Fläche, Flurstück und Personen bei den Jahressummen sind kleiner und passen häufiger in eine Zeile.
 
 ## Fehlerkorrekturen

@@ -307,9 +307,9 @@ func (z *Zugang) Gate(a Anspruch, next http.HandlerFunc) http.HandlerFunc {
 		}
 		if zg.Rolle == store.RolleMieter {
 			if a.art == anspruchBraucht {
-				z.keineBerechtigungSeite(w, r, wantedPath, "Nicht freigegeben", "Der Vermieter hat diese Seite für dich nicht freigegeben.")
+				z.keineBerechtigungSeite(w, r, wantedPath, "Nicht freigegeben", "Die Vermieter:innen haben diese Seite für dich nicht freigegeben.")
 			} else {
-				z.keineBerechtigungSeite(w, r, wantedPath, "Nur für den Vermieter", "Diese Seite ist dem Vermieter vorbehalten. Als Mieter hast du hier keinen Zugriff.")
+				z.keineBerechtigungSeite(w, r, wantedPath, "Nur für Vermieter:innen", "Diese Seite ist den Vermieter:innen vorbehalten. Als Mieter:in hast du hier keinen Zugriff.")
 			}
 			return
 		}

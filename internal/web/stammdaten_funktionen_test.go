@@ -205,7 +205,7 @@ func TestStammdatenFehler(t *testing.T) {
 	}{
 		{"Formularfehler", formFehler("ungültiger Wert für %s bei Wohnung %s", "Wohnungsgröße", "1"), "", 400, "ungültiger Wert für Wohnungsgröße bei Wohnung 1"},
 		{"Wohnungsstatus", &store.InvalidStatusError{ApartmentID: 2, Status: "leer"}, "0.7", 400, "ungültiger Wohnungsstatus für Wohnung 2"},
-		{"Mieter seit", &store.InvalidMieterSeitError{ApartmentID: 1, MieterSeit: "x"}, "0.7", 400, "ungültiges Datum für \"Mieter seit\" bei Wohnung 1"},
+		{"Mieter seit", &store.InvalidMieterSeitError{ApartmentID: 1, MieterSeit: "x"}, "0.7", 400, "ungültiges Datum für \"Mieter:innen seit\" bei Wohnung 1"},
 		{"Gewichtung", &store.InvalidHeizungGewichtungError{Gewichtung: 0.8}, "0.8", 400, "ungültige Heizungs-Gewichtung \"0.8\" (muss 0.7, 0.6 oder 0.5 sein)"},
 		{"Fehler im Store umhüllt", errors.Join(errors.New("x"), &store.InvalidStatusError{ApartmentID: 3}), "", 400, "ungültiger Wohnungsstatus für Wohnung 3"},
 		{"anderer Fehler", errors.New("disk full"), "", 500, "save: disk full"},
