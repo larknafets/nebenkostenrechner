@@ -20,9 +20,9 @@
     </div>
     <div class="stat-value">{{deEUR .GesamtEUR}}&nbsp;€</div>
     <div class="stat-bar-track">
-      {{range .Segmente}}
+      {{range .Segmente}}{{if ne .Farbe "fix"}}
       <div class="stat-bar-seg cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%"></div>
-      {{end}}
+      {{end}}{{end}}
     </div>
     <div class="muted stat-kategorien">
       {{range .Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{deEUR .Kosten}}&nbsp;€</span>{{end}}
