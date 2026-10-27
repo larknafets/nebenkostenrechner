@@ -109,8 +109,8 @@ func orDefaults(b store.Berechtigungen) store.Berechtigungen {
 // sichtbar is the visibility table (#293, #311): whether b may see e at all.
 // It is the one place that table lives; both entry points below ask it. The
 // Vermieter sees everything; the others see what the saved Berechtigungen
-// (ber, nil for the defaults) grant. The Wallboxen card exists for nobody unless a Wohnung carries the
-// Wallbox in its Abrechnung (#297).
+// (ber, nil for the defaults) grant. The Wallboxen card exists for nobody
+// unless a Wohnung carries the Wallbox in its Abrechnung (#297).
 func (b betrachter) sichtbar(e entitaet, dd dashboardData, ber store.Berechtigungen) bool {
 	if e.Art == entitaetWallbox && !dd.wallboxInAbrechnung() {
 		return false

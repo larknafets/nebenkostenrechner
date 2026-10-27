@@ -16,7 +16,7 @@ Bisher gab es ein Kennwort (`LOGIN_PASSWORD`, im Add-on `login_password`): Wer e
 - Das Anmeldeformular hat ein Auswahlfeld (Mieter, Vermieter, Demo) und ein Kennwortfeld. Die Auswahl bestimmt die Rolle, Demo braucht kein Kennwort.
 - Je Rolle ein eigenes Sitzungs-Cookie, signiert mit dem Kennwort der Rolle. Ein geändertes Kennwort meldet nur diese Rolle ab.
 - Ein Mieter-Kennwort ohne Vermieter-Kennwort wird ignoriert (Log-Warnung). Ohne Vermieter-Kennwort bleibt die App offen und jeder ist Vermieter, wie bisher.
-- Die Berechtigungsmatrix (welche Rechte einstellbar oder fest sind, Defaults) steht in der Entscheidung zum Ticket "Berechtigungsmatrix festlegen", nicht hier.
+- Die Berechtigungsmatrix (welche Rechte einstellbar oder fest sind, Defaults) steht in der Entscheidung zum Ticket "Berechtigungsmatrix festlegen" (#307), nicht hier.
 
 ## Konsequenzen
 

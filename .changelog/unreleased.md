@@ -31,25 +31,18 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
-- Stammdaten: In der neuen Tabelle "Berechtigungen" stellt der Vermieter je Recht Häkchen für Nicht angemeldet und Mieter ein (Standard wie bisher, dazu die Wärmepumpe). (#310)
+- Stammdaten: In der neuen Tabelle "Berechtigungen" stellt der Vermieter je Recht Häkchen für Nicht angemeldet und Mieter ein (Standard wie bisher, dazu die Wärmepumpe) (#310)
 - Die Berechtigungen wirken: Dashboard-Karten und Monatsübersichten, Ablesungen, Fixkosten und Stammdaten sowie die Menüpunkte und Buttons zum Anlegen folgen den Häkchen. Ohne Recht landet ein nicht angemeldeter Besucher im Anmelde-Overlay, ein Mieter auf der Seite "Nicht freigegeben" (#311)
-
 - Anmeldung mit zwei Rollen: Neben dem Vermieter gibt es einen Mieter-Login mit eigenem Kennwort, das Anmeldeformular hat ein Auswahlfeld (Mieter, Vermieter, Demo), die Demo braucht kein Kennwort mehr (#309)
-
 - Dashboard: Die Wärmepumpe hat einen eigenen Monatsverlauf wie die Wallboxen, auch ohne Anmeldung sichtbar (#305)
-
 - Dashboard: Die Jahreskarte jeder Wohnung zeigt die Wallbox in einem eigenen Block mit Stromkosten in EUR und kWh, statt im Hauptbalken (#304)
-
 - Dashboard: neue Jahreskarte "Wärmepumpe" mit Stromkosten und PV-Anteil, auch ohne Anmeldung sichtbar (#296)
 
 ## Verbesserungen
 
 - Dashboard: Die Zahlen der Jahreskarte stehen in zwei Zeilen (Strom, Heizung/Ww, Wasser, darunter Fixkosten und PV), der Wallbox-Block zeigt das Wallbox-Symbol
-
 - Dashboard: Die Monatsübersicht wählst du jetzt in einem Dropdown statt über Buttons, bei nur einer Auswahl entfällt es (#306)
-
 - Dashboard: Der Balken der Jahreskarte zeigt nur noch den Verbrauch, die Fixkosten stehen weiter als Zeile und im Gesamtbetrag (#302)
-
 - Dashboard: Die Karte "Wallboxen" erscheint nur, wenn eine Wohnung die Wallbox in der Abrechnung trägt (Eigennutzung oder weiterberechnet) (#297)
 
 ## Fehlerkorrekturen
@@ -57,5 +50,4 @@ Keep every section, an empty one included. Do not change the headings.
 ## Wartung
 
 - **Kennwort neu setzen:** `LOGIN_PASSWORD` (Home Assistant: `login_password`) heißt jetzt `VERMIETER_PASSWORD` (`vermieter_password`) und wird nicht mehr gelesen. Nach dem Update das Kennwort neu setzen, sonst ist die App offen und jeder Besucher ist Vermieter. Neu ist das optionale `MIETER_PASSWORD` (`mieter_password`) (#309)
-
 - Die Widget-Routen und der zweite Port (`WIDGET_LISTEN_ADDR`, Host-Port 8081 beim Release, 8082 beim Nightly) entfallen, Lovelace-Karten mit Webpage-Card auf diese Routen funktionieren nicht mehr (#301)

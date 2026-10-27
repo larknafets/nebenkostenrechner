@@ -87,7 +87,7 @@ Die Anmeldung als Vermieter mit dem Vermieter-Kennwort (früher "Login"). Ist ke
 Dasselbe Kennwort gilt für das ganze Haus.
 
 **Mieter-Login**:
-Die Anmeldung als Mieter mit dem Mieter-Kennwort, ein Login für das ganze Haus (nicht je Wohnung). Er gibt es nur, wenn ein Mieter-Kennwort und ein Vermieter-Kennwort gesetzt sind.
+Die Anmeldung als Mieter mit dem Mieter-Kennwort, ein Login für das ganze Haus (nicht je Wohnung). Ihn gibt es nur, wenn ein Mieter-Kennwort und ein Vermieter-Kennwort gesetzt sind.
 Nicht zu verwechseln mit den **Mieter-Angaben** (Name, Anschrift je Wohnung, siehe Wohnungsstatus).
 
 ## Heizung & Warmwasser
