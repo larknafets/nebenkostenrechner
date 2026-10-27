@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 	"sync"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
@@ -315,46 +314,5 @@ func (z *Zugang) Gate(a Anspruch, next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		redirectToLoginOverlay(w, r, wantedPath, "", false)
-	}
-}
-
-// keineBerechtigungSeite answers a logged-in Mieter who asked for a page
-// reserved for the Vermieter or not granted to him: 403 with a link that opens
-// the login as Vermieter and leads back to the wanted page.
-func (z *Zugang) keineBerechtigungSeite(w http.ResponseWriter, r *http.Request, wanted, titel, text string) {
-	if wanted == "" || !strings.HasPrefix(wanted, "/") || strings.HasPrefix(wanted, "//") {
-		wanted = "/dashboard"
-	}
-	data := struct {
-		navData
-		Aktuell string
-		Next    string
-		Titel   string
-		Text    string
-	}{navData: z.NavData(r), Next: wanted, Titel: titel, Text: text}
-	w.WriteHeader(http.StatusForbidden)
-	if err := keineBerechtigungTemplate.ExecuteTemplate(w, "layout", data); err != nil {
-		log.Printf("keine berechtigung: %v", err)
-	}
-}
-
-// NavData builds navData for the current request - the single place the
-// Zugriff, requestBase and the login entries are put together.
-//
-// The login entry shows for everybody but the Vermieter session and the demo
-// session, so a Mieter can switch to the Vermieter and the (otherwise open)
-// app keeps a visible path to the demo login (Issue #122). The logout entry
-// needs a real session to end: with no Vermieter password everyone counts as
-// Vermieter, but there is no session to log out of.
-func (z *Zugang) NavData(r *http.Request) navData {
-	zg := z.Zugriff(r)
-	return navData{
-		Zugriff:         zg,
-		Base:            requestBase(r),
-		IsDemoSession:   zg.Demo,
-		ShowLoginEntry:  !zg.HatSitzung || !zg.Vermieter,
-		ShowLogoutEntry: zg.HatSitzung,
-		LoginOptionen:   z.login.loginOptionen(),
-		HatMieter:       z.login.mieterAktiv(),
 	}
 }
