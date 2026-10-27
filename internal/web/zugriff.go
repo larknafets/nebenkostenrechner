@@ -75,6 +75,7 @@ const (
 	anspruchNurVermieter anspruchArt = iota
 	anspruchBraucht
 	anspruchOffen
+	anspruchAnlegenOderVermieter
 )
 
 // Anspruch is what a route demands of the role: a Recht, the Vermieter or
@@ -90,6 +91,14 @@ var NurVermieter = Anspruch{art: anspruchNurVermieter}
 
 // Offen demands nothing, everybody passes.
 var Offen = Anspruch{art: anspruchOffen}
+
+// AnlegenOderVermieter is the Anspruch of the routes that correct a reading
+// (Teilstand, Ticket #130): it depends on the reading the request names. A
+// Teilstand needs the Recht to create a reading (Braucht(RechtAblesungAnlegen)),
+// a complete reading is for the Vermieter (NurVermieter). Gate resolves it per
+// request (teilstandAnspruch); Erfuellt cannot, it has no request, and denies
+// everybody but the Vermieter.
+var AnlegenOderVermieter = Anspruch{art: anspruchAnlegenOderVermieter}
 
 // Braucht demands the Recht r (the Vermieter always has it).
 func Braucht(r store.Recht) Anspruch { return Anspruch{art: anspruchBraucht, recht: r} }
@@ -266,17 +275,20 @@ func (z *Zugang) Recht(r store.Recht, next http.HandlerFunc) http.HandlerFunc {
 // along as "next" and is where a successful login lands (see
 // loginRedirectTarget).
 func (z *Zugang) Gate(a Anspruch, next http.HandlerFunc) http.HandlerFunc {
-	return z.GateAus(func(http.ResponseWriter, *http.Request) (Anspruch, bool) { return a, true }, next)
-}
-
-// GateAus is Gate for a route whose Anspruch depends on the request (the
-// Teilstand of an Ablesung). anspruch answers with the Anspruch, or with false
-// after it has written the response itself (404, 400).
-func (z *Zugang) GateAus(anspruch func(w http.ResponseWriter, r *http.Request) (Anspruch, bool), next http.HandlerFunc) http.HandlerFunc {
+	if a.art == anspruchOffen {
+		// Nothing to check, so no Berechtigungen are loaded either.
+		return next
+	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		a, ok := anspruch(w, r)
-		if !ok {
-			return
+		a := a // resolved per request, never written back to the shared value
+		if a.art == anspruchAnlegenOderVermieter {
+			// The id is looked up first: a missing reading answers 404 and an
+			// invalid id 400 before any right is checked.
+			resolved, ok := teilstandAnspruch(w, r)
+			if !ok {
+				return
+			}
+			a = resolved
 		}
 		zg := z.Zugriff(r)
 		if zg.Erfuellt(a) {

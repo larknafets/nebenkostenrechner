@@ -198,7 +198,7 @@ func TestAbrechnungSeite_Navigation(t *testing.T) {
 }
 
 // A visitor who is not logged in gets no Abrechnung (it carries names,
-// addresses and the IBAN) - TestRouteMatrix_RequireLoginCoverage checks the
+// addresses and the IBAN) - TestRouten_Verdrahtung checks the
 // redirect, this checks that no data leaks with it.
 func TestAbrechnungSeite_NichtAngemeldetKeineDaten(t *testing.T) {
 	t.Setenv("VERMIETER_PASSWORD", "geheim")
