@@ -315,10 +315,15 @@ func handleUpdateStammdaten() http.HandlerFunc {
 			http.Error(w, "kostenpositionen: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		gespeichert, err := store.GetBerechtigungen(db)
-		if err != nil {
-			http.Error(w, "berechtigungen: "+err.Error(), http.StatusInternalServerError)
-			return
+		// Only a form that carries the Berechtigungen table needs the saved
+		// ones; every other form leaves them alone (nil).
+		var gespeichert store.Berechtigungen
+		if len(r.Form["berechtigung_rolle"]) > 0 {
+			gespeichert, err = store.GetBerechtigungen(db)
+			if err != nil {
+				http.Error(w, "berechtigungen: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 
 		save, err := stammdatenAusFormular(r.Form, apartments, kostenpositionen, gespeichert)
