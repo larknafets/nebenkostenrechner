@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sort"
+	"strconv"
+	"time"
 )
 
 // Verbrauch is the consumption of one meter: its reading in current minus
@@ -61,6 +64,35 @@ type PeriodInput struct {
 	// it, rather than requiring every MeterKeys/apartment id to be present.
 	Readings map[string]float64 // meter key -> Zählerstand
 	Personen map[int64]float64  // apartment id -> Personenzahl
+}
+
+// Validate checks the field rules of one reading, pure and without the
+// database: the reading date (format YYYY-MM-DD), the Abrechnungsmonat (same
+// format, empty is allowed: Teilstand, #128) and the Personenzahl of every
+// apartment, by ascending apartment id. It returns the first violation as
+// *EingabeFehler, in exactly this order. Meter values and prices are not
+// part of it (negative or outlying meter values are warnings), and neither
+// are the Ablesungsreihe rules (reihe.go), which need the database.
+func (in PeriodInput) Validate() error {
+	if _, err := time.Parse("2006-01-02", in.ReadingDate); err != nil {
+		return &EingabeFehler{Feld: FeldReadingDate, Wert: in.ReadingDate}
+	}
+	if in.Monat != "" {
+		if _, err := time.Parse("2006-01-02", in.Monat); err != nil {
+			return &EingabeFehler{Feld: FeldMonat, Wert: in.Monat}
+		}
+	}
+	ids := make([]int64, 0, len(in.Personen))
+	for id := range in.Personen {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	for _, id := range ids {
+		if err := ValidierePersonenzahl(in.Personen[id]); err != nil {
+			return &EingabeFehler{Feld: FeldPersonen, ID: id, Wert: strconv.FormatFloat(in.Personen[id], 'f', -1, 64), Err: err}
+		}
+	}
+	return nil
 }
 
 // Float64 returns a pointer to v - a constructor for PeriodInput/
@@ -128,6 +160,9 @@ func insertPeriodTx(tx *sql.Tx, in PeriodInput) (periodID int64, err error) {
 // transaction. The series rules (see checkAppend) are enforced here, not
 // just by the web wizard, so any caller gets the same protection.
 func CreatePeriod(db *sql.DB, in PeriodInput) (periodID int64, err error) {
+	if err := in.Validate(); err != nil {
+		return 0, err
+	}
 	err = inTx(db, func(tx *sql.Tx) error {
 		if err := checkAppend(tx, in); err != nil {
 			return err
@@ -145,14 +180,17 @@ func CreatePeriod(db *sql.DB, in PeriodInput) (periodID int64, err error) {
 // or nothing, for the CSV bulk import (Ticket #54): a failure on any input
 // rolls back every period from this call, not just the failing one. The
 // inputs must be in reading-date order; each one passes the same series
-// rules as CreatePeriod (checkAppend), and a violation names the reading
-// date of the offending input.
+// rules as CreatePeriod (Validate, then checkAppend), and a violation names
+// the position and the reading date of the offending input (ImportRowError).
 func ImportPeriods(db *sql.DB, inputs []PeriodInput) (ids []int64, err error) {
 	err = inTx(db, func(tx *sql.Tx) error {
 		ids = make([]int64, 0, len(inputs))
-		for _, in := range inputs {
+		for i, in := range inputs {
+			if err := in.Validate(); err != nil {
+				return &ImportRowError{Index: i, ReadingDate: in.ReadingDate, Err: err}
+			}
 			if err := checkAppend(tx, in); err != nil {
-				return &ImportRowError{ReadingDate: in.ReadingDate, Err: err}
+				return &ImportRowError{Index: i, ReadingDate: in.ReadingDate, Err: err}
 			}
 			id, err := insertPeriodTx(tx, in)
 			if err != nil {
@@ -177,6 +215,9 @@ func ImportPeriods(db *sql.DB, inputs []PeriodInput) (ids []int64, err error) {
 // invariant (see checkReadingOrder) is enforced here, not just by the web
 // wizard, so any caller gets the same protection.
 func UpdatePeriod(db *sql.DB, periodID int64, in PeriodInput) error {
+	if err := in.Validate(); err != nil {
+		return err
+	}
 	if err := checkReadingOrder(db, periodID, in); err != nil {
 		return err
 	}
