@@ -186,7 +186,7 @@ func TestMieter_SichtUndNavigation(t *testing.T) {
 	if !strings.Contains(body, `id="logout-link"`) || !strings.Contains(body, `id="login-open"`) {
 		t.Error("Mieter sieht nicht Abmelden und Anmelden (als Vermieter)")
 	}
-	if strings.Contains(body, `>Abrechnung</a>`) || strings.Contains(body, "Mieteinnahmen") || strings.Contains(body, "<strong>Wohnung 1</strong>") {
+	if strings.Contains(body, `>Abrechnung</a>`) || strings.Contains(body, labelMiete) || strings.Contains(body, "<strong>Wohnung 1</strong>") {
 		t.Error("Mieter sieht Vermieter-Inhalte")
 	}
 }

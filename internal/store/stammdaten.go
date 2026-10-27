@@ -203,6 +203,9 @@ type StammdatenSave struct {
 	// apartments are touched.
 	Wohnungen map[int64]WohnungDetails
 	Haus      HausDetails
+	// Berechtigungen are the rights of Nicht angemeldet and Mieter; nil leaves
+	// them untouched.
+	Berechtigungen Berechtigungen
 }
 
 // InvalidStatusError is returned by SaveStammdaten for a Wohnungsstatus that
@@ -298,6 +301,9 @@ func SaveStammdaten(db *sql.DB, in StammdatenSave) error {
 			in.Haus.VermieterName, in.Haus.VermieterAnschrift, in.Haus.ObjektAnschrift, in.Haus.IBAN, in.Haus.Kontoinhaber,
 		); err != nil {
 			return fmt.Errorf("update haus details: %w", err)
+		}
+		if in.Berechtigungen != nil {
+			return saveBerechtigungenTx(tx, in.Berechtigungen)
 		}
 		return nil
 	})

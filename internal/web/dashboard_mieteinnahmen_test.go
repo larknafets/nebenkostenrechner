@@ -10,6 +10,9 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
+// labelMiete is the heading of the Miete block on a Jahreskarte.
+const labelMiete = `<div class="label">Miete</div>`
+
 // Tests for #278: the Mieteinnahmen block on the Jahreskarte of a rented
 // apartment, through the HTTP seam.
 
@@ -41,7 +44,7 @@ func TestDashboard_MieteinnahmenSummeDesAnzeigejahres(t *testing.T) {
 	mieteEingabe(t, db, "2026-02-01", map[int64]float64{2: 700.20})
 
 	body := dashboardHTML(t, db)
-	if n := strings.Count(body, "Mieteinnahmen"); n != 1 {
+	if n := strings.Count(body, labelMiete); n != 1 {
 		t.Fatalf("Block Mieteinnahmen %d mal, want 1 (nur die vermietete Wohnung 2)", n)
 	}
 	if !strings.Contains(body, "1.400,30") {
@@ -56,14 +59,14 @@ func TestDashboard_MieteinnahmenAuchMitNull(t *testing.T) {
 	db := openTestDB(t)
 	mieteEingabe(t, db, "2026-01-01", map[int64]float64{2: 0})
 	body := dashboardHTML(t, db)
-	i := strings.Index(body, "Mieteinnahmen")
+	i := strings.Index(body, labelMiete)
 	if i < 0 || !strings.Contains(body[i:i+200], "0,00") {
 		t.Error("Mieteinnahmen mit 0,00 fehlen")
 	}
 	// No Miete recorded at all: the block is still there.
 	db = openTestDB(t)
 	mieteEingabe(t, db, "2026-01-01", nil)
-	if !strings.Contains(dashboardHTML(t, db), "Mieteinnahmen") {
+	if !strings.Contains(dashboardHTML(t, db), labelMiete) {
 		t.Error("ohne erfasste Miete fehlt der Block")
 	}
 }
@@ -73,7 +76,7 @@ func TestDashboard_MieteinnahmenNieBeiEigennutzung(t *testing.T) {
 	mieteEingabe(t, db, "2026-01-01", map[int64]float64{1: 300, 2: 700})
 	setStatus(t, db, 2, store.StatusEigennutzung)
 	body := dashboardHTML(t, db)
-	if strings.Contains(body, "Mieteinnahmen") || strings.Contains(body, "700,00") {
+	if strings.Contains(body, labelMiete) || strings.Contains(body, "700,00") {
 		t.Error("Mieteinnahmen bei Eigennutzung sichtbar")
 	}
 }
@@ -86,7 +89,7 @@ func TestDashboard_MieteinnahmenNurMitLogin(t *testing.T) {
 	if !strings.Contains(anon, "<strong>Wohnung 2</strong>") {
 		t.Fatal("Wohnung 2 fehlt für Anonyme, Test prüft nichts")
 	}
-	if strings.Contains(anon, "Mieteinnahmen") || strings.Contains(anon, "712,34") {
+	if strings.Contains(anon, labelMiete) || strings.Contains(anon, "712,34") {
 		t.Error("Mieteinnahmen im HTML ohne Login")
 	}
 	// Without LOGIN_PASSWORD everyone is logged in.

@@ -77,6 +77,11 @@ _Avoid_: Anonym (heißt Nicht angemeldet), Benutzer, Konto
 **Nicht angemeldet**:
 Die Rolle eines Besuchers ohne Anmeldung (früher "Anonym"). Er sieht nur, was für ihn freigegeben ist, und darf nur, was für ihn freigegeben ist.
 
+**Recht (Berechtigung)**:
+Etwas, das die Rollen Nicht angemeldet und Mieter nur mit gesetztem Häkchen sehen oder tun dürfen, zum Beispiel "Wohnung 1 ansehen" oder "Ablesung anlegen". Die Häkchen stehen auf der Stammdatenseite, nur der Vermieter ändert sie.
+Was dort kein Häkchen hat (Fixkosten ändern, Abrechnung, Berechtigungen ändern, ...), ist dem Vermieter fest vorbehalten. Der Vermieter hat immer jedes Recht.
+_Avoid_: Freigabe, Rolle (die Rolle ist, wer jemand ist, das Recht, was er darf)
+
 **Vermieter-Login**:
 Die Anmeldung als Vermieter mit dem Vermieter-Kennwort (früher "Login"). Ist kein Vermieter-Kennwort gesetzt, ist jeder angemeldet und die App offen.
 Dasselbe Kennwort gilt für das ganze Haus.
@@ -180,9 +185,9 @@ Die monatliche Vorauszahlung je Wohnung (Tabelle `nebenkosten_abschlaege`), an d
 Das Formular erfasst ihn nur für Wohnungen mit Status Vermietung (Pflicht, 0 erlaubt), bei Eigennutzung gibt es kein Feld: ein früher gespeicherter Wert bleibt erhalten und zählt weiter, ein fehlender zählt als 0.
 _Avoid_: Abschlag ohne "Nebenkosten"-Präfix (zu unspezifisch), Vorauszahlung
 
-**Miete / Mieteinnahmen**:
+**Miete**:
 Die monatliche Miete je Wohnung (Tabelle `mieten`), an der Fixkosten-Eingabe erfasst wie der Nebenkostenabschlag, aber reine Einnahmen-Information: keine Kostenposition, keine Berechnungslogik, geht in keinen Saldo, Übertrag und keine Abrechnung ein.
-Das Formularfeld heißt "Miete", die Anzeige (Jahressumme) "Mieteinnahmen".
+Das Formularfeld und die Anzeige (Jahressumme in der Jahreskarte) heißen "Miete". Im Code und in älteren Texten steht für die Jahressumme auch "Mieteinnahmen".
 Wie der Abschlag nur für Wohnungen mit Status Vermietung erfasst (Pflicht, 0 erlaubt, vorbelegt aus der letzten Eingabe), bei Eigennutzung gibt es kein Feld.
 Ein früher gespeicherter Abschlag einer inzwischen eigengenutzten Wohnung zählt weiter und bleibt beim Korrigieren unverändert.
 Im CSV immer `abschlag_1`, `abschlag_2`, `miete_1`, `miete_2`, eine leere Zelle heißt nicht erfasst, der Import übernimmt Werte unabhängig vom Status.

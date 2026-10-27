@@ -3,7 +3,7 @@
 Web-App zur monatlichen Nebenkostenabrechnung für ein Zweifamilienhaus mit Wärmepumpe und PV-Anlage.
 Berechnet Strom-, Heizung/Warmwasser- und Wasserkosten je Wohnung aus monatlich erfassten Zählerständen, sowie Fixkosten/Grundgebühren (Grundsteuer, Versicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise, Wärmepumpenwartung, PV-Anlagenwartung).
 Zusätzlich können Nebenkostenabschläge eingetragen und gegengerechnet werden, so daß eine erfassungsaktuelle Guthaben/Nachzahlung Übersicht entsteht.
-Für vermietete Wohnungen kannst du außerdem die monatliche Miete erfassen: Sie erscheint als Mieteinnahmen auf der Jahreskarte (nur für angemeldete Nutzer) und geht in keine Berechnung ein.
+Für vermietete Wohnungen kannst du außerdem die monatliche Miete erfassen: Sie erscheint als "Miete" auf der Jahreskarte (nur für den Vermieter) und geht in keine Berechnung ein.
 Angenommen wird, dass es Hauptzähler für die Gemeinschaft und separate Zwischenzähler für die Einliegerwohnung (Wohnung 2) und Wallboxen gibt.
 
 <p align="center">
@@ -256,7 +256,7 @@ Wohnung 1 bekommt in der Jahreskarte die Zeile **PV-Gutschrift** (auch mit 0,00,
 Im Monatsverlauf steht sie nur in "Kombiniert" (Gesamt abzüglich Gutschrift) und fließt in den Saldo ein, nicht in "Verbrauch" und "Verbrauchswerte".
 Die haus-weiten Karten "Wärmepumpe", "Wallboxen" und "PV-Anlage" zeigen ihre Werte für das ganze Haus. Die Wärmepumpe (Stromkosten und PV-Anteil) ist immer sichtbar, auch ohne Login, und hat wie die Wallboxen einen eigenen Monatsverlauf.
 Welcher Monatsverlauf unter den Karten steht (Wohnungen, Wärmepumpe, Wallboxen, PV-Anlage), wählst du in einem Dropdown "Monatsübersicht"; gibt es nur eine Auswahl, entfällt das Dropdown. Die Auswahl merkt sich der Browser.
-Die Jahreskarte der vermieteten Wohnung zeigt unter Guthaben / Nachzahlung die **Mieteinnahmen** des Anzeigejahres (Summe der Miete aller Fixkosten-Eingaben des Jahres, auch mit 0,00; bei Eigennutzung nie).
+Die Jahreskarte der vermieteten Wohnung zeigt unter Guthaben / Nachzahlung die **Miete** des Anzeigejahres (Summe der Miete aller Fixkosten-Eingaben des Jahres, auch mit 0,00; bei Eigennutzung nie).
 Der Block erscheint nur für angemeldete Nutzer und steht ohne Login nicht im HTML-Quelltext.
 
 Fortlaufend seit Erfassungsbeginn kumuliert, kein Reset zum Jahreswechsel. Positiv heißt Guthaben, negativ Nachzahlung, exakt 0 Ausgeglichen. Ein Monat ohne Fixkosteneingabe lässt den Saldo unverändert, statt ihn verschwinden zu lassen.
@@ -388,6 +388,19 @@ Danach erreichbar unter `http://localhost:8080`, Health-Check unter `/healthz`. 
 Das Overlay "Anmelden" hat ein Auswahlfeld "Anmelden als" mit **Mieter**, **Vermieter** und **Demo** und ein Kennwortfeld. Die Auswahl bestimmt die Rolle, das Kennwort wird gegen das der gewählten Rolle geprüft. "Mieter" erscheint nur mit gesetztem `MIETER_PASSWORD`, "Vermieter" nur mit gesetztem `VERMIETER_PASSWORD`, "Demo" immer (ohne Kennwort).
 Der Vermieter sieht und darf alles. Wer nicht angemeldet ist und der Mieter sehen die eingeschränkten Ansichten. Öffnet ein angemeldeter Mieter eine Seite nur für den Vermieter, erscheint der Hinweis "Nur für den Vermieter" mit dem Weg zur Anmeldung als Vermieter, ein nicht angemeldeter Besucher landet im Anmelde-Overlay.
 Jede Rolle hat ein eigenes Sitzungs-Cookie, signiert mit ihrem Kennwort: Ein geändertes Kennwort meldet nur diese Rolle ab.
+
+#### Berechtigungen
+
+Auf der Seite Stammdaten stellt der Vermieter in der Tabelle **Berechtigungen** je Recht ein Häkchen für **Nicht angemeldet** und **Mieter** ein (die Mieter-Spalte gibt es nur mit Mieter-Login). Der Vermieter darf immer alles.
+
+| Recht | Nicht angemeldet | Mieter |
+|---|---|---|
+| Wohnung 1, Wohnung 2, Wärmepumpe, Wallboxen, PV-Anlage (Karte und Monatsübersicht) | nur Wohnung 2 und Wärmepumpe | nur Wohnung 2 und Wärmepumpe |
+| Ablesungen ansehen, Ablesung anlegen und Teilstand vervollständigen | an | an |
+| Stammdaten ansehen (ohne Personenbezug), Fixkosten ansehen | an | an |
+| Miete (Block in der Jahreskarte) | aus | aus |
+
+Die Standardwerte entsprechen dem Verhalten vor den Berechtigungen, dazu die Wärmepumpe. Nur der Vermieter darf, ohne Häkchen: Fixkosten erfassen und ändern, Abrechnung, personenbezogene Stammdaten, Stammdaten und Berechtigungen ändern, Ablesungen bearbeiten und löschen, CSV-Export und -Import. Die Seite "Wie wird gerechnet?" sehen alle.
 
 ### Demo-Modus
 

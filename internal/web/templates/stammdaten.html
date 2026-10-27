@@ -71,6 +71,26 @@
   </div>
 
   {{if .IsLoggedIn}}
+  <div class="panel" id="berechtigungen">
+    <h3>Berechtigungen</h3>
+    <p class="muted">Was {{if .HatMieter}}Nicht angemeldete und der Mieter{{else}}Nicht angemeldete{{end}} sehen und tun dürfen. Der Vermieter darf immer alles.</p>
+    <input type="hidden" name="berechtigung_rolle" value="nicht_angemeldet">
+    {{if .HatMieter}}<input type="hidden" name="berechtigung_rolle" value="mieter">{{end}}
+    <table class="berechtigungen">
+      <thead><tr><th>Recht</th><th>Nicht angemeldet</th>{{if .HatMieter}}<th>Mieter</th>{{end}}</tr></thead>
+      <tbody>
+        {{range .Berechtigungen}}
+        <tr>
+          <td>{{.Label}}</td>
+          <td><input type="checkbox" name="recht_nicht_angemeldet_{{.Recht}}" value="1" {{if .NichtAngemeldet}}checked{{end}} aria-label="{{.Label}}, nicht angemeldet"></td>
+          {{if $.HatMieter}}<td><input type="checkbox" name="recht_mieter_{{.Recht}}" value="1" {{if .Mieter}}checked{{end}} aria-label="{{.Label}}, Mieter"></td>{{end}}
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    <p class="muted klein">Nur der Vermieter darf: Fixkosten erfassen und ändern, Abrechnung, personenbezogene Stammdaten, Stammdaten und Berechtigungen ändern, Ablesungen bearbeiten und löschen, CSV-Export und -Import.</p>
+  </div>
+
   <div class="btn-row">
     <button type="submit" class="primary dirty-save" disabled>Speichern</button>
   </div>
