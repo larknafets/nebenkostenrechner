@@ -1665,7 +1665,7 @@ func TestHandleCreateAblesung_BlocksWhileTeilstandOpen(t *testing.T) {
 // Teilstand redirects to its Vervollständigung instead of a blank form.
 func TestHandleWizardForm_RedirectsToOpenTeilstand(t *testing.T) {
 	db := openTestDB(t)
-	a := newAuth("", nil)
+	a := newZugang("", nil)
 
 	teilstandID, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate: "2026-11-01",
@@ -1692,7 +1692,7 @@ func TestHandleWizardForm_RedirectsToOpenTeilstand(t *testing.T) {
 // the normal, blank "neu"-Formular.
 func TestHandleWizardForm_NoRedirectWhenComplete(t *testing.T) {
 	db := openTestDB(t)
-	a := newAuth("", nil)
+	a := newZugang("", nil)
 
 	if _, err := store.CreatePeriod(db, seedPeriodInputAt("2026-11-01")); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
@@ -1824,7 +1824,7 @@ func TestPeriodOverviewGroups_MarksTeilstand(t *testing.T) {
 // Teilstand row.
 func TestHandleAblesungenListe_TeilstandBadge(t *testing.T) {
 	db := openTestDB(t)
-	a := newAuth("", nil)
+	a := newZugang("", nil)
 
 	if _, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate: "2026-11-01",
@@ -1850,7 +1850,7 @@ func TestHandleAblesungenListe_TeilstandBadge(t *testing.T) {
 // normally, not as "noch offen".
 func TestHandleAblesungDetail_TeilstandZeigtOffeneFelder(t *testing.T) {
 	db := openTestDB(t)
-	a := newAuth("", nil)
+	a := newZugang("", nil)
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate: "2026-11-01",
@@ -1885,7 +1885,7 @@ func TestHandleAblesungDetail_TeilstandZeigtOffeneFelder(t *testing.T) {
 // complete Ablesung.
 func TestHandleAblesungDetail_VollstaendigKeinBadge(t *testing.T) {
 	db := openTestDB(t)
-	a := newAuth("", nil)
+	a := newZugang("", nil)
 
 	id, err := store.CreatePeriod(db, seedPeriodInputAt("2026-11-01"))
 	if err != nil {
@@ -1916,7 +1916,7 @@ func TestHandleAblesungDetail_VollstaendigKeinBadge(t *testing.T) {
 // Ticket #130 already ungated for them.
 func TestHandleAblesungDetail_TeilstandButtonOhneLogin(t *testing.T) {
 	db := openTestDB(t)
-	a := newAuth("geheim", nil)
+	a := newZugang("geheim", nil)
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate: "2026-11-01",
@@ -1945,7 +1945,7 @@ func TestHandleAblesungDetail_TeilstandButtonOhneLogin(t *testing.T) {
 // PreviousXErfasst flags guard against.
 func TestHandleEditWizardForm_TeilstandBlankNotZero(t *testing.T) {
 	db := openTestDB(t)
-	a := newAuth("", nil)
+	a := newZugang("", nil)
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate: "2026-11-01",
@@ -1988,7 +1988,7 @@ func TestHandleEditWizardForm_TeilstandBlankNotZero(t *testing.T) {
 // residue of a summed reading.
 func TestHandleEditWizardForm_ZaehlerOhneGleitkommareste(t *testing.T) {
 	db := openTestDB(t)
-	a := newAuth("", nil)
+	a := newZugang("", nil)
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate: "2026-11-01",
@@ -2018,7 +2018,7 @@ func TestHandleEditWizardForm_ZaehlerOhneGleitkommareste(t *testing.T) {
 // prefilled prices, which can carry up to 4 decimals.
 func TestHandleEditWizardForm_PreisOhneGleitkommareste(t *testing.T) {
 	db := openTestDB(t)
-	a := newAuth("", nil)
+	a := newZugang("", nil)
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate:       "2026-11-01",

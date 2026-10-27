@@ -51,7 +51,7 @@ func TestCreateAblesung_PlausibilitaetsHinweisNachDemSpeichern(t *testing.T) {
 			id := req.URL.Path[strings.LastIndex(req.URL.Path, "/")+1:]
 			req.SetPathValue("id", id)
 			rec := httptest.NewRecorder()
-			handleAblesungDetail(newAuth("", nil))(rec, requestWithDB(req, db))
+			handleAblesungDetail(newZugang("", nil))(rec, requestWithDB(req, db))
 			if rec.Code != http.StatusOK {
 				t.Fatalf("Weiterleitungsziel status = %d, want 200", rec.Code)
 			}

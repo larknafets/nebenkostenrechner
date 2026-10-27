@@ -69,7 +69,7 @@ func TestEditWizard_PVSchalterGiltAusDerAblesung(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/ablesungen/"+strconv.FormatInt(id, 10)+"/bearbeiten", nil)
 	req.SetPathValue("id", strconv.FormatInt(id, 10))
 	w := httptest.NewRecorder()
-	handleEditWizardForm(newAuth("", nil))(w, requestWithDB(req, db))
+	handleEditWizardForm(newZugang("", nil))(w, requestWithDB(req, db))
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", w.Code)
 	}

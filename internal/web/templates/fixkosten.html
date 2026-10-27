@@ -2,7 +2,7 @@
 <h1>Fixkosten</h1>
 {{template "nav" .}}
 
-{{if .IsLoggedIn}}
+{{if .Vermieter}}
 <div class="btn-row">
   <a href="{{.Base}}/fixkosten/neu" class="button success">Neue Fixkosteneingabe</a>
 </div>
@@ -13,7 +13,7 @@
 {{end}}
 
 {{if not .Eingaben}}
-{{if .IsLoggedIn}}
+{{if .Vermieter}}
 <p class="muted" style="margin-top:1rem">Noch keine Fixkosten-Eingabe erfasst. <a href="{{.Base}}/fixkosten/neu">Jetzt erfassen</a>.</p>
 {{else}}
 <p class="muted" style="margin-top:1rem">Noch keine Fixkosten-Eingabe erfasst.</p>
@@ -35,7 +35,7 @@
   </table>
 </div>
 
-{{if .IsLoggedIn}}
+{{if .Vermieter}}
 <div class="btn-row">
   <a href="{{.Base}}/fixkosten/export.csv" class="button secondary">CSV Export</a>
 </div>

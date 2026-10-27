@@ -104,7 +104,7 @@ func TestBuildFixkostenPositionRows_OhneVorherigeEingabe(t *testing.T) {
 // them - an unchecked checkbox is absent from the form and means "No".
 func TestStammdaten_FlagsAnzeigenUndSpeichern(t *testing.T) {
 	db := openTestDB(t)
-	a := newAuth("", nil)
+	a := newZugang("", nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/stammdaten", nil)
 	w := httptest.NewRecorder()
@@ -201,7 +201,7 @@ func TestStammdaten_MieterUndVermieterNurAngemeldet(t *testing.T) {
 	// Logged in (no LOGIN_PASSWORD configured): everything is visible.
 	req := httptest.NewRequest(http.MethodGet, "/stammdaten", nil)
 	w := httptest.NewRecorder()
-	handleStammdatenForm(newAuth("", nil))(w, requestWithDB(req, db))
+	handleStammdatenForm(newZugang("", nil))(w, requestWithDB(req, db))
 	if w.Code != http.StatusOK {
 		t.Fatalf("GET (logged in) status = %d", w.Code)
 	}
@@ -215,7 +215,7 @@ func TestStammdaten_MieterUndVermieterNurAngemeldet(t *testing.T) {
 	// the status is visible but disabled.
 	req = httptest.NewRequest(http.MethodGet, "/stammdaten", nil)
 	w = httptest.NewRecorder()
-	handleStammdatenForm(newAuth("geheim", nil))(w, requestWithDB(req, db))
+	handleStammdatenForm(newZugang("geheim", nil))(w, requestWithDB(req, db))
 	if w.Code != http.StatusOK {
 		t.Fatalf("GET (not logged in) status = %d", w.Code)
 	}
@@ -290,7 +290,7 @@ func TestStammdaten_HeizungGewichtung(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/stammdaten", nil)
 	w := httptest.NewRecorder()
-	handleStammdatenForm(newAuth("", nil))(w, requestWithDB(req, db))
+	handleStammdatenForm(newZugang("", nil))(w, requestWithDB(req, db))
 	body := w.Body.String()
 	for _, want := range []string{`name="heizung_gewichtung" value="0.7" `, `name="heizung_gewichtung" value="0.6" checked`, `name="heizung_gewichtung" value="0.5" `, "60 % / 40 %"} {
 		if !strings.Contains(body, want) {
@@ -404,7 +404,7 @@ func TestStammdaten_MieterSeit(t *testing.T) {
 		handleUpdateStammdaten()(w, requestWithDB(req, db))
 		return w.Code
 	}
-	get := func(a auth) string {
+	get := func(a *Zugang) string {
 		req := httptest.NewRequest(http.MethodGet, "/stammdaten", nil)
 		w := httptest.NewRecorder()
 		handleStammdatenForm(a)(w, requestWithDB(req, db))
@@ -428,7 +428,7 @@ func TestStammdaten_MieterSeit(t *testing.T) {
 	}
 
 	// Logged in: the field shows the month, hidden for the Eigennutzung apartment.
-	body := get(newAuth("", nil))
+	body := get(newZugang("", nil))
 	if !strings.Contains(body, `name="mieter_seit_2" value="2025-07"`) {
 		t.Error("logged in: the field of Wohnung 2 does not show 2025-07")
 	}
@@ -437,7 +437,7 @@ func TestStammdaten_MieterSeit(t *testing.T) {
 	}
 
 	// Not logged in: no field, no value.
-	body = get(newAuth("geheim", nil))
+	body = get(newZugang("geheim", nil))
 	if strings.Contains(body, `name="mieter_seit_`) || strings.Contains(body, "2025-07") {
 		t.Error("not logged in: Mieter seit is visible")
 	}
@@ -461,7 +461,7 @@ func TestStammdaten_MieterSeit(t *testing.T) {
 // position on /stammdaten changes Stammdaten and the Fixkosten-Eingabe form.
 func TestStammdaten_KostenpositionVerschieben(t *testing.T) {
 	db := openTestDB(t)
-	a := newAuth("", nil)
+	a := newZugang("", nil)
 
 	move := func(id, richtung string) *httptest.ResponseRecorder {
 		form := url.Values{"id": {id}, "richtung": {richtung}}
@@ -512,7 +512,7 @@ func TestStammdaten_KostenpositionVerschieben(t *testing.T) {
 // the first "nach oben" and the last "nach unten" button are disabled.
 func TestStammdaten_ReihenfolgeDarstellung(t *testing.T) {
 	db := openTestDB(t)
-	a := newAuth("", nil)
+	a := newZugang("", nil)
 
 	w := httptest.NewRecorder()
 	handleStammdatenForm(a)(w, requestWithDB(httptest.NewRequest(http.MethodGet, "/stammdaten", nil), db))

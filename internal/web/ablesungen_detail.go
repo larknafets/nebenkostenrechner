@@ -76,7 +76,7 @@ func formatMeterDiff(current, previous float64) string {
 // breakdown (Kostenaufstellung, Ticket #43, generalized from the old
 // "letzte Ablesung" view to any period by id), with a dropdown to jump to
 // any other period.
-func handleAblesungDetail(a auth) http.HandlerFunc {
+func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 		periodID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -166,7 +166,7 @@ func handleAblesungDetail(a auth) http.HandlerFunc {
 			KostenNote    string
 			MonatLabel    string
 		}{
-			navData:         a.NavData(r),
+			navData:         z.NavData(r),
 			TeilstandStatus: status,
 			Aktuell:         "ablesungen-detail",
 			Period:          period,

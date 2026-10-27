@@ -159,7 +159,7 @@ func TestAblesungDetail_VorperiodeAusDemDatenstand(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/ablesungen/999", nil)
 	req.SetPathValue("id", "999")
 	w := httptest.NewRecorder()
-	handleAblesungDetail(newAuth("", nil))(w, requestWithDB(req, db))
+	handleAblesungDetail(newZugang("", nil))(w, requestWithDB(req, db))
 	if w.Code != http.StatusNotFound {
 		t.Errorf("unbekannte Id: status = %d, want 404", w.Code)
 	}

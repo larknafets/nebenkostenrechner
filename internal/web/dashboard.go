@@ -120,14 +120,14 @@ func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, error) {
 // totals cards per apartment for the auto-following display year, then an
 // apartment switcher with a combined consumption+fixed-costs monthly
 // history (4 modes).
-func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
+func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dd, miete, err := loadDashboardData(dbFromContext(r.Context()))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		nav := a.NavData(r)
+		nav := z.NavData(r)
 		latestVersion, updateAvailable := checkForUpdate(version)
 
 		if !dd.HasAnyData {
@@ -161,7 +161,7 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 		}
 
 		// What the viewer may see is decided in one place (#293, #311).
-		view := sichtbareAnsicht(a.betrachter(r), dd, berechtigungen, miete)
+		view := sichtbareAnsicht(betrachterVon(nav.Zugriff), dd, berechtigungen, miete)
 		var wallboxCard, wpCard, pvCard dashboardSimpleCard
 		var wallboxVerlauf, wpVerlauf, pvVerlauf dashboardSimpleSpalte
 		if view.Wallbox != nil {

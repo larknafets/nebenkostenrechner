@@ -60,8 +60,8 @@ func TestHandleLogin_DemoPassword(t *testing.T) {
 			if !isDemoSession(req) {
 				t.Error("isDemoSession() = false for a freshly issued demo cookie")
 			}
-			if !newAuth(secret, nil).istVermieter(req) {
-				t.Error("istVermieter() = false for a demo session")
+			if !newZugang(secret, nil).Zugriff(req).Vermieter {
+				t.Error("Zugriff().Vermieter = false for a demo session")
 			}
 		})
 	}

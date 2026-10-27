@@ -36,7 +36,7 @@ func wizardBody(t *testing.T, db *sql.DB) string {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/ablesungen/neu", nil)
 	w := httptest.NewRecorder()
-	handleWizardForm(newAuth("", nil))(w, requestWithDB(req, db))
+	handleWizardForm(newZugang("", nil))(w, requestWithDB(req, db))
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200 (body: %s)", w.Code, w.Body.String())
 	}
@@ -193,7 +193,7 @@ func detailBody(t *testing.T, db *sql.DB, id int64) string {
 	req := httptest.NewRequest(http.MethodGet, "/ablesungen/"+strconv.FormatInt(id, 10), nil)
 	req.SetPathValue("id", strconv.FormatInt(id, 10))
 	w := httptest.NewRecorder()
-	handleAblesungDetail(newAuth("", nil))(w, requestWithDB(req, db))
+	handleAblesungDetail(newZugang("", nil))(w, requestWithDB(req, db))
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200 (body: %s)", w.Code, w.Body.String())
 	}

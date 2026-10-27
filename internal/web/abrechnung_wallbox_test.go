@@ -80,7 +80,7 @@ func TestStammdaten_WallboxWeiterberechnenSpeichernUndAnzeigen(t *testing.T) {
 	get := func() string {
 		req := httptest.NewRequest(http.MethodGet, "/stammdaten", nil)
 		w := httptest.NewRecorder()
-		handleStammdatenForm(newAuth("", nil))(w, requestWithDB(req, db))
+		handleStammdatenForm(newZugang("", nil))(w, requestWithDB(req, db))
 		return w.Body.String()
 	}
 	post := func(withFlag bool) {

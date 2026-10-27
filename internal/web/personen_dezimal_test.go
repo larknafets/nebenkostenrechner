@@ -163,7 +163,7 @@ func TestFixkosten_PersonenDezimal(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/fixkosten/"+strconv.FormatInt(all[0].ID, 10), nil)
 	req.SetPathValue("id", strconv.FormatInt(all[0].ID, 10))
 	w := httptest.NewRecorder()
-	handleFixkostenDetail(newAuth("", nil))(w, requestWithDB(req, db))
+	handleFixkostenDetail(newZugang("", nil))(w, requestWithDB(req, db))
 	if !strings.Contains(w.Body.String(), ">1,25</td>") {
 		t.Errorf("Fixkosten-Detail zeigt 1,25 nicht")
 	}

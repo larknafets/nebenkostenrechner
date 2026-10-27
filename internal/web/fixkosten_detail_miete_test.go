@@ -14,7 +14,7 @@ import (
 // Tests for #281: the Fixkosten detail page shows the Miete of a rented
 // apartment, without any permission check (like the Nebenkostenabschlag).
 
-func fixkostenDetailHTML(t *testing.T, db *sql.DB, a auth, id int64) string {
+func fixkostenDetailHTML(t *testing.T, db *sql.DB, a *Zugang, id int64) string {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/fixkosten/"+strconv.FormatInt(id, 10), nil)
 	req.SetPathValue("id", strconv.FormatInt(id, 10))
@@ -52,7 +52,7 @@ func TestFixkostenDetail_MieteNurBeiVermietung(t *testing.T) {
 	db := openTestDB(t)
 	// Wohnung 1 is Eigennutzung: a stored Miete must stay hidden.
 	id := mieteDetailEingabe(t, db, "2026-01-01", map[int64]float64{1: 555.55, 2: 712.34})
-	body := fixkostenDetailHTML(t, db, newAuth("", nil), id)
+	body := fixkostenDetailHTML(t, db, newZugang("", nil), id)
 
 	if !strings.Contains(body, "<th>Miete</th>") {
 		t.Error("Spalte Miete fehlt")
@@ -70,10 +70,10 @@ func TestFixkostenDetail_MieteNullUndNichtErfasst(t *testing.T) {
 	zero := mieteDetailEingabe(t, db, "2026-01-01", map[int64]float64{2: 0})
 	old := mieteDetailEingabe(t, db, "2026-02-01", nil)
 
-	if row := apartmentRow(t, fixkostenDetailHTML(t, db, newAuth("", nil), zero), "Wohnung 2"); !strings.HasSuffix(row, "<td>0,00&nbsp;€</td>") {
+	if row := apartmentRow(t, fixkostenDetailHTML(t, db, newZugang("", nil), zero), "Wohnung 2"); !strings.HasSuffix(row, "<td>0,00&nbsp;€</td>") {
 		t.Errorf("erfasste 0 nicht als 0,00 €: %s", row)
 	}
-	row := apartmentRow(t, fixkostenDetailHTML(t, db, newAuth("", nil), old), "Wohnung 2")
+	row := apartmentRow(t, fixkostenDetailHTML(t, db, newZugang("", nil), old), "Wohnung 2")
 	if !strings.HasSuffix(row, "<td>–</td>") {
 		t.Errorf("nicht erfasste Miete nicht als Strich: %s", row)
 	}
@@ -82,7 +82,7 @@ func TestFixkostenDetail_MieteNullUndNichtErfasst(t *testing.T) {
 func TestFixkostenDetail_EigennutzungZelleLeer(t *testing.T) {
 	db := openTestDB(t)
 	id := mieteDetailEingabe(t, db, "2026-01-01", map[int64]float64{1: 555.55, 2: 712.34})
-	row := apartmentRow(t, fixkostenDetailHTML(t, db, newAuth("", nil), id), "Wohnung 1")
+	row := apartmentRow(t, fixkostenDetailHTML(t, db, newZugang("", nil), id), "Wohnung 1")
 	if !strings.HasSuffix(row, "<td></td>") {
 		t.Errorf("Zelle der Eigennutzung nicht leer: %s", row)
 	}
@@ -91,7 +91,7 @@ func TestFixkostenDetail_EigennutzungZelleLeer(t *testing.T) {
 func TestFixkostenDetail_MieteOhneLoginSichtbar(t *testing.T) {
 	db := openTestDB(t)
 	id := mieteDetailEingabe(t, db, "2026-01-01", map[int64]float64{2: 712.34})
-	body := fixkostenDetailHTML(t, db, newAuth("geheim", nil), id)
+	body := fixkostenDetailHTML(t, db, newZugang("geheim", nil), id)
 	if strings.Contains(body, "Eingabe korrigieren") {
 		t.Fatal("Anonyme gelten als angemeldet, Test prüft nichts")
 	}

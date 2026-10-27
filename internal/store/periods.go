@@ -528,7 +528,7 @@ func DeletePeriod(db *sql.DB, periodID int64) error {
 // PeriodComplete reports whether periodID is a fully entered Ablesung or a
 // Teilstand (Ticket #128): the answer of LatestPeriod.Teilstand, the one
 // place that knows what "complete" means, for callers that only hold a bare
-// periodID (e.g. requireLoginUnlessTeilstand). Purely derived - no
+// periodID (e.g. teilstandAnspruch). Purely derived - no
 // dedicated "complete" flag, so there's no second source of truth.
 func PeriodComplete(db *sql.DB, periodID int64) (bool, error) {
 	return periodComplete(db, periodID)

@@ -52,7 +52,7 @@ func TestFixkosten_PersonenDezimal_Kostenanteil(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/fixkosten/"+id, nil)
 	req.SetPathValue("id", id)
 	w := httptest.NewRecorder()
-	handleFixkostenDetail(newAuth("", nil))(w, requestWithDB(req, db))
+	handleFixkostenDetail(newZugang("", nil))(w, requestWithDB(req, db))
 	mustContain(t, w.Body.String(), "38,46&nbsp;€", "61,54&nbsp;€")
 }
 
@@ -127,7 +127,7 @@ func TestPersonenDezimal_VorbelegungAusVorperiode(t *testing.T) {
 		}
 		req := httptest.NewRequest(http.MethodGet, "/fixkosten/neu", nil)
 		w := httptest.NewRecorder()
-		handleFixkostenForm(newAuth("", nil))(w, requestWithDB(req, db))
+		handleFixkostenForm(newZugang("", nil))(w, requestWithDB(req, db))
 		if w.Code != http.StatusOK {
 			t.Fatalf("status = %d (body: %s)", w.Code, w.Body.String())
 		}

@@ -122,11 +122,11 @@
   {{end}}
 </div>
 
-{{if or .IsLoggedIn (and .IstTeilstand .KannAblesungAnlegen)}}
+{{if or .Vermieter (and .IstTeilstand .KannAblesungAnlegen)}}
 <div class="btn-row">
   {{if .KannAblesungAnlegen}}<a href="{{.Base}}/ablesungen/neu" class="button success">Neue Ablesung</a>{{end}}
   <a href="{{.Base}}/ablesungen/{{.Period.ID}}/bearbeiten" class="button secondary">{{if .IstTeilstand}}Ablesung vervollständigen{{else}}Ablesung korrigieren{{end}}</a>
-  {{if .IsLoggedIn}}
+  {{if .Vermieter}}
   <form method="post" action="{{.Base}}/ablesungen/{{.Period.ID}}/loeschen" onsubmit="return confirm('Ablesung vom {{deDatum .Period.ReadingDate}} wirklich löschen?');">
     <button type="submit" class="danger">Ablesung löschen</button>
   </form>
