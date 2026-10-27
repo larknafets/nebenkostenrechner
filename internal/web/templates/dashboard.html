@@ -50,6 +50,18 @@
     </div>{{end}}
   </div>
   {{end}}
+  <div class="panel stat-card">
+    <div class="muted"><strong>Wärmepumpe</strong></div>
+    <div class="stat-value">{{deEUR .WPCard.GesamtEUR}}&nbsp;€</div>
+    <div class="stat-bar-track">
+      {{range .WPCard.Segmente}}
+      <div class="stat-bar-seg cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%"></div>
+      {{end}}
+    </div>
+    <div class="muted stat-kategorien">
+      {{range .WPCard.Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{de0 .Verbrauch}}&nbsp;{{.Einheit}}</span>{{end}}
+    </div>
+  </div>
   {{if .ShowWallbox}}
   <div class="panel stat-card">
     <div class="muted"><strong>Wallboxen</strong></div>
@@ -64,18 +76,6 @@
     </div>
   </div>
   {{end}}
-  <div class="panel stat-card">
-    <div class="muted"><strong>Wärmepumpe</strong></div>
-    <div class="stat-value">{{deEUR .WPCard.GesamtEUR}}&nbsp;€</div>
-    <div class="stat-bar-track">
-      {{range .WPCard.Segmente}}
-      <div class="stat-bar-seg cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%"></div>
-      {{end}}
-    </div>
-    <div class="muted stat-kategorien">
-      {{range .WPCard.Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{de0 .Verbrauch}}&nbsp;{{.Einheit}}</span>{{end}}
-    </div>
-  </div>
   {{if .IsLoggedIn}}
   <div class="panel stat-card">
     <div class="muted"><strong>PV-Anlage</strong></div>
