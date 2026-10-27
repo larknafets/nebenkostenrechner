@@ -132,7 +132,7 @@ func (l *matrixLauf) get() (store.Berechtigungen, error) {
 type Zugriff struct {
 	Rolle store.Rolle
 	// Vermieter is true for the Vermieter role, the demo session and every
-	// visitor of an app without Vermieter password. It replaces IsLoggedIn.
+	// visitor of an app without Vermieter password.
 	Vermieter bool
 	// Demo is true during a demo session, HatSitzung when a session cookie is
 	// valid (also without Vermieter password, where everyone is Vermieter).
