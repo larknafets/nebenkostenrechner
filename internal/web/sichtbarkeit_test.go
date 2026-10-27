@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -29,17 +30,17 @@ func TestSichtbareAnsicht_JeBetrachter(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		betrachter   betrachter
+		rolle        store.Rolle
 		wohnungen    []int64
 		wallboxPV    bool
 		mieteinnahme map[int64]float64 // apartment id -> expected sum, absent = nil
 	}{
-		{"Anonym", betrachterNichtAngemeldet, []int64{2}, false, nil},
-		{"Angemeldet", betrachterVermieter, []int64{1, 2}, true, map[int64]float64{1: 300, 2: 712.34}},
+		{"Anonym", store.RolleNichtAngemeldet, []int64{2}, false, nil},
+		{"Angemeldet", RolleVermieter, []int64{1, 2}, true, map[int64]float64{1: 300, 2: 712.34}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v := sichtbareAnsicht(tt.betrachter, dd, nil, miete)
+			v := sichtbareAnsicht(zugriffMitDefaults(tt.rolle), dd, miete)
 
 			if len(v.Cards) != len(tt.wohnungen) || len(v.VerlaufSpalten) != len(tt.wohnungen) {
 				t.Fatalf("Cards/Verlauf = %d/%d, want %d each", len(v.Cards), len(v.VerlaufSpalten), len(tt.wohnungen))
@@ -95,14 +96,14 @@ func TestSichtbareAnsicht_WallboxKarteNachWohnungsstatus(t *testing.T) {
 					{ID: 2, Name: "Wohnung 2", Status: tt.w2},
 				},
 			}
-			got := sichtbareAnsicht(betrachterVermieter, dd, nil, nil)
+			got := sichtbareAnsicht(zugriffMitDefaults(RolleVermieter), dd, nil)
 			if (got.Wallbox != nil) != tt.sichtbar {
 				t.Errorf("Wallbox sichtbar = %v, want %v", got.Wallbox != nil, tt.sichtbar)
 			}
 			if got.WP == nil || got.PV == nil {
 				t.Errorf("WP/PV present = %v/%v, want both", got.WP != nil, got.PV != nil)
 			}
-			if anon := sichtbareAnsicht(betrachterNichtAngemeldet, dd, nil, nil); anon.Wallbox != nil || anon.WP == nil {
+			if anon := sichtbareAnsicht(zugriffMitDefaults(store.RolleNichtAngemeldet), dd, nil); anon.Wallbox != nil || anon.WP == nil {
 				t.Errorf("anonym Wallbox/WP = %v/%v, want nil/present", anon.Wallbox != nil, anon.WP != nil)
 			}
 		})
@@ -143,21 +144,54 @@ func TestVerlaufAuswahl(t *testing.T) {
 			{ID: 2, Name: "Wohnung 2", Status: store.StatusVermietet},
 		},
 	}
-	ids := func(b betrachter) []string {
+	ids := func(rolle store.Rolle) []string {
 		var out []string
-		for _, o := range verlaufAuswahl(sichtbareAnsicht(b, dd, nil, nil)) {
+		for _, o := range verlaufAuswahl(sichtbareAnsicht(zugriffMitDefaults(rolle), dd, nil)) {
 			out = append(out, o.ID)
 		}
 		return out
 	}
-	if got, want := ids(betrachterVermieter), []string{"1", "2", "waermepumpe", "wallbox", "pv"}; !reflect.DeepEqual(got, want) {
+	if got, want := ids(RolleVermieter), []string{"1", "2", "waermepumpe", "wallbox", "pv"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("angemeldet = %v, want %v", got, want)
 	}
-	if got, want := ids(betrachterNichtAngemeldet), []string{"2", "waermepumpe"}; !reflect.DeepEqual(got, want) {
+	if got, want := ids(store.RolleNichtAngemeldet), []string{"2", "waermepumpe"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("anonym = %v, want %v", got, want)
 	}
 	dd.Apartments = nil
-	if got, want := ids(betrachterNichtAngemeldet), []string{"waermepumpe"}; !reflect.DeepEqual(got, want) {
+	if got, want := ids(store.RolleNichtAngemeldet), []string{"waermepumpe"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("anonym ohne Wohnungen = %v, want %v", got, want)
+	}
+}
+
+// zugriffMitDefaults is the Zugriff of rolle on a database with the default
+// Berechtigungen (what a nil Berechtigungen used to stand for).
+func zugriffMitDefaults(rolle store.Rolle) Zugriff {
+	return zugriffFuer(rolle, matrixAus{b: store.DefaultBerechtigungen()})
+}
+
+// A Dashboard that cannot load the Berechtigungen answers 500 like the gates
+// do (#323), for a Mieter and for a visitor who is not logged in; the
+// Vermieter needs none and gets the page.
+func TestDashboard_LadefehlerDerBerechtigungen(t *testing.T) {
+	db := openTestDB(t)
+	wallboxPVAblesungen(t, db, false)
+	fehler := matrixAus{err: errors.New("db weg")}
+	for _, tt := range []struct {
+		rolle store.Rolle
+		want  int
+	}{
+		{store.RolleMieter, http.StatusInternalServerError},
+		{store.RolleNichtAngemeldet, http.StatusInternalServerError},
+		{RolleVermieter, http.StatusOK},
+	} {
+		t.Run(string(tt.rolle), func(t *testing.T) {
+			logAufnehmen(t)
+			h := handleDashboard("dev", "", NewZugang(festeRolle{rolle: tt.rolle}, fehler))
+			w := httptest.NewRecorder()
+			h(w, requestWithDB(httptest.NewRequest(http.MethodGet, "/dashboard", nil), db))
+			if w.Code != tt.want {
+				t.Errorf("status %d, want %d (%s)", w.Code, tt.want, w.Body.String())
+			}
+		})
 	}
 }
