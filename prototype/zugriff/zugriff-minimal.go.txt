@@ -1,0 +1,272 @@
+// Entwurf "minimal": zwei Einstiegspunkte, auth.Zugriff(r) und auth.Gate(...).
+// Kompilierfaehig als eigenes Paket (store-Typen unten als Stubs; im Repo
+// kommen sie aus internal/store).
+package web
+
+import (
+	"errors"
+	"context"
+	"log"
+	"net/http"
+)
+
+// --- Stubs fuer store (im Repo vorhanden) ---
+type Recht string
+type Rolle string
+type Berechtigungen map[Rolle]map[Recht]bool
+
+const (
+	RolleNichtAngemeldet Rolle = "nicht_angemeldet"
+	RolleMieter          Rolle = "mieter"
+	RechtMiete           Recht = "miete"
+	RechtFixkostenAnsehen Recht = "fixkosten_ansehen"
+)
+
+func (b Berechtigungen) Erlaubt(r Rolle, x Recht) bool { return b[r][x] }
+func DefaultBerechtigungen() Berechtigungen            { return Berechtigungen{} }
+
+// --- Interface ---
+
+// Wer ist die Rolle der Anfrage (GLOSSARY). Drei Werte, kein "betrachter".
+type Wer int
+
+const (
+	WerNichtAngemeldet Wer = iota
+	WerMieter
+	WerVermieter // auch Demo-Sitzung und "kein Vermieter-Passwort gesetzt"
+)
+
+// Anspruch ist, was eine Route, ein Button oder eine Ansicht verlangt.
+// Ein Wert, zwei Arten: ein konfigurierbares Recht oder "nur Vermieter".
+// Unveraenderlich, vergleichbar, als Paketvariable nutzbar.
+type Anspruch struct {
+	recht        Recht
+	nurVermieter bool
+}
+
+// NurVermieter ist ein eigener Wert, kein Pseudo-Recht: er steht nicht in
+// store.Rechte, hat keine Spalte in der Matrix und keinen Default.
+var NurVermieter = Anspruch{nurVermieter: true}
+
+// Braucht liefert den Anspruch auf ein konfigurierbares Recht.
+func Braucht(r Recht) Anspruch { return Anspruch{recht: r} }
+
+// Zugriff ist die Antwort auf "was darf diese Anfrage" und wird pro Request
+// genau einmal gebildet. Wert ohne DB-Zugriff nach dem Bilden.
+type Zugriff struct {
+	wer  Wer
+	demo bool
+	ber  Berechtigungen // nil beim Vermieter: er braucht sie nicht
+	// Sitzungsfakten, die nur die Nav braucht (Login-/Logout-Eintrag).
+	Sitzung Sitzung
+}
+
+type Sitzung struct {
+	Demo, ZeigeLogin, ZeigeLogout, HatMieter bool
+}
+
+func (z Zugriff) Wer() Wer { return z.wer }
+
+// Darf ist die einzige Frage. Der Vermieter darf alles.
+// Unbekannte Rechte: false.
+func (z Zugriff) Darf(a Anspruch) bool {
+	if z.wer == WerVermieter {
+		return true
+	}
+	if a.nurVermieter {
+		return false
+	}
+	return z.ber.Erlaubt(z.rolle(), a.recht)
+}
+
+func (z Zugriff) rolle() Rolle {
+	if z.wer == WerMieter {
+		return RolleMieter
+	}
+	return RolleNichtAngemeldet
+}
+
+// Personenbezug ist die Regel "nur fuer Vermieter", einmal benannt, damit
+// Stammdaten, Fixkosten-Detail und Dashboard-Miete sie nicht nachbauen.
+func (z Zugriff) Personenbezug() bool { return z.Darf(NurVermieter) }
+
+// --- Einstiegspunkt 1: Zugriff(r) ---
+
+type ctxKey struct{}
+
+// quellen ist die Seam: wer sagt, wer da ist und was gespeichert ist.
+// Adapter 1: Produktion (Sitzungs-Cookies + dbFromContext). Adapter 2: Test.
+type quellen interface {
+	Wer(r *http.Request) (Wer, Sitzung)
+	Berechtigungen(r *http.Request) (Berechtigungen, error)
+}
+
+type auth struct{ q quellen }
+
+type geladen struct {
+	z   Zugriff
+	err error
+}
+
+// Zugriff liefert den Zugriff dieser Anfrage.
+// Reihenfolge: Wer ermitteln, dann (nur Nicht-Vermieter) Berechtigungen einmal
+// laden. Das Ergebnis, auch ein Fehler, liegt im Request-Kontext; die
+// zurueckgegebene *http.Request traegt es weiter (Gate setzt es, Handler
+// bekommen denselben r). Wiederholte Aufrufe lesen die DB nie erneut.
+//
+// Fehler: nur wenn der Lesezugriff scheitert, und nie fuer den Vermieter.
+// Dann ist z der Zugriff ohne Rechte (fail closed), err gesetzt. Handler
+// antworten bei err mit 500, einheitlich (heute: rechte() nimmt Defaults,
+// Dashboard 500).
+func (a auth) Zugriff(r *http.Request) (Zugriff, error) {
+	if g, ok := r.Context().Value(ctxKey{}).(*geladen); ok {
+		return g.z, g.err
+	}
+	return a.laden(r)
+}
+
+func (a auth) laden(r *http.Request) (Zugriff, error) {
+	wer, s := a.q.Wer(r)
+	z := Zugriff{wer: wer, Sitzung: s}
+	if wer == WerVermieter {
+		return z, nil
+	}
+	ber, err := a.q.Berechtigungen(r)
+	if err != nil {
+		log.Printf("zugriff: %v", err)
+		return z, err
+	}
+	z.ber = ber
+	return z, nil
+}
+
+// --- Einstiegspunkt 2: Gate ---
+
+var errKeinZugriff = errors.New("kein Zugriff")
+
+// Gate schuetzt eine Route. Ersetzt RequireLogin, RequireRecht und
+// requireLoginUnlessTeilstand. Es bildet den Zugriff einmal, legt ihn in den
+// Kontext (Handler und NavData sehen ihn) und verzweigt:
+//   darf            -> next
+//   Ladefehler      -> 500
+//   Mieter ohne     -> Seite "Nicht freigegeben" bzw. "Nur fuer den Vermieter"
+//   Nicht angemeldet -> Login-Overlay
+// anspruch darf von der Anfrage abhaengen (Teilstand: Recht, sonst NurVermieter);
+// dafuer die Funktionsform. Fuer den festen Fall: Gate(Fest(x), next).
+func (a auth) Gate(anspruch func(*http.Request) (Anspruch, error), next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		z, err := a.laden(r)
+		r = r.WithContext(context.WithValue(r.Context(), ctxKey{}, &geladen{z, err}))
+		if err != nil {
+			http.Error(w, "berechtigungen", http.StatusInternalServerError)
+			return
+		}
+		an, err := anspruch(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if z.Darf(an) {
+			next(w, r)
+			return
+		}
+		a.abweisen(w, r, z, an)
+	}
+}
+
+func Fest(an Anspruch) func(*http.Request) (Anspruch, error) {
+	return func(*http.Request) (Anspruch, error) { return an, nil }
+}
+
+func (a auth) abweisen(w http.ResponseWriter, r *http.Request, z Zugriff, an Anspruch) {
+	if z.wer == WerMieter {
+		http.Error(w, "Nicht freigegeben", http.StatusForbidden) // Seite im Repo
+		return
+	}
+	http.Redirect(w, r, "/dashboard?login=1", http.StatusSeeOther)
+}
+
+// --- Nav und Templates ---
+
+// navData haelt den Zugriff selbst; Templates fragen .Zugriff.Darf nicht
+// (Methoden mit Struct-Argument sind in Templates umstaendlich), sondern
+// benannte Fakten. Die bleiben als Felder, aber aus EINER Quelle.
+type navData struct {
+	Base    string
+	Zugriff Zugriff
+	// Ersetzt IsLoggedIn (hiess: ist Vermieter).
+	IstVermieter bool
+	KannAblesungenAnsehen, KannFixkostenAnsehen bool
+}
+
+// Fuer Templates: Methoden ohne Argumente auf Zugriff, z.B.
+// {{if .Zugriff.Personenbezug}}. Der Rest ueber Felder der Nav.
+func (a auth) NavData(r *http.Request) (navData, error) {
+	z, err := a.Zugriff(r)
+	return navData{
+		Zugriff:               z,
+		IstVermieter:          z.Personenbezug(),
+		KannFixkostenAnsehen:  z.Darf(Braucht(RechtFixkostenAnsehen)),
+	}, err
+}
+
+// --- Dashboard-Ansicht: sichtbar fragt denselben Zugriff ---
+
+type entitaet struct{ recht Recht }
+
+func (e entitaet) sichtbar(z Zugriff) bool { return z.Darf(Braucht(e.recht)) }
+
+// Miete im Jahreskarten-Block: z.Darf(Braucht(RechtMiete)); eine zweite
+// Vermieter-Regel gibt es nicht mehr.
+func mieteSichtbar(z Zugriff) bool { return z.Darf(Braucht(RechtMiete)) }
+
+// --- Stammdaten-Personenbezug ---
+
+type apartment struct{ MieterName, MieterAnschrift, MieterSeit string }
+
+func schwaerzen(z Zugriff, as []apartment) {
+	if z.Personenbezug() {
+		return
+	}
+	for i := range as {
+		as[i] = apartment{}
+	}
+}
+
+// --- Test-Adapter ---
+
+type festeQuellen struct {
+	wer Wer
+	ber Berechtigungen
+	err error
+}
+
+func (f festeQuellen) Wer(*http.Request) (Wer, Sitzung)               { return f.wer, Sitzung{} }
+func (f festeQuellen) Berechtigungen(*http.Request) (Berechtigungen, error) { return f.ber, f.err }
+
+// FuerTest baut auth ohne Cookies und ohne DB.
+func FuerTest(w Wer, b Berechtigungen) auth { return auth{q: festeQuellen{wer: w, ber: b}} }
+
+// --- Produktions-Adapter (Skizze) ---
+
+type prodQuellen struct {
+	resolve func(*http.Request) (Wer, Sitzung)  // wrappt auth.resolveSession + Passwortlage
+	lesen   func(*http.Request) (Berechtigungen, error) // dbFromContext(ctx) + GetBerechtigungen
+}
+
+func (p prodQuellen) Wer(r *http.Request) (Wer, Sitzung) { return p.resolve(r) }
+func (p prodQuellen) Berechtigungen(r *http.Request) (Berechtigungen, error) { return p.lesen(r) }
+
+// --- Nutzung in handlers.go ---
+//
+//   mux.HandleFunc("GET /fixkosten", withDB(db, demoDB,
+//       a.Gate(Fest(Braucht(RechtFixkostenAnsehen)), handleFixkostenListe(a))))
+//   mux.HandleFunc("POST /fixkosten", withDB(db, demoDB,
+//       a.Gate(Fest(NurVermieter), handleCreateFixkosten())))
+//   mux.HandleFunc("POST /ablesungen/{id}", withDB(db, demoDB,
+//       a.Gate(teilstandAnspruch, handleUpdateAblesung())))
+//
+// Dashboard (ungated, braucht aber Zugriff):
+//   z, err := a.Zugriff(r); if err != nil { 500 }
+//   view := sichtbareAnsicht(z, dd, miete)   // kein Berechtigungen-Parameter mehr
+

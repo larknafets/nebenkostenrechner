@@ -1,0 +1,283 @@
+// Entwurf: Zugriffs-Module (Ticket #316), Variante "häufigster Aufrufer".
+// Kompilierfähig als eigenständige Datei (Stubs für store.* unten).
+//
+// Häufigkeit am Code (Ist-Zustand):
+//   Route-Gate        23 Registrierungen: 16x RequireLogin (nur Vermieter), 7x RequireRecht,
+//                     dazu requireLoginUnlessTeilstand (beides)
+//   NavData           13 Handler rufen a.NavData(r) und betten das Ergebnis ein
+//   Templates         26 Stellen: 17x IsLoggedIn (= "ist Vermieter"), 9x .Kann*
+//   Dashboard         1x (betrachter + GetBerechtigungen + sichtbareAnsicht)
+//   Stammdaten        1x Personenbezug (!nav.IsLoggedIn), 2x GetBerechtigungen fürs Formular
+// => Standardfall = "Gate für eine Route" und "Fakten fürs Template". Beide dürfen
+//    keine Fehlerbehandlung und keine Rollen-Kenntnis beim Aufrufer verlangen.
+package zugriffsketch
+
+import (
+	"context"
+	"errors"
+	"log"
+	"net/http"
+	"sync"
+)
+
+// ---- Stubs (echt: internal/store, internal/web) ---------------------------
+
+type Recht string
+
+const (
+	RechtAblesungenAnsehen Recht = "ablesungen_ansehen"
+	RechtAblesungAnlegen   Recht = "ablesung_anlegen"
+	RechtFixkostenAnsehen  Recht = "fixkosten_ansehen"
+	RechtStammdatenAnsehen Recht = "stammdaten_ansehen"
+	RechtMiete             Recht = "miete"
+	RechtWohnung1          Recht = "wohnung1"
+)
+
+type Rolle string
+
+const (
+	RolleNichtAngemeldet Rolle = "nicht_angemeldet"
+	RolleMieter          Rolle = "mieter"
+	// Neu, nur im Zugriffs-Module: der Vermieter ist eine Rolle, aber ohne
+	// konfigurierbare Zeile in der Matrix.
+	RolleVermieter Rolle = "vermieter"
+)
+
+type Berechtigungen map[Rolle]map[Recht]bool
+
+func DefaultBerechtigungen() Berechtigungen { return Berechtigungen{} }
+func (b Berechtigungen) Erlaubt(r Rolle, x Recht) bool { return b[r][x] }
+
+// ---- Seam 1: Sitzung -> Rolle (Adapter: Cookies; Test: feste Rolle) -------
+
+// Sitzungen beantwortet nur: welche Rolle hat diese Anfrage? Die Vorrangregel
+// (Demo vor Vermieter vor Mieter, "ohne Vermieter-Kennwort ist jeder Vermieter")
+// lebt im Cookie-Adapter, nicht im Module.
+type Sitzungen interface {
+	Rolle(r *http.Request) (rolle Rolle, istDemo, hatSitzung bool)
+}
+
+// ---- Seam 2: Berechtigungsmatrix (Adapter: SQLite; Test: Map) --------------
+
+type Matrix interface {
+	Lade(ctx context.Context) (Berechtigungen, error)
+}
+
+// ---- Das Module ------------------------------------------------------------
+
+// Zugang ist das Module, einmal in NewMux gebaut (ersetzt `auth` für alle
+// Zugriffsfragen; Login/Logout bleiben bei auth).
+type Zugang struct {
+	sitzungen Sitzungen
+	matrix    Matrix
+}
+
+func NewZugang(s Sitzungen, m Matrix) *Zugang { return &Zugang{sitzungen: s, matrix: m} }
+
+// Anspruch ist, was eine Route verlangt. Zwei Werte, eine Form: kein
+// Pseudo-Recht in der Tabelle (die Matrix hat bewusst keine Vermieter-Spalte,
+// GLOSSARY), aber auch kein zweiter Gate-Weg.
+type Anspruch struct {
+	recht        Recht
+	nurVermieter bool
+}
+
+var NurVermieter = Anspruch{nurVermieter: true}
+
+func Braucht(r Recht) Anspruch { return Anspruch{recht: r} }
+
+// Zugriff ist die Antwort fuer EINE Anfrage: unveraenderlich, pro Request
+// hoechstens einmal aus der DB geladen (lazy, beim ersten Darf einer
+// nicht-Vermieter-Rolle). Die Felder sind absichtlich exportiert und flach,
+// damit Templates sie ohne Methodenaufruf lesen: {{if .Vermieter}}.
+type Zugriff struct {
+	Rolle Rolle
+
+	// Fuer Templates / navData (die Einbettung ersetzt die 4 Kann*-Kopien):
+	Vermieter             bool // ersetzt IsLoggedIn (17 Stellen)
+	KannAblesungenAnsehen bool
+	KannAblesungAnlegen   bool
+	KannFixkostenAnsehen  bool
+	KannStammdatenAnsehen bool
+
+	Demo, HatSitzung bool
+
+	lade *lazy
+}
+
+type lazy struct {
+	once sync.Once
+	b    Berechtigungen
+	err  error
+	m    Matrix
+	ctx  context.Context
+}
+
+func (l *lazy) get() Berechtigungen {
+	l.once.Do(func() {
+		l.b, l.err = l.m.Lade(l.ctx)
+		if l.err != nil {
+			// Eine Regel fuer alle Aufrufer: loggen, Defaults nehmen.
+			// Eine Berechtigungs-Lesung reisst keine Seite um (heute: rechte
+			// so, Dashboard 500; das Dashboard wird angeglichen).
+			log.Printf("berechtigungen: %v", l.err)
+			l.b = DefaultBerechtigungen()
+		}
+	})
+	return l.b
+}
+
+// Zugriff ist der Standardeinstieg: kein Fehlerrueckgabewert, kein DB-Argument.
+// Mehrfachaufrufe im selben Request sind billig (Cache im Request-Context, den
+// withDB anlegt; dort steht auch die DB, daher entfaellt dbFromContextOptional).
+func (z *Zugang) Zugriff(r *http.Request) Zugriff {
+	if c, ok := r.Context().Value(cacheKey{}).(*cache); ok {
+		return c.hole(z, r)
+	}
+	return z.bauen(r)
+}
+
+type cacheKey struct{}
+type cache struct {
+	once sync.Once
+	z    Zugriff
+}
+
+// WithZugriff ist die Middleware-Haelfte, die withDB aufruft.
+func (z *Zugang) WithZugriff(r *http.Request) *http.Request {
+	return r.WithContext(context.WithValue(r.Context(), cacheKey{}, &cache{}))
+}
+
+func (c *cache) hole(z *Zugang, r *http.Request) Zugriff {
+	c.once.Do(func() { c.z = z.bauen(r) })
+	return c.z
+}
+
+func (z *Zugang) bauen(r *http.Request) Zugriff {
+	rolle, demo, sitzung := z.sitzungen.Rolle(r)
+	l := &lazy{m: z.matrix, ctx: r.Context()}
+	zg := Zugriff{Rolle: rolle, Demo: demo, HatSitzung: sitzung, Vermieter: rolle == RolleVermieter, lade: l}
+	zg.KannAblesungenAnsehen = zg.Darf(RechtAblesungenAnsehen)
+	zg.KannAblesungAnlegen = zg.Darf(RechtAblesungAnlegen)
+	zg.KannFixkostenAnsehen = zg.Darf(RechtFixkostenAnsehen)
+	zg.KannStammdatenAnsehen = zg.Darf(RechtStammdatenAnsehen)
+	return zg
+}
+
+// Darf: die EINE Vermieter-Regel (Vermieter darf alles). Die Matrix wird nur
+// fuer Nicht-Vermieter geladen.
+func (z Zugriff) Darf(recht Recht) bool {
+	if z.Vermieter {
+		return true
+	}
+	return z.lade.get().Erlaubt(z.Rolle, recht)
+}
+
+// Erfuellt wendet einen Anspruch an (Gate und requireLoginUnlessTeilstand).
+func (z Zugriff) Erfuellt(a Anspruch) bool {
+	if a.nurVermieter {
+		return z.Vermieter
+	}
+	return z.Darf(a.recht)
+}
+
+// Personenbezug: die EINE Regel "Namen, Anschriften, IBAN nur fuer den
+// Vermieter" (Stammdaten, Fixkosten-Detail, Abrechnung).
+func (z Zugriff) Personenbezug() bool { return z.Vermieter }
+
+// Matrix liefert die ganze Tabelle fuer das Stammdaten-Formular, aus
+// demselben Cache (kein zweiter GetBerechtigungen).
+func (z Zugriff) Matrix() Berechtigungen { return z.lade.get() }
+
+// SichtbarDashboard: die Dashboard-Tabelle fragt dasselbe Darf, nicht mehr
+// betrachter+Berechtigungen. Entitaet -> Recht bleibt in sichtbarkeit.go.
+func (z Zugriff) Sichtbar(e Entitaet) bool {
+	if z.Vermieter {
+		return true
+	}
+	r, ok := e.RechtFuer()
+	return ok && z.Darf(r)
+}
+
+type Entitaet struct{ ID int64 }
+
+func (e Entitaet) RechtFuer() (Recht, bool) { return RechtWohnung1, e.ID == 1 }
+
+// ---- Gate (Route) ------------------------------------------------------------
+
+// Gate ist der Standardfall fuer Routen. NurVermieter(h) und Recht(r, h) sind
+// zwei Einzeiler darauf, damit die 23 Registrierungen kurz bleiben.
+func (z *Zugang) Gate(a Anspruch, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		zg := z.Zugriff(r)
+		if zg.Erfuellt(a) {
+			next(w, r)
+			return
+		}
+		if zg.Rolle == RolleMieter {
+			z.keineBerechtigung(w, r, a)
+			return
+		}
+		z.zumLogin(w, r)
+	}
+}
+
+func (z *Zugang) NurVermieter(h http.HandlerFunc) http.HandlerFunc { return z.Gate(NurVermieter, h) }
+func (z *Zugang) Recht(r Recht, h http.HandlerFunc) http.HandlerFunc {
+	return z.Gate(Braucht(r), h)
+}
+
+func (z *Zugang) keineBerechtigung(w http.ResponseWriter, r *http.Request, a Anspruch) {
+	http.Error(w, "Nur fuer den Vermieter / Nicht freigegeben", http.StatusForbidden)
+}
+func (z *Zugang) zumLogin(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/dashboard?login=1", http.StatusSeeOther)
+}
+
+// ---- Usage -------------------------------------------------------------------
+//
+// Route-Gate (handlers.go):
+//   mux.HandleFunc("GET /abrechnung",  withDB(db, demoDB, zg.NurVermieter(handleAbrechnung(zg))))
+//   mux.HandleFunc("GET /ablesungen",  withDB(db, demoDB, zg.Recht(store.RechtAblesungenAnsehen, ...)))
+//   requireLoginUnlessTeilstand:  an := NurVermieter; if !complete { an = Braucht(RechtAblesungAnlegen) }
+//                                 zg.Gate(an, next)(w, r)
+//
+// Nav (alle 13 Handler), ein Feld, kein Aufruf mit Fehler:
+//   type navData struct { Base string; Zugriff; IsDemoSession, ShowLoginEntry... }
+//   data := struct{ navData; ... }{ navData: navFor(r, zg.Zugriff(r)) }
+//   Templates: {{if .Vermieter}} statt {{if .IsLoggedIn}}; .Kann* unveraendert (promoted).
+//
+// Dashboard:
+//   z := zg.Zugriff(r)
+//   view := sichtbareAnsicht(z, dd, miete)   // intern z.Sichtbar(e), z.Darf(RechtMiete)
+//   // kein GetBerechtigungen, kein 500 mehr fuer Ladefehler
+//
+// Stammdaten-Personenbezug:
+//   z := zg.Zugriff(r)
+//   if !z.Personenbezug() { leerePersonendaten(apartments, &haus) }
+//   berechtigungen := z.Matrix()      // Formular, gleicher Cache
+//
+// Test-Adapter:
+//   z := NewZugang(feste(RolleMieter), matrixAus(Berechtigungen{...}))
+//   oder Fehler: matrixAus(nil, errors.New("db"))  -> Defaults, Log, kein Fehler
+
+// Test-Adapter fuer beide Seams.
+type feste Rolle
+
+func (f feste) Rolle(*http.Request) (Rolle, bool, bool) { return Rolle(f), false, f != "" }
+
+type matrixAus struct {
+	b   Berechtigungen
+	err error
+}
+
+func (m matrixAus) Lade(context.Context) (Berechtigungen, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return m.b, nil
+}
+
+var _ = errors.New
+var _ Sitzungen = feste("")
+var _ Matrix = matrixAus{}

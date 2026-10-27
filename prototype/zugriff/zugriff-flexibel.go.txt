@@ -1,0 +1,285 @@
+// Entwurf "flexibel": Zugriffs-Module fuer Rolle und Recht (Ticket #316).
+// Package zugriff, kompilierfaehig als eigenes Package gedacht. Die Seams
+// (Sitzung, Quelle) haben je einen Produktions-Adapter in web/store und einen
+// Test-Adapter. Keine Gedankenstriche.
+package zugriff
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log"
+	"sync"
+)
+
+// ---- Werte --------------------------------------------------------------
+
+// Rolle ist, wer jemand ist (GLOSSARY). Offener String-Typ: eine vierte Rolle
+// ist ein Eintrag in Rollen, kein Umbau. Heute gebraucht: nur 3.
+type Rolle string
+
+const (
+	NichtAngemeldet Rolle = "nicht_angemeldet"
+	Mieter          Rolle = "mieter"
+	Vermieter       Rolle = "vermieter" // Demo-Sitzung und "kein Passwort gesetzt" landen hier
+)
+
+// Recht ist, was eine Rolle darf. NurVermieter ist ein eigener Wert (siehe
+// Trade-offs): ein Recht ohne Zeile in der Matrix, das nur der Vermieter hat.
+type Recht string
+
+const (
+	Wohnung1          Recht = "wohnung1"
+	Wohnung2          Recht = "wohnung2"
+	Waermepumpe       Recht = "waermepumpe"
+	Wallboxen         Recht = "wallboxen"
+	PVAnlage          Recht = "pv_anlage"
+	AblesungenAnsehen Recht = "ablesungen_ansehen"
+	AblesungAnlegen   Recht = "ablesung_anlegen"
+	StammdatenAnsehen Recht = "stammdaten_ansehen"
+	FixkostenAnsehen  Recht = "fixkosten_ansehen"
+	Miete             Recht = "miete"
+
+	// NurVermieter hat keine Zeile in der Matrix und keinen Haken auf der
+	// Stammdatenseite. Heute RequireLogin, Personenbezug, Abrechnung, CSV.
+	NurVermieter Recht = "nur_vermieter"
+)
+
+// Entitaet bindet ein Dashboard-Objekt an sein Recht. Die Tabelle ist Daten
+// (heute 5 Zeilen, vorher switch in sichtbarkeit.go). Feinere Rechte je
+// Entitaet (Wohnung 3) sind eine neue Zeile, kein neuer Code.
+type Entitaet struct {
+	Art  string // "wohnung", "wallbox", "wp", "pv"
+	ID   int64  // nur fuer Wohnung
+	Recht Recht
+}
+
+// Regeln ist die eine Regeltabelle. Als Daten gehalten, damit Matrix-UI,
+// Defaults, Nav und Gate dieselbe Quelle lesen. NICHT als DB-Tabelle: die
+// Regeln aendern sich nur mit dem Code, nur die Haken sind Laufzeitdaten.
+type Regeln struct {
+	Rechte    []RechtInfo // Anzeigereihenfolge, Defaults
+	Rollen    []Rolle     // konfigurierbare Rollen (ohne Vermieter)
+	Entitaeten []Entitaet
+}
+
+type RechtInfo struct {
+	Recht    Recht
+	Label    string
+	Default  map[Rolle]bool
+	// Personenbezug ist heute nur eine Eigenschaft von NurVermieter; als Feld
+	// erst anlegen, wenn ein zweites Merkmal (z.B. Anonymisierung) kommt.
+}
+
+// Matrix sind die gespeicherten Haken, immer vollstaendig (Defaults gefuellt).
+type Matrix map[Rolle]map[Recht]bool
+
+// ---- Seams --------------------------------------------------------------
+
+// Sitzung ist die Seam zu Cookies und Passwoertern. Adapter: HTTP (auth.go,
+// resolveSession), Test (feste Rolle). Liefert die Rolle, nie ein Recht.
+type Sitzung interface {
+	Rolle() Rolle
+	// Echt meldet, ob es eine beendbare Sitzung gibt (Logout-Eintrag).
+	Echt() bool
+	Demo() bool
+}
+
+// Quelle ist die Seam zur Persistenz der Haken. Adapter: store.GetBerechtigungen
+// (SQLite, db oder demoDB je Request), Test: Map im Speicher.
+type Quelle interface {
+	Matrix() (Matrix, error)
+}
+
+// ---- Interface ----------------------------------------------------------
+
+// Zugriff ist die Entscheidung fuer EINEN Request. Einmal gebaut, Matrix
+// hoechstens einmal geladen (lazy, sync.Once), danach nur lesen. Eine Rolle,
+// eine Regel "Vermieter darf alles".
+type Zugriff struct {
+	regeln Regeln
+	sitz   Sitzung
+	quelle Quelle
+
+	once   sync.Once
+	matrix Matrix
+	err    error
+}
+
+// Neu baut den Zugriff eines Requests. Laedt nichts, kann nicht scheitern.
+func Neu(r Regeln, s Sitzung, q Quelle) *Zugriff {
+	return &Zugriff{regeln: r, sitz: s, quelle: q}
+}
+
+// Rolle ist die einzige Frage, die ohne Datenbank beantwortet wird.
+func (z *Zugriff) Rolle() Rolle { return z.sitz.Rolle() }
+
+// IstVermieter ersetzt istVermieter, betrachter==Vermieter, rechteSicht.vermieter
+// und IsLoggedIn in Templates. Kein Ladefehler moeglich.
+func (z *Zugriff) IstVermieter() bool { return z.Rolle() == Vermieter }
+
+// Darf ist die eine Berechtigungsfrage. Vermieter: immer true, ohne Laden.
+// NurVermieter: fuer alle anderen false, ohne Laden. Sonst Matrix-Lookup.
+// Ladefehler: false (fail closed) und der Fehler bleibt ueber Fehler() sichtbar.
+func (z *Zugriff) Darf(recht Recht) bool {
+	ok, _ := z.DarfErr(recht)
+	return ok
+}
+
+// DarfErr liefert zusaetzlich den Ladefehler, fuer Aufrufer die ihn zeigen
+// wollen (Dashboard: 500). Gleiche Entscheidung wie Darf, ein Pfad.
+func (z *Zugriff) DarfErr(recht Recht) (bool, error) {
+	switch {
+	case z.IstVermieter():
+		return true, nil
+	case recht == NurVermieter:
+		return false, nil
+	}
+	m, err := z.laden()
+	if err != nil {
+		return false, err
+	}
+	return m[z.Rolle()][recht], nil
+}
+
+// Sieht ist Darf fuer eine Entitaet (Dashboard). Unbekannte Entitaet: false.
+func (z *Zugriff) Sieht(e Entitaet) bool {
+	for _, k := range z.regeln.Entitaeten {
+		if k.Art == e.Art && k.ID == e.ID {
+			return z.Darf(k.Recht)
+		}
+	}
+	return false
+}
+
+// Fehler ist der erste Ladefehler dieses Requests, nil wenn keiner oder noch
+// nichts geladen wurde. Handler die Fehlerverhalten wollen, fragen hier.
+func (z *Zugriff) Fehler() error { return z.err }
+
+// Nav ist alles, was Templates ueber Zugriff wissen. Einmal berechnet, flach,
+// damit Templates keine Methoden mit Fehlerpfad aufrufen.
+type Nav struct {
+	Rolle         Rolle
+	IstVermieter  bool // ersetzt IsLoggedIn
+	Demo          bool
+	LoginEintrag  bool
+	LogoutEintrag bool
+	Darf          map[Recht]bool // {{if .Darf.fixkosten_ansehen}}: Schluessel sind Recht-Werte
+}
+
+// Nav fragt jedes Recht der Regeln einmal. Ein Ladevorgang pro Request.
+func (z *Zugriff) Nav() Nav {
+	n := Nav{
+		Rolle:         z.Rolle(),
+		IstVermieter:  z.IstVermieter(),
+		Demo:          z.sitz.Demo(),
+		LoginEintrag:  z.Rolle() != Vermieter || !z.sitz.Echt(),
+		LogoutEintrag: z.sitz.Echt(),
+		Darf:          map[Recht]bool{NurVermieter: z.IstVermieter()},
+	}
+	n.LoginEintrag = !z.sitz.Demo() && !(z.IstVermieter() && z.sitz.Echt())
+	for _, ri := range z.regeln.Rechte {
+		n.Darf[ri.Recht] = z.Darf(ri.Recht)
+	}
+	return n
+}
+
+// Personenbezug ist die eine Regel "Personenbezug nur fuer Vermieter".
+// Handler fragen sie, statt NurVermieter zu raten, so liegt die Regel hier und
+// ist spaeter aenderbar (z.B. Mieter sieht eigenen Namen).
+func (z *Zugriff) Personenbezug() bool { return z.Darf(NurVermieter) }
+
+func (z *Zugriff) laden() (Matrix, error) {
+	z.once.Do(func() {
+		m, err := z.quelle.Matrix()
+		if err != nil {
+			z.err = fmt.Errorf("berechtigungen: %w", err)
+			log.Print(z.err)
+			return
+		}
+		z.matrix = m
+	})
+	return z.matrix, z.err
+}
+
+// ---- Verdrahtung in web (Skizze) ---------------------------------------
+
+type ctxKey struct{}
+
+// MitZugriff legt den Zugriff in den Context (von withDB-nahem Middleware,
+// die Sitzung und db kennt). Danach braucht niemand dbFromContextOptional.
+func MitZugriff(ctx context.Context, z *Zugriff) context.Context {
+	return context.WithValue(ctx, ctxKey{}, z)
+}
+
+// Aus liest ihn; Panik wie dbFromContext, wenn die Middleware fehlt.
+func Aus(ctx context.Context) *Zugriff {
+	z, ok := ctx.Value(ctxKey{}).(*Zugriff)
+	if !ok {
+		panic("zugriff: nicht im Context, Route nicht in mitZugriff")
+	}
+	return z
+}
+
+// Verweigerung sagt dem Gate, was es tun soll; die Seiten bleiben in web.
+type Verweigerung int
+
+const (
+	Erlaubt Verweigerung = iota
+	ZumLogin             // nicht angemeldet: Overlay
+	Seite                // Mieter: Seite "Nicht freigegeben" / "Nur fuer den Vermieter"
+	Ladefehler           // 500, nie stillschweigend Defaults
+)
+
+// Pruefen ist die Entscheidung des Route-Gates, ohne HTTP. Gate in web:
+//   func (a auth) Gate(recht Recht, next) { switch Aus(ctx).Pruefen(recht) {...} }
+// Seite-Text unterscheidet web per recht == NurVermieter.
+func (z *Zugriff) Pruefen(recht Recht) Verweigerung {
+	ok, err := z.DarfErr(recht)
+	switch {
+	case err != nil:
+		return Ladefehler
+	case ok:
+		return Erlaubt
+	case z.Rolle() == Mieter:
+		return Seite
+	}
+	return ZumLogin
+}
+
+// ---- Test-Adapter -------------------------------------------------------
+
+type FesteSitzung struct {
+	R        Rolle
+	IstEcht  bool
+	IstDemo  bool
+}
+
+func (f FesteSitzung) Rolle() Rolle { return f.R }
+func (f FesteSitzung) Echt() bool   { return f.IstEcht }
+func (f FesteSitzung) Demo() bool   { return f.IstDemo }
+
+type FesteQuelle struct {
+	M   Matrix
+	Err error
+}
+
+func (f FesteQuelle) Matrix() (Matrix, error) {
+	if f.Err != nil {
+		return nil, f.Err
+	}
+	return f.M, nil
+}
+
+var ErrUnbekannt = errors.New("zugriff: unbekanntes Recht")
+
+// Pflicht fuer Nutzer des Hilfsfilters (nur Stammdaten): ob ein Recht in der
+// Matrix existiert; NurVermieter nicht.
+func (r Regeln) Konfigurierbar(recht Recht) bool {
+	for _, ri := range r.Rechte {
+		if ri.Recht == recht {
+			return true
+		}
+	}
+	return false
+}
