@@ -141,6 +141,29 @@ func TestStammdaten_BerechtigungenSpeichern(t *testing.T) {
 	}
 }
 
+// A form without the Berechtigungen table must not read them: saving the
+// Stammdaten works even when they cannot be loaded, and only a form that
+// carries the table fails then.
+func TestStammdaten_OhneTabelleLiestKeineBerechtigungen(t *testing.T) {
+	db := openTestDB(t)
+	if _, err := db.Exec(`DROP TABLE berechtigungen`); err != nil {
+		t.Fatal(err)
+	}
+	post := func(extra url.Values) int {
+		req := httptest.NewRequest(http.MethodPost, "/stammdaten", strings.NewReader(stammdatenForm(extra).Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
+		handleUpdateStammdaten()(w, requestWithDB(req, db))
+		return w.Code
+	}
+	if got := post(nil); got != http.StatusFound {
+		t.Errorf("Formular ohne Tabelle: status = %d, want %d", got, http.StatusFound)
+	}
+	if got := post(url.Values{"berechtigung_rolle": {"mieter"}}); got != http.StatusInternalServerError {
+		t.Errorf("Formular mit Tabelle: status = %d, want %d", got, http.StatusInternalServerError)
+	}
+}
+
 // --- Berechtigungen apply (#311) ---
 
 // rechteMux builds a mux over a database with demo data and both passwords and
