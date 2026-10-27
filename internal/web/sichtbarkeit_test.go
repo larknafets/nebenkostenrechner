@@ -131,7 +131,7 @@ func TestLoadDashboardData_LiefertMieteProjektion(t *testing.T) {
 	}
 }
 
-// The dropdown of the Monatsverlauf lists what the viewer sees, in panel
+// The dropdown of the Monatsverlauf lists what the viewer sees, in card
 // order; with one entry only the template shows no dropdown (#306).
 func TestVerlaufAuswahl(t *testing.T) {
 	dd := dashboardData{
@@ -150,7 +150,7 @@ func TestVerlaufAuswahl(t *testing.T) {
 		}
 		return out
 	}
-	if got, want := ids(betrachterAngemeldet), []string{"1", "2", "wallbox", "waermepumpe", "pv"}; !reflect.DeepEqual(got, want) {
+	if got, want := ids(betrachterAngemeldet), []string{"1", "2", "waermepumpe", "wallbox", "pv"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("angemeldet = %v, want %v", got, want)
 	}
 	if got, want := ids(betrachterAnonym), []string{"2", "waermepumpe"}; !reflect.DeepEqual(got, want) {

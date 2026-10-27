@@ -255,7 +255,7 @@ Die Beträge darunter stehen in zwei Zeilen: erst Strom, Heizung/Ww und Wasser, 
 Wohnung 1 bekommt in der Jahreskarte die Zeile **PV-Gutschrift** (auch mit 0,00, dann ohne Minus; Wohnung 2 zeigt entsprechend den PV-Anteil in kWh auch mit 0): Sie senkt die Gesamtkosten, aber nicht die Verbrauchskosten und ist kein Balkensegment.
 Im Monatsverlauf steht sie nur in "Kombiniert" (Gesamt abzüglich Gutschrift) und fließt in den Saldo ein, nicht in "Verbrauch" und "Verbrauchswerte".
 Die haus-weiten Karten "Wärmepumpe", "Wallboxen" und "PV-Anlage" zeigen ihre Werte für das ganze Haus. Die Wärmepumpe (Stromkosten und PV-Anteil) ist immer sichtbar, auch ohne Login, und hat wie die Wallboxen einen eigenen Monatsverlauf.
-Welcher Monatsverlauf unter den Karten steht (Wohnungen, Wallboxen, Wärmepumpe, PV-Anlage), wählst du in einem Dropdown "Monatsübersicht"; gibt es nur eine Auswahl, entfällt das Dropdown. Die Auswahl merkt sich der Browser.
+Welcher Monatsverlauf unter den Karten steht (Wohnungen, Wärmepumpe, Wallboxen, PV-Anlage), wählst du in einem Dropdown "Monatsübersicht"; gibt es nur eine Auswahl, entfällt das Dropdown. Die Auswahl merkt sich der Browser.
 Die Jahreskarte der vermieteten Wohnung zeigt unter Guthaben / Nachzahlung die **Mieteinnahmen** des Anzeigejahres (Summe der Miete aller Fixkosten-Eingaben des Jahres, auch mit 0,00; bei Eigennutzung nie).
 Der Block erscheint nur für angemeldete Nutzer und steht ohne Login nicht im HTML-Quelltext.
 
