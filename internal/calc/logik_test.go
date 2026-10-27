@@ -13,3 +13,18 @@ func TestLogikLabels_CoversAllLogikKonstanten(t *testing.T) {
 		}
 	}
 }
+
+// TestLogikLabels_MatchStoreLogiken: store.Logiken (the store cannot read
+// LogikLabels) holds exactly the keys of LogikLabels.
+func TestLogikLabels_MatchStoreLogiken(t *testing.T) {
+	for logik := range LogikLabels {
+		if !store.Logiken[logik] {
+			t.Errorf("store.Logiken missing %q from LogikLabels", logik)
+		}
+	}
+	for logik := range store.Logiken {
+		if LogikLabels[logik] == "" {
+			t.Errorf("LogikLabels missing entry for store.Logiken %q", logik)
+		}
+	}
+}

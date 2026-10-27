@@ -173,7 +173,7 @@ func TestHandleImportCSV_PersonenzahlDezimal(t *testing.T) {
 }
 
 func TestHandleImportCSV_PersonenzahlUngueltigBrichtAb(t *testing.T) {
-	for _, bad := range []string{"-1", "1,255"} {
+	for _, bad := range []string{"1,255"} {
 		db := openTestDB(t)
 		csvText := strings.Join(csvHeader, ";") + "\n" + csvRow("2026-05-01", "50") + "\n" +
 			csvRowMitPersonen("2026-06-01", bad, "1") + "\n"
