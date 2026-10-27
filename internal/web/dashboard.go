@@ -3,6 +3,7 @@ package web
 import (
 	"database/sql"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
@@ -20,6 +21,28 @@ type dashboardData struct {
 	// WallboxWeiterberechnen is the house flag of the same name; with the
 	// Wohnungsstatus it decides whether a zero Wallbox line is shown.
 	WallboxWeiterberechnen bool
+}
+
+// verlaufOption is one entry of the dropdown that picks the Monatsverlauf
+// shown: an apartment or one of the whole-house series the viewer may see.
+type verlaufOption struct {
+	ID   string
+	Name string
+}
+
+// verlaufAuswahl lists the dropdown entries of the visible Verläufe in the
+// order of the panels: apartments, Wallboxen, Wärmepumpe, PV-Anlage.
+func verlaufAuswahl(v ansicht) []verlaufOption {
+	var out []verlaufOption
+	for _, c := range v.Cards {
+		out = append(out, verlaufOption{ID: strconv.FormatInt(c.ApartmentID, 10), Name: c.ApartmentName})
+	}
+	for _, s := range []*sichtbarerSimple{v.Wallbox, v.WP, v.PV} {
+		if s != nil {
+			out = append(out, verlaufOption{ID: s.Verlauf.ID, Name: s.Verlauf.Name})
+		}
+	}
+	return out
 }
 
 // mieteMonat is the Miete projection of one Fixkosten-Eingabe: its
@@ -159,6 +182,7 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			Cards              []dashboardJahresCard
 			VerlaufSpalten     []dashboardVerlaufSpalte
 			WallboxCard        dashboardSimpleCard
+			VerlaufAuswahl     []verlaufOption
 			WallboxVerlauf     dashboardSimpleSpalte
 			ShowWallbox        bool
 			WPCard             dashboardSimpleCard
@@ -178,6 +202,7 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			Cards:              view.Cards,
 			VerlaufSpalten:     view.VerlaufSpalten,
 			WallboxCard:        wallboxCard,
+			VerlaufAuswahl:     verlaufAuswahl(view),
 			WallboxVerlauf:     wallboxVerlauf,
 			ShowWallbox:        view.Wallbox != nil,
 			WPCard:             wpCard,
