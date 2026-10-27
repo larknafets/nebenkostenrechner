@@ -74,6 +74,8 @@ func TestCSV_EingabeFehlerTexteMitZeilennummer(t *testing.T) {
 			`Zeile 3: ungültiger Abrechnungsmonat "Juli" (Format JJJJ-MM-01)`},
 		{"Abrechnungsmonat leer", "monat", "",
 			`Zeile 3: ungültiger Abrechnungsmonat "" (Format JJJJ-MM-01)`},
+		{"Personenzahl keine Zahl", "personen_2", "abc",
+			`Zeile 3: ungültige Personenzahl für Wohnung 2: "abc"`},
 		{"Personenzahl", "personen_2", "1,255",
 			`Zeile 3: ungültige Personenzahl für Wohnung 2: "1,255" (Personenzahl darf höchstens 2 Nachkommastellen haben)`},
 	}
