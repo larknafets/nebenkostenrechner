@@ -19,7 +19,7 @@
           <option value="eigennutzung" {{if not .Vermietet}}selected{{end}}>Eigennutzung</option>
         </select>
       </div>
-      {{if $.Vermieter}}
+      {{if $.Personenbezug}}
       <div class="field"><label>Name des Mieters bzw. Bewohners</label><input type="text" name="mieter_name_{{.ID}}" value="{{.MieterName}}"></div>
       <div class="field"><label>Zustellanschrift</label><textarea name="mieter_anschrift_{{.ID}}" rows="3">{{.MieterAnschrift}}</textarea></div>
       <div class="field mieter-seit" {{if not .Vermietet}}hidden{{end}}><label>Mieter seit (Einzugsmonat)</label><input type="month" name="mieter_seit_{{.ID}}" value="{{mieterSeit .MieterSeit}}"><p class="muted klein">Leer: ab Erfassungsbeginn. Der Übertrag in der Abrechnung zählt erst ab diesem Monat.</p></div>
@@ -28,7 +28,7 @@
     {{end}}
   </div>
 
-  {{if .Vermieter}}
+  {{if .Personenbezug}}
   <div class="panel">
     <h3>Vermieter und Objekt</h3>
     <p class="muted">Erscheinen im Kopf der Jahresabrechnung. Die IBAN ist optional und erscheint nur bei einer Nachzahlung.</p>
