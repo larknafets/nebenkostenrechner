@@ -3,34 +3,31 @@ package store
 import "testing"
 
 // TestWohnungsregeln_AnzeigeUndErfassung covers the display and capture
-// questions: status x Wallbox flag x Wallbox amount.
+// questions: status x Wallbox flag.
 func TestWohnungsregeln_AnzeigeUndErfassung(t *testing.T) {
 	for _, status := range []string{StatusEigennutzung, StatusVermietet} {
 		for _, wallbox := range []bool{false, true} {
-			for _, betrag := range []float64{0, 12.5} {
-				vermietet := status == StatusVermietet
-				// Written out from the table, not from the rule.
-				wantFormular := vermietet
-				wantMieteinnahmen := vermietet
-				wantDetailMiete := vermietet
-				wantWallboxZeile := !(vermietet && !wallbox && betrag == 0)
+			vermietet := status == StatusVermietet
+			// Written out from the table, not from the rule.
+			wantFormular := vermietet
+			wantMieteinnahmen := vermietet
+			wantDetailMiete := vermietet
 
-				s := NewWohnungsregeln(
-					Apartment{ID: 1, Status: status},
-					Haus{WallboxWeiterberechnen: wallbox},
-				)
-				if got := s.FixkostenAbschlagMiete(); got != wantFormular {
-					t.Errorf("%s wallbox=%v: FixkostenAbschlagMiete=%v, want %v", status, wallbox, got, wantFormular)
-				}
-				if got := s.Mieteinnahmen(); got != wantMieteinnahmen {
-					t.Errorf("%s wallbox=%v: Mieteinnahmen=%v, want %v", status, wallbox, got, wantMieteinnahmen)
-				}
-				if got := s.FixkostenDetailMiete(); got != wantDetailMiete {
-					t.Errorf("%s wallbox=%v: FixkostenDetailMiete=%v, want %v", status, wallbox, got, wantDetailMiete)
-				}
-				if got := s.JahreskarteWallboxZeile(betrag); got != wantWallboxZeile {
-					t.Errorf("%s wallbox=%v betrag=%v: JahreskarteWallboxZeile=%v, want %v", status, wallbox, betrag, got, wantWallboxZeile)
-				}
+			s := NewWohnungsregeln(
+				Apartment{ID: 1, Status: status},
+				Haus{WallboxWeiterberechnen: wallbox},
+			)
+			if got := s.FixkostenAbschlagMiete(); got != wantFormular {
+				t.Errorf("%s wallbox=%v: FixkostenAbschlagMiete=%v, want %v", status, wallbox, got, wantFormular)
+			}
+			if got := s.Mieteinnahmen(); got != wantMieteinnahmen {
+				t.Errorf("%s wallbox=%v: Mieteinnahmen=%v, want %v", status, wallbox, got, wantMieteinnahmen)
+			}
+			if got := s.FixkostenDetailMiete(); got != wantDetailMiete {
+				t.Errorf("%s wallbox=%v: FixkostenDetailMiete=%v, want %v", status, wallbox, got, wantDetailMiete)
+			}
+			if got, want := s.AbrechnungWallbox(), !vermietet || wallbox; got != want {
+				t.Errorf("%s wallbox=%v: AbrechnungWallbox=%v, want %v", status, wallbox, got, want)
 			}
 		}
 	}
@@ -58,9 +55,8 @@ func TestWohnungsregelnOhneHaus(t *testing.T) {
 			}
 
 			for name, ask := range map[string]func(){
-				"AbrechnungStrom":         func() { s.AbrechnungStrom() },
-				"AbrechnungWallbox":       func() { s.AbrechnungWallbox() },
-				"JahreskarteWallboxZeile": func() { s.JahreskarteWallboxZeile(0) },
+				"AbrechnungStrom":   func() { s.AbrechnungStrom() },
+				"AbrechnungWallbox": func() { s.AbrechnungWallbox() },
 			} {
 				func() {
 					defer func() {

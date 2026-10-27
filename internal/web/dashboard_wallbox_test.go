@@ -48,7 +48,7 @@ func wallboxPVAblesungen(t *testing.T, db *sql.DB, pvSchalter bool) {
 	}
 }
 
-func TestJahreskarte_WallboxKategorieBeiBeidenWohnungen(t *testing.T) {
+func TestJahreskarte_WallboxBlockBeiBeidenWohnungen(t *testing.T) {
 	db := openTestDB(t)
 	wallboxPVAblesungen(t, db, false)
 	dd, _, err := loadDashboardData(db)
@@ -58,20 +58,25 @@ func TestJahreskarte_WallboxKategorieBeiBeidenWohnungen(t *testing.T) {
 
 	for _, c := range []struct {
 		apt  int64
-		want float64
-	}{{1, 1.10}, {2, 3.30}} {
+		euro float64
+		kWh  float64
+	}{{1, 1.10, 5}, {2, 3.30, 15}} {
 		card, _ := buildEntityView(dd, c.apt)
-		seg := segmentByLabel(card.Segmente, "Wallbox")
-		if seg == nil {
-			t.Fatalf("Wohnung %d: Segment Wallbox fehlt: %+v", c.apt, card.Segmente)
+		// The Wallbox leaves the main bar and the chips (#304).
+		if seg := segmentByLabel(card.Segmente, "Wallbox"); seg != nil {
+			t.Errorf("Wohnung %d: Segment Wallbox im Hauptbalken: %+v", c.apt, seg)
 		}
-		if seg.Kosten != c.want {
-			t.Errorf("Wohnung %d: Wallbox = %v EUR, want %v", c.apt, seg.Kosten, c.want)
+		if card.Wallbox == nil || len(card.Wallbox.Segmente) != 1 {
+			t.Fatalf("Wohnung %d: Wallbox-Block = %+v, want ein Segment", c.apt, card.Wallbox)
 		}
-		if card.WallboxEUR != c.want {
-			t.Errorf("Wohnung %d: WallboxEUR = %v, want %v", c.apt, card.WallboxEUR, c.want)
+		seg := card.Wallbox.Segmente[0]
+		if seg.Label != "Stromkosten" || seg.Kosten != c.euro || seg.Verbrauch != c.kWh || seg.Einheit != "kWh" || seg.ProzentNeuestesGesamt != 100 {
+			t.Errorf("Wohnung %d: Block-Segment = %+v, want Stromkosten %v EUR, %v kWh, 100%%", c.apt, seg, c.euro, c.kWh)
 		}
-		// Wallbox is a consumption cost: it is part of Verbrauch and Gesamt.
+		if card.WallboxEUR != c.euro || card.WallboxKWh != c.kWh {
+			t.Errorf("Wohnung %d: WallboxEUR/KWh = %v/%v, want %v/%v", c.apt, card.WallboxEUR, card.WallboxKWh, c.euro, c.kWh)
+		}
+		// Wallbox is a consumption cost: it stays part of Verbrauch and Gesamt.
 		if want := card.StromEUR + card.WallboxEUR + card.HeizungEUR + card.WasserEUR; card.VerbrauchEUR != calc.Round2(want) {
 			t.Errorf("Wohnung %d: VerbrauchEUR = %v, want %v", c.apt, card.VerbrauchEUR, want)
 		}
@@ -84,7 +89,9 @@ func TestJahreskarte_WallboxKategorieBeiBeidenWohnungen(t *testing.T) {
 	}
 }
 
-func TestJahreskarte_WallboxImmerSichtbarAuchMitNull(t *testing.T) {
+// Without an assignment of the Wallbox costs there is no block, also not
+// with 0 (#304); the Monatsverlauf still lists the Wallbox with 0 EUR (#227).
+func TestJahreskarte_WallboxOhneZuordnungKeinBlock(t *testing.T) {
 	db := openTestDB(t)
 	// Without Einzelzähler and switch the Wallbox costs stay informative.
 	wallboxAblesungen(t, db, nil, nil, false)
@@ -94,9 +101,8 @@ func TestJahreskarte_WallboxImmerSichtbarAuchMitNull(t *testing.T) {
 	}
 	for _, apt := range []int64{1, 2} {
 		card, verlauf := buildEntityView(dd, apt)
-		seg := segmentByLabel(card.Segmente, "Wallbox")
-		if seg == nil || seg.Kosten != 0 {
-			t.Errorf("Wohnung %d: Jahreskarte soll Wallbox mit 0 EUR zeigen, got %+v", apt, seg)
+		if card.Wallbox != nil {
+			t.Errorf("Wohnung %d: Wallbox-Block ohne Zuordnung: %+v", apt, card.Wallbox)
 		}
 		m := verlauf.Eintraege[0].Monat
 		if m == nil || segmentByLabel(m.VerbrauchSegmente, "Wallbox") == nil {
@@ -219,8 +225,8 @@ func TestDashboardHTML_WallboxUndPVGutschrift(t *testing.T) {
 	wallboxPVAblesungen(t, db, true)
 	body := dashboardHTML(t, db)
 
-	if n := strings.Count(body, `title="Wallbox"`); n < 2 {
-		t.Errorf("Kategorie Wallbox %d mal in der Jahreskarte, want mindestens 2 (Wohnung 1 und 2)", n)
+	if n := strings.Count(body, `class="stat-wallbox"`); n != 2 {
+		t.Errorf("Wallbox-Block %d mal in den Jahreskarten, want 2 (Wohnung 1 und 2)", n)
 	}
 	if !strings.Contains(body, `title="PV-Gutschrift"`) || !strings.Contains(body, "&minus;4,20") {
 		t.Error("Jahreskarte Wohnung 1 ohne Zeile PV-Gutschrift 4,20")

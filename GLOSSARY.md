@@ -35,6 +35,12 @@ _Avoid_: Wallbox-Zähler (unklar gegenüber dem Zwischenzähler "Wallboxen")
 Der Schalter je Ablesung, der alle Wallbox-Kosten (kWh und EUR, inkl. Solarzuteilung) auf Wohnung 1 legt und die Einzelzähler überstimmt. Neue Ablesungen belegen ihn aus der letzten vor, bestehende Ablesungen haben ihn aus.
 _Avoid_: Wallbox-Schalter
 
+**Wallbox-Block**:
+Der eigene Abschnitt der Jahreskarte einer Wohnung auf dem Dashboard mit einem Balken "Stromkosten" (EUR und kWh der Wohnung aus der Wallbox-Kostenposition).
+Er erscheint, wenn die Wohnung die Wallbox in der Abrechnung trägt (siehe **Wohnungsstatus**) und die Wallbox-Kosten den Wohnungen zugeordnet sind; sonst fehlt er, auch mit 0.
+Die Wallbox steht dann nicht mehr im Hauptbalken und bei den Chips der Jahreskarte, Gesamt und Saldo enthalten sie weiter. Der PV-Anteil bleibt in der haus-weiten Karte "Wallboxen", er wird keiner Wohnung zugeteilt.
+_Avoid_: Wallbox-Zeile
+
 **Wallbox (Kostenposition)**:
 Die Kosten des Zwischenzählers "Wallboxen" (Netzbezug-Anteil mal Strompreis), je Ablesung auf Wohnung 1 und Wohnung 2 verteilt: mit Schalter alles Wohnung 1, sonst zahlt Wohnung 2 `min(Verbrauch Wallbox Wohnung 2, Netzbezug-Anteil)` mal Strompreis (gerundet) und Wohnung 1 den Rest. Ohne Schalter und ohne Verbrauch von Wallbox Wohnung 2 bleibt sie informativ und keiner Wohnung zugeordnet.
 
@@ -92,7 +98,7 @@ Mieter-/Bewohnername, Zustellanschrift, Vermieter, Objektanschrift und IBAN sind
 
 **Wohnungsstatus**:
 Je Wohnung "Vermietung" oder "Eigennutzung" (Stammdaten, Startwert Wohnung 1 Eigennutzung, Wohnung 2 Vermietung).
-Steuert die Jahresabrechnung (Mieter-Block, Rechtshinweise, Pflichtfelder und welche Posten darin stehen) und auf dem Dashboard nur die Wallbox-Zeile der Jahreskarte (bei Vermietung, ausgeschaltetem Flag "Wallbox weiterberechnen" und Betrag 0 entfällt sie samt Balkensegment), nie die Summen, den fortlaufenden Saldo, die Kostenberechnung oder die Heizungs-Gewichtung.
+Steuert die Jahresabrechnung (Mieter-Block, Rechtshinweise, Pflichtfelder und welche Posten darin stehen) und auf dem Dashboard nur den Wallbox-Block der Jahreskarte (bei Vermietung und ausgeschaltetem Flag "Wallbox weiterberechnen" entfällt er), nie die Summen, den fortlaufenden Saldo, die Kostenberechnung oder die Heizungs-Gewichtung.
 Welche Posten in der Abrechnung einer Wohnung stehen:
 
 | Status der Wohnung | Block "Strom" (ihr Haushaltsstrom) | Block "Wallbox" (ihr Anteil) | Block "PV-Gutschrift" (nur Wohnung 1, wenn der Schalter der Ablesung an ist) |

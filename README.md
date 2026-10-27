@@ -246,9 +246,10 @@ Saldo(Monat) = Saldo(Vormonat) + Abschlag(Monat) - (Fixkosten(Monat) + Verbrauch
 
 Der Verbrauch enthält den **Strom** (Wohnung 1: Rest des Netzbezugs, Wohnung 2: Zwischenzähler) und die **Wallbox**-Kosten der Wohnung (siehe Strom). Die Salden von Wohnung 1 sinken damit rückwirkend um die bisher aufgelaufenen Stromkosten. Bei Wohnung 1 kommt die **PV-Gutschrift** des Monats als Gutschrift dazu: `Saldo(Monat) = Saldo(Vormonat) + Abschlag + PV-Gutschrift - (Fixkosten + Verbrauch)`, ohne Deckel.
 
-**Dashboard:** Die Jahreskarte und der Monatsverlauf beider Wohnungen zeigen die Kategorie **Wallbox** auch mit 0 EUR.
-Einzige Ausnahme ist die Jahreskarte einer vermieteten Wohnung bei ausgeschaltetem "Wallbox weiterberechnen" und Betrag 0: Dort entfallen Zeile und Balkensegment (bei Betrag ungleich 0 bleibt sie), Gesamt und Saldo ändern sich nicht.
-Der Balken der Jahreskarte zeigt nur die Verbrauchskategorien (Strom, Wallbox, Heizung/Ww, Wasser), die Fixkosten stehen als Zeile und im Gesamtbetrag, aber nicht im Balken.
+**Dashboard:** Der Monatsverlauf beider Wohnungen zeigt die Kategorie **Wallbox** auch mit 0 EUR.
+Die Jahreskarte zeigt die Wallbox in einem eigenen **Wallbox-Block** mit Balken "Stromkosten" (EUR und kWh der Wohnung), nicht im Hauptbalken und nicht bei den Chips.
+Der Block erscheint nur, wenn die Wohnung die Wallbox in der Abrechnung trägt (Eigennutzung, oder Vermietung mit "Wallbox weiterberechnen") und die Wallbox-Kosten den Wohnungen zugeordnet sind (Schalter "Wallboxen vollständig Wohnung 1" oder Einzelzähler Wallbox Wohnung 2). Gesamt und Saldo ändern sich dadurch nicht, die Wallbox ist weiter darin.
+Der Balken der Jahreskarte zeigt nur die Verbrauchskategorien (Strom, Heizung/Ww, Wasser), die Fixkosten stehen als Zeile und im Gesamtbetrag, aber nicht im Balken.
 "Strom" steht für beide Wohnungen immer in der Jahreskarte (auch mit 0,00), im Balken und im Monatsverlauf (Wohnung 1: Rest des Netzbezugs, Wohnung 2: Haushaltsstrom), "Verbrauchswerte" zeigen die zugeordneten Netzbezug-kWh (bei Wohnung 1 die Rest-kWh).
 Wohnung 1 bekommt in der Jahreskarte die Zeile **PV-Gutschrift** (auch mit 0,00, dann ohne Minus; Wohnung 2 zeigt entsprechend den PV-Anteil in kWh auch mit 0): Sie senkt die Gesamtkosten, aber nicht die Verbrauchskosten und ist kein Balkensegment.
 Im Monatsverlauf steht sie nur in "Kombiniert" (Gesamt abzüglich Gutschrift) und fließt in den Saldo ein, nicht in "Verbrauch" und "Verbrauchswerte".
@@ -282,7 +283,7 @@ Die Seite `/abrechnung?jahr=2027&wohnung=2` zeigt die Betriebskostenabrechnung e
   Die Gutschrift folgt ihrer Zuordnung zu Wohnung 1, auch wenn Wohnung 1 vermietet und Wohnung 2 Eigennutzung ist.
   Der Block "Wallbox" erscheint neben dem Stromverbrauch (Haushaltsstrom), sobald die Wallbox-Kosten den Wohnungen zugeordnet sind (Schalter oder Einzelzähler von Wohnung 2).
   Der Jahressaldo und der Übertrag Vorjahre zählen genau die Posten, die in der Abrechnung stehen: Vorauszahlungen minus Betriebskosten minus Strom minus Wallbox plus PV-Gutschrift.
-  Das Dashboard richtet sich nur in zwei Punkten nach dem Wohnungsstatus: Die Wallbox-Zeile der Jahreskarte entfällt bei Vermietung, ausgeschaltetem "Wallbox weiterberechnen" und Betrag 0, und die Mieteinnahmen stehen nur bei Vermietung in der Jahreskarte.
+  Das Dashboard richtet sich nur in zwei Punkten nach dem Wohnungsstatus: Der Wallbox-Block der Jahreskarte entfällt bei Vermietung und ausgeschaltetem "Wallbox weiterberechnen", und die Mieteinnahmen stehen nur bei Vermietung in der Jahreskarte.
   Summen, Saldo und Kostenberechnung bleiben unberührt.
 - **Monatsverlauf und Saldo (Anlage 1):** Je Abrechnungsmonat Fixkosten (nur umlagefähig), Verbrauchskosten (Heizung, Wasser/Abwasser, der Strom der Wohnung (bei Vermietung nur mit "Stromverbrauch weiterberechnen"), die Wallbox, wenn sie in der Abrechnung steht), bei Wohnung 1 in Eigennutzung eine Spalte PV-Gutschrift, Nebenkostenabschlag und der kumulierte Saldo, darunter die Summe und der Jahressaldo der Saldoberechnung.
   Oben steht, wenn es etwas zu übertragen gibt, der **Übertrag Vorjahre**: der Saldo (Abschlag minus Kosten) aller Monate vom Startmonat bis zum Monat vor dem Zeitraum.
