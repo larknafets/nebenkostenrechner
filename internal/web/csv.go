@@ -151,7 +151,7 @@ func handleImportCSV() http.HandlerFunc {
 					var ef *store.EingabeFehler
 					if errors.As(row.Err, &ef) && row.Index < len(rows) {
 						// parseImportRow validates already, so this is a safety net.
-						return nil, &importEingabeFehler{msg: csvEingabeFehler(ef, rows[row.Index].line, nil).Error()}
+						return nil, &importEingabeFehler{msg: ablesungCsvFehler(ef, rows[row.Index].line, nil).Error()}
 					}
 					if msg, _, ok := reiheFehler(row.Err); ok {
 						return nil, &importEingabeFehler{msg: fmt.Sprintf("Ablesung vom %s: %s", row.ReadingDate, msg)}
@@ -199,7 +199,7 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 	monat := strings.TrimSpace(cell("monat"))
 	// The store accepts an empty Monat (Teilstand), the CSV does not.
 	if monat == "" {
-		return importRow{}, csvEingabeFehler(&store.EingabeFehler{Feld: store.FeldMonat}, line, nil)
+		return importRow{}, ablesungCsvFehler(&store.EingabeFehler{Feld: store.FeldMonat}, line, nil)
 	}
 
 	readings := make(map[string]float64, len(store.MeterKeys))
@@ -265,17 +265,17 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 		*s.Input(&input) = switches[i]
 	}
 	if err := input.Validate(); err != nil {
-		return importRow{}, csvEingabeFehler(err, line, func(id int64) string {
+		return importRow{}, ablesungCsvFehler(err, line, func(id int64) string {
 			return cell(fmt.Sprintf("personen_%d", id))
 		})
 	}
 	return importRow{input: input, line: line}, nil
 }
 
-// csvEingabeFehler turns the *store.EingabeFehler of PeriodInput.Validate into
+// ablesungCsvFehler turns the *store.EingabeFehler of PeriodInput.Validate into
 // the German CSV message with the line number. rawPersonen returns the
 // uploaded cell of a Wohnung, so the message quotes it as written.
-func csvEingabeFehler(err error, line int, rawPersonen func(id int64) string) error {
+func ablesungCsvFehler(err error, line int, rawPersonen func(id int64) string) error {
 	var ef *store.EingabeFehler
 	if !errors.As(err, &ef) {
 		return err

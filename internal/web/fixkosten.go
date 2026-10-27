@@ -274,7 +274,7 @@ func parseFixkostenInput(r *http.Request, apartments []store.Apartment) (store.F
 		names[a.ID] = a.Name
 		p, err := strconv.ParseFloat(r.FormValue("personen_"+idStr), 64)
 		if err != nil {
-			return store.FixkostenInput{}, fmt.Errorf("ungültige Personenzahl für %s: Personenzahl muss eine Zahl sein", a.Name)
+			return store.FixkostenInput{}, personenKeineZahl(a.Name)
 		}
 		personen[a.ID] = p
 
@@ -302,6 +302,12 @@ func parseFixkostenInput(r *http.Request, apartments []store.Apartment) (store.F
 		return store.FixkostenInput{}, fixkostenFormularFehler(err, labels, names)
 	}
 	return in, nil
+}
+
+// personenKeineZahl is the form error for a Personenzahl field that does not
+// parse as a number (shared by the Ablesung and Fixkosten forms).
+func personenKeineZahl(wohnung string) error {
+	return fmt.Errorf("ungültige Personenzahl für %s: Personenzahl muss eine Zahl sein", wohnung)
 }
 
 // fixkostenFormularFehler words a store.EingabeFehler for the form. labels
