@@ -107,3 +107,22 @@ func TestJahreskarte_WallboxBlockMitWallboxIcon(t *testing.T) {
 		t.Error("Wallbox-Block mit Blitz-Icon")
 	}
 }
+
+// The house-wide cards stand in the order Wärmepumpe, Wallboxen, PV-Anlage.
+func TestDashboard_HausweiteKartenReihenfolge(t *testing.T) {
+	db := openTestDB(t)
+	wallboxPVAblesungen(t, db, true)
+	body := dashboardHTML(t, db)
+
+	last := -1
+	for _, name := range []string{"Wärmepumpe", "Wallboxen", "PV-Anlage"} {
+		i := strings.Index(body, "<strong>"+name+"</strong>")
+		if i < 0 {
+			t.Fatalf("Karte %s fehlt", name)
+		}
+		if i < last {
+			t.Errorf("Karte %s steht vor ihrem Vorgänger", name)
+		}
+		last = i
+	}
+}
