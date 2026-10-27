@@ -2,7 +2,6 @@ package web
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -17,19 +16,6 @@ func parseImportPersonenzahl(raw string, line int, id int64) (float64, error) {
 	}
 	if err := store.ValidierePersonenzahl(p); err != nil {
 		return 0, fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q (%w)", line, id, raw, err)
-	}
-	return p, nil
-}
-
-// parsePersonenzahl parses a form value (the browser sends a decimal point)
-// and validates it with store.ValidierePersonenzahl.
-func parsePersonenzahl(raw string) (float64, error) {
-	p, err := strconv.ParseFloat(raw, 64)
-	if err != nil {
-		return 0, fmt.Errorf("Personenzahl muss eine Zahl sein")
-	}
-	if err := store.ValidierePersonenzahl(p); err != nil {
-		return 0, err
 	}
 	return p, nil
 }
