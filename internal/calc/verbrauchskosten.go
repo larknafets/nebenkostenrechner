@@ -51,11 +51,18 @@ type Wohnungsanteil struct {
 	// only with the switch on. Kept apart from the costs: it lowers the balance,
 	// not the consumption costs.
 	PVGutschrift float64
+	// HatPVGutschrift says that this apartment carries the PV-Gutschrift line
+	// (apartment 1), whatever its value. Like HatStrom it does not depend on
+	// the data.
+	HatPVGutschrift bool
 
 	// PVAnteilKWh is the part of this apartment's submeter consumption not
 	// allocated to grid draw (PV), see StromErgebnis.PVAnteilW2KWh. Only set
 	// for apartment 2: apartment 1 has no own electricity meter.
 	PVAnteilKWh float64
+	// HatPVAnteil says that this apartment carries the PV-Anteil line
+	// (apartment 2), whatever its value.
+	HatPVAnteil bool
 }
 
 // Anteil returns apartmentID's share of these Kosten.
@@ -69,12 +76,12 @@ func (k Kosten) Anteil(apartmentID int64) Wohnungsanteil {
 		a.HeizungKosten, a.HeizungWPKWh, a.HeizungMWh = k.Heizung.KostenHeizungW2, k.Heizung.WPVerbrauchW2KWh, k.Heizung.WaermeW2MWh
 		a.WasserKosten, a.WasserM3 = Round2(k.Wasser.KostenFrischwasserW2+k.Wasser.KostenAbwasserW2), k.Wasser.FrischwasserW2
 		a.WallboxKosten, a.WallboxKWh = k.Strom.KostenWallboxW2, k.Strom.WallboxW2KWh
-		a.PVAnteilKWh = k.Strom.PVAnteilW2KWh
+		a.PVAnteilKWh, a.HatPVAnteil = k.Strom.PVAnteilW2KWh, true
 		return a
 	}
 	a.HatStrom, a.StromKosten, a.StromKWh = true, k.Strom.KostenW1, k.Strom.W1RestKWh
 	a.WallboxKosten, a.WallboxKWh = k.Strom.KostenWallboxW1, k.Strom.WallboxW1KWh
-	a.PVGutschrift = k.PVGutschriftW1
+	a.PVGutschrift, a.HatPVGutschrift = k.PVGutschriftW1, true
 	a.HeizungKosten, a.HeizungWPKWh, a.HeizungMWh = k.Heizung.KostenHeizungW1, k.Heizung.WPVerbrauchW1KWh, k.Heizung.WaermeW1MWh
 	a.WasserKosten, a.WasserM3 = Round2(k.Wasser.KostenFrischwasserW1+k.Wasser.KostenAbwasserW1), k.Wasser.FrischwasserW1
 	return a

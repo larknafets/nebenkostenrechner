@@ -31,8 +31,8 @@
     </div>
     <div class="muted stat-kategorien">
       <span class="v-fix" title="Fixkosten">{{kategorieIcon "Fixkosten"}}{{deEUR .FixkostenEUR}}&nbsp;€</span>
-      {{if eq .ApartmentID 1}}<span class="v-pv" title="PV-Gutschrift">{{kategorieIcon "PV-Gutschrift"}}{{if ne .PVGutschriftEUR 0.0}}&minus;{{end}}{{deEUR .PVGutschriftEUR}}&nbsp;€</span>{{end}}
-      {{if eq .ApartmentID 2}}<span class="v-pv" title="Nicht dem Netzbezug zugeordnet (PV)">{{kategorieIcon "PV-Anteil"}}{{de0 .PVAnteilKWh}}&nbsp;kWh</span>{{end}}
+      {{if .HatPVGutschrift}}<span class="v-pv" title="PV-Gutschrift">{{kategorieIcon "PV-Gutschrift"}}{{if ne .PVGutschriftEUR 0.0}}&minus;{{end}}{{deEUR .PVGutschriftEUR}}&nbsp;€</span>{{end}}
+      {{if .HatPVAnteil}}<span class="v-pv" title="Nicht dem Netzbezug zugeordnet (PV)">{{kategorieIcon "PV-Anteil"}}{{de0 .PVAnteilKWh}}&nbsp;kWh</span>{{end}}
     </div>
     {{with .Wallbox}}<div class="stat-wallbox">
       <div class="muted">{{.Name}}</div>

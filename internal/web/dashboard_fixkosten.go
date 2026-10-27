@@ -125,6 +125,8 @@ type dashboardJahresCard struct {
 	// shown as a negative line, only ever set for apartment 1. It lowers
 	// GesamtEUR but not VerbrauchEUR and is no bar segment.
 	PVGutschriftEUR float64
+	// HatPVGutschrift shows the PV-Gutschrift line (apartment 1), also at 0.
+	HatPVGutschrift bool
 	GesamtEUR       float64
 	Segmente        []dashboardSegment
 
@@ -141,6 +143,8 @@ type dashboardJahresCard struct {
 	// (Issue #98), since apartment 1 has no own electricity meter. 0 =
 	// row is hidden.
 	PVAnteilKWh float64
+	// HatPVAnteil shows the PV-Anteil line (apartment 2), also at 0.
+	HatPVAnteil bool
 
 	// Nebenkostenabschlag-Saldo (utility advance payment balance):
 	// continuously accumulated since recording began (no yearly reset),
@@ -239,7 +243,12 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 	// (first) gets no width.
 	setSegmentPct(segs[1:], calc.Round2(strom+heizung+wasser))
 
+	// Which lines the card carries comes from the Wohnungsanteil, not from the
+	// data: an empty Kosten tells it without a period.
+	zeilen := calc.Kosten{Strom: &calc.StromErgebnis{}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}.Anteil(apartmentID)
+
 	return dashboardJahresCard{
+		HatPVGutschrift: zeilen.HatPVGutschrift, HatPVAnteil: zeilen.HatPVAnteil,
 		ApartmentID: apartmentID, ApartmentName: apartmentName, ApartmentQM: apartmentQM,
 		ApartmentFlurstueck: apartmentFlurstueck, PersonenSchnitt: personenSchnitt,
 		FixkostenEUR: fix, StromEUR: strom, WallboxEUR: wallbox, HeizungEUR: heizung, WasserEUR: wasser,
