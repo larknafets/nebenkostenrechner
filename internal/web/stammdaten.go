@@ -72,6 +72,45 @@ func formText(r *http.Request, name string) string {
 	return strings.TrimSpace(strings.ReplaceAll(r.FormValue(name), "\r\n", "\n"))
 }
 
+// berechtigungZeile is one row of the Berechtigungen table on /stammdaten: a
+// right with its checkbox state per role.
+type berechtigungZeile struct {
+	Recht           string
+	Label           string
+	NichtAngemeldet bool
+	Mieter          bool
+}
+
+func berechtigungZeilen(b store.Berechtigungen) []berechtigungZeile {
+	zeilen := make([]berechtigungZeile, 0, len(store.Rechte))
+	for _, info := range store.Rechte {
+		zeilen = append(zeilen, berechtigungZeile{
+			Recht:           string(info.Recht),
+			Label:           info.Label,
+			NichtAngemeldet: b.Erlaubt(store.RolleNichtAngemeldet, info.Recht),
+			Mieter:          b.Erlaubt(store.RolleMieter, info.Recht),
+		})
+	}
+	return zeilen
+}
+
+// berechtigungenAusFormular overlays the checkboxes of the form onto the saved
+// rights. The form names the role columns it contains in the hidden fields
+// "berechtigung_rolle" (the Mieter column is missing without a Mieter login),
+// the other columns keep their saved values. An unchecked checkbox is absent
+// from the form, so a missing field in a shown column means "No".
+func berechtigungenAusFormular(r *http.Request, gespeichert store.Berechtigungen) store.Berechtigungen {
+	for _, rolle := range r.Form["berechtigung_rolle"] {
+		for _, info := range store.Rechte {
+			if _, bekannt := gespeichert[store.Rolle(rolle)]; !bekannt {
+				continue
+			}
+			gespeichert[store.Rolle(rolle)][info.Recht] = r.FormValue("recht_"+rolle+"_"+string(info.Recht)) == "1"
+		}
+	}
+	return gespeichert
+}
+
 // handleStammdatenForm serves the /stammdaten page (Issue #61): each
 // apartment's current Wohnungsgröße/Flurstücksgröße, editable as live
 // values - not historized per Ablesung like the rest of the monthly form.
@@ -109,9 +148,16 @@ func handleStammdatenForm(a auth) http.HandlerFunc {
 			haus.VermieterName, haus.VermieterAnschrift, haus.ObjektAnschrift, haus.IBAN, haus.Kontoinhaber = "", "", "", "", ""
 		}
 
+		berechtigungen, err := store.GetBerechtigungen(db)
+		if err != nil {
+			http.Error(w, "berechtigungen: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		data := struct {
 			navData
 			Aktuell          string
+			Berechtigungen   []berechtigungZeile
 			Apartments       []store.Apartment
 			Kostenpositionen []store.Kostenposition
 			LetzterIndex     int // Index der letzten Kostenposition, sperrt "nach unten"
@@ -120,6 +166,7 @@ func handleStammdatenForm(a auth) http.HandlerFunc {
 		}{
 			navData:          nav,
 			Aktuell:          "stammdaten",
+			Berechtigungen:   berechtigungZeilen(berechtigungen),
 			Apartments:       apartments,
 			Kostenpositionen: kostenpositionen,
 			LetzterIndex:     len(kostenpositionen) - 1,
@@ -195,7 +242,18 @@ func handleUpdateStammdaten() http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		// Only a form that carries the Berechtigungen table touches them.
+		var berechtigungen store.Berechtigungen
+		if len(r.Form["berechtigung_rolle"]) > 0 {
+			gespeichert, err := store.GetBerechtigungen(db)
+			if err != nil {
+				http.Error(w, "berechtigungen: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			berechtigungen = berechtigungenAusFormular(r, gespeichert)
+		}
 		save := store.StammdatenSave{
+			Berechtigungen:          berechtigungen,
 			Apartments:              in,
 			Flags:                   flags,
 			HeizungWaermeGewichtung: gewichtung,

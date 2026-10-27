@@ -41,7 +41,7 @@ func TestDashboard_AnonymNurWohnung2(t *testing.T) {
 	// so the check targets the card and the tab of Wohnung 1.
 	for _, s := range []string{
 		"<strong>Wohnung 1</strong>", `data-wohnung="1"`, `<option value="1">`,
-		"Wallboxen", "PV-Anlage", "Mieteinnahmen", "712,34",
+		"Wallboxen", "PV-Anlage", labelMiete, "712,34",
 	} {
 		if strings.Contains(anon, s) {
 			t.Errorf("%q im HTML ohne Login", s)
@@ -57,7 +57,7 @@ func TestDashboard_EingeloggtZeigtAlles(t *testing.T) {
 		`data-wohnung="1"`, `<option value="1">Wohnung 1</option>`,
 		"<strong>Wallboxen</strong>", "<strong>Wärmepumpe</strong>", "<strong>PV-Anlage</strong>",
 		`<option value="waermepumpe">Wärmepumpe</option>`, `data-wohnung="waermepumpe"`,
-		"Mieteinnahmen", "712,34",
+		labelMiete, "712,34",
 	} {
 		if !strings.Contains(voll, s) {
 			t.Errorf("%q fehlt im HTML mit Login", s)

@@ -305,6 +305,8 @@ type navData struct {
 	ShowLoginEntry  bool
 	ShowLogoutEntry bool
 	LoginOptionen   []loginOption
+	// HatMieter is true when the Mieter login exists (see mieterAktiv).
+	HatMieter bool
 }
 
 // auth bundles what every login-related decision needs: the two configured
@@ -341,6 +343,7 @@ func (a auth) NavData(r *http.Request) navData {
 		ShowLoginEntry:  kind != sitzungDemo && kind != sitzungVermieter,
 		ShowLogoutEntry: kind != sitzungKeine,
 		LoginOptionen:   a.loginOptionen(),
+		HatMieter:       a.mieterAktiv(),
 	}
 }
 

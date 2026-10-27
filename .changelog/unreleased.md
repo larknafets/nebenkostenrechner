@@ -31,6 +31,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
+- Stammdaten: In der neuen Tabelle "Berechtigungen" stellt der Vermieter je Recht Häkchen für Nicht angemeldet und Mieter ein (Standard wie bisher, dazu die Wärmepumpe). (#310)
+
 - Anmeldung mit zwei Rollen: Neben dem Vermieter gibt es einen Mieter-Login mit eigenem Kennwort, das Anmeldeformular hat ein Auswahlfeld (Mieter, Vermieter, Demo), die Demo braucht kein Kennwort mehr (#309)
 
 - Dashboard: Die Wärmepumpe hat einen eigenen Monatsverlauf wie die Wallboxen, auch ohne Anmeldung sichtbar (#305)

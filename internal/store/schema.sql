@@ -108,3 +108,13 @@ CREATE TABLE IF NOT EXISTS mieten (
     wert                  REAL NOT NULL,
     UNIQUE(fixkosten_eingabe_id, apartment_id)
 );
+
+-- Berechtigungen (ADR 0003): which rights the roles "nicht_angemeldet" and
+-- "mieter" have. Only rows the Vermieter saved exist, a missing row means the
+-- default of the right (see Rechte in berechtigungen.go).
+CREATE TABLE IF NOT EXISTS berechtigungen (
+    recht   TEXT NOT NULL,
+    rolle   TEXT NOT NULL,
+    erlaubt INTEGER NOT NULL CHECK (erlaubt IN (0, 1)),
+    PRIMARY KEY (recht, rolle)
+);
