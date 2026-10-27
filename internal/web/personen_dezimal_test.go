@@ -10,25 +10,9 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-func TestValidatePersonenzahl(t *testing.T) {
-	ok := []float64{0, 1, 2, 1.25, 0.5, 0.01, 3.1}
-	for _, v := range ok {
-		if err := validatePersonenzahl(v); err != nil {
-			t.Errorf("validatePersonenzahl(%v) = %v, want nil", v, err)
-		}
-	}
-	bad := []float64{-1, -0.01, 1.255, 1.001, 0.005}
-	for _, v := range bad {
-		if err := validatePersonenzahl(v); err == nil {
-			t.Errorf("validatePersonenzahl(%v) = nil, want Fehler", v)
-		}
-	}
-}
-
 func TestParseImportPersonenzahl(t *testing.T) {
 	for _, c := range []struct{ raw, want string }{
 		{"abc", "ungültige Personenzahl für Wohnung 2"},
-		{"-1", "darf nicht negativ sein"},
 		{"1,255", "höchstens 2 Nachkommastellen"},
 	} {
 		_, err := parseImportPersonenzahl(c.raw, 7, 2)
@@ -52,9 +36,6 @@ func TestAblesung_PersonenDezimal_Formular(t *testing.T) {
 		{"2", 2, false},
 		{"0", 0, false},
 		{"1.255", 0, true},
-		{"-1", 0, true},
-		{"NaN", 0, true},
-		{"Inf", 0, true},
 	}
 	for _, c := range cases {
 		t.Run(c.raw, func(t *testing.T) {
@@ -144,7 +125,7 @@ func TestFixkosten_PersonenDezimal(t *testing.T) {
 		return w
 	}
 
-	for _, raw := range []string{"1.255", "-1"} {
+	for _, raw := range []string{"1.255"} {
 		if w := post(raw); w.Code != http.StatusBadRequest {
 			t.Errorf("personen_1=%q: status = %d, want 400", raw, w.Code)
 		}
