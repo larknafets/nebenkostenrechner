@@ -2,12 +2,11 @@ package web
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
-	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -152,28 +151,19 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 	}
 
 	monat := strings.TrimSpace(cell("monat"))
-	if _, err := time.Parse("2006-01-02", monat); err != nil {
-		return store.FixkostenInput{}, fmt.Errorf("Zeile %d: ungültiger Monat %q (Format JJJJ-MM-01)", line, monat)
-	}
 
 	werte := make(map[int64]store.FixkostenPositionWert, len(store.KostenpositionDefaults))
 	for _, kd := range store.KostenpositionDefaults {
-		logik := strings.TrimSpace(cell(kd.Key + "_logik"))
-		if _, ok := calc.LogikLabels[logik]; !ok {
-			return store.FixkostenInput{}, fmt.Errorf("Zeile %d: ungültige Berechnungslogik für %s: %q", line, kd.Label, logik)
-		}
-
-		typ := strings.TrimSpace(cell(kd.Key + "_typ"))
-		if typ != store.TypJaehrlich && typ != store.TypMonatlich {
-			return store.FixkostenInput{}, fmt.Errorf("Zeile %d: ungültiger Typ für %s: %q", line, kd.Label, typ)
-		}
-
 		wert, err := parseDecimalDE(cell(kd.Key + "_wert"))
 		if err != nil {
 			return store.FixkostenInput{}, fmt.Errorf("Zeile %d: ungültiger Wert für %s: %q", line, kd.Label, cell(kd.Key+"_wert"))
 		}
-
-		werte[kd.ID] = store.FixkostenPositionWert{Logik: logik, Typ: typ, Wert: wert}
+		// Logik and Typ are checked by FixkostenInput.Validate below.
+		werte[kd.ID] = store.FixkostenPositionWert{
+			Logik: strings.TrimSpace(cell(kd.Key + "_logik")),
+			Typ:   strings.TrimSpace(cell(kd.Key + "_typ")),
+			Wert:  wert,
+		}
 	}
 
 	personen := make(map[int64]float64, 2)
@@ -181,9 +171,9 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 	miete := make(map[int64]float64, 2)
 	for _, id := range [2]int64{1, 2} {
 		personenCol := fmt.Sprintf("personen_%d", id)
-		p, err := parseImportPersonenzahl(cell(personenCol), line, id)
+		p, err := parseDecimalDE(cell(personenCol))
 		if err != nil {
-			return store.FixkostenInput{}, err
+			return store.FixkostenInput{}, fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q", line, id, cell(personenCol))
 		}
 		personen[id] = p
 
@@ -207,11 +197,48 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 		}
 	}
 
-	return store.FixkostenInput{
+	in := store.FixkostenInput{
 		Monat:    monat,
 		Personen: personen,
 		Werte:    werte,
 		Abschlag: abschlag,
 		Miete:    miete,
-	}, nil
+	}
+	if err := in.Validate(); err != nil {
+		return store.FixkostenInput{}, fixkostenCsvFehler(err, line, colIdx, record)
+	}
+	return in, nil
+}
+
+// fixkostenCsvFehler words a store.EingabeFehler for the CSV import with the
+// line number. Any other error passes through.
+func fixkostenCsvFehler(err error, line int, colIdx map[string]int, record []string) error {
+	var ef *store.EingabeFehler
+	if !errors.As(err, &ef) {
+		return err
+	}
+	label := func(id int64) string {
+		for _, kd := range store.KostenpositionDefaults {
+			if kd.ID == id {
+				return kd.Label
+			}
+		}
+		return ""
+	}
+	switch ef.Feld {
+	case store.FeldMonat:
+		return fmt.Errorf("Zeile %d: ungültiger Monat %q (Format JJJJ-MM-01)", line, ef.Wert)
+	case store.FeldLogik:
+		return fmt.Errorf("Zeile %d: ungültige Berechnungslogik für %s: %q", line, label(ef.ID), ef.Wert)
+	case store.FeldTyp:
+		return fmt.Errorf("Zeile %d: ungültiger Typ für %s: %q", line, label(ef.ID), ef.Wert)
+	case store.FeldPersonen:
+		// The message quotes the cell as written, not the parsed number.
+		raw := ef.Wert
+		if i, ok := colIdx[fmt.Sprintf("personen_%d", ef.ID)]; ok {
+			raw = record[i]
+		}
+		return fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q (%w)", line, ef.ID, raw, ef.Err)
+	}
+	return err
 }

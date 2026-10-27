@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -148,6 +149,59 @@ type FixkostenInput struct {
 	Miete map[int64]float64
 }
 
+// Validate checks the field rules every Fixkosten-Eingabe must meet, without a
+// database: Monat, then Logik and Typ per Kostenposition (ascending id), then
+// the Personenzahl per Wohnung (ascending id). It returns the first violation
+// as an *EingabeFehler. Abschlag and Miete are not checked here: a missing
+// entry means "not recorded", whether it is required is up to the adapter.
+func (in FixkostenInput) Validate() error {
+	if _, err := time.Parse("2006-01-02", in.Monat); err != nil {
+		return &EingabeFehler{Feld: FeldMonat, Wert: in.Monat}
+	}
+	for _, id := range idsAufsteigend(in.Werte) {
+		w := in.Werte[id]
+		if !Logiken[w.Logik] {
+			return &EingabeFehler{Feld: FeldLogik, ID: id, Wert: w.Logik}
+		}
+		if w.Typ != TypJaehrlich && w.Typ != TypMonatlich {
+			return &EingabeFehler{Feld: FeldTyp, ID: id, Wert: w.Typ}
+		}
+	}
+	for _, id := range idsAufsteigend(in.Personen) {
+		if err := ValidierePersonenzahl(in.Personen[id]); err != nil {
+			return &EingabeFehler{
+				Feld: FeldPersonen, ID: id, Err: err,
+				Wert: strconv.FormatFloat(in.Personen[id], 'f', -1, 64),
+			}
+		}
+	}
+	return nil
+}
+
+// idsAufsteigend returns the keys of m in ascending order.
+func idsAufsteigend[V any](m map[int64]V) []int64 {
+	ids := make([]int64, 0, len(m))
+	for id := range m {
+		ids = append(ids, id)
+	}
+	slices.Sort(ids)
+	return ids
+}
+
+// FixkostenImportError is returned by ImportFixkostenEingaben when one input
+// is invalid: the store knows no CSV line numbers, so the error names the
+// input's position in the list (0-based). Err is the rule's own error.
+type FixkostenImportError struct {
+	Index int
+	Err   error
+}
+
+func (e *FixkostenImportError) Error() string {
+	return fmt.Sprintf("fixkosten input %d: %v", e.Index, e.Err)
+}
+
+func (e *FixkostenImportError) Unwrap() error { return e.Err }
+
 // ErrFixkostenEingabeNotFound is returned by UpdateFixkostenEingabe and
 // DeleteFixkostenEingabe when the given id doesn't exist.
 var ErrFixkostenEingabeNotFound = errors.New("fixkosten eingabe not found")
@@ -186,6 +240,9 @@ func monatBelegtTx(tx *sql.Tx, monat string, exceptID int64) (bool, error) {
 // Shared by CreateFixkostenEingabe and (a future bulk-insert, should one
 // ever be needed) so the write shape stays in one place.
 func insertFixkostenTx(tx *sql.Tx, in FixkostenInput) (eingabeID int64, err error) {
+	if err := in.Validate(); err != nil {
+		return 0, err
+	}
 	if belegt, err := monatBelegtTx(tx, in.Monat, 0); err != nil {
 		return 0, err
 	} else if belegt {
@@ -269,6 +326,9 @@ func CreateFixkostenEingabe(db *sql.DB, in FixkostenInput) (eingabeID int64, err
 // don't depend on a chronological Vorperiode (no Verbrauch/Diff involved),
 // so there's no neighbor-date reordering constraint to enforce here.
 func UpdateFixkostenEingabe(db *sql.DB, eingabeID int64, in FixkostenInput) error {
+	if err := in.Validate(); err != nil {
+		return err
+	}
 	tx, err := db.Begin()
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
@@ -560,9 +620,13 @@ func ImportFixkostenEingaben(db *sql.DB, inputs []FixkostenInput) (ids []int64, 
 	defer tx.Rollback()
 
 	ids = make([]int64, 0, len(inputs))
-	for _, in := range inputs {
+	for i, in := range inputs {
 		id, err := insertFixkostenTx(tx, in)
 		if err != nil {
+			var ef *EingabeFehler
+			if errors.As(err, &ef) {
+				return nil, &FixkostenImportError{Index: i, Err: err}
+			}
 			return nil, err
 		}
 		ids = append(ids, id)
