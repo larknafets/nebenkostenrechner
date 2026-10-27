@@ -1,6 +1,7 @@
 package web
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -324,6 +325,27 @@ func fixkostenFormularFehler(err error, labels, names map[int64]string) error {
 	return err
 }
 
+// fixkostenStoreFehler words a *store.EingabeFehler that CreateFixkostenEingabe
+// or UpdateFixkostenEingabe returned (a caller that skipped parseFixkostenInput).
+// It returns nil for every other error.
+func fixkostenStoreFehler(db *sql.DB, err error, apartments []store.Apartment) error {
+	var ef *store.EingabeFehler
+	if !errors.As(err, &ef) {
+		return nil
+	}
+	labels := map[int64]string{}
+	if kostenpositionen, kerr := store.Kostenpositionen(db); kerr == nil {
+		for _, kp := range kostenpositionen {
+			labels[kp.ID] = kp.Label
+		}
+	}
+	names := make(map[int64]string, len(apartments))
+	for _, a := range apartments {
+		names[a.ID] = a.Name
+	}
+	return fixkostenFormularFehler(ef, labels, names)
+}
+
 func handleCreateFixkosten() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
@@ -348,6 +370,10 @@ func handleCreateFixkosten() http.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, store.ErrFixkostenMonatBelegt) {
 				badRequestFeld(w, monatBelegtMessage(in.Monat), "monat")
+				return
+			}
+			if mapped := fixkostenStoreFehler(db, err, apartments); mapped != nil {
+				http.Error(w, mapped.Error(), http.StatusBadRequest)
 				return
 			}
 			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
@@ -403,6 +429,10 @@ func handleUpdateFixkosten() http.HandlerFunc {
 		if err := store.UpdateFixkostenEingabe(db, eingabeID, in); err != nil {
 			if errors.Is(err, store.ErrFixkostenMonatBelegt) {
 				badRequestFeld(w, monatBelegtMessage(in.Monat), "monat")
+				return
+			}
+			if mapped := fixkostenStoreFehler(db, err, apartments); mapped != nil {
+				http.Error(w, mapped.Error(), http.StatusBadRequest)
 				return
 			}
 			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
