@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"sort"
 	"strconv"
 	"time"
 )
@@ -82,12 +81,7 @@ func (in PeriodInput) Validate() error {
 			return &EingabeFehler{Feld: FeldMonat, Wert: in.Monat}
 		}
 	}
-	ids := make([]int64, 0, len(in.Personen))
-	for id := range in.Personen {
-		ids = append(ids, id)
-	}
-	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
-	for _, id := range ids {
+	for _, id := range idsAufsteigend(in.Personen) {
 		if err := ValidierePersonenzahl(in.Personen[id]); err != nil {
 			return &EingabeFehler{Feld: FeldPersonen, ID: id, Wert: strconv.FormatFloat(in.Personen[id], 'f', -1, 64), Err: err}
 		}
@@ -114,7 +108,8 @@ func OrZero(p *float64) float64 {
 // Wohnungsgröße/Flurstücksgröße live on apartments and are edited separately on
 // /stammdaten (Issue #61), not per period. Shared by CreatePeriod (one
 // period, own transaction) and ImportPeriods (many periods, one shared
-// transaction - Ticket #54).
+// transaction - Ticket #54). It does not validate: PeriodInput.Validate runs
+// in CreatePeriod, ImportPeriods and UpdatePeriod before the insert.
 func insertPeriodTx(tx *sql.Tx, in PeriodInput) (periodID int64, err error) {
 	res, err := tx.Exec(
 		insertPeriodSQL(),

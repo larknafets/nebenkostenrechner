@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 )
 
 // Logiken is the set of valid allocation logics (fixkosten_werte.logik). The
@@ -43,6 +44,16 @@ func (e *EingabeFehler) Error() string {
 }
 
 func (e *EingabeFehler) Unwrap() error { return e.Err }
+
+// idsAufsteigend returns the keys of m in ascending order.
+func idsAufsteigend[V any](m map[int64]V) []int64 {
+	ids := make([]int64, 0, len(m))
+	for id := range m {
+		ids = append(ids, id)
+	}
+	slices.Sort(ids)
+	return ids
+}
 
 // ValidierePersonenzahl is the single check for an occupant count: finite,
 // >= 0 (0 stays allowed) and at most 2 decimal places. The forms and both
