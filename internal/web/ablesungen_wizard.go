@@ -226,7 +226,7 @@ func requireLoginUnlessTeilstand(a auth, next http.HandlerFunc) http.HandlerFunc
 			return
 		}
 		if !complete {
-			next(w, r)
+			a.RequireRecht(store.RechtAblesungAnlegen, next)(w, r)
 			return
 		}
 		a.RequireLogin(next)(w, r)

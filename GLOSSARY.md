@@ -75,7 +75,7 @@ Die Rolle ergibt sich aus der Anmeldung. Eine Rolle ist keine Person: Es gibt ke
 _Avoid_: Anonym (heißt Nicht angemeldet), Benutzer, Konto
 
 **Nicht angemeldet**:
-Die Rolle eines Besuchers ohne Anmeldung (früher "Anonym"). Er sieht nur, was für ihn freigegeben ist, und darf nur, was für ihn freigegeben ist.
+Die Rolle eines Besuchers ohne Anmeldung (früher "Anonym"). Er sieht nur, was für ihn freigegeben ist, und darf nur, was für ihn freigegeben ist. Fehlt ihm ein Recht, führt die Seite ins Anmelde-Overlay.
 
 **Recht (Berechtigung)**:
 Etwas, das die Rollen Nicht angemeldet und Mieter nur mit gesetztem Häkchen sehen oder tun dürfen, zum Beispiel "Wohnung 1 ansehen" oder "Ablesung anlegen". Die Häkchen stehen auf der Stammdatenseite, nur der Vermieter ändert sie.

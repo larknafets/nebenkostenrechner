@@ -401,6 +401,7 @@ Auf der Seite Stammdaten stellt der Vermieter in der Tabelle **Berechtigungen** 
 | Miete (Block in der Jahreskarte) | aus | aus |
 
 Die Standardwerte entsprechen dem Verhalten vor den Berechtigungen, dazu die Wärmepumpe. Nur der Vermieter darf, ohne Häkchen: Fixkosten erfassen und ändern, Abrechnung, personenbezogene Stammdaten, Stammdaten und Berechtigungen ändern, Ablesungen bearbeiten und löschen, CSV-Export und -Import. Die Seite "Wie wird gerechnet?" sehen alle.
+Ohne ein Recht fehlen Karte, Menüpunkt oder Button. Ruft jemand die Seite trotzdem per Adresse auf, landet ein nicht angemeldeter Besucher im Anmelde-Overlay und ein Mieter auf der Seite "Nicht freigegeben". Sind für jemanden gar keine Karten freigegeben, steht auf dem Dashboard ein Hinweis.
 
 ### Demo-Modus
 

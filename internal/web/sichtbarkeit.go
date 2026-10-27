@@ -2,18 +2,32 @@ package web
 
 import "github.com/larknafets/nebenkostenrechner/internal/store"
 
-// betrachter says who looks at the Dashboard. It is the only input that
-// decides what is visible (#293).
+// betrachter says who looks at the Dashboard: the role of the visitor. It is
+// the only input, besides the saved Berechtigungen, that decides what is
+// visible (#293).
 type betrachter int
 
 const (
-	// betrachterAnonym is a visitor who is not logged in (VERMIETER_PASSWORD set),
-	// or a Mieter until the Berechtigungen exist:
-	// only Wohnung 2, no Wallboxen/PV-Anlage, no Mieteinnahmen.
-	betrachterAnonym betrachter = iota
-	// betrachterAngemeldet is a logged-in user: everything, with Mieteinnahmen.
-	betrachterAngemeldet
+	// betrachterNichtAngemeldet is a visitor who is not logged in
+	// (VERMIETER_PASSWORD set): what the Berechtigungen grant to Nicht
+	// angemeldet.
+	betrachterNichtAngemeldet betrachter = iota
+	// betrachterMieter is a logged-in Mieter: what the Berechtigungen grant to
+	// the Mieter.
+	betrachterMieter
+	// betrachterVermieter is the Vermieter (or the demo session): everything,
+	// with Miete.
+	betrachterVermieter
 )
+
+// rolle returns the role whose Berechtigungen apply to b; the Vermieter has
+// none to look up, he has every right.
+func (b betrachter) rolle() store.Rolle {
+	if b == betrachterMieter {
+		return store.RolleMieter
+	}
+	return store.RolleNichtAngemeldet
+}
 
 // sichtbareWohnung is one visible apartment: its Jahreskarte and Verlauf.
 type sichtbareWohnung struct {
@@ -62,25 +76,50 @@ func wohnungEntitaet(id int64) entitaet {
 	return entitaet{Art: entitaetWohnung, ApartmentID: id}
 }
 
-// sichtbar is the visibility table (#293): whether b may see e at all. It is
-// the one place that table lives; both entry points below ask it. dd decides
-// whether the Wallboxen card exists for a logged-in user (#297).
-func (b betrachter) sichtbar(e entitaet, dd dashboardData) bool {
+// rechtFuer is the right that lets a Mieter or a visitor who is not logged in
+// see e; ok is false for an entity no right exists for.
+func (e entitaet) rechtFuer() (recht store.Recht, ok bool) {
 	switch e.Art {
 	case entitaetWP:
-		// The heat pump card has no condition, not even a login (#296).
-		return true
+		return store.RechtWaermepumpe, true
 	case entitaetWallbox:
-		// Anonymous: no whole-house Wallboxen (Ticket #67). Logged in: only
-		// when a Wohnung carries the Wallbox in its Abrechnung (#297).
-		return b == betrachterAngemeldet && dd.wallboxInAbrechnung()
+		return store.RechtWallboxen, true
+	case entitaetPV:
+		return store.RechtPVAnlage, true
+	case entitaetWohnung:
+		switch e.ApartmentID {
+		case 1:
+			return store.RechtWohnung1, true
+		case 2:
+			return store.RechtWohnung2, true
+		}
 	}
-	if b != betrachterAnonym {
+	return "", false
+}
+
+// orDefaults returns b, or the defaults when b is nil (a database that never
+// saved any, tests).
+func orDefaults(b store.Berechtigungen) store.Berechtigungen {
+	if b == nil {
+		return store.DefaultBerechtigungen()
+	}
+	return b
+}
+
+// sichtbar is the visibility table (#293, #311): whether b may see e at all.
+// It is the one place that table lives; both entry points below ask it. The
+// Vermieter sees everything; the others see what the saved Berechtigungen
+// (ber, nil for the defaults) grant. The Wallboxen card exists for nobody unless a Wohnung carries the
+// Wallbox in its Abrechnung (#297).
+func (b betrachter) sichtbar(e entitaet, dd dashboardData, ber store.Berechtigungen) bool {
+	if e.Art == entitaetWallbox && !dd.wallboxInAbrechnung() {
+		return false
+	}
+	if b == betrachterVermieter {
 		return true
 	}
-	// Anonymous: only apartment 2 (Ticket #112); PV-Anlage is a whole-house
-	// entity, excluded like apartment 1 (Ticket #67).
-	return e.Art == entitaetWohnung && e.ApartmentID == 2
+	recht, ok := e.rechtFuer()
+	return ok && orDefaults(ber).Erlaubt(b.rolle(), recht)
 }
 
 // wallboxInAbrechnung reports whether at least one Wohnung carries the
@@ -96,34 +135,34 @@ func (dd dashboardData) wallboxInAbrechnung() bool {
 }
 
 // sichtbareAnsicht decides the visibility for b and calls the builders (kept
-// apart, ADR 0002) for what stays visible. miete is read only for
-// betrachterAngemeldet (Mieteinnahmen, #278); it is ignored for the others, so
-// the caller may pass nil.
-func sichtbareAnsicht(b betrachter, dd dashboardData, miete []mieteMonat) ansicht {
+// apart, ADR 0002) for what stays visible. miete is read only for a betrachter
+// who may see the Miete (#278); it is ignored for the others, so the caller may
+// pass nil.
+func sichtbareAnsicht(b betrachter, dd dashboardData, ber store.Berechtigungen, miete []mieteMonat) ansicht {
 	var v ansicht
 	for _, a := range dd.Apartments {
-		if b.sichtbar(wohnungEntitaet(a.ID), dd) {
-			v.addWohnung(b, dd, a, miete)
+		if b.sichtbar(wohnungEntitaet(a.ID), dd, ber) {
+			v.addWohnung(b, dd, ber, a, miete)
 		}
 	}
-	if b.sichtbar(entitaet{Art: entitaetWallbox}, dd) {
+	if b.sichtbar(entitaet{Art: entitaetWallbox}, dd, ber) {
 		v.Wallbox = buildSichtbarerSimple(wallboxSeries, dd)
 	}
-	if b.sichtbar(entitaet{Art: entitaetWP}, dd) {
+	if b.sichtbar(entitaet{Art: entitaetWP}, dd, ber) {
 		v.WP = buildSichtbarerSimple(wpSeries, dd)
 	}
-	if b.sichtbar(entitaet{Art: entitaetPV}, dd) {
+	if b.sichtbar(entitaet{Art: entitaetPV}, dd, ber) {
 		v.PV = buildSichtbarerSimple(pvSeries, dd)
 	}
 	return v
 }
 
 // addWohnung builds card and Verlauf of one visible apartment.
-func (v *ansicht) addWohnung(b betrachter, dd dashboardData, a store.Apartment, miete []mieteMonat) {
+func (v *ansicht) addWohnung(b betrachter, dd dashboardData, ber store.Berechtigungen, a store.Apartment, miete []mieteMonat) {
 	card, verlauf := buildEntityView(dd, a.ID)
-	// Mieteinnahmen (#278): only for a rented apartment and a logged-in
-	// user, so the rent stays out of the view otherwise.
-	if b == betrachterAngemeldet && store.NewWohnungsregelnOhneHaus(a).Mieteinnahmen() {
+	// Miete (#278, #311): only for a rented apartment and a betrachter who has
+	// the right, so the rent stays out of the view otherwise.
+	if store.NewWohnungsregelnOhneHaus(a).Mieteinnahmen() && (b == betrachterVermieter || orDefaults(ber).Erlaubt(b.rolle(), store.RechtMiete)) {
 		summe := mieteinnahmen(a.ID, dd.Jahr, miete)
 		card.Mieteinnahmen = &summe
 	}

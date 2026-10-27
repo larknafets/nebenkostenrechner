@@ -53,3 +53,10 @@ func dbFromContext(ctx context.Context) *sql.DB {
 	}
 	return db
 }
+
+// dbFromContextOptional is dbFromContext for callers that may run without
+// withDB (nil then).
+func dbFromContextOptional(ctx context.Context) *sql.DB {
+	db, _ := ctx.Value(dbContextKey{}).(*sql.DB)
+	return db
+}

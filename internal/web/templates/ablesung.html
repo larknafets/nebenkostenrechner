@@ -122,9 +122,9 @@
   {{end}}
 </div>
 
-{{if or .IsLoggedIn .IstTeilstand}}
+{{if or .IsLoggedIn (and .IstTeilstand .KannAblesungAnlegen)}}
 <div class="btn-row">
-  {{if .IsLoggedIn}}<a href="{{.Base}}/ablesungen/neu" class="button success">Neue Ablesung</a>{{end}}
+  {{if .KannAblesungAnlegen}}<a href="{{.Base}}/ablesungen/neu" class="button success">Neue Ablesung</a>{{end}}
   <a href="{{.Base}}/ablesungen/{{.Period.ID}}/bearbeiten" class="button secondary">{{if .IstTeilstand}}Ablesung vervollständigen{{else}}Ablesung korrigieren{{end}}</a>
   {{if .IsLoggedIn}}
   <form method="post" action="{{.Base}}/ablesungen/{{.Period.ID}}/loeschen" onsubmit="return confirm('Ablesung vom {{deDatum .Period.ReadingDate}} wirklich löschen?');">
