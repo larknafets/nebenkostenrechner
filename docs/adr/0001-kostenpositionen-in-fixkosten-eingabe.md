@@ -16,7 +16,7 @@ Logik/Typ/Wert jeder Kostenposition werden vollständig in die Fixkosten-Eingabe
 
 Die Typ-Unterscheidung (jährlich/monatlich) bleibt bestehen: bei "jährlich" ist der erfasste Wert ein Jahresgesamtbetrag (für die Berechnung durch 12 geteilt), bei "monatlich" ein direkter Monatsbetrag - nur der Pflegeort ändert sich.
 
-Der Stammdaten-Jahresblock (Tabelle `kostenpositionen_jahre`, Seite, Routen, Store-Funktionen) entfällt ersatzlos. Bestehende Fixkosten-Eingaben wurden einmalig automatisch beim App-Start mit den zu ihrem jeweiligen Monat gültigen Werten aus `kostenpositionen_jahre` befüllt, bevor die Tabelle gedroppt wurde (siehe `ensureFixkostenWerteLogikTypColumns`/`dropKostenpositionenJahreTable` in `internal/store/store.go`).
+Der Stammdaten-Jahresblock (Tabelle `kostenpositionen_jahre`, Seite, Routen, Store-Funktionen) entfällt ersatzlos. Bestehende Fixkosten-Eingaben wurden einmalig automatisch beim App-Start mit den zu ihrem jeweiligen Monat gültigen Werten aus `kostenpositionen_jahre` befüllt, bevor die Tabelle gedroppt wurde (siehe `ensureFixkostenWerteLogikTypColumns`/`dropKostenpositionenJahreTable` in `internal/store/migrationsschritte.go`).
 
 Stammdaten (`/stammdaten`) bleibt als Seite bestehen, aber nur noch für Wohnungsgröße/Flurstücksgröße je Wohnung - Werte, die sich selten ändern, nicht Teil einer monatlichen Erfassung sind und bewusst sofort für alle Monate wirken sollen (kein Historisierungsbedarf).
 
