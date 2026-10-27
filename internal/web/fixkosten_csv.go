@@ -96,7 +96,7 @@ func handleImportFixkostenCSV() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 
-		cfg := ImportConfig[store.FixkostenInput]{
+		cfg := ImportConfig[fixkostenImportRow]{
 			Header: fixkostenCsvPflichtSpalten(),
 			CheckExisting: func(db *sql.DB) (bool, error) {
 				existing, err := store.AllFixkostenEingaben(db)
@@ -105,9 +105,11 @@ func handleImportFixkostenCSV() http.HandlerFunc {
 			ExistingErrMsg: "Import nur möglich, solange noch keine Fixkosten-Eingabe existiert",
 			ParseRow:       parseImportFixkostenRow,
 			EmptyErrMsg:    "CSV enthält keine Fixkosten-Eingaben",
-			SortKey:        func(in store.FixkostenInput) string { return in.Monat },
-			ValidateRows:   validateFixkostenMonateEindeutig,
-			Insert:         store.ImportFixkostenEingaben,
+			SortKey:        func(row fixkostenImportRow) string { return row.input.Monat },
+			ValidateRows: func(rows []fixkostenImportRow) error {
+				return validateFixkostenMonateEindeutig(fixkostenInputs(rows))
+			},
+			Insert: insertFixkostenRows,
 		}
 
 		ids, _, ok := RunCSVImport(w, r, db, cfg)
@@ -118,6 +120,37 @@ func handleImportFixkostenCSV() http.HandlerFunc {
 		redirectURL := fmt.Sprintf("%s/fixkosten?imported=%d", requestBase(r), len(ids))
 		http.Redirect(w, r, redirectURL, http.StatusFound)
 	}
+}
+
+// fixkostenImportRow keeps the CSV line number next to the parsed input, so
+// the safety net can still point at the uploaded file after the rows are
+// re-sorted into chronological order.
+type fixkostenImportRow struct {
+	input store.FixkostenInput
+	line  int
+}
+
+func fixkostenInputs(rows []fixkostenImportRow) []store.FixkostenInput {
+	inputs := make([]store.FixkostenInput, len(rows))
+	for i, row := range rows {
+		inputs[i] = row.input
+	}
+	return inputs
+}
+
+// insertFixkostenRows imports the parsed rows. A rule violation the store
+// reports (store.FixkostenImportError) becomes a 400 with the CSV line number.
+func insertFixkostenRows(db *sql.DB, rows []fixkostenImportRow) ([]int64, error) {
+	ids, err := store.ImportFixkostenEingaben(db, fixkostenInputs(rows))
+	var row *store.FixkostenImportError
+	if errors.As(err, &row) {
+		var ef *store.EingabeFehler
+		if errors.As(row.Err, &ef) && row.Index < len(rows) {
+			// parseImportFixkostenRow validates already, so this is a safety net.
+			return nil, &importEingabeFehler{msg: fixkostenCsvFehler(ef, rows[row.Index].line, nil, nil).Error()}
+		}
+	}
+	return ids, err
 }
 
 // validateFixkostenMonateEindeutig rejects a CSV that has more than one row
@@ -140,7 +173,7 @@ func validateFixkostenMonateEindeutig(rows []store.FixkostenInput) error {
 
 // parseImportFixkostenRow validates one CSV record (semicolon-separated,
 // comma-decimal) into a FixkostenInput.
-func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (store.FixkostenInput, error) {
+func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (fixkostenImportRow, error) {
 	// A column an old file lacks (the Miete columns) reads as an empty cell.
 	cell := func(col string) string {
 		i, ok := colIdx[col]
@@ -156,7 +189,7 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 	for _, kd := range store.KostenpositionDefaults {
 		wert, err := parseDecimalDE(cell(kd.Key + "_wert"))
 		if err != nil {
-			return store.FixkostenInput{}, fmt.Errorf("Zeile %d: ungültiger Wert für %s: %q", line, kd.Label, cell(kd.Key+"_wert"))
+			return fixkostenImportRow{}, fmt.Errorf("Zeile %d: ungültiger Wert für %s: %q", line, kd.Label, cell(kd.Key+"_wert"))
 		}
 		// Logik and Typ are checked by FixkostenInput.Validate below.
 		werte[kd.ID] = store.FixkostenPositionWert{
@@ -173,7 +206,7 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 		personenCol := fmt.Sprintf("personen_%d", id)
 		p, err := parseDecimalDE(cell(personenCol))
 		if err != nil {
-			return store.FixkostenInput{}, fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q", line, id, cell(personenCol))
+			return fixkostenImportRow{}, fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q", line, id, cell(personenCol))
 		}
 		personen[id] = p
 
@@ -181,7 +214,7 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 		// Taken regardless of the apartment's status, empty = not recorded.
 		a, ok, err := parseErfasst(cell(abschlagCol))
 		if err != nil {
-			return store.FixkostenInput{}, fmt.Errorf("Zeile %d: ungültiger Abschlag für Wohnung %d: %q", line, id, cell(abschlagCol))
+			return fixkostenImportRow{}, fmt.Errorf("Zeile %d: ungültiger Abschlag für Wohnung %d: %q", line, id, cell(abschlagCol))
 		}
 		if ok {
 			abschlag[id] = a
@@ -190,7 +223,7 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 		mieteCol := fmt.Sprintf("miete_%d", id)
 		m, ok, err := parseErfasst(cell(mieteCol))
 		if err != nil {
-			return store.FixkostenInput{}, fmt.Errorf("Zeile %d: ungültige Miete für Wohnung %d: %q", line, id, cell(mieteCol))
+			return fixkostenImportRow{}, fmt.Errorf("Zeile %d: ungültige Miete für Wohnung %d: %q", line, id, cell(mieteCol))
 		}
 		if ok {
 			miete[id] = m
@@ -205,9 +238,9 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 		Miete:    miete,
 	}
 	if err := in.Validate(); err != nil {
-		return store.FixkostenInput{}, fixkostenCsvFehler(err, line, colIdx, record)
+		return fixkostenImportRow{}, fixkostenCsvFehler(err, line, colIdx, record)
 	}
-	return in, nil
+	return fixkostenImportRow{input: in, line: line}, nil
 }
 
 // fixkostenCsvFehler words a store.EingabeFehler for the CSV import with the

@@ -131,3 +131,18 @@ func TestFixkostenSchreiber_LehnenUngueltigesAb(t *testing.T) {
 		t.Errorf("nach abgelehntem Import %d Eingaben, want 0", len(alle))
 	}
 }
+
+// TestImportFixkostenEingaben_MonatBelegtNenntPosition: like ImportPeriods the
+// import wraps a rule violation with the input's position, and errors.Is
+// still finds the sentinel.
+func TestImportFixkostenEingaben_MonatBelegtNenntPosition(t *testing.T) {
+	db := openTestDB(t)
+	_, err := ImportFixkostenEingaben(db, []FixkostenInput{gueltigeFixkosten(), gueltigeFixkosten()})
+	var ie *FixkostenImportError
+	if !errors.As(err, &ie) || ie.Index != 1 {
+		t.Fatalf("err = %v, want *FixkostenImportError mit Index 1", err)
+	}
+	if !errors.Is(err, ErrFixkostenMonatBelegt) {
+		t.Errorf("err = %v, want ErrFixkostenMonatBelegt", err)
+	}
+}
