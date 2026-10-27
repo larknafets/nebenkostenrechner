@@ -52,45 +52,17 @@
     </div>{{end}}
   </div>
   {{end}}
-  {{if .ShowWP}}
+  {{range .Haus}}
   <div class="panel stat-card">
-    <div class="muted"><strong>Wärmepumpe</strong></div>
-    <div class="stat-value">{{deEUR .WPCard.GesamtEUR}}&nbsp;€</div>
+    <div class="muted"><strong>{{.Card.Name}}</strong></div>
+    <div class="stat-value"{{if .Card.IstErtrag}} style="color:var(--success)"{{end}}>{{if .Card.IstErtrag}}+{{end}}{{deEUR .Card.GesamtEUR}}&nbsp;€</div>
     <div class="stat-bar-track">
-      {{range .WPCard.Segmente}}
+      {{range .Card.Segmente}}
       <div class="stat-bar-seg cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%"></div>
       {{end}}
     </div>
     <div class="muted stat-kategorien">
-      {{range .WPCard.Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{de0 .Verbrauch}}&nbsp;{{.Einheit}}</span>{{end}}
-    </div>
-  </div>
-  {{end}}
-  {{if .ShowWallbox}}
-  <div class="panel stat-card">
-    <div class="muted"><strong>Wallboxen</strong></div>
-    <div class="stat-value">{{deEUR .WallboxCard.GesamtEUR}}&nbsp;€</div>
-    <div class="stat-bar-track">
-      {{range .WallboxCard.Segmente}}
-      <div class="stat-bar-seg cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%"></div>
-      {{end}}
-    </div>
-    <div class="muted stat-kategorien">
-      {{range .WallboxCard.Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{de0 .Verbrauch}}&nbsp;{{.Einheit}}</span>{{end}}
-    </div>
-  </div>
-  {{end}}
-  {{if .ShowPV}}
-  <div class="panel stat-card">
-    <div class="muted"><strong>PV-Anlage</strong></div>
-    <div class="stat-value" style="color:var(--success)">+{{deEUR .PVCard.GesamtEUR}}&nbsp;€</div>
-    <div class="stat-bar-track">
-      {{range .PVCard.Segmente}}
-      <div class="stat-bar-seg cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%"></div>
-      {{end}}
-    </div>
-    <div class="muted stat-kategorien">
-      {{range .PVCard.Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{de0 .Verbrauch}}&nbsp;{{.Einheit}}</span>{{end}}
+      {{range .Card.Segmente}}<span class="v-{{.Farbe}}" title="{{.Label}}">{{kategorieIcon .Label}}{{de0 .Verbrauch}}&nbsp;{{.Einheit}}</span>{{end}}
     </div>
   </div>
   {{end}}
@@ -120,26 +92,10 @@
 </div>
 {{end}}
 
-{{if .ShowWallbox}}
-{{with $.WallboxVerlauf}}
-<div class="wohnung-panel" data-wohnung="{{.ID}}">
-  {{template "monatsverlauf-simple-body" .}}
+{{range .Haus}}
+<div class="wohnung-panel" data-wohnung="{{.Verlauf.ID}}">
+  {{template "monatsverlauf-simple-body" .Verlauf}}
 </div>
-{{end}}
-{{end}}
-
-{{if .ShowWP}}
-<div class="wohnung-panel" data-wohnung="{{.WPVerlauf.ID}}">
-  {{template "monatsverlauf-simple-body" .WPVerlauf}}
-</div>
-{{end}}
-
-{{if .ShowPV}}
-{{with $.PVVerlauf}}
-<div class="wohnung-panel" data-wohnung="{{.ID}}">
-  {{template "monatsverlauf-simple-body" .}}
-</div>
-{{end}}
 {{end}}
 
 <script>

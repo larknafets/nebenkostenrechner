@@ -199,12 +199,11 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 				wasser += kat.Kosten
 			}
 		}
-		gutschrift += pk.K.Anteil(apartmentID).PVGutschrift
+		anteil := pk.K.Anteil(apartmentID)
+		gutschrift += anteil.PVGutschrift
+		pvAnteilKWh += anteil.PVAnteilKWh
 		if pk.K.Strom != nil && pk.K.Strom.WallboxVerteilt {
 			wallboxVerteilt = true
-		}
-		if apartmentID == 2 && pk.K.Strom != nil {
-			pvAnteilKWh += pk.K.Strom.PVAnteilW2KWh
 		}
 	}
 	for _, fk := range fixkostenListe {

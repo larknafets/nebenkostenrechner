@@ -31,16 +31,15 @@ type verlaufOption struct {
 }
 
 // verlaufAuswahl lists the dropdown entries of the visible Verläufe in the
-// order of the cards: apartments, Wärmepumpe, Wallboxen, PV-Anlage.
+// order of the cards: the apartments, then the whole-house entries in the order
+// of v.Haus.
 func verlaufAuswahl(v ansicht) []verlaufOption {
 	var out []verlaufOption
 	for _, c := range v.Cards {
 		out = append(out, verlaufOption{ID: strconv.FormatInt(c.ApartmentID, 10), Name: c.ApartmentName})
 	}
-	for _, s := range []*sichtbarerSimple{v.WP, v.Wallbox, v.PV} {
-		if s != nil {
-			out = append(out, verlaufOption{ID: s.Verlauf.ID, Name: s.Verlauf.Name})
-		}
+	for _, s := range v.Haus {
+		out = append(out, verlaufOption{ID: s.Verlauf.ID, Name: s.Verlauf.Name})
 	}
 	return out
 }
@@ -161,18 +160,6 @@ func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 
 		// What the viewer may see is decided in one place (#293, #311).
 		view := sichtbareAnsicht(nav.Zugriff, dd, miete)
-		var wallboxCard, wpCard, pvCard dashboardSimpleCard
-		var wallboxVerlauf, wpVerlauf, pvVerlauf dashboardSimpleSpalte
-		if view.Wallbox != nil {
-			wallboxCard, wallboxVerlauf = view.Wallbox.Card, view.Wallbox.Verlauf
-		}
-		if view.WP != nil {
-			wpCard, wpVerlauf = view.WP.Card, view.WP.Verlauf
-		}
-		if view.PV != nil {
-			pvCard, pvVerlauf = view.PV.Card, view.PV.Verlauf
-		}
-
 		data := struct {
 			navData
 			Aktuell            string
@@ -181,16 +168,8 @@ func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 			AnzeigeJahrLaufend bool
 			Cards              []dashboardJahresCard
 			VerlaufSpalten     []dashboardVerlaufSpalte
-			WallboxCard        dashboardSimpleCard
+			Haus               []sichtbarerSimple
 			VerlaufAuswahl     []verlaufOption
-			WallboxVerlauf     dashboardSimpleSpalte
-			ShowWallbox        bool
-			ShowWP             bool
-			ShowPV             bool
-			WPCard             dashboardSimpleCard
-			WPVerlauf          dashboardSimpleSpalte
-			PVCard             dashboardSimpleCard
-			PVVerlauf          dashboardSimpleSpalte
 			Version            string
 			BuildDate          string
 			UpdateAvailable    bool
@@ -203,16 +182,8 @@ func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 			AnzeigeJahrLaufend: jahr == time.Now().Year(),
 			Cards:              view.Cards,
 			VerlaufSpalten:     view.VerlaufSpalten,
-			WallboxCard:        wallboxCard,
+			Haus:               view.Haus,
 			VerlaufAuswahl:     verlaufAuswahl(view),
-			WallboxVerlauf:     wallboxVerlauf,
-			ShowWallbox:        view.Wallbox != nil,
-			ShowWP:             view.WP != nil,
-			ShowPV:             view.PV != nil,
-			WPCard:             wpCard,
-			WPVerlauf:          wpVerlauf,
-			PVCard:             pvCard,
-			PVVerlauf:          pvVerlauf,
 			Version:            version,
 			BuildDate:          buildDate,
 			UpdateAvailable:    updateAvailable,
