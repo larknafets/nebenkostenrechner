@@ -139,12 +139,12 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 		// What the viewer may see is decided in one place (#293).
 		view := sichtbareAnsicht(b, dd, miete)
 		var wallboxCard, wpCard, pvCard dashboardSimpleCard
-		var wallboxVerlauf, pvVerlauf dashboardSimpleSpalte
+		var wallboxVerlauf, wpVerlauf, pvVerlauf dashboardSimpleSpalte
 		if view.Wallbox != nil {
 			wallboxCard, wallboxVerlauf = view.Wallbox.Card, view.Wallbox.Verlauf
 		}
 		if view.WP != nil {
-			wpCard = view.WP.Card
+			wpCard, wpVerlauf = view.WP.Card, view.WP.Verlauf
 		}
 		if view.PV != nil {
 			pvCard, pvVerlauf = view.PV.Card, view.PV.Verlauf
@@ -162,6 +162,7 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			WallboxVerlauf     dashboardSimpleSpalte
 			ShowWallbox        bool
 			WPCard             dashboardSimpleCard
+			WPVerlauf          dashboardSimpleSpalte
 			PVCard             dashboardSimpleCard
 			PVVerlauf          dashboardSimpleSpalte
 			Version            string
@@ -180,6 +181,7 @@ func handleDashboard(version, buildDate string, a auth) http.HandlerFunc {
 			WallboxVerlauf:     wallboxVerlauf,
 			ShowWallbox:        view.Wallbox != nil,
 			WPCard:             wpCard,
+			WPVerlauf:          wpVerlauf,
 			PVCard:             pvCard,
 			PVVerlauf:          pvVerlauf,
 			Version:            version,

@@ -250,3 +250,38 @@ func TestDashboardHTML_OhneSchalterGutschriftNurMitNull(t *testing.T) {
 		t.Error("Gutschrift 4,20 ohne Schalter")
 	}
 }
+
+// The Wärmepumpe has a Monatsverlauf like the Wallboxen (#305): one row per
+// month with the segments "Stromkosten" and "PV-Anteil" in kWh.
+func TestMonatsverlauf_Waermepumpe(t *testing.T) {
+	db := openTestDB(t)
+	wallboxPVAblesungen(t, db, false)
+	dd, _, err := loadDashboardData(db)
+	if err != nil {
+		t.Fatalf("loadDashboardData: %v", err)
+	}
+	v := sichtbareAnsicht(betrachterAnonym, dd, nil)
+	if v.WP == nil {
+		t.Fatal("Wärmepumpe fehlt in der anonymen Ansicht")
+	}
+	if v.WP.Verlauf.ID != "waermepumpe" || v.WP.Verlauf.Name != "Wärmepumpe" || len(v.WP.Verlauf.Eintraege) == 0 {
+		t.Fatalf("Verlauf = %+v, want ID waermepumpe, Name Wärmepumpe und Einträge", v.WP.Verlauf)
+	}
+	var monat *dashboardSimpleMonat
+	for _, e := range v.WP.Verlauf.Eintraege {
+		if e.Monat != nil {
+			monat = e.Monat
+			break
+		}
+	}
+	if monat == nil || !monat.HasWert {
+		t.Fatalf("keine Monatszeile mit Wert: %+v", v.WP.Verlauf.Eintraege)
+	}
+	// 50 kWh Wärmepumpe of 100 kWh grid draw (Wohnung 2 30 kWh) are billed.
+	if seg := segmentByLabel(monat.Segmente, "Stromkosten"); seg == nil || seg.Verbrauch != 50 || seg.Einheit != "kWh" {
+		t.Errorf("Segment Stromkosten = %+v, want 50 kWh", seg)
+	}
+	if segmentByLabel(monat.Segmente, "PV-Anteil") == nil {
+		t.Error("Segment PV-Anteil fehlt")
+	}
+}
