@@ -1,0 +1,207 @@
+// Entwurf Variante "Parse, don't validate" (Ticket #329). Package store,
+// hier als eigenstaendiges Paket kompilierbar (Stubs am Ende).
+package store
+
+import (
+	"errors"
+	"fmt"
+	"math"
+	"time"
+)
+
+// ---- 1. Wertetypen: unexported Felder, Konstruktor ist der einzige Weg ----
+
+// WertError is the one error of every constructor. Adapters add context
+// (Zeile, Position, Wohnung) by wrapping, never by parsing the message.
+type WertError struct {
+	Art   string // "Logik", "Typ", "Abrechnungsmonat", "Personenzahl", "Abschlag", "Miete"
+	Roh   string // the offending raw text, "" if the adapter had none
+	Grund string // German reason, e.g. "darf nicht negativ sein"
+}
+
+func (e *WertError) Error() string { return fmt.Sprintf("ungültige %s %q: %s", e.Art, e.Roh, e.Grund) }
+
+// Logik is a Berechnungslogik. Zero value is invalid (Valid() == false), so
+// an unset field cannot be written by accident.
+type Logik struct{ s string }
+
+var logiken = map[string]bool{"wohneinheit": true, "flurstueck": true, "qm": true, "personen": true, "wohnung1": true, "wohnung2": true}
+
+func ParseLogik(s string) (Logik, error) {
+	if !logiken[s] {
+		return Logik{}, &WertError{Art: "Berechnungslogik", Roh: s, Grund: "unbekannt"}
+	}
+	return Logik{s}, nil
+}
+func (l Logik) String() string { return l.s }
+
+type Typ struct{ s string }
+
+var (
+	TypJaehrlich = Typ{"jaehrlich"}
+	TypMonatlich = Typ{"monatlich"}
+)
+
+func ParseTyp(s string) (Typ, error) {
+	if s == TypJaehrlich.s || s == TypMonatlich.s {
+		return Typ{s}, nil
+	}
+	return Typ{}, &WertError{Art: "Typ", Roh: s, Grund: "weder jaehrlich noch monatlich"}
+}
+func (t Typ) String() string { return t.s }
+
+// Abrechnungsmonat is "YYYY-MM-01". Absorbs parseFixkostenMonat (form,
+// "2006-01") and the CSV date check, both via one normalising constructor.
+type Abrechnungsmonat struct{ s string }
+
+// KeinMonat is the Teilstand "nicht erfasst" (#128), only PeriodInput accepts it.
+var KeinMonat Abrechnungsmonat
+
+func ParseAbrechnungsmonat(s string) (Abrechnungsmonat, error) {
+	for _, layout := range []string{"2006-01", "2006-01-02"} {
+		if t, err := time.Parse(layout, s); err == nil && (layout == "2006-01" || t.Day() == 1) {
+			return Abrechnungsmonat{t.Format("2006-01") + "-01"}, nil
+		}
+	}
+	return Abrechnungsmonat{}, &WertError{Art: "Abrechnungsmonat", Roh: s, Grund: "Format JJJJ-MM-01"}
+}
+func (m Abrechnungsmonat) String() string { return m.s }
+func (m Abrechnungsmonat) Erfasst() bool  { return m.s != "" }
+
+// Personenzahl: finite, >= 0, at most 2 decimals. Replaces validatePersonenzahl.
+type Personenzahl struct{ v float64 }
+
+func NewPersonenzahl(p float64) (Personenzahl, error) {
+	switch {
+	case math.IsNaN(p) || math.IsInf(p, 0):
+		return Personenzahl{}, &WertError{Art: "Personenzahl", Grund: "muss eine Zahl sein"}
+	case p < 0:
+		return Personenzahl{}, &WertError{Art: "Personenzahl", Grund: "darf nicht negativ sein"}
+	case math.Abs(p*100-math.Round(p*100)) > 1e-9:
+		return Personenzahl{}, &WertError{Art: "Personenzahl", Grund: "darf höchstens 2 Nachkommastellen haben"}
+	}
+	return Personenzahl{p}, nil
+}
+func (p Personenzahl) Float() float64 { return p.v }
+
+// Bewusst KEIN Typ fuer Wert/Betrag/Zaehlerstand/Preis: float64 ohne Regel
+// (Warnungen, #331). Ein Typ ohne Invariante waere reines Umhuellen.
+
+// ---- 2. Eingabe-Typen: Felder tragen nur noch gueltige Werte ----
+
+type FixkostenPositionWert struct {
+	Logik Logik
+	Typ   Typ
+	Wert  float64
+}
+
+// Modus says which Pflichtfelder the Eingabe route demands. It is data of the
+// input, because "Abschlag/Miete Pflicht bei vermieteter Wohnung" needs the
+// Stammdaten and cannot live in a value type (siehe Trade-offs).
+type Modus int
+
+const (
+	Formular Modus = iota // Abschlag+Miete Pflicht bei vermietet, Personen Pflicht
+	Import                // Abschlag/Miete optional, aeltere Dateien ohne Miete bleiben gueltig (#277)
+)
+
+type FixkostenInput struct {
+	Modus    Modus
+	Monat    Abrechnungsmonat // Erfasst() zwingend
+	Personen map[int64]Personenzahl
+	Werte    map[int64]FixkostenPositionWert
+	Abschlag map[int64]float64
+	Miete    map[int64]float64
+}
+
+type PeriodInput struct {
+	Modus       Modus // Import: alle Zaehler + Personen Pflicht; Formular: Teilstand (#129)
+	ReadingDate string
+	Monat       Abrechnungsmonat // KeinMonat nur im Formular
+	Readings    map[string]float64
+	Personen    map[int64]Personenzahl
+	// Preise, Switches wie heute
+}
+
+// ---- 3. Regeln, die Typen nicht tragen: ein Pruefer im Store ----
+
+// FeldError is the structured, field-addressed failure of the cross-field
+// rules. Feld is the form field name ("personen_2", "abschlag_1", "monat"),
+// so badRequestFeld(w, msg, e.Feld) works unchanged; the CSV adapter maps
+// the same Feld to its column and prefixes "Zeile N: ".
+type FeldError struct {
+	Feld        string
+	ApartmentID int64
+	Kind        FeldKind
+}
+type FeldKind int
+
+const (
+	Fehlt FeldKind = iota // Pflichtfeld leer
+	UnbekannteWohnung
+)
+
+func (e *FeldError) Error() string { return fmt.Sprintf("feld %s: %d", e.Feld, e.Kind) }
+
+var _ = errors.Is // (Create* liefern *FeldError oder *WertError per errors.As)
+
+// Create/Update/Import behalten ihre Signaturen; neu ist der Pruefer, der
+// vor dem Schreiben in derselben Tx laeuft, wie checkAppend in reihe.go:
+//
+//	func checkFixkosten(q querier, in FixkostenInput) error  // Wohnungsmenge aus apartments(q), Pflicht je Modus
+//	func checkPeriod(q querier, in PeriodInput) error        // Pflicht-Zaehler je Modus
+//
+// ImportFixkostenEingaben/ImportPeriods wickeln wie bisher in ImportRowError
+// (Index statt Datum: Zeilennummer kennt nur der Adapter).
+
+// Row ties an input to its source line; the adapter owns the line number.
+type ImportRowError struct {
+	Index int // position in the slice handed to Import*; adapter maps to Zeile
+	Err   error
+}
+
+func (e *ImportRowError) Error() string { return fmt.Sprintf("eintrag %d: %v", e.Index, e.Err) }
+func (e *ImportRowError) Unwrap() error { return e.Err }
+
+// ---- 4. Adapter-Skizze (package web), kompilierbar gegen die Stubs ----
+
+type csvCtx struct {
+	line int
+}
+
+func (c csvCtx) wrap(err error) error { return fmt.Errorf("Zeile %d: %w", c.line, err) }
+
+// Fixkosten-CSV, Auszug: Text -> Rohwert (Dezimalkomma bleibt hier) -> Typ.
+func exampleCSVRow(c csvCtx, cell func(string) string, kpKey string) (FixkostenPositionWert, error) {
+	l, err := ParseLogik(cell(kpKey + "_logik"))
+	if err != nil {
+		return FixkostenPositionWert{}, c.wrap(err) // "Zeile 7: ungültige Berechnungslogik \"x\": unbekannt" nach Textmapping
+	}
+	t, err := ParseTyp(cell(kpKey + "_typ"))
+	if err != nil {
+		return FixkostenPositionWert{}, c.wrap(err)
+	}
+	return FixkostenPositionWert{Logik: l, Typ: t}, nil
+}
+
+// Fixkosten-Formular, Auszug: derselbe Konstruktor, Fehler geht per Feld.
+func exampleFormValue(form func(string) string, id string) (FixkostenPositionWert, string, error) {
+	l, err := ParseLogik(form("logik_" + id))
+	if err != nil {
+		return FixkostenPositionWert{}, "logik_" + id, err // badRequestFeld(w, msg, "logik_"+id)
+	}
+	t, err := ParseTyp(form("typ_" + id))
+	if err != nil {
+		return FixkostenPositionWert{}, "typ_" + id, err
+	}
+	return FixkostenPositionWert{Logik: l, Typ: t}, "", nil
+}
+
+// Aufrufer des Stores (Handler), Fehlerzuordnung wie reiheFehler:
+func feldAusFehler(err error) (feld string, ok bool) {
+	var fe *FeldError
+	if errors.As(err, &fe) {
+		return fe.Feld, true
+	}
+	return "", false
+}

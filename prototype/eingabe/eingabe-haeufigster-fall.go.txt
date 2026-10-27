@@ -1,0 +1,299 @@
+// Entwurf Variante "haeufigster Fall": Eingabe.Validate() am Store, keine neue Schicht.
+// Kompilierfaehig als eigenstaendiges Paket (Kopie der relevanten Typen, siehe Kommentare).
+// Zum Pruefen: Datei nach x/main.go kopieren, package in "main" aendern ist nicht noetig: go vet ./x
+package entwurf
+
+import (
+	"errors"
+	"fmt"
+	"math"
+	"net/url"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+)
+
+// ---- Teil 1: store (neue Datei store/eingabe.go) ----------------------------------
+
+// Kopien des Bestehenden, nur damit die Skizze kompiliert.
+const (
+	LogikWohneinheit = "wohneinheit"
+	LogikFlurstueck  = "flurstueck"
+	LogikQM          = "qm"
+	LogikPersonen    = "personen"
+	LogikWohnung1    = "wohnung1"
+	LogikWohnung2    = "wohnung2"
+	TypJaehrlich     = "jaehrlich"
+	TypMonatlich     = "monatlich"
+)
+
+type FixkostenPositionWert struct {
+	Logik, Typ string
+	Wert       float64
+}
+type FixkostenInput struct {
+	Monat    string
+	Personen map[int64]float64
+	Werte    map[int64]FixkostenPositionWert
+	Abschlag map[int64]float64
+	Miete    map[int64]float64
+}
+type PeriodInput struct {
+	ReadingDate string
+	Monat       string // "" = Teilstand
+	Readings    map[string]float64
+	Personen    map[int64]float64
+}
+
+// Logiken ist die Menge gueltiger Logik-Werte. Im Store, weil calc store importiert
+// (calc.LogikLabels kann der Store nicht lesen). calc/logik_test.go prueft schon,
+// dass LogikLabels alle Konstanten abdeckt; derselbe Test deckt kuenftig Logiken ab.
+var Logiken = map[string]bool{
+	LogikWohneinheit: true, LogikFlurstueck: true, LogikQM: true,
+	LogikPersonen: true, LogikWohnung1: true, LogikWohnung2: true,
+}
+
+// Feldart sagt, welches Feld der Eingabe verletzt ist. Kein deutscher Text im Store
+// (wie bei reihe.go: Texte entstehen im Adapter, vgl. web/reihe_fehler.go).
+type Feldart int
+
+const (
+	FeldReadingDate Feldart = iota
+	FeldMonat
+	FeldLogik    // ID = Kostenposition
+	FeldTyp      // ID = Kostenposition
+	FeldPersonen // ID = Wohnung
+)
+
+// EingabeFehler ist der eine Fehlertyp des Seams (Muster: InvalidStatusError).
+// ID ist Kostenposition- oder Wohnungs-ID, 0 ohne Bezug. Wert ist der verletzende
+// Wert als Text (fuer die CSV-Meldung mit %q). Err ist der Grund (nur Personenzahl).
+type EingabeFehler struct {
+	Feld Feldart
+	ID   int64
+	Wert string
+	Err  error
+}
+
+func (e *EingabeFehler) Error() string {
+	return fmt.Sprintf("ungueltige Eingabe (Feld %d, id %d): %q", e.Feld, e.ID, e.Wert)
+}
+func (e *EingabeFehler) Unwrap() error { return e.Err }
+
+// ValidierePersonenzahl wandert aus web/personen.go (validatePersonenzahl) hierher.
+func ValidierePersonenzahl(p float64) error {
+	if math.IsNaN(p) || math.IsInf(p, 0) {
+		return errors.New("Personenzahl muss eine Zahl sein")
+	}
+	if p < 0 {
+		return errors.New("Personenzahl darf nicht negativ sein")
+	}
+	if math.Abs(p*100-math.Round(p*100)) > 1e-9 {
+		return errors.New("Personenzahl darf höchstens 2 Nachkommastellen haben")
+	}
+	return nil
+}
+
+func istTag(s string) bool { _, err := time.Parse("2006-01-02", s); return err == nil }
+
+func sortedIDs[V any](m map[int64]V) []int64 {
+	ids := make([]int64, 0, len(m))
+	for id := range m {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	return ids
+}
+
+func validierePersonen(p map[int64]float64) error {
+	for _, id := range sortedIDs(p) {
+		if err := ValidierePersonenzahl(p[id]); err != nil {
+			return &EingabeFehler{Feld: FeldPersonen, ID: id, Wert: strconv.FormatFloat(p[id], 'f', -1, 64), Err: err}
+		}
+	}
+	return nil
+}
+
+// Validate prueft die Fachregeln, die fuer Formular und CSV gleich sind. Reine Funktion,
+// keine DB. Gibt den ersten Fehler zurueck, in fester Reihenfolge (Monat, Werte nach
+// Kostenposition-ID, Personen nach Wohnungs-ID). Fehlende Abschlag/Miete-Eintraege sind
+// "nicht erfasst" und kein Fehler (ob sie Pflicht sind, entscheidet der Adapter).
+func (in FixkostenInput) Validate() error {
+	if !istTag(in.Monat) || !strings.HasSuffix(in.Monat, "-01") {
+		return &EingabeFehler{Feld: FeldMonat, Wert: in.Monat}
+	}
+	for _, id := range sortedIDs(in.Werte) {
+		w := in.Werte[id]
+		if !Logiken[w.Logik] {
+			return &EingabeFehler{Feld: FeldLogik, ID: id, Wert: w.Logik}
+		}
+		if w.Typ != TypJaehrlich && w.Typ != TypMonatlich {
+			return &EingabeFehler{Feld: FeldTyp, ID: id, Wert: w.Typ}
+		}
+	}
+	return validierePersonen(in.Personen)
+}
+
+// Validate fuer die Ablesung: Datum, Monat ("" = Teilstand erlaubt), Personenzahl.
+// Fehlende Readings/Personen sind Teilstand (#129), kein Fehler: die CSV-Pflicht
+// "alle Zaehler" bleibt im CSV-Adapter.
+func (in PeriodInput) Validate() error {
+	if !istTag(in.ReadingDate) {
+		return &EingabeFehler{Feld: FeldReadingDate, Wert: in.ReadingDate}
+	}
+	if in.Monat != "" && (!istTag(in.Monat) || !strings.HasSuffix(in.Monat, "-01")) {
+		return &EingabeFehler{Feld: FeldMonat, Wert: in.Monat}
+	}
+	return validierePersonen(in.Personen)
+}
+
+// Einhaengepunkte (Eingabezeilen der bestehenden Funktionen, hier nur als Kommentar):
+//   insertPeriodTx(tx, in):       if err := in.Validate(); err != nil { return 0, err }  // deckt Create + Import
+//   insertFixkostenTx(tx, in):    dasselbe                                               // deckt Create + Import
+//   UpdatePeriod / UpdateFixkostenEingabe: dieselbe Zeile am Anfang
+// Import bekommt den Fehler wie bei der Reihe verpackt: ImportRowError{ReadingDate, Err}
+// (Fixkosten: neuer FixkostenImportRowError{Monat}, oder ImportRowError mit Schluessel).
+// Die 190+ Test-Aufrufer aendern sich nicht, solange ihre Eingaben gueltig sind.
+
+// ---- Teil 2: Adapter (web) --------------------------------------------------------
+
+// Meldungen: das Interface liefert Feld + Wert, der Adapter formuliert (Texte bleiben).
+// label = Positionsname bzw. Wohnungsname. csvZeile > 0 = CSV-Stil mit Zeilennummer.
+func eingabeText(err error, label func(Feldart, int64) string, csvZeile int) (msg, formFeld string, ok bool) {
+	var ef *EingabeFehler
+	if !errors.As(err, &ef) {
+		return "", "", false
+	}
+	var was, feld string
+	switch ef.Feld {
+	case FeldMonat:
+		was, feld = "ungültiger Monat", "monat"
+	case FeldReadingDate:
+		was, feld = "ungültiges Ablesedatum", "reading_date"
+	case FeldLogik:
+		was, feld = "ungültige Berechnungslogik für "+label(ef.Feld, ef.ID), "logik_"+strconv.FormatInt(ef.ID, 10)
+	case FeldTyp:
+		was, feld = "ungültiger Typ für "+label(ef.Feld, ef.ID), "typ_"+strconv.FormatInt(ef.ID, 10)
+	case FeldPersonen:
+		was, feld = "ungültige Personenzahl für "+label(ef.Feld, ef.ID), "personen_"+strconv.FormatInt(ef.ID, 10)
+	}
+	if csvZeile > 0 { // CSV: Zeile + Rohwert (+ Grund)
+		msg = fmt.Sprintf("Zeile %d: %s: %q", csvZeile, was, ef.Wert)
+		if ef.Err != nil {
+			msg += fmt.Sprintf(" (%v)", ef.Err)
+		}
+		return msg, "", true
+	}
+	if ef.Err != nil { // Formular: Grund statt Rohwert
+		return was + ": " + ef.Err.Error(), feld, true
+	}
+	return was, feld, true
+}
+
+// Adapter 1: Fixkosten-Formular. Parser baut nur noch; Fachregeln sind weg.
+// Bleibt hier: ParseFloat, "YYYY-MM" -> "YYYY-MM-01", Abschlag/Miete nur bei vermieteter
+// Wohnung und dort Pflicht (blank = Fehler).
+func parseFixkostenFormular(f url.Values, vermietet map[int64]bool, kp []int64) (FixkostenInput, error) {
+	in := FixkostenInput{
+		Monat:    f.Get("monat") + "-01",
+		Personen: map[int64]float64{}, Werte: map[int64]FixkostenPositionWert{},
+		Abschlag: map[int64]float64{}, Miete: map[int64]float64{},
+	}
+	for _, id := range kp {
+		s := strconv.FormatInt(id, 10)
+		v, err := strconv.ParseFloat(f.Get("wert_"+s), 64)
+		if err != nil {
+			return in, fmt.Errorf("ungültiger Wert für %d", id)
+		}
+		in.Werte[id] = FixkostenPositionWert{Logik: f.Get("logik_" + s), Typ: f.Get("typ_" + s), Wert: v}
+	}
+	for id, miet := range vermietet {
+		s := strconv.FormatInt(id, 10)
+		p, err := strconv.ParseFloat(f.Get("personen_"+s), 64)
+		if err != nil {
+			return in, errors.New("Personenzahl muss eine Zahl sein")
+		}
+		in.Personen[id] = p
+		if miet { // Pflicht nur hier: bewusste Formular-Regel
+			a, err := strconv.ParseFloat(f.Get("abschlag_"+s), 64)
+			if err != nil {
+				return in, fmt.Errorf("ungültiger Abschlag für %d", id)
+			}
+			in.Abschlag[id] = a
+		}
+	}
+	return in, in.Validate() // einzige Fachpruefung; Handler: eingabeText -> badRequestFeld(msg, feld)
+}
+
+// Adapter 2: Fixkosten-CSV-Zeile. Zeilennummer kommt aus eingabeText(.., line).
+// Leer = nicht erfasst bleibt hier (parseErfasst), ebenso fehlende Miete-Spalten.
+func parseFixkostenCSV(cell func(string) string, line int, wohnungen []int64) (FixkostenInput, error) {
+	in := FixkostenInput{
+		Monat: strings.TrimSpace(cell("monat")), Personen: map[int64]float64{},
+		Werte: map[int64]FixkostenPositionWert{}, Abschlag: map[int64]float64{}, Miete: map[int64]float64{},
+	}
+	for _, id := range wohnungen { // kuenftig aus store.Apartments statt [2]int64{1,2}
+		s := strconv.FormatInt(id, 10)
+		p, err := strconv.ParseFloat(strings.Replace(cell("personen_"+s), ",", ".", 1), 64)
+		if err != nil {
+			return in, fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q", line, id, cell("personen_"+s))
+		}
+		in.Personen[id] = p
+		if c := strings.TrimSpace(cell("abschlag_" + s)); c != "" {
+			a, err := strconv.ParseFloat(strings.Replace(c, ",", ".", 1), 64)
+			if err != nil {
+				return in, fmt.Errorf("Zeile %d: ungültiger Abschlag für Wohnung %d: %q", line, id, c)
+			}
+			in.Abschlag[id] = a
+		}
+	}
+	if err := in.Validate(); err != nil {
+		msg, _, _ := eingabeText(err, func(_ Feldart, id int64) string { return fmt.Sprintf("Wohnung %d", id) }, line)
+		return in, errors.New(msg)
+	}
+	return in, nil
+}
+
+// Adapter 3: Ablesungs-Wizard. Teilstand: leere Felder bleiben weg.
+func parseAblesungFormular(f url.Values, wohnungen []int64) (PeriodInput, error) {
+	in := PeriodInput{ReadingDate: f.Get("reading_date"), Monat: f.Get("monat"), Personen: map[int64]float64{}}
+	if len(in.Monat) == 7 {
+		in.Monat += "-01"
+	}
+	for _, id := range wohnungen {
+		raw := f.Get("personen_" + strconv.FormatInt(id, 10))
+		if raw == "" {
+			continue
+		}
+		p, err := strconv.ParseFloat(raw, 64)
+		if err != nil {
+			return in, errors.New("Personenzahl muss eine Zahl sein")
+		}
+		in.Personen[id] = p
+	}
+	return in, in.Validate()
+}
+
+// Adapter 4: Ablesungs-CSV-Zeile. Pflicht "alle Zaehler" bleibt hier (Spaltenschleife).
+func parseAblesungCSV(cell func(string) string, line int, meterKeys []string) (PeriodInput, error) {
+	in := PeriodInput{
+		ReadingDate: strings.TrimSpace(cell("reading_date")), Monat: strings.TrimSpace(cell("monat")),
+		Readings: map[string]float64{}, Personen: map[int64]float64{},
+	}
+	for _, k := range meterKeys {
+		v, err := strconv.ParseFloat(strings.Replace(cell(k), ",", ".", 1), 64)
+		if err != nil {
+			return in, fmt.Errorf("Zeile %d: ungültiger Wert für %s: %q", line, k, cell(k))
+		}
+		in.Readings[k] = v
+	}
+	if in.Monat == "" { // CSV verlangt den Monat, das Formular erlaubt Teilstand
+		return in, fmt.Errorf("Zeile %d: ungültiger Abrechnungsmonat %q (Format JJJJ-MM-01)", line, in.Monat)
+	}
+	if err := in.Validate(); err != nil {
+		msg, _, _ := eingabeText(err, func(_ Feldart, id int64) string { return fmt.Sprintf("Wohnung %d", id) }, line)
+		return in, errors.New(msg)
+	}
+	return in, nil
+}

@@ -1,0 +1,284 @@
+// Entwurf Store-Seam Eingabe (Ticket #329), Variante "minimal":
+// KEIN neuer Einstiegspunkt. Die sechs vorhandenen Schreiber
+// (Create/Update/Import fuer Ablesung und Fixkosten) pruefen die Feldregeln
+// selbst, bevor sie schreiben. Neu ist nur der Fehlertyp EingabeFehler und
+// ein Index an ImportRowError. Datei kompiliert eigenstaendig (Stubs unten
+// ersetzen die echten store-Typen); Endziel: store/eingabe.go.
+package store
+
+import (
+	"fmt"
+	"math"
+	"time"
+)
+
+// ---- Stubs der vorhandenen Typen (nur damit der Entwurf kompiliert) ----
+
+type Apartment struct {
+	ID      int64
+	Name    string
+	Status  string
+	Vermiet bool
+}
+
+func (a Apartment) Vermietet() bool { return a.Vermiet }
+
+type Kostenposition struct {
+	ID    int64
+	Label string
+}
+
+type FixkostenPositionWert struct {
+	Logik, Typ string
+	Wert       float64
+}
+
+type FixkostenInput struct {
+	Monat    string
+	Personen map[int64]float64
+	Werte    map[int64]FixkostenPositionWert
+	Abschlag map[int64]float64
+	Miete    map[int64]float64
+}
+
+type PeriodInput struct {
+	ReadingDate, Monat                                         string
+	Strompreis, FrischwasserPreis, AbwasserPreis, EinspeisungPreis *float64
+	Readings                                                   map[string]float64
+	Personen                                                   map[int64]float64
+}
+
+const (
+	TypJaehrlich = "jaehrlich"
+	TypMonatlich = "monatlich"
+)
+
+// gueltigeLogik ersetzt calc.LogikLabels als Regelquelle (calc importiert
+// store, store darf calc nicht importieren). Ein Test in calc haelt beide
+// gleich (LogikLabels deckt genau diese Menge ab).
+var gueltigeLogik = map[string]bool{
+	"wohneinheit": true, "flurstueck": true, "qm": true, "personen": true,
+	"wohnung1": true, "wohnung2": true,
+}
+
+var meterKeys = []string{"strom_haus", "wasser_frisch"} // Pflichtzaehler (MeterKeys)
+
+func validAbrechnungsmonat(s string) bool {
+	t, err := time.Parse("2006-01-02", s)
+	return err == nil && t.Day() == 1 && len(s) == 10
+}
+
+// ---- Der Seam: Fehlertyp ----
+
+// Regel benennt die verletzte Feldregel. Die Texte (deutsch) bauen die
+// Adapter, wie reiheFehler es schon fuer die Reihe-Regeln tut.
+type Regel int
+
+const (
+	RegelDatum        Regel = iota // Ablesedatum kein JJJJ-MM-TT
+	RegelMonat                     // Abrechnungsmonat kein JJJJ-MM-01
+	RegelLogik                     // Logik nicht in der Menge
+	RegelTyp                       // Typ weder jaehrlich noch monatlich
+	RegelPersonenzahl              // siehe Grund
+	RegelFehlt                     // Pflichtwert fehlt (Strenge)
+	RegelUnbekannt                 // Schluessel gehoert zu keiner Wohnung/Position
+)
+
+type PersonenGrund int
+
+const (
+	NichtEndlich PersonenGrund = iota + 1
+	Negativ
+	ZuvieleNachkommastellen
+)
+
+// EingabeFehler ist ein Verstoss gegen eine Feldregel. Feld traegt den
+// Formularfeldnamen ("monat", "logik_3", "personen_2", "abschlag_1",
+// "strompreis", Zaehlerschluessel): das Formular uebergibt ihn an
+// badRequestFeld, das CSV ignoriert ihn. Subjekt/SubjektID nennen Wohnung
+// oder Kostenposition fuer den Text. Wert ist die abgelehnte Eingabe als Text.
+type EingabeFehler struct {
+	Regel     Regel
+	Feld      string
+	Subjekt   string
+	SubjektID int64
+	Wert      string
+	Grund     PersonenGrund
+}
+
+func (e *EingabeFehler) Error() string {
+	return fmt.Sprintf("eingabe: regel %d feld %s wert %q", e.Regel, e.Feld, e.Wert)
+}
+
+// ImportRowError (vorhanden, hier nur der neue Teil): Index ist die
+// Position in der uebergebenen Liste. Der Adapter bildet sie auf seine
+// Zeilennummer ab; der Store kennt keine CSV-Zeilen.
+type ImportRowError struct {
+	Index int
+	Err   error
+}
+
+func (e *ImportRowError) Error() string { return fmt.Sprintf("import %d: %v", e.Index, e.Err) }
+func (e *ImportRowError) Unwrap() error { return e.Err }
+
+// ---- Der Seam: Regeln (rein, ohne DB) ----
+
+// Strenge unterscheidet die Eingabewege, ohne Flag am Aufrufer: die Create/
+// Update-Schreiber arbeiten mit Formular, die Import-Schreiber mit Import.
+type Strenge int
+
+const (
+	Formular Strenge = iota // Teilstand erlaubt, Abschlag/Miete Pflicht bei vermietet
+	Import                  // vollstaendig, Abschlag/Miete optional (#277)
+)
+
+func personenFehler(p float64) PersonenGrund {
+	switch {
+	case math.IsNaN(p) || math.IsInf(p, 0):
+		return NichtEndlich
+	case p < 0:
+		return Negativ
+	case math.Abs(p*100-math.Round(p*100)) > 1e-9:
+		return ZuvieleNachkommastellen
+	}
+	return 0
+}
+
+func pruefePersonen(personen map[int64]float64, apts []Apartment, pflicht bool, prefix string) *EingabeFehler {
+	for _, a := range apts {
+		p, ok := personen[a.ID]
+		if !ok {
+			if pflicht {
+				return &EingabeFehler{Regel: RegelFehlt, Feld: fmt.Sprintf("%s%d", prefix, a.ID), Subjekt: a.Name, SubjektID: a.ID}
+			}
+			continue
+		}
+		if g := personenFehler(p); g != 0 {
+			return &EingabeFehler{Regel: RegelPersonenzahl, Feld: fmt.Sprintf("%s%d", prefix, a.ID), Subjekt: a.Name, SubjektID: a.ID, Wert: fmt.Sprint(p), Grund: g}
+		}
+	}
+	for id := range personen {
+		known := false
+		for _, a := range apts {
+			known = known || a.ID == id
+		}
+		if !known {
+			return &EingabeFehler{Regel: RegelUnbekannt, Feld: fmt.Sprintf("%s%d", prefix, id), SubjektID: id}
+		}
+	}
+	return nil
+}
+
+// pruefePeriod: Reihenfolge der Pruefung = Reihenfolge der heutigen
+// Parser (Datum, Monat, Zaehler, Preise, Personen); erster Fehler gewinnt.
+// Import verlangt Vollstaendigkeit (kein Teilstand), Formular nicht.
+func pruefePeriod(in PeriodInput, apts []Apartment, s Strenge) *EingabeFehler {
+	if _, err := time.Parse("2006-01-02", in.ReadingDate); err != nil || len(in.ReadingDate) != 10 {
+		return &EingabeFehler{Regel: RegelDatum, Feld: "reading_date", Wert: in.ReadingDate}
+	}
+	if in.Monat != "" && !validAbrechnungsmonat(in.Monat) {
+		return &EingabeFehler{Regel: RegelMonat, Feld: "monat", Wert: in.Monat}
+	}
+	if s == Import {
+		if in.Monat == "" {
+			return &EingabeFehler{Regel: RegelFehlt, Feld: "monat"}
+		}
+		for _, k := range meterKeys {
+			if _, ok := in.Readings[k]; !ok {
+				return &EingabeFehler{Regel: RegelFehlt, Feld: k}
+			}
+		}
+		for name, p := range map[string]*float64{"strompreis": in.Strompreis, "frischwasser_preis": in.FrischwasserPreis, "abwasser_preis": in.AbwasserPreis, "einspeisung_preis": in.EinspeisungPreis} {
+			if p == nil {
+				return &EingabeFehler{Regel: RegelFehlt, Feld: name}
+			}
+		}
+	}
+	return pruefePersonen(in.Personen, apts, s == Import, "personen_")
+}
+
+// pruefeFixkosten: Monat, Werte (Logik, Typ) je Position, Personen (immer
+// Pflicht, auch im Formular), dann Abschlag/Miete nach Strenge.
+func pruefeFixkosten(in FixkostenInput, apts []Apartment, pos []Kostenposition, s Strenge) *EingabeFehler {
+	if !validAbrechnungsmonat(in.Monat) {
+		return &EingabeFehler{Regel: RegelMonat, Feld: "monat", Wert: in.Monat}
+	}
+	for _, kp := range pos {
+		f := fmt.Sprintf("_%d", kp.ID)
+		w, ok := in.Werte[kp.ID]
+		if !ok {
+			return &EingabeFehler{Regel: RegelFehlt, Feld: "wert" + f, Subjekt: kp.Label, SubjektID: kp.ID}
+		}
+		if !gueltigeLogik[w.Logik] {
+			return &EingabeFehler{Regel: RegelLogik, Feld: "logik" + f, Subjekt: kp.Label, SubjektID: kp.ID, Wert: w.Logik}
+		}
+		if w.Typ != TypJaehrlich && w.Typ != TypMonatlich {
+			return &EingabeFehler{Regel: RegelTyp, Feld: "typ" + f, Subjekt: kp.Label, SubjektID: kp.ID, Wert: w.Typ}
+		}
+	}
+	if e := pruefePersonen(in.Personen, apts, true, "personen_"); e != nil {
+		return e
+	}
+	if s == Formular {
+		for _, a := range apts {
+			if !a.Vermietet() { // Wohnungsregeln.FixkostenAbschlagMiete()
+				continue
+			}
+			if _, ok := in.Abschlag[a.ID]; !ok {
+				return &EingabeFehler{Regel: RegelFehlt, Feld: fmt.Sprintf("abschlag_%d", a.ID), Subjekt: a.Name, SubjektID: a.ID}
+			}
+			if _, ok := in.Miete[a.ID]; !ok {
+				return &EingabeFehler{Regel: RegelFehlt, Feld: fmt.Sprintf("miete_%d", a.ID), Subjekt: a.Name, SubjektID: a.ID}
+			}
+		}
+	}
+	return nil
+}
+
+// ---- Verdrahtung in den vorhandenen Schreibern (Skizze) ----
+
+// ImportFixkostenEingaben-Schleife: pruefen VOR checkAppend/insert je Eingabe,
+// Fehler mit Index wrappen. CreateX/UpdateX rufen dasselbe mit Formular und
+// geben den *EingabeFehler unverpackt zurueck.
+func importFixkosten(inputs []FixkostenInput, apts []Apartment, pos []Kostenposition) error {
+	for i, in := range inputs {
+		if e := pruefeFixkosten(in, apts, pos, Import); e != nil {
+			return &ImportRowError{Index: i, Err: e}
+		}
+		// insertFixkostenTx(tx, in) ...
+	}
+	return nil
+}
+
+/* ---- Usage der vier Adapter (web-Seite, Skizze) ----
+
+Gemeinsam: eingabeText(f *store.EingabeFehler) (msg, feld string) baut den
+deutschen Text aus Regel/Subjekt/Wert/Grund (Muster reiheFehler).
+
+1. Wizard (Formular, Teilstand): parsePeriodInput bleibt Text->Rohwerte
+   (leer = Schluessel fehlt in der Map). Dann:
+     id, err := store.CreatePeriod(db, in)
+     var ef *store.EingabeFehler
+     if errors.As(err, &ef) { msg, feld := eingabeText(ef); badRequestFeld(w, msg, feld); return }
+     // reiheFehler/PeriodOpenTeilstandError wie bisher
+
+2. Ablesungs-CSV (Import): parseImportRow liefert Rohwerte, Personen-IDs aus
+   store.Apartments statt [2]int64{1,2}. Insert-Callback:
+     ids, err := store.ImportPeriods(db, inputs)
+     var re *store.ImportRowError
+     if errors.As(err, &re) && errors.As(re.Err, &ef) {
+         return nil, &importEingabeFehler{msg: fmt.Sprintf("Zeile %d: %s", rows[re.Index].line, text)}
+     }
+   (rows ist die sortierte Liste, Index passt; Reihe-Regeln wie heute ueber re.Err)
+
+3. Fixkosten-Formular: parseFixkostenInput liest nur Zahlen/Strings; fuer
+   vermietete Wohnungen Abschlag/Miete, leeres Feld = fehlt (Text
+   "ungültiger Abschlag für X" kommt aus RegelFehlt, Feld abschlag_N).
+     err := store.CreateFixkostenEingabe(db, in)  // Update analog
+     errors.As(err, &ef) -> badRequestFeld(w, msg, ef.Feld)
+
+4. Fixkosten-CSV: ParseRow liefert fixkostenZeile{in, line}; Insert-Callback
+   entpackt, ruft store.ImportFixkostenEingaben(db, ins) und mappt
+   ImportRowError.Index auf zeilen[Index].line. Abschlag/Miete leer = Key fehlt,
+   Import-Strenge verlangt sie nicht.
+*/
