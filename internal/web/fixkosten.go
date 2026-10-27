@@ -251,34 +251,29 @@ func parseFixkostenInput(r *http.Request, apartments []store.Apartment) (store.F
 	}
 
 	werte := make(map[int64]store.FixkostenPositionWert, len(kostenpositionen))
+	labels := make(map[int64]string, len(kostenpositionen))
 	for _, kp := range kostenpositionen {
 		idStr := strconv.FormatInt(kp.ID, 10)
-
-		logik := r.FormValue("logik_" + idStr)
-		if _, ok := calc.LogikLabels[logik]; !ok {
-			return store.FixkostenInput{}, fmt.Errorf("ungültige Berechnungslogik für %s", kp.Label)
-		}
-
-		typ := r.FormValue("typ_" + idStr)
-		if typ != store.TypJaehrlich && typ != store.TypMonatlich {
-			return store.FixkostenInput{}, fmt.Errorf("ungültiger Typ für %s", kp.Label)
-		}
+		labels[kp.ID] = kp.Label
 
 		v, err := strconv.ParseFloat(r.FormValue("wert_"+idStr), 64)
 		if err != nil {
 			return store.FixkostenInput{}, fmt.Errorf("ungültiger Wert für %s", kp.Label)
 		}
-		werte[kp.ID] = store.FixkostenPositionWert{Logik: logik, Typ: typ, Wert: v}
+		// Logik and Typ are checked by FixkostenInput.Validate below.
+		werte[kp.ID] = store.FixkostenPositionWert{Logik: r.FormValue("logik_" + idStr), Typ: r.FormValue("typ_" + idStr), Wert: v}
 	}
 
 	personen := make(map[int64]float64, len(apartments))
 	abschlag := make(map[int64]float64, len(apartments))
 	miete := make(map[int64]float64, len(apartments))
+	names := make(map[int64]string, len(apartments))
 	for _, a := range apartments {
 		idStr := strconv.FormatInt(a.ID, 10)
-		p, err := parsePersonenzahl(r.FormValue("personen_" + idStr))
+		names[a.ID] = a.Name
+		p, err := strconv.ParseFloat(r.FormValue("personen_"+idStr), 64)
 		if err != nil {
-			return store.FixkostenInput{}, fmt.Errorf("ungültige Personenzahl für %s: %w", a.Name, err)
+			return store.FixkostenInput{}, fmt.Errorf("ungültige Personenzahl für %s: Personenzahl muss eine Zahl sein", a.Name)
 		}
 		personen[a.ID] = p
 
@@ -301,7 +296,32 @@ func parseFixkostenInput(r *http.Request, apartments []store.Apartment) (store.F
 		miete[a.ID] = m
 	}
 
-	return store.FixkostenInput{Monat: monat, Personen: personen, Werte: werte, Abschlag: abschlag, Miete: miete}, nil
+	in := store.FixkostenInput{Monat: monat, Personen: personen, Werte: werte, Abschlag: abschlag, Miete: miete}
+	if err := in.Validate(); err != nil {
+		return store.FixkostenInput{}, fixkostenFormularFehler(err, labels, names)
+	}
+	return in, nil
+}
+
+// fixkostenFormularFehler words a store.EingabeFehler for the form. labels
+// are the Kostenposition names by id, names the Wohnung names by id. Any
+// other error passes through.
+func fixkostenFormularFehler(err error, labels, names map[int64]string) error {
+	var ef *store.EingabeFehler
+	if !errors.As(err, &ef) {
+		return err
+	}
+	switch ef.Feld {
+	case store.FeldMonat:
+		return fmt.Errorf("ungültiger Monat %q", ef.Wert)
+	case store.FeldLogik:
+		return fmt.Errorf("ungültige Berechnungslogik für %s", labels[ef.ID])
+	case store.FeldTyp:
+		return fmt.Errorf("ungültiger Typ für %s", labels[ef.ID])
+	case store.FeldPersonen:
+		return fmt.Errorf("ungültige Personenzahl für %s: %w", names[ef.ID], ef.Err)
+	}
+	return err
 }
 
 func handleCreateFixkosten() http.HandlerFunc {
