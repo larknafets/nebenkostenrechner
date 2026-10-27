@@ -14,7 +14,7 @@ import (
 // Table test for the Sichtbarkeit module (#293) at its seam: no HTTP, no
 // database. Both apartments are rented, so Mieteinnahmen exist wherever the
 // viewer may see them.
-func TestSichtbareAnsicht_JeBetrachter(t *testing.T) {
+func TestSichtbareAnsicht_JeRolle(t *testing.T) {
 	dd := dashboardData{
 		HasAnyData:             true,
 		Jahr:                   2026,

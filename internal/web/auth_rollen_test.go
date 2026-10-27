@@ -182,7 +182,7 @@ func TestLogin_MieterOhneMieterKennwort(t *testing.T) {
 // A Mieter reaches a page reserved for the Vermieter as a 403 with the link to
 // log in as Vermieter; a visitor who is not logged in is bounced to the login
 // overlay, the Vermieter gets the page.
-func TestRequireLogin_JeRolle(t *testing.T) {
+func TestGate_JeRolle(t *testing.T) {
 	mux := rollenMux(t, "geheim", "mieter")
 	mieter := loginCookies(t, mux, "mieter", "mieter")
 	vermieter := loginCookies(t, mux, "vermieter", "geheim")

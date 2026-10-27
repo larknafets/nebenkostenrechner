@@ -30,7 +30,7 @@ const (
 	// demoSessionCookieName marks a visitor's session as a demo session
 	// (Issue #120) - a separate cookie from the real ones, so the real
 	// password mechanism stays completely untouched. A demo visitor also
-	// counts as Vermieter for UI/routing purposes (see auth.istVermieter);
+	// counts as Vermieter for UI/routing purposes (see auth.Rolle);
 	// this cookie additionally tells withDB which *sql.DB a request should
 	// use.
 	demoSessionCookieName = "nk_demo_session"

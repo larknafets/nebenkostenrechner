@@ -22,5 +22,5 @@ Bisher gab es ein Kennwort (`LOGIN_PASSWORD`, im Add-on `login_password`): Wer e
 
 - Bruch beim Update: Wer `LOGIN_PASSWORD` oder `login_password` gesetzt hatte, muss `VERMIETER_PASSWORD` bzw. `vermieter_password` neu setzen. Bis dahin ist die App offen. Das steht im Changelog unter "Wartung" und in der Add-on-Dokumentation.
 - Die Namen der Variablen und Optionen sind von außen sichtbar und nur mit einem weiteren Bruch änderbar, deshalb ein ADR.
-- Der Code unterscheidet nicht mehr "angemeldet oder nicht", sondern die Rolle (Betrachter). Routen, die dem Vermieter vorbehalten sind, antworten dem Mieter mit einer Hinweisseite.
+- Der Code unterscheidet nicht mehr "angemeldet oder nicht", sondern die Rolle (Zugriff). Routen, die dem Vermieter vorbehalten sind, antworten dem Mieter mit einer Hinweisseite.
 - Die Kennwörter bleiben einfache gemeinsame Geheimnisse ohne Benutzerkonten, Passwortwechsel und Mehrfaktor. Wer mehr braucht, setzt die App hinter einen Reverse Proxy.
