@@ -56,7 +56,7 @@ func TestNav_LoginEntry_NoLoginPassword(t *testing.T) {
 // still exactly one entry point, now named "Anmelden" instead of "Login",
 // no additional logout link.
 func TestNav_LoginEntry_NotLoggedIn(t *testing.T) {
-	t.Setenv("LOGIN_PASSWORD", "geheim")
+	t.Setenv("VERMIETER_PASSWORD", "geheim")
 	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
 	body := getDashboard(t, mux, nil)
 
@@ -79,9 +79,9 @@ func TestNav_LoginEntry_NotLoggedIn(t *testing.T) {
 // banner nor an additional login entry point - just "Abmelden" (logout), as
 // before Issue #122.
 func TestNav_RealLogin_NoDemoEntryNoBanner(t *testing.T) {
-	t.Setenv("LOGIN_PASSWORD", "geheim")
+	t.Setenv("VERMIETER_PASSWORD", "geheim")
 	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
-	cookies := demoLoginCookies(t, mux, "geheim")
+	cookies := loginCookies(t, mux, "vermieter", "geheim")
 	body := getDashboard(t, mux, cookies)
 
 	if !strings.Contains(body, `id="logout-link">Abmelden</a>`) {
@@ -100,7 +100,7 @@ func TestNav_RealLogin_NoDemoEntryNoBanner(t *testing.T) {
 // login entry point (logout is enough to leave the demo).
 func TestNav_DemoSession_ShowsBannerNotEntry(t *testing.T) {
 	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
-	cookies := demoLoginCookies(t, mux, demoPassword)
+	cookies := demoLoginCookies(t, mux)
 	body := getDashboard(t, mux, cookies)
 
 	if !strings.Contains(body, `class="demo-banner no-print"`) {

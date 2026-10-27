@@ -31,6 +31,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
+- Anmeldung mit zwei Rollen: Neben dem Vermieter gibt es einen Mieter-Login mit eigenem Kennwort, das Anmeldeformular hat ein Auswahlfeld (Mieter, Vermieter, Demo), die Demo braucht kein Kennwort mehr (#309)
+
 - Dashboard: Die Wärmepumpe hat einen eigenen Monatsverlauf wie die Wallboxen, auch ohne Anmeldung sichtbar (#305)
 
 - Dashboard: Die Jahreskarte jeder Wohnung zeigt die Wallbox in einem eigenen Block mit Stromkosten in EUR und kWh, statt im Hauptbalken (#304)
@@ -50,5 +52,7 @@ Keep every section, an empty one included. Do not change the headings.
 ## Fehlerkorrekturen
 
 ## Wartung
+
+- **Kennwort neu setzen:** `LOGIN_PASSWORD` (Home Assistant: `login_password`) heißt jetzt `VERMIETER_PASSWORD` (`vermieter_password`) und wird nicht mehr gelesen. Nach dem Update das Kennwort neu setzen, sonst ist die App offen und jeder Besucher ist Vermieter. Neu ist das optionale `MIETER_PASSWORD` (`mieter_password`) (#309)
 
 - Die Widget-Routen und der zweite Port (`WIDGET_LISTEN_ADDR`, Host-Port 8081 beim Release, 8082 beim Nightly) entfallen, Lovelace-Karten mit Webpage-Card auf diese Routen funktionieren nicht mehr (#301)

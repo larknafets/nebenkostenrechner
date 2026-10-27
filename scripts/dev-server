@@ -4,7 +4,7 @@
 # anonymous (a private window, or a browser without the cookie) and logged in.
 # Stop it with Ctrl-C, the temp directory goes with it.
 #   scripts/dev-server            port 18080, password "dev"
-#   DEV_PORT=9000 DEV_PASSWORD=x scripts/dev-server
+#   DEV_PORT=9000 DEV_PASSWORD=x DEV_MIETER_PASSWORD=y scripts/dev-server
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -21,7 +21,7 @@ password=${DEV_PASSWORD:-dev}
 go build -o "$dir/app" ./cmd/nebenkostenrechner
 
 start() {
-  DB_PATH="$dir/nk.db" LOGIN_PASSWORD="$1" LISTEN_ADDR="127.0.0.1:$port" "$dir/app" >"$dir/log" 2>&1 &
+  DB_PATH="$dir/nk.db" VERMIETER_PASSWORD="$1" MIETER_PASSWORD="${1:+${DEV_MIETER_PASSWORD:-mieter}}" LISTEN_ADDR="127.0.0.1:$port" "$dir/app" >"$dir/log" 2>&1 &
   pid=$!
   for _ in $(seq 50); do
     curl -s -o /dev/null "127.0.0.1:$port/health" && return 0
@@ -43,6 +43,6 @@ for suffix in "" "-wal" "-shm"; do
 done
 start "$password"
 
-echo "dev-server: http://127.0.0.1:$port/  (password: $password)"
+echo "dev-server: http://127.0.0.1:$port/  (Vermieter: $password, Mieter: ${DEV_MIETER_PASSWORD:-mieter})"
 echo "dev-server: anonymous = private window or a browser without the login cookie, Ctrl-C stops"
 wait "$pid"

@@ -10,11 +10,12 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// demoLoginCookies logs in with the given password against mux and returns
-// the resulting Set-Cookie values, ready to attach to a follow-up request.
-func demoLoginCookies(t *testing.T, mux *http.ServeMux, password string) []*http.Cookie {
+// loginCookies logs in as the given role ("demo", "vermieter", "mieter") with
+// the given password against mux and returns the resulting Set-Cookie values,
+// ready to attach to a follow-up request.
+func loginCookies(t *testing.T, mux *http.ServeMux, rolle, password string) []*http.Cookie {
 	t.Helper()
-	form := url.Values{"password": {password}}
+	form := url.Values{"rolle": {rolle}, "password": {password}}
 	req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
@@ -25,6 +26,12 @@ func demoLoginCookies(t *testing.T, mux *http.ServeMux, password string) []*http
 	return w.Result().Cookies()
 }
 
+// demoLoginCookies logs in as Demo, which needs no password.
+func demoLoginCookies(t *testing.T, mux *http.ServeMux) []*http.Cookie {
+	t.Helper()
+	return loginCookies(t, mux, "demo", "")
+}
+
 func attachCookies(req *http.Request, cookies []*http.Cookie) {
 	for _, c := range cookies {
 		req.AddCookie(c)
@@ -32,11 +39,11 @@ func attachCookies(req *http.Request, cookies []*http.Cookie) {
 }
 
 // TestHandleLogin_DemoPassword issues the demo login regardless of whether
-// LOGIN_PASSWORD (secret) is configured (Issue #118: "always works").
+// a Vermieter password is configured (Issue #118: "always works").
 func TestHandleLogin_DemoPassword(t *testing.T) {
 	for _, secret := range []string{"", "geheim"} {
 		t.Run("secret="+secret, func(t *testing.T) {
-			cookies := demoLoginCookies(t, NewMux(openTestDB(t), openTestDB(t), "", ""), demoPassword)
+			cookies := demoLoginCookies(t, NewMux(openTestDB(t), openTestDB(t), "", ""))
 
 			var demoCookie *http.Cookie
 			for _, c := range cookies {
@@ -53,8 +60,8 @@ func TestHandleLogin_DemoPassword(t *testing.T) {
 			if !isDemoSession(req) {
 				t.Error("isDemoSession() = false for a freshly issued demo cookie")
 			}
-			if !isLoggedIn(req, secret) {
-				t.Error("isLoggedIn() = false for a demo session")
+			if !newAuth(secret, nil).istVermieter(req) {
+				t.Error("istVermieter() = false for a demo session")
 			}
 		})
 	}
@@ -69,7 +76,7 @@ func TestDemoMode_WritesIsolatedFromRealDB(t *testing.T) {
 	demoDB := openTestDB(t)
 	mux := NewMux(realDB, demoDB, "", "")
 
-	cookies := demoLoginCookies(t, mux, demoPassword)
+	cookies := demoLoginCookies(t, mux)
 
 	// Demo login already resets the demo DB to its 39-month starting state
 	// (Issue #121) - read the baseline once here instead of hardcoding the
@@ -124,7 +131,7 @@ func TestDemoLogin_ResetsPreviousDemoSession(t *testing.T) {
 	demoDB := openTestDB(t)
 	mux := NewMux(realDB, demoDB, "", "")
 
-	firstSession := demoLoginCookies(t, mux, demoPassword)
+	firstSession := demoLoginCookies(t, mux)
 	baseline, err := store.AllPeriods(demoDB)
 	if err != nil {
 		t.Fatalf("AllPeriods(demoDB) baseline: %v", err)
@@ -154,7 +161,7 @@ func TestDemoLogin_ResetsPreviousDemoSession(t *testing.T) {
 
 	// A renewed demo login (2nd session) must discard the reading from the
 	// 1st session and show exactly the baseline again.
-	demoLoginCookies(t, mux, demoPassword)
+	demoLoginCookies(t, mux)
 
 	afterReset, err := store.AllPeriods(demoDB)
 	if err != nil {
@@ -197,10 +204,10 @@ func findCookie(cookies []*http.Cookie, name string) *http.Cookie {
 // symmetrically clears whichever other session cookie exists, instead of
 // relying solely on the check order.
 func TestLogin_ClearsOtherSessionCookie(t *testing.T) {
-	t.Setenv("LOGIN_PASSWORD", "geheim")
+	t.Setenv("VERMIETER_PASSWORD", "geheim")
 	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
 
-	demoCookies := demoLoginCookies(t, mux, demoPassword)
+	demoCookies := demoLoginCookies(t, mux)
 	if c := findCookie(demoCookies, sessionCookieName); c == nil || c.Value != "" {
 		t.Errorf("Demo-Login: %s nicht geräumt (Value=%q), want geräumt (Value == \"\")", sessionCookieName, valueOrMissing(c))
 	}
@@ -208,7 +215,7 @@ func TestLogin_ClearsOtherSessionCookie(t *testing.T) {
 		t.Errorf("Demo-Login: %s nicht gesetzt", demoSessionCookieName)
 	}
 
-	realCookies := demoLoginCookies(t, mux, "geheim")
+	realCookies := loginCookies(t, mux, "vermieter", "geheim")
 	if c := findCookie(realCookies, demoSessionCookieName); c == nil || c.Value != "" {
 		t.Errorf("echter Login: %s nicht geräumt (Value=%q), want geräumt (Value == \"\")", demoSessionCookieName, valueOrMissing(c))
 	}
@@ -225,17 +232,17 @@ func valueOrMissing(c *http.Cookie) string {
 }
 
 // TestDemoMode_IndependentOfRealLogin covers the spec's last point: a
-// regular login (real LOGIN_PASSWORD) stays tied to the real database
+// regular login (real VERMIETER_PASSWORD) stays tied to the real database
 // unchanged, independent of demo mode.
 func TestDemoMode_IndependentOfRealLogin(t *testing.T) {
 	const secret = "geheim"
 	realDB := openTestDB(t)
 	demoDB := openTestDB(t)
 
-	t.Setenv("LOGIN_PASSWORD", secret)
+	t.Setenv("VERMIETER_PASSWORD", secret)
 	mux := NewMux(realDB, demoDB, "", "")
 
-	realCookies := demoLoginCookies(t, mux, secret)
+	realCookies := loginCookies(t, mux, "vermieter", secret)
 
 	form := periodFormValues("2026-07-15", "2026-07")
 	req := httptest.NewRequest(http.MethodPost, "/ablesungen", strings.NewReader(form.Encode()))

@@ -69,6 +69,22 @@ _Avoid_: PV-Anteil, PV-Ertrag (das ist die separate Einspeisevergütung, siehe u
 **Wohnung 1 / Wohnung 2**:
 Die zwei Hausparteien, auf die Kosten verteilt werden. Wohnung 1 trägt als Strom-Kostenposition den Rest des Netzbezugs nach Wohnung 2, Wärmepumpe und Wallboxen (Haushaltsstrom, mal Strompreis der Ablesung, je Ablesung auf den Cent gerundet, nie negativ). Ihr Wallbox-Anteil bleibt in der Wallbox-Position, einen PV-Anteil gibt es für sie nicht (kein Zwischenzähler).
 
+**Rolle**:
+Wer die App benutzt: **Nicht angemeldet**, **Mieter** oder **Vermieter**. Der Vermieter sieht und darf alles, für Nicht angemeldete und Mieter bestimmen Häkchen, was sie sehen und tun dürfen; einiges bleibt fest beim Vermieter.
+Die Rolle ergibt sich aus der Anmeldung. Eine Rolle ist keine Person: Es gibt kein Benutzerkonto, nur ein gemeinsames Kennwort je Rolle.
+_Avoid_: Anonym (heißt Nicht angemeldet), Benutzer, Konto
+
+**Nicht angemeldet**:
+Die Rolle eines Besuchers ohne Anmeldung (früher "Anonym"). Er sieht nur, was für ihn freigegeben ist, und darf nur, was für ihn freigegeben ist.
+
+**Vermieter-Login**:
+Die Anmeldung als Vermieter mit dem Vermieter-Kennwort (früher "Login"). Ist kein Vermieter-Kennwort gesetzt, ist jeder angemeldet und die App offen.
+Dasselbe Kennwort gilt für das ganze Haus.
+
+**Mieter-Login**:
+Die Anmeldung als Mieter mit dem Mieter-Kennwort, ein Login für das ganze Haus (nicht je Wohnung). Er gibt es nur, wenn ein Mieter-Kennwort und ein Vermieter-Kennwort gesetzt sind.
+Nicht zu verwechseln mit den **Mieter-Angaben** (Name, Anschrift je Wohnung, siehe Wohnungsstatus).
+
 ## Heizung & Warmwasser
 
 **WP-Strom (Heizung + Warmwasser)**:
@@ -93,7 +109,7 @@ Die ins Netz eingespeiste PV-Überschussmenge (Zähler `strom_einspeisung`) und 
 
 **Stammdaten** (`/stammdaten`):
 Die Seite für Werte, die sich selten ändern und nicht Teil einer monatlichen Erfassung sind: Wohnungsgröße/Flurstücksgröße je Wohnung, Wohnungsstatus, Mieter- und Vermieter-Angaben, das Umlagefähig-Flag je Kostenposition und die Flags "Stromverbrauch weiterberechnen" und "Wallbox weiterberechnen" (aktuelle Einzelwerte).
-Mieter-/Bewohnername, Zustellanschrift, Vermieter, Objektanschrift und IBAN sind personenbezogen: sie sind nur für angemeldete Nutzer sichtbar und änderbar (ohne gesetztes `LOGIN_PASSWORD` ist jeder angemeldet).
+Mieter-/Bewohnername, Zustellanschrift, Vermieter, Objektanschrift und IBAN sind personenbezogen: sie sind nur für angemeldete Nutzer sichtbar und änderbar (ohne gesetztes Vermieter-Kennwort ist jeder angemeldet).
 Änderungen wirken sofort auf alle Monate, nicht eingefroren wie ein Ablesungs- oder Fixkosten-Eingabe-Wert.
 
 **Wohnungsstatus**:

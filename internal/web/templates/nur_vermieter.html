@@ -1,0 +1,9 @@
+{{define "content"}}
+<h1>Nebenkostenrechner</h1>
+{{template "nav" .}}
+
+<h2>Nur für den Vermieter</h2>
+<p>Diese Seite ist dem Vermieter vorbehalten. Als Mieter hast du hier keinen Zugriff.</p>
+<p><a href="{{.Base}}/dashboard?login=1&amp;rolle=vermieter&amp;next={{.Next}}" class="button success">Als Vermieter anmelden</a>
+<a href="{{.Base}}/dashboard" class="button secondary">Zum Dashboard</a></p>
+{{end}}

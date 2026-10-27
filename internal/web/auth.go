@@ -20,91 +20,108 @@ import (
 )
 
 const (
-	sessionCookieName = "nk_session"
-	sessionTTL        = 30 * 24 * time.Hour
+	// sessionCookieName is the cookie of the Vermieter session, mieterSessionCookieName
+	// the one of the Mieter session (ADR 0003): one cookie per role, each signed
+	// with the password of that role.
+	sessionCookieName       = "nk_session"
+	mieterSessionCookieName = "nk_session_mieter"
+	sessionTTL              = 30 * 24 * time.Hour
 
 	// demoSessionCookieName marks a visitor's session as a demo session
-	// (Issue #120) - a separate cookie from sessionCookieName, so the real
-	// login password mechanism (secret) stays completely untouched. A demo
-	// visitor also counts as "logged in" for UI/routing purposes (see
-	// isLoggedIn); this cookie additionally tells withDB which *sql.DB a
-	// request should use.
+	// (Issue #120) - a separate cookie from the real ones, so the real
+	// password mechanism stays completely untouched. A demo visitor also
+	// counts as Vermieter for UI/routing purposes (see auth.istVermieter);
+	// this cookie additionally tells withDB which *sql.DB a request should
+	// use.
 	demoSessionCookieName = "nk_demo_session"
 
-	// demoPassword is hardcoded in the code (Issue #118 implementation
-	// decision) - no ENV/config, always works regardless of whether
-	// LOGIN_PASSWORD is set.
-	demoPassword = "demo"
-
 	// demoSessionSecret signs the demo session cookie. Not a real secret -
-	// demoPassword itself is public/hardcoded - just reuses signSession's
-	// HMAC mechanism so a visitor can't forge/tamper the marker.
+	// the demo login needs no password - just reuses signSession's HMAC
+	// mechanism so a visitor can't forge/tamper the marker.
 	demoSessionSecret = "nebenkostenrechner-demo-session"
+
+	// The values of the login form's "rolle" select (ADR 0003).
+	rolleFormMieter    = "mieter"
+	rolleFormVermieter = "vermieter"
+	rolleFormDemo      = "demo"
 )
 
-// resolveLoginPassword reads the optional login password: LOGIN_PASSWORD env
-// var first (Docker/.env), falling back to the Home Assistant Supervisor API
-// when unset - Supervisor does not map addon options onto container env vars
-// itself, and this app's distroless image has no shell for the usual
-// bashio/run.sh workaround (see larknafets/ha-addons#3). An earlier version
-// of this fallback read /data/options.json directly, but that file is
-// root-owned and unreadable by this image's nonroot container user
-// (confirmed via addon log: "permission denied") - the Supervisor API call
-// needs no filesystem access at all. Read once at startup, like
-// DB_PATH/LISTEN_ADDR. Empty means the login system stays disabled -
-// everything visible.
-func resolveLoginPassword() string {
-	if pw := os.Getenv("LOGIN_PASSWORD"); pw != "" {
-		log.Printf("login: LOGIN_PASSWORD env set (length %d)", len(pw))
-		return pw
+// ladeKennwoerter reads the two optional passwords (ADR 0003):
+// VERMIETER_PASSWORD and MIETER_PASSWORD from the environment (Docker/.env),
+// falling back per password to the Home Assistant Supervisor API when unset -
+// Supervisor does not map addon options onto container env vars itself, and
+// this app's distroless image has no shell for the usual bashio/run.sh
+// workaround (see larknafets/ha-addons#3). The Supervisor call needs no
+// filesystem access (an earlier read of /data/options.json failed with
+// "permission denied" for the nonroot container user). Read once at startup,
+// like DB_PATH/LISTEN_ADDR.
+//
+// Empty vermieter means the login system stays disabled - everything
+// visible, everyone is Vermieter. A Mieter password without a Vermieter
+// password is ignored (it would make everyone Vermieter anyway).
+func ladeKennwoerter() (vermieter, mieter string) {
+	vermieter = os.Getenv("VERMIETER_PASSWORD")
+	mieter = os.Getenv("MIETER_PASSWORD")
+	if os.Getenv("LOGIN_PASSWORD") != "" && vermieter == "" {
+		log.Print("login: LOGIN_PASSWORD wird nicht mehr gelesen, das Vermieter-Kennwort heisst jetzt VERMIETER_PASSWORD - die App ist ohne Vermieter-Kennwort offen")
 	}
-	token := os.Getenv("SUPERVISOR_TOKEN")
-	if token == "" {
-		return ""
+	if token := os.Getenv("SUPERVISOR_TOKEN"); token != "" && (vermieter == "" || mieter == "") {
+		v, m, err := fetchSupervisorKennwoerter(token)
+		if err != nil {
+			log.Printf("login: Supervisor API call failed (%v) - passwords stay empty", err)
+		} else {
+			if vermieter == "" {
+				vermieter = v
+			}
+			if mieter == "" {
+				mieter = m
+			}
+		}
 	}
-	pw, err := fetchSupervisorLoginPassword(token)
-	if err != nil {
-		log.Printf("login: Supervisor API call failed (%v) - login password stays empty", err)
-		return ""
+	if mieter != "" && vermieter == "" {
+		log.Print("login: MIETER_PASSWORD ohne VERMIETER_PASSWORD wird ignoriert, die App bleibt offen")
+		mieter = ""
 	}
-	log.Printf("login: read login_password from Supervisor API (length %d)", len(pw))
-	return pw
+	log.Printf("login: Vermieter-Kennwort (Laenge %d), Mieter-Kennwort (Laenge %d)", len(vermieter), len(mieter))
+	return vermieter, mieter
 }
 
-// fetchSupervisorLoginPassword calls the Supervisor's internal
+// fetchSupervisorKennwoerter calls the Supervisor's internal
 // "/addons/self/info" API (only reachable from inside the addon container,
 // requires "hassio_api: true" in config.yaml) and extracts the currently
-// configured "login_password" option. The options object in this response
-// is the addon's own, unredacted configuration - unlike the equivalent
-// "/addons/<slug>/info" call from outside, which redacts it.
-func fetchSupervisorLoginPassword(token string) (string, error) {
+// configured "vermieter_password" and "mieter_password" options. The options
+// object in this response is the addon's own, unredacted configuration -
+// unlike the equivalent "/addons/<slug>/info" call from outside, which
+// redacts it.
+func fetchSupervisorKennwoerter(token string) (vermieter, mieter string, err error) {
 	req, err := http.NewRequest(http.MethodGet, "http://supervisor/addons/self/info", nil)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected status %d", resp.StatusCode)
+		return "", "", fmt.Errorf("unexpected status %d", resp.StatusCode)
 	}
 
 	var body struct {
 		Data struct {
 			Options struct {
-				LoginPassword string `json:"login_password"`
+				VermieterPassword string `json:"vermieter_password"`
+				MieterPassword    string `json:"mieter_password"`
 			} `json:"options"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return "", err
+		return "", "", err
 	}
-	return body.Data.Options.LoginPassword, nil
+	return body.Data.Options.VermieterPassword, body.Data.Options.MieterPassword, nil
 }
 
 // signSession returns a session cookie value valid until expiry:
@@ -136,8 +153,8 @@ func verifySession(secret, value string) bool {
 	return hmac.Equal([]byte(sig), []byte(wantSig))
 }
 
-// sessionKind is one of the 2 cookie-based session mechanisms this app
-// knows (real login vs demo login) - same shape (stateless HMAC-signed
+// sessionKind is one of the 3 cookie-based session mechanisms this app
+// knows (Vermieter, Mieter, demo login) - same shape (stateless HMAC-signed
 // cookie, sessionTTL), differing only in cookie name and signing secret.
 // Extracting this (architecture review after demo mode #118, candidate 3)
 // replaces what used to be 4 hand-written, near-identical set/clear
@@ -148,15 +165,20 @@ type sessionKind struct {
 }
 
 // demoKind is the demo session's cookie/secret pair - fixed regardless of
-// LOGIN_PASSWORD, since the demo login always works (Issue #118
+// the passwords, since the demo login always works (Issue #118
 // implementation decision).
 var demoKind = sessionKind{cookieName: demoSessionCookieName, secret: demoSessionSecret}
 
-// realKind is the real login's cookie/secret pair for this auth instance -
-// secret is a.secret, so an empty secret's "login disabled" meaning is
-// still entirely a's caller's concern, not sessionKind's.
-func (a auth) realKind() sessionKind {
-	return sessionKind{cookieName: sessionCookieName, secret: a.secret}
+// vermieterKind and mieterKind are the real logins' cookie/secret pairs for
+// this auth instance - the secret is the password of the role, so an empty
+// password's "login disabled" meaning is still entirely the caller's concern,
+// not sessionKind's.
+func (a auth) vermieterKind() sessionKind {
+	return sessionKind{cookieName: sessionCookieName, secret: a.vermieter}
+}
+
+func (a auth) mieterKind() sessionKind {
+	return sessionKind{cookieName: mieterSessionCookieName, secret: a.mieter}
 }
 
 // active reports whether r carries a valid, unexpired cookie for this kind.
@@ -200,55 +222,69 @@ func (k sessionKind) clear(w http.ResponseWriter) {
 }
 
 // isDemoSession reports whether r carries a valid demo session cookie -
-// independent of secret/LOGIN_PASSWORD. Kept as its own entry point (rather
-// than folded into resolveSession) since selectDB (dbcontext.go) and
-// HandleLogin's demo-password branch need exactly this, with no secret in
-// scope and no interest in real-session precedence.
+// independent of the passwords. Kept as its own entry point (rather than
+// folded into resolveSession) since selectDB (dbcontext.go) needs exactly
+// this, with no passwords in scope and no interest in real-session precedence.
 func isDemoSession(r *http.Request) bool {
 	return demoKind.active(r)
 }
 
-// resolveSession is the one place session precedence is decided: "demo",
-// "real", or "none" - demo wins when both cookies happen to be valid at
-// once. isLoggedIn and demoNavFlags both read from this instead of each
-// re-deriving the same precedence.
-func resolveSession(r *http.Request, secret string) string {
-	if demoKind.active(r) {
-		return "demo"
-	}
-	if secret != "" && (sessionKind{cookieName: sessionCookieName, secret: secret}).active(r) {
-		return "real"
-	}
-	return "none"
+// Session kinds as resolveSession reports them.
+const (
+	sitzungDemo      = "demo"
+	sitzungVermieter = "vermieter"
+	sitzungMieter    = "mieter"
+	sitzungKeine     = "none"
+)
+
+// mieterAktiv reports whether the Mieter login exists: it needs its own
+// password and a Vermieter password (without one everyone is Vermieter).
+func (a auth) mieterAktiv() bool {
+	return a.vermieter != "" && a.mieter != ""
 }
 
-// isLoggedIn reports whether r carries a valid session - always true when
-// no password is configured (secret == ""), the "login system disabled"
-// case from Ticket #112, or when resolveSession finds a valid demo or real
-// session.
-func isLoggedIn(r *http.Request, secret string) bool {
-	return secret == "" || resolveSession(r, secret) != "none"
+// resolveSession is the one place session precedence is decided: demo wins
+// when several cookies happen to be valid at once, then Vermieter, then Mieter.
+func (a auth) resolveSession(r *http.Request) string {
+	switch {
+	case demoKind.active(r):
+		return sitzungDemo
+	case a.vermieter != "" && a.vermieterKind().active(r):
+		return sitzungVermieter
+	case a.mieterAktiv() && a.mieterKind().active(r):
+		return sitzungMieter
+	}
+	return sitzungKeine
 }
 
-// demoNavFlags computes the 3 demo-mode-related nav facts that every
-// page needs via the shared "nav" partial (Issue #122): isDemo
-// (controls the demo banner), showLoginEntry (visibility of the "Login"
-// entry point into the login overlay) and showLogoutEntry (visibility of
-// the "Logout" link). showLoginEntry is shown as soon as the visitor is
-// neither in a demo session nor logged in with a real, configured
-// LOGIN_PASSWORD - covers both the classic "not logged in" case (secret
-// set, no valid cookie) and the secret == "" case, where isLoggedIn is
-// unconditionally true (everything open) but there's still a need for a
-// visible path to the demo login. showLogoutEntry is deliberately NOT
-// simply isLoggedIn: with secret == "", isLoggedIn is always true
-// (everything open) even though no session exists to log out of -
-// "Logout" only makes sense with a real session (realLogin) or a demo
-// session.
-func demoNavFlags(r *http.Request, secret string) (isDemo, showLoginEntry, showLogoutEntry bool) {
-	kind := resolveSession(r, secret)
-	isDemo = kind == "demo"
-	realLogin := kind == "real"
-	return isDemo, !isDemo && !realLogin, isDemo || realLogin
+// istVermieter reports whether r counts as Vermieter - always true when no
+// Vermieter password is configured (the "login system disabled" case from
+// Ticket #112), or when resolveSession finds a demo or Vermieter session.
+func (a auth) istVermieter(r *http.Request) bool {
+	if a.vermieter == "" {
+		return true
+	}
+	kind := a.resolveSession(r)
+	return kind == sitzungVermieter || kind == sitzungDemo
+}
+
+// loginOption is one entry of the login form's "Anmelden als" select.
+type loginOption struct {
+	Wert  string
+	Label string
+}
+
+// loginOptionen lists the roles one can log in as: Vermieter and Mieter only
+// when their password is set, Demo always. The first entry is preselected.
+func (a auth) loginOptionen() []loginOption {
+	var out []loginOption
+	if a.mieterAktiv() {
+		out = append(out, loginOption{rolleFormMieter, "Mieter"})
+	}
+	if a.vermieter != "" {
+		out = append(out, loginOption{rolleFormVermieter, "Vermieter"})
+	}
+	return append(out, loginOption{rolleFormDemo, "Demo"})
 }
 
 // navData is every page's shared nav facts - Base plus the 3 login/demo
@@ -260,46 +296,59 @@ func demoNavFlags(r *http.Request, secret string) (isDemo, showLoginEntry, showL
 // Aktuell (the active nav tab) deliberately stays out - each handler names
 // its own page, a constructor here can't derive that for it.
 type navData struct {
-	Base            string
+	Base string
+	// IsLoggedIn is true for the Vermieter (and the demo session, which
+	// shows the Vermieter's view); the templates gate everything reserved for
+	// the Vermieter on it.
 	IsLoggedIn      bool
 	IsDemoSession   bool
 	ShowLoginEntry  bool
 	ShowLogoutEntry bool
+	LoginOptionen   []loginOption
 }
 
-// auth bundles the 2 facts every login-related decision needs: the
-// configured login password (secret) and the demo database (needed to
-// reset it on a successful demo login). Built once in NewMux (newAuth)
-// and passed along ever since, instead of secret as a bare string through
-// ~13 route registrations and 11 handler constructors - architecture
-// review after demo mode (#118), candidate 2.
+// auth bundles what every login-related decision needs: the two configured
+// passwords and the demo database (needed to reset it on a successful demo
+// login). Built once in NewMux and passed along ever since, instead of the
+// password as a bare string through ~13 route registrations and 11 handler
+// constructors - architecture review after demo mode (#118), candidate 2.
 type auth struct {
-	secret string
-	demoDB *sql.DB
+	vermieter string
+	mieter    string
+	demoDB    *sql.DB
 }
 
-func newAuth(secret string, demoDB *sql.DB) auth {
-	return auth{secret: secret, demoDB: demoDB}
+// newAuth builds an auth with a Vermieter password only (no Mieter login).
+func newAuth(vermieter string, demoDB *sql.DB) auth {
+	return auth{vermieter: vermieter, demoDB: demoDB}
 }
 
 // NavData builds navData for the current request - the single place
-// requestBase/isLoggedIn/demoNavFlags are called together, replacing what
-// used to be duplicated across all 9 page-handlers.
+// requestBase/session resolution are called together, replacing what used to
+// be duplicated across all 9 page-handlers.
+//
+// The login entry shows for everybody but the Vermieter and the demo
+// session, so a Mieter can switch to the Vermieter and the (otherwise open)
+// app keeps a visible path to the demo login (Issue #122). The logout entry
+// needs a real session to end: with no Vermieter password everyone counts as
+// Vermieter, but there is no session to log out of.
 func (a auth) NavData(r *http.Request) navData {
-	isDemo, showLoginEntry, showLogoutEntry := demoNavFlags(r, a.secret)
+	kind := a.resolveSession(r)
 	return navData{
 		Base:            requestBase(r),
-		IsLoggedIn:      isLoggedIn(r, a.secret),
-		IsDemoSession:   isDemo,
-		ShowLoginEntry:  showLoginEntry,
-		ShowLogoutEntry: showLogoutEntry,
+		IsLoggedIn:      a.istVermieter(r),
+		IsDemoSession:   kind == sitzungDemo,
+		ShowLoginEntry:  kind != sitzungDemo && kind != sitzungVermieter,
+		ShowLogoutEntry: kind != sitzungKeine,
+		LoginOptionen:   a.loginOptionen(),
 	}
 }
 
-// RequireLogin gates a mutating or create-only route behind the
-// login password (Ticket #112's enforcement matrix): with no password
-// configured every route stays open (isLoggedIn always true), otherwise an
-// unauthenticated request bounces to the login overlay (Ticket #113).
+// RequireLogin gates a mutating or create-only route behind the Vermieter
+// (Ticket #112's enforcement matrix): with no Vermieter password configured
+// every route stays open (istVermieter always true). Otherwise an
+// unauthenticated request bounces to the login overlay (Ticket #113), and a
+// logged-in Mieter gets the page "Nur für den Vermieter" (ADR 0003).
 //
 // The bounce always lands on the Dashboard, never back on the gated URL
 // itself - a fully gated GET page (e.g. /ablesungen/neu) is itself wrapped
@@ -311,7 +360,7 @@ func (a auth) NavData(r *http.Request) navData {
 // loginRedirectTarget).
 func (a auth) RequireLogin(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if isLoggedIn(r, a.secret) {
+		if a.istVermieter(r) {
 			next(w, r)
 			return
 		}
@@ -325,7 +374,11 @@ func (a auth) RequireLogin(next http.HandlerFunc) http.HandlerFunc {
 			// submitted from, if any.
 			wantedPath = refererPath(r)
 		}
-		redirectToLoginOverlay(w, r, wantedPath, false)
+		if a.resolveSession(r) == sitzungMieter {
+			a.nurVermieterSeite(w, r, wantedPath)
+			return
+		}
+		redirectToLoginOverlay(w, r, wantedPath, "", false)
 	}
 }
 
@@ -347,15 +400,36 @@ func refererPath(r *http.Request) string {
 // flagged open (?login=1[&fehler=1]) and next carrying where a successful
 // login should actually land - see requireLogin for why it's always the
 // Dashboard, never the originally attempted URL.
-func redirectToLoginOverlay(w http.ResponseWriter, r *http.Request, next string, fehler bool) {
+func redirectToLoginOverlay(w http.ResponseWriter, r *http.Request, next, rolle string, fehler bool) {
 	if next == "" || !strings.HasPrefix(next, "/") || strings.HasPrefix(next, "//") {
 		next = "/dashboard"
 	}
 	target := requestBase(r) + "/dashboard?login=1&next=" + url.QueryEscape(next)
+	if rolle != "" {
+		target += "&rolle=" + url.QueryEscape(rolle)
+	}
 	if fehler {
 		target += "&fehler=1"
 	}
 	http.Redirect(w, r, target, http.StatusFound)
+}
+
+// nurVermieterSeite answers a logged-in Mieter who asked for a page reserved
+// for the Vermieter: 403 with a link that opens the login as Vermieter and
+// leads back to the wanted page.
+func (a auth) nurVermieterSeite(w http.ResponseWriter, r *http.Request, wanted string) {
+	if wanted == "" || !strings.HasPrefix(wanted, "/") || strings.HasPrefix(wanted, "//") {
+		wanted = "/dashboard"
+	}
+	data := struct {
+		navData
+		Aktuell string
+		Next    string
+	}{navData: a.NavData(r), Next: wanted}
+	w.WriteHeader(http.StatusForbidden)
+	if err := nurVermieterTemplate.ExecuteTemplate(w, "layout", data); err != nil {
+		log.Printf("nur vermieter: %v", err)
+	}
 }
 
 // loginRedirectTarget resolves where to send the browser after a
@@ -372,53 +446,70 @@ func loginRedirectTarget(r *http.Request) string {
 	return requestBase(r) + next
 }
 
-// HandleLogin's demo branch resets a.demoDB to its fresh 39-month
-// initial state on every successful demo login (Issue #121) - before
-// setting the session cookie, so a granted demo session always sees the
-// fresh state, never that of a previous session.
+// HandleLogin logs in as the role the form's "rolle" select names (ADR 0003):
+// Mieter and Vermieter check the password of that role, Demo needs none.
 func (a auth) HandleLogin() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form: "+err.Error(), http.StatusBadRequest)
 			return
 		}
-		// demoPassword is a special case, checked before the regular
-		// secret comparison - always works, even when secret == ""
-		// (Issue #118 implementation decision).
-		if r.FormValue("password") == demoPassword {
+		rolle := r.FormValue("rolle")
+		fehler := func() { redirectToLoginOverlay(w, r, r.FormValue("next"), rolle, true) }
+		passt := func(want string) bool {
+			return subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte(want)) == 1
+		}
+		switch rolle {
+		case rolleFormDemo:
+			// The demo login needs no password and always works, even when
+			// no password is configured (Issue #118). It resets a.demoDB to
+			// its fresh 39-month initial state on every login (Issue #121) -
+			// before setting the session cookie, so a granted demo session
+			// always sees the fresh state, never that of a previous session.
 			if err := store.ResetDemoData(a.demoDB, time.Now()); err != nil {
 				http.Error(w, "demo reset: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
 			// A still-valid real session cookie must not be left lying
-			// around - isDemoSession is checked before the real session
-			// (isLoggedIn/withDB), but a clean login switch cleans up
-			// both sides instead of relying solely on that check
-			// ordering.
-			a.realKind().clear(w)
+			// around: a clean login switch cleans up all sides instead of
+			// relying solely on the precedence in resolveSession.
+			a.vermieterKind().clear(w)
+			a.mieterKind().clear(w)
 			demoKind.set(w)
-			http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
+		case rolleFormVermieter:
+			if a.vermieter == "" {
+				// Login system disabled, everyone is Vermieter already.
+				break
+			}
+			if !passt(a.vermieter) {
+				fehler()
+				return
+			}
+			// Symmetric to the demo branch: no other session may override a
+			// fresh login.
+			demoKind.clear(w)
+			a.mieterKind().clear(w)
+			a.vermieterKind().set(w)
+		case rolleFormMieter:
+			if !a.mieterAktiv() || !passt(a.mieter) {
+				fehler()
+				return
+			}
+			demoKind.clear(w)
+			a.vermieterKind().clear(w)
+			a.mieterKind().set(w)
+		default:
+			fehler()
 			return
 		}
-		if a.secret == "" {
-			http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
-			return
-		}
-		if subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte(a.secret)) != 1 {
-			redirectToLoginOverlay(w, r, r.FormValue("next"), true)
-			return
-		}
-		// Symmetric to the demo branch above: a still-valid demo session
-		// cookie must not override a fresh real login.
-		demoKind.clear(w)
-		a.realKind().set(w)
 		http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
 	}
 }
 
 func (a auth) HandleLogout() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		a.realKind().clear(w)
+		a.vermieterKind().clear(w)
+		a.mieterKind().clear(w)
 		demoKind.clear(w)
 		http.Redirect(w, r, loginRedirectTarget(r), http.StatusFound)
 	}

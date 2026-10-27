@@ -191,7 +191,7 @@ func TestAbrechnungSeite_Navigation(t *testing.T) {
 		mustContain(t, body, `href="/abrechnung">Abrechnung</a>`)
 	})
 	t.Run("nicht angemeldet: kein Menuepunkt", func(t *testing.T) {
-		t.Setenv("LOGIN_PASSWORD", "geheim")
+		t.Setenv("VERMIETER_PASSWORD", "geheim")
 		body := getDashboard(t, NewMux(openTestDB(t), openTestDB(t), "", ""), nil)
 		mustNotContain(t, body, `href="/abrechnung"`)
 	})
@@ -201,7 +201,7 @@ func TestAbrechnungSeite_Navigation(t *testing.T) {
 // addresses and the IBAN) - TestRouteMatrix_RequireLoginCoverage checks the
 // redirect, this checks that no data leaks with it.
 func TestAbrechnungSeite_NichtAngemeldetKeineDaten(t *testing.T) {
-	t.Setenv("LOGIN_PASSWORD", "geheim")
+	t.Setenv("VERMIETER_PASSWORD", "geheim")
 	db := teiljahrDB(t, true)
 	mux := NewMux(db, openTestDB(t), "", "")
 	code, body := getAbrechnung(t, mux, "?jahr=2026&wohnung=2", nil)
