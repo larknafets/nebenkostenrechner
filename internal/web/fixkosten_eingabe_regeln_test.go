@@ -61,6 +61,8 @@ func TestHandleImportFixkostenCSV_UngueltigeFelderMeldungen(t *testing.T) {
 		{"Monat", zeile("2026-06", kd.Logik, kd.Typ), `Zeile 2: ungültiger Monat "2026-06" (Format JJJJ-MM-01)`},
 		{"Logik", zeile("2026-06-01", "x", kd.Typ), `Zeile 2: ungültige Berechnungslogik für ` + kd.Label + `: "x"`},
 		{"Typ", zeile("2026-06-01", kd.Logik, "y"), `Zeile 2: ungültiger Typ für ` + kd.Label + `: "y"`},
+		{"Personenzahl keine Zahl", fixkostenCSVRowMitPersonen("2026-06-01", "abc", "1"), `Zeile 2: ungültige Personenzahl für Wohnung 1: "abc"`},
+		{"Personenzahl zu viele Nachkommastellen", fixkostenCSVRowMitPersonen("2026-06-01", "1,255", "1"), `Zeile 2: ungültige Personenzahl für Wohnung 1: "1,255" (Personenzahl darf höchstens 2 Nachkommastellen haben)`},
 		{"Personenzahl", fixkostenCSVRowMitPersonen("2026-06-01", "-1", "1"), `Zeile 2: ungültige Personenzahl für Wohnung 1: "-1" (Personenzahl darf nicht negativ sein)`},
 	} {
 		t.Run(c.name, func(t *testing.T) {
