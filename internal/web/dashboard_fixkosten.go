@@ -2,7 +2,6 @@ package web
 
 import (
 	"math"
-	"slices"
 	"sort"
 	"time"
 
@@ -118,6 +117,7 @@ type dashboardJahresCard struct {
 	FixkostenEUR        float64
 	StromEUR            float64
 	WallboxEUR          float64
+	WallboxKWh          float64 // yearly kWh of the Wallbox share (not a bar segment, see Wallbox)
 	HeizungEUR          float64
 	WasserEUR           float64
 	VerbrauchEUR        float64
@@ -127,6 +127,14 @@ type dashboardJahresCard struct {
 	PVGutschriftEUR float64
 	GesamtEUR       float64
 	Segmente        []dashboardSegment
+
+	// WallboxVerteilt is true when at least one period of the year assigns
+	// the Wallbox costs to the apartments (StromErgebnis.WallboxVerteilt).
+	WallboxVerteilt bool
+	// Wallbox is the apartment's own Wallbox block (#304): one bar
+	// "Stromkosten" in EUR and kWh. nil = no block. Set by buildEntityView
+	// from the Wohnungsregeln, the Wallbox no longer sits in Segmente.
+	Wallbox *dashboardSimpleCard
 
 	// PVAnteilKWh is the yearly total of StromErgebnis.PVAnteilW2KWh ("not
 	// allocated to grid draw (PV)", GLOSSARY.md) - only set for apartment 2
@@ -169,7 +177,8 @@ func mieteinnahmen(apartmentID int64, jahr int, eingaben []mieteMonat) float64 {
 // decimal places, 0 if the year has no entry yet).
 func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apartmentFlurstueck float64, jahr int, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten) dashboardJahresCard {
 	var strom, wallbox, heizung, wasser, fix, gutschrift float64
-	var pvAnteilKWh float64
+	var wallboxKWh, pvAnteilKWh float64
+	var wallboxVerteilt bool
 	var personenSumme float64
 	var personenAnzahl int
 	for _, pk := range periodenKosten {
@@ -183,6 +192,7 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 				strom += kat.Kosten
 			case kategorieKindWallbox:
 				wallbox += kat.Kosten
+				wallboxKWh += kat.Verbrauch
 			case kategorieKindHeizung:
 				heizung += kat.Kosten
 			case kategorieKindWasser:
@@ -190,6 +200,9 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 			}
 		}
 		gutschrift += pk.K.Anteil(apartmentID).PVGutschrift
+		if pk.K.Strom != nil && pk.K.Strom.WallboxVerteilt {
+			wallboxVerteilt = true
+		}
 		if apartmentID == 2 && pk.K.Strom != nil {
 			pvAnteilKWh += pk.K.Strom.PVAnteilW2KWh
 		}
@@ -217,15 +230,15 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 	segs := []dashboardSegment{
 		{Farbe: "fix", Label: "Fixkosten", Kosten: fix},
 		{Farbe: "strom", Label: "Strom", Kosten: strom},
-		{Farbe: "wallbox", Label: "Wallbox", Kosten: wallbox},
 		{Farbe: "heizung", Label: "Heizung/Ww", Kosten: heizung},
 		{Farbe: "wasser", Label: "Wasser", Kosten: wasser},
 	}
 	// The bar shows the consumption categories only: the Fixkosten grow too
 	// fast and crowd out the consumption (they stay a chip and in the total).
-	// Its segments add up to 100% of the consumption, the Fixkosten segment
+	// The Wallbox has its own block (#304), so it is no segment either. The
+	// segments add up to 100% of what the bar shows, the Fixkosten segment
 	// (first) gets no width.
-	setSegmentPct(segs[1:], verbrauch)
+	setSegmentPct(segs[1:], calc.Round2(strom+heizung+wasser))
 
 	return dashboardJahresCard{
 		ApartmentID: apartmentID, ApartmentName: apartmentName, ApartmentQM: apartmentQM,
@@ -233,6 +246,7 @@ func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apart
 		FixkostenEUR: fix, StromEUR: strom, WallboxEUR: wallbox, HeizungEUR: heizung, WasserEUR: wasser,
 		VerbrauchEUR: verbrauch, PVGutschriftEUR: gutschrift, GesamtEUR: gesamt, Segmente: segs,
 		PVAnteilKWh: pvAnteilKWh,
+		WallboxKWh:  wallboxKWh, WallboxVerteilt: wallboxVerteilt,
 	}
 }
 
@@ -552,6 +566,17 @@ func findApartment(apartments []store.Apartment, id int64) store.Apartment {
 	return store.Apartment{}
 }
 
+// wallboxBlock builds the apartment's Wallbox block from its yearly totals:
+// one full-width "Stromkosten" segment, as in the Wallboxen card but without
+// a PV share (nothing allocates the PV share to an apartment).
+func wallboxBlock(card dashboardJahresCard) *dashboardSimpleCard {
+	seg := dashboardSegment{Farbe: "strom", Label: "Stromkosten", Kosten: card.WallboxEUR, Verbrauch: card.WallboxKWh, Einheit: "kWh"}
+	if card.WallboxKWh > 0 {
+		seg.ProzentNeuestesGesamt = 100
+	}
+	return &dashboardSimpleCard{Name: "Wallbox", GesamtEUR: card.WallboxEUR, Segmente: []dashboardSegment{seg}}
+}
+
 // buildEntityView bundles what every apartmentID-based Dashboard
 // view needs in one place anyway: the yearly-totals card, the monthly
 // history, and the balance wired consistently between both (#99,
@@ -564,12 +589,12 @@ func buildEntityView(dd dashboardData, apartmentID int64) (dashboardJahresCard, 
 	a := findApartment(dd.Apartments, apartmentID)
 	verlauf := buildDashboardVerlauf(a.ID, a.Name, dd.PeriodenKosten, dd.FixkostenListe)
 	card := buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, dd.Jahr, dd.PeriodenKosten, dd.FixkostenListe)
-	// The Wohnungsstatus steers the display, too (#276): a rented apartment
-	// whose Wallbox is not passed on and costs nothing shows no Wallbox line
-	// and no bar segment. Totals and Saldo stay untouched (the segment is 0).
+	// The Wallbox block (#304) shows only when the Wohnung carries the
+	// Wallbox in its Abrechnung and the costs are assigned to the apartments.
+	// Totals and Saldo stay untouched (the Wallbox is in them either way).
 	regeln := store.NewWohnungsregeln(a, store.Haus{WallboxWeiterberechnen: dd.WallboxWeiterberechnen})
-	if !regeln.JahreskarteWallboxZeile(card.WallboxEUR) {
-		card.Segmente = slices.DeleteFunc(card.Segmente, func(s dashboardSegment) bool { return s.Farbe == "wallbox" })
+	if regeln.AbrechnungWallbox() && card.WallboxVerteilt {
+		card.Wallbox = wallboxBlock(card)
 	}
 	card.Saldo = verlauf.LatestSaldo
 	return card, verlauf

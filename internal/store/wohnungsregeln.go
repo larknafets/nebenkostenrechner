@@ -21,9 +21,8 @@ func NewWohnungsregeln(a Apartment, h Haus) Wohnungsregeln {
 // NewWohnungsregelnOhneHaus builds the rules for callers that have no Haus
 // at hand and only ask Haus-free questions (FixkostenAbschlagMiete,
 // FixkostenDetailMiete, Mieteinnahmen, AbrechnungPVGutschrift). A question
-// that depends on a Haus flag (AbrechnungStrom, AbrechnungWallbox,
-// JahreskarteWallboxZeile) panics on these rules: a programming error, not a
-// silent "flag off".
+// that depends on a Haus flag (AbrechnungStrom, AbrechnungWallbox) panics on
+// these rules: a programming error, not a silent "flag off".
 func NewWohnungsregelnOhneHaus(a Apartment) Wohnungsregeln {
 	return Wohnungsregeln{apartment: a}
 }
@@ -69,15 +68,6 @@ func (s Wohnungsregeln) FixkostenDetailMiete() bool {
 // Vermietung only.
 func (s Wohnungsregeln) Mieteinnahmen() bool {
 	return s.apartment.Vermietet()
-}
-
-// JahreskarteWallboxZeile reports whether the Jahreskarte of the Dashboard
-// shows the Wallbox line. It drops for a rented apartment whose Wallbox is not
-// passed on ("Wallbox weiterberechnen" off) and whose amount is 0; the amount
-// stays an argument because it comes from the cost calculation.
-func (s Wohnungsregeln) JahreskarteWallboxZeile(betragEUR float64) bool {
-	h := s.flags()
-	return !(s.apartment.Vermietet() && !h.WallboxWeiterberechnen && betragEUR == 0)
 }
 
 // AbrechnungPVGutschrift reports whether the PV-Gutschrift stands in the

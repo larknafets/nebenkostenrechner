@@ -9,13 +9,14 @@ import (
 )
 
 // dashboard_nullwerte_test.go covers the display rules of the Jahreskarten
-// (#276): zero values of PV-Gutschrift and PV-Anteil stay visible, the
-// Wallbox line of a rented apartment disappears when it is not passed on and
-// 0. Everything goes through the HTTP seam (Dashboard), except
-// the unchanged totals, which read the card data.
+// (#276, #304): zero values of PV-Gutschrift and PV-Anteil stay visible, the
+// Wallbox block of an apartment disappears when it is not passed on or not
+// assigned. Everything goes through the HTTP seam (Dashboard), except the
+// unchanged totals, which read the card data.
 
 const (
 	titelWallbox      = `title="Wallbox"`
+	blockWallbox      = `class="stat-wallbox"`
 	titelPVGutschrift = `title="PV-Gutschrift"`
 	titelPVAnteil     = `title="Nicht dem Netzbezug zugeordnet (PV)"`
 )
@@ -35,19 +36,23 @@ func TestJahreskarte_PVZeilenAuchMitNull(t *testing.T) {
 	}
 }
 
-func TestJahreskarte_WallboxZeileJeStatusFlagUndBetrag(t *testing.T) {
+// The Wallbox block of a Jahreskarte (#304) shows only when the Wohnung
+// carries the Wallbox in its Abrechnung and the costs are assigned to the
+// apartments. Wohnung 1 is in Eigennutzung, so it has the block whenever the
+// costs are assigned.
+func TestJahreskarte_WallboxBlockJeStatusFlagUndZuordnung(t *testing.T) {
 	einzelW2 := 15.0
 	for _, c := range []struct {
-		name         string
-		einzelW2     *float64
-		weiter       bool
-		w2Status     string
-		wantWallbox2 bool
+		name       string
+		einzelW2   *float64
+		weiter     bool
+		w2Status   string
+		wantBloeke int
 	}{
-		{"vermietet, Flag aus, 0: ausgeblendet", nil, false, store.StatusVermietet, false},
-		{"vermietet, Flag aus, Betrag: sichtbar", &einzelW2, false, store.StatusVermietet, true},
-		{"vermietet, Flag an, 0: sichtbar", nil, true, store.StatusVermietet, true},
-		{"Eigennutzung, Flag aus, 0: sichtbar", nil, false, store.StatusEigennutzung, true},
+		{"nicht zugeordnet: kein Block", nil, true, store.StatusEigennutzung, 0},
+		{"vermietet, Flag aus: nur Wohnung 1", &einzelW2, false, store.StatusVermietet, 1},
+		{"vermietet, Flag an: beide", &einzelW2, true, store.StatusVermietet, 2},
+		{"Eigennutzung, Flag aus: beide", &einzelW2, false, store.StatusEigennutzung, 2},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			db := openTestDB(t)
@@ -57,16 +62,15 @@ func TestJahreskarte_WallboxZeileJeStatusFlagUndBetrag(t *testing.T) {
 				s.Wohnungen = map[int64]store.WohnungDetails{2: {Status: c.w2Status}}
 			})
 
-			// Dashboard: the house-wide card stays, only the line of
-			// Wohnung 2 may go.
 			body := dashboardHTML(t, db)
-			want := 1
-			if c.wantWallbox2 {
-				want = 2
+			if n := strings.Count(body, blockWallbox); n != c.wantBloeke {
+				t.Errorf("Dashboard: %d Wallbox-Blöcke, want %d", n, c.wantBloeke)
 			}
-			if n := strings.Count(body, titelWallbox); n != want {
-				t.Errorf("Dashboard: %d Wallbox-Zeilen, want %d", n, want)
+			// Wallbox is no chip and no segment of the main bar any more.
+			if strings.Contains(body, titelWallbox) || strings.Contains(body, "stat-bar-seg cat-wallbox") {
+				t.Error("Wallbox steht noch im Hauptbalken oder bei den Chips der Jahreskarte")
 			}
+			// The house-wide card stays.
 			if !strings.Contains(body, "<strong>Wallboxen</strong>") {
 				t.Error("Karte Wallboxen fehlt")
 			}
@@ -74,19 +78,22 @@ func TestJahreskarte_WallboxZeileJeStatusFlagUndBetrag(t *testing.T) {
 	}
 }
 
-func TestJahreskarte_WallboxAusblendenAendertGesamtNicht(t *testing.T) {
+// Hiding the block changes no number: the Wallbox stays in Verbrauch and Gesamt.
+func TestJahreskarte_WallboxBlockAusblendenAendertGesamtNicht(t *testing.T) {
 	db := openTestDB(t)
-	wallboxAblesungen(t, db, nil, nil, false)
+	einzelW2 := 15.0
+	wallboxAblesungen(t, db, nil, &einzelW2, false)
+	saveStammdaten(t, db, func(s *store.StammdatenSave) { s.Flags.WallboxWeiterberechnen = true })
 	vorher, _ := buildEntityView(mustLoadDashboard(t, db), 2)
 
 	saveStammdaten(t, db, func(s *store.StammdatenSave) { s.Flags.WallboxWeiterberechnen = false })
 	nachher, _ := buildEntityView(mustLoadDashboard(t, db), 2)
 
+	if vorher.Wallbox == nil || nachher.Wallbox != nil {
+		t.Fatalf("Block vorher %v, nachher %v, want vorhanden und dann weg", vorher.Wallbox, nachher.Wallbox)
+	}
 	if vorher.GesamtEUR != nachher.GesamtEUR || vorher.VerbrauchEUR != nachher.VerbrauchEUR || vorher.WallboxEUR != nachher.WallboxEUR {
 		t.Errorf("Zahlen ändern sich: vorher %+v, nachher %+v", vorher, nachher)
-	}
-	if segmentByLabel(nachher.Segmente, "Wallbox") != nil {
-		t.Error("Segment Wallbox bleibt trotz vermietet, Flag aus, 0")
 	}
 }
 
