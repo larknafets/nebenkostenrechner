@@ -154,14 +154,13 @@ func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 		}
 		jahr := dd.Jahr
 
-		berechtigungen, err := store.GetBerechtigungen(dbFromContext(r.Context()))
-		if err != nil {
+		if err := nav.Fehler(); err != nil {
 			http.Error(w, "berechtigungen: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		// What the viewer may see is decided in one place (#293, #311).
-		view := sichtbareAnsicht(betrachterVon(nav.Zugriff), dd, berechtigungen, miete)
+		view := sichtbareAnsicht(nav.Zugriff, dd, miete)
 		var wallboxCard, wpCard, pvCard dashboardSimpleCard
 		var wallboxVerlauf, wpVerlauf, pvVerlauf dashboardSimpleSpalte
 		if view.Wallbox != nil {

@@ -260,7 +260,7 @@ func TestMonatsverlauf_Waermepumpe(t *testing.T) {
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
-	v := sichtbareAnsicht(betrachterNichtAngemeldet, dd, nil, nil)
+	v := sichtbareAnsicht(zugriffMitDefaults(store.RolleNichtAngemeldet), dd, nil)
 	if v.WP == nil {
 		t.Fatal("Wärmepumpe fehlt in der anonymen Ansicht")
 	}
