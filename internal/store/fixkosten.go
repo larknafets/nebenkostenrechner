@@ -179,8 +179,9 @@ func (in FixkostenInput) Validate() error {
 }
 
 // FixkostenImportError is returned by ImportFixkostenEingaben when one input
-// is invalid: the store knows no CSV line numbers, so the error names the
-// input's position in the list (0-based). Err is the rule's own error.
+// breaks a rule (FixkostenInput.Validate or ErrFixkostenMonatBelegt):
+// the store knows no CSV line numbers, so the error names the input's
+// position in the list (0-based). Err is the rule's own error.
 type FixkostenImportError struct {
 	Index int
 	Err   error
@@ -603,27 +604,27 @@ func AllFixkostenEingabenDetails(db *sql.DB) ([]*FixkostenEingabeDetails, error)
 // transaction (Issue #133) - bootstrap-only CSV import, same all-or-nothing
 // shape as ImportPeriods.
 func ImportFixkostenEingaben(db *sql.DB, inputs []FixkostenInput) (ids []int64, err error) {
-	tx, err := db.Begin()
-	if err != nil {
-		return nil, fmt.Errorf("begin tx: %w", err)
-	}
-	defer tx.Rollback()
-
-	ids = make([]int64, 0, len(inputs))
-	for i, in := range inputs {
-		id, err := insertFixkostenTx(tx, in)
-		if err != nil {
-			var ef *EingabeFehler
-			if errors.As(err, &ef) {
-				return nil, &FixkostenImportError{Index: i, Err: err}
+	err = inTx(db, func(tx *sql.Tx) error {
+		ids = make([]int64, 0, len(inputs))
+		for i, in := range inputs {
+			// Like ImportPeriods: a rule violation (field rules, month
+			// taken) names the input's position, a system error passes through.
+			if err := in.Validate(); err != nil {
+				return &FixkostenImportError{Index: i, Err: err}
 			}
-			return nil, err
+			id, err := insertFixkostenTx(tx, in)
+			if err != nil {
+				if errors.Is(err, ErrFixkostenMonatBelegt) {
+					return &FixkostenImportError{Index: i, Err: err}
+				}
+				return err
+			}
+			ids = append(ids, id)
 		}
-		ids = append(ids, id)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("commit tx: %w", err)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return ids, nil
 }
