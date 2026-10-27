@@ -374,9 +374,9 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 		if raw == "" {
 			continue // Teilstand (Ticket #129): deliberately left blank
 		}
-		p, err := parsePersonenzahl(raw)
+		p, err := strconv.ParseFloat(raw, 64)
 		if err != nil {
-			return store.PeriodInput{}, fmt.Errorf("ungültige Personenzahl für %s: %w", a.Name, err)
+			return store.PeriodInput{}, fmt.Errorf("ungültige Personenzahl für %s: Personenzahl muss eine Zahl sein", a.Name)
 		}
 		personen[a.ID] = p
 	}
@@ -395,7 +395,51 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 	for _, s := range store.Switches {
 		*s.Input(&in) = r.FormValue(s.FormName) != ""
 	}
+	if err := in.Validate(); err != nil {
+		return store.PeriodInput{}, wizardEingabeFehler(err, apartments)
+	}
 	return in, nil
+}
+
+// ablesungFormFehler is a parsePeriodInput error that names the form field it is
+// about, so the 400 response can carry the field for the Fehler-Overlay.
+type ablesungFormFehler struct{ msg, feld string }
+
+func (e *ablesungFormFehler) Error() string { return e.msg }
+
+// wizardEingabeFehler turns the *store.EingabeFehler of PeriodInput.Validate
+// into the German form message. Personenzahl keeps its message without a field.
+func wizardEingabeFehler(err error, apartments []store.Apartment) error {
+	var ef *store.EingabeFehler
+	if !errors.As(err, &ef) {
+		return err
+	}
+	switch ef.Feld {
+	case store.FeldReadingDate:
+		return &ablesungFormFehler{fmt.Sprintf("ungültiges Ablesedatum %q (Format JJJJ-MM-TT)", ef.Wert), "reading_date"}
+	case store.FeldMonat:
+		return &ablesungFormFehler{fmt.Sprintf("ungültiger Abrechnungsmonat %q (Format JJJJ-MM)", ef.Wert), "monat"}
+	case store.FeldPersonen:
+		name := strconv.FormatInt(ef.ID, 10)
+		for _, a := range apartments {
+			if a.ID == ef.ID {
+				name = a.Name
+			}
+		}
+		return fmt.Errorf("ungültige Personenzahl für %s: %w", name, ef.Err)
+	}
+	return err
+}
+
+// badRequestParse answers a parsePeriodInput error with 400, with the field
+// name if the error carries one.
+func badRequestParse(w http.ResponseWriter, err error) {
+	var f *ablesungFormFehler
+	if errors.As(err, &f) {
+		badRequestFeld(w, f.msg, f.feld)
+		return
+	}
+	http.Error(w, err.Error(), http.StatusBadRequest)
 }
 
 func handleCreateAblesung() http.HandlerFunc {
@@ -414,7 +458,7 @@ func handleCreateAblesung() http.HandlerFunc {
 
 		in, err := parsePeriodInput(r, apartments)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			badRequestParse(w, err)
 			return
 		}
 
@@ -478,7 +522,7 @@ func handleUpdateAblesung() http.HandlerFunc {
 
 		in, err := parsePeriodInput(r, apartments)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			badRequestParse(w, err)
 			return
 		}
 

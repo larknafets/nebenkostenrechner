@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -149,6 +148,11 @@ func handleImportCSV() http.HandlerFunc {
 				ids, err := store.ImportPeriods(db, inputs)
 				var row *store.ImportRowError
 				if errors.As(err, &row) {
+					var ef *store.EingabeFehler
+					if errors.As(row.Err, &ef) && row.Index < len(rows) {
+						// parseImportRow validates already, so this is a safety net.
+						return nil, &importEingabeFehler{msg: csvEingabeFehler(ef, rows[row.Index].line, nil).Error()}
+					}
 					if msg, _, ok := reiheFehler(row.Err); ok {
 						return nil, &importEingabeFehler{msg: fmt.Sprintf("Ablesung vom %s: %s", row.ReadingDate, msg)}
 					}
@@ -192,13 +196,10 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 	cell := func(col string) string { return record[colIdx[col]] }
 
 	readingDate := strings.TrimSpace(cell("reading_date"))
-	if _, err := time.Parse("2006-01-02", readingDate); err != nil {
-		return importRow{}, fmt.Errorf("Zeile %d: ungültiges Ablesedatum %q (Format JJJJ-MM-TT)", line, readingDate)
-	}
-
 	monat := strings.TrimSpace(cell("monat"))
-	if _, err := time.Parse("2006-01-02", monat); err != nil {
-		return importRow{}, fmt.Errorf("Zeile %d: ungültiger Abrechnungsmonat %q (Format JJJJ-MM-01)", line, monat)
+	// The store accepts an empty Monat (Teilstand), the CSV does not.
+	if monat == "" {
+		return importRow{}, csvEingabeFehler(&store.EingabeFehler{Feld: store.FeldMonat}, line, nil)
 	}
 
 	readings := make(map[string]float64, len(store.MeterKeys))
@@ -243,9 +244,9 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 	personen := make(map[int64]float64, 2)
 	for _, id := range [2]int64{1, 2} {
 		personenCol := fmt.Sprintf("personen_%d", id)
-		p, err := parseImportPersonenzahl(cell(personenCol), line, id)
+		p, err := parseDecimalDE(cell(personenCol))
 		if err != nil {
-			return importRow{}, err
+			return importRow{}, fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q", line, id, cell(personenCol))
 		}
 		personen[id] = p
 	}
@@ -263,7 +264,35 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 	for i, s := range store.Switches {
 		*s.Input(&input) = switches[i]
 	}
+	if err := input.Validate(); err != nil {
+		return importRow{}, csvEingabeFehler(err, line, func(id int64) string {
+			return cell(fmt.Sprintf("personen_%d", id))
+		})
+	}
 	return importRow{input: input, line: line}, nil
+}
+
+// csvEingabeFehler turns the *store.EingabeFehler of PeriodInput.Validate into
+// the German CSV message with the line number. rawPersonen returns the
+// uploaded cell of a Wohnung, so the message quotes it as written.
+func csvEingabeFehler(err error, line int, rawPersonen func(id int64) string) error {
+	var ef *store.EingabeFehler
+	if !errors.As(err, &ef) {
+		return err
+	}
+	switch ef.Feld {
+	case store.FeldReadingDate:
+		return fmt.Errorf("Zeile %d: ungültiges Ablesedatum %q (Format JJJJ-MM-TT)", line, ef.Wert)
+	case store.FeldMonat:
+		return fmt.Errorf("Zeile %d: ungültiger Abrechnungsmonat %q (Format JJJJ-MM-01)", line, ef.Wert)
+	case store.FeldPersonen:
+		raw := ef.Wert
+		if rawPersonen != nil {
+			raw = rawPersonen(ef.ID)
+		}
+		return fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q (%w)", line, ef.ID, raw, ef.Err)
+	}
+	return err
 }
 
 // warnedMeterKeys are the meters the negative-consumption/outlier warnings
