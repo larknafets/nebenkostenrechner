@@ -150,9 +150,9 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 		k := ablesung.Kosten
 
 		fix := fixkostenAnsicht(ds, period)
-		var hinweis *fixkostenHinweis
+		var hinweis *ablesungKostenHinweis
 		if ablesung.Grund == calc.GrundFixkostenFehlen {
-			hinweis = &fixkostenHinweis{Text: fixkostenFehlenText(period.Monat)}
+			hinweis = &ablesungKostenHinweis{Text: ablesungKostenFehlenText(period.Monat)}
 			if len(vorperiode) > 0 {
 				verbrauch := make(map[string]float64, len(store.MeterKeys))
 				for _, key := range store.MeterKeys {
@@ -180,7 +180,7 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			// Fix reads the Fixkosten-Eingabe of the month, FixkostenHinweis
 			// is set when it is missing (#359), instead of the Euro blocks.
 			Fix              ablesungFixkosten
-			FixkostenHinweis *fixkostenHinweis
+			FixkostenHinweis *ablesungKostenHinweis
 		}{
 			navData:          z.NavData(r),
 			TeilstandStatus:  status,
@@ -236,16 +236,16 @@ func fixkostenAnsicht(ds *store.Datenstand, period *store.LatestPeriod) ablesung
 	}
 }
 
-// fixkostenHinweis is the hint section of the detail view for an Ablesung
+// ablesungKostenHinweis is the hint section of the detail view for an Ablesung
 // without Verbrauchskosten because its Fixkosten-Eingabe is missing. It is
 // its own field, not part of kostenHinweis. WallboxKWh is the grid-draw share
 // of the Wallboxen, a pure meter value.
-type fixkostenHinweis struct {
+type ablesungKostenHinweis struct {
 	Text       string
 	WallboxKWh float64
 }
 
-// fixkostenFehlenText is the one wording for "this month lacks its Fixkosten".
-func fixkostenFehlenText(monat string) string {
+// ablesungKostenFehlenText is the one wording for "this month lacks its Fixkosten".
+func ablesungKostenFehlenText(monat string) string {
 	return "Für " + store.MonatLabel(monat) + " fehlen die Fixkosten (oder sind unvollständig). Die Kosten dieser Ablesung sind noch nicht berechnet."
 }
