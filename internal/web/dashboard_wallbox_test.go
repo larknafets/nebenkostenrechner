@@ -32,7 +32,7 @@ func wallboxPVAblesungen(t *testing.T, db *sql.DB, pvSchalter bool) {
 	w2 := 15.0
 	first := seedPeriodInputAt("2026-10-01")
 	first.Readings[wbW1], first.Readings[wbW2] = 0, 0
-	if _, err := store.CreatePeriod(db, first); err != nil {
+	if _, err := createPeriod(db, first); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 	second := seedPeriodInputAt("2026-11-01")
@@ -43,7 +43,7 @@ func wallboxPVAblesungen(t *testing.T, db *sql.DB, pvSchalter bool) {
 	second.Readings["strom_einspeisung"] = 52.5
 	second.Readings[wbW2] = w2
 	second.PVGutschriftW1 = pvSchalter
-	if _, err := store.CreatePeriod(db, second); err != nil {
+	if _, err := createPeriod(db, second); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 }

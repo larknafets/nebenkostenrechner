@@ -152,6 +152,7 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 		data := struct {
 			navData
 			store.TeilstandStatus
+			ablesungFelder
 			Aktuell       string
 			Period        *store.LatestPeriod
 			AllPeriods    []periodListItem
@@ -168,6 +169,7 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 		}{
 			navData:         z.NavData(r),
 			TeilstandStatus: status,
+			ablesungFelder:  erfasseFelder(period, apartments),
 			Aktuell:         "ablesungen-detail",
 			Period:          period,
 			AllPeriods:      periodListItems(allPeriods),

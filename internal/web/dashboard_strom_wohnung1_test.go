@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
-	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
 // dashboard_strom_wohnung1_test.go covers Wohnung 1's Strom position (#279):
@@ -21,7 +20,7 @@ const titelStrom = `title="Strom"`
 // 0,22 EUR/kWh.
 func stromRestAblesungen(t *testing.T, db *sql.DB, netzbezug float64) {
 	t.Helper()
-	if _, err := store.CreatePeriod(db, seedPeriodInputAt("2026-10-01")); err != nil {
+	if _, err := createPeriod(db, seedPeriodInputAt("2026-10-01")); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 	second := seedPeriodInputAt("2026-11-01")
@@ -29,7 +28,7 @@ func stromRestAblesungen(t *testing.T, db *sql.DB, netzbezug float64) {
 	second.Readings["strom_wohnung2"] = 30
 	second.Readings["strom_waermepumpe"] = 50
 	second.Readings["strom_wallbox"] = 40
-	if _, err := store.CreatePeriod(db, second); err != nil {
+	if _, err := createPeriod(db, second); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 }

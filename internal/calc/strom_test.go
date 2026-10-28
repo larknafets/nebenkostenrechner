@@ -43,9 +43,39 @@ func baseReadings(overrides map[string]float64) map[string]float64 {
 	return out
 }
 
+// createPeriod creates the Ablesung and, once per Abrechnungsmonat, the
+// Fixkosten-Eingabe that carries its Personenzahl, prices and switches: the
+// calculation reads them from there (#359). A second Ablesung in a month
+// finds the Eingabe and shares it.
+func createPeriod(db *sql.DB, in store.PeriodInput) (int64, error) {
+	id, err := store.CreatePeriod(db, in)
+	if err != nil || in.Monat == "" {
+		return id, err
+	}
+	eingaben, err := store.AllFixkostenEingabenDetails(db)
+	if err != nil {
+		return 0, err
+	}
+	for _, e := range eingaben {
+		if e.Monat == in.Monat {
+			return id, nil
+		}
+	}
+	fk := store.FixkostenInput{
+		Monat: in.Monat, Personen: in.Personen,
+		Strompreis: in.Strompreis, FrischwasserPreis: in.FrischwasserPreis,
+		AbwasserPreis: in.AbwasserPreis, EinspeisungPreis: in.EinspeisungPreis,
+	}
+	for _, sw := range store.Switches {
+		*sw.FixkostenInput(&fk) = *sw.Input(&in)
+	}
+	_, err = store.CreateFixkostenEingabe(db, fk)
+	return id, err
+}
+
 func mustCreatePeriod(t *testing.T, db *sql.DB, date string, strompreis float64, readings map[string]float64) int64 {
 	t.Helper()
-	id, err := store.CreatePeriod(db, store.PeriodInput{
+	id, err := createPeriod(db, store.PeriodInput{
 		ReadingDate:       date,
 		Monat:             monatVon(date),
 		EinspeisungPreis:  store.Float64(0.08),

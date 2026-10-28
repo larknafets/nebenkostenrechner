@@ -1647,11 +1647,11 @@ func TestPeriodComplete(t *testing.T) {
 			t.Error("PeriodComplete = false, want true")
 		}
 	})
-	t.Run("Preis fehlt", func(t *testing.T) {
+	t.Run("Preis fehlt: bleibt vollständig, Preise gehören zur Fixkosten-Eingabe", func(t *testing.T) {
 		in := full()
 		in.EinspeisungPreis = nil
-		if complete(t, in) {
-			t.Error("PeriodComplete = true, want false (Preis fehlt)")
+		if !complete(t, in) {
+			t.Error("PeriodComplete = false, want true (Preise sind kein Teil der Vollständigkeit, #359)")
 		}
 	})
 	t.Run("Zählerstand fehlt", func(t *testing.T) {
@@ -1661,11 +1661,11 @@ func TestPeriodComplete(t *testing.T) {
 			t.Error("PeriodComplete = true, want false (Zählerstand fehlt)")
 		}
 	})
-	t.Run("Personenzahl fehlt", func(t *testing.T) {
+	t.Run("Personenzahl fehlt: bleibt vollständig, die Personenzahl gehört zur Fixkosten-Eingabe", func(t *testing.T) {
 		in := full()
 		delete(in.Personen, 2)
-		if complete(t, in) {
-			t.Error("PeriodComplete = true, want false (Personenzahl fehlt)")
+		if !complete(t, in) {
+			t.Error("PeriodComplete = false, want true (Personenzahl ist kein Teil der Vollständigkeit, #359)")
 		}
 	})
 	t.Run("Monat fehlt", func(t *testing.T) {

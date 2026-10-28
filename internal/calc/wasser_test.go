@@ -10,7 +10,7 @@ func TestWasser_PersonenanteilUndKosten(t *testing.T) {
 	db := openTestDB(t)
 	mustCreatePeriod(t, db, "2026-10-01", 0.22, baseReadings(nil))
 
-	id, err := store.CreatePeriod(db, store.PeriodInput{
+	id, err := createPeriod(db, store.PeriodInput{
 		ReadingDate:       "2026-11-01",
 		Monat:             monatVon("2026-11-01"),
 		EinspeisungPreis:  store.Float64(0.08),
@@ -63,7 +63,7 @@ func TestWasser_KeinePersonen_FaelltAufHaelftigeVerteilungZurueck(t *testing.T) 
 	db := openTestDB(t)
 	mustCreatePeriod(t, db, "2026-10-01", 0.22, baseReadings(nil))
 
-	id, err := store.CreatePeriod(db, store.PeriodInput{
+	id, err := createPeriod(db, store.PeriodInput{
 		ReadingDate:       "2026-11-01",
 		Monat:             monatVon("2026-11-01"),
 		EinspeisungPreis:  store.Float64(0.08),

@@ -215,13 +215,13 @@ func TestAblesungDetail_Einzelzaehler(t *testing.T) {
 	db := openTestDB(t)
 	vor := seedPeriodInputAt("2026-10-01")
 	vor.Readings[wbW1] = 100
-	if _, err := store.CreatePeriod(db, vor); err != nil {
+	if _, err := createPeriod(db, vor); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 	cur := seedPeriodInputAt("2026-11-01")
 	cur.Readings[wbW1] = 160.5
 	cur.Readings[wbW2] = 30
-	id, err := store.CreatePeriod(db, cur)
+	id, err := createPeriod(db, cur)
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}

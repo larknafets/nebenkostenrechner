@@ -101,6 +101,10 @@ const (
 	// GrundKeineVorperiode: the oldest Ablesung has no earlier one to
 	// diff its Zählerstände against, so it has no Verbrauch.
 	GrundKeineVorperiode
+	// GrundFixkostenFehlen: the Fixkosten-Eingabe of the Abrechnungsmonat
+	// is missing or lacks a price. Personenzahl, the four prices and both
+	// switches come from it (#359), there is no fallback to another month.
+	GrundFixkostenFehlen
 )
 
 // Ablesung is one Ablesung together with its Verbrauchskosten. Kosten is
@@ -118,7 +122,10 @@ func (a Ablesung) Berechenbar() bool { return a.Grund == GrundKeiner }
 // oldest first by reading date, then id (as store.AllPeriodDetails
 // returns them): the Vorperiode of an Ablesung is the one before it.
 type Daten struct {
-	Periods    []*store.LatestPeriod
+	Periods []*store.LatestPeriod
+	// Eingaben are the Fixkosten-Eingaben: each Ablesung takes Personenzahl,
+	// prices and switches from the one of its Abrechnungsmonat.
+	Eingaben   []*store.FixkostenEingabeDetails
 	Apartments []store.Apartment
 	Haus       store.Haus
 }
@@ -141,13 +148,17 @@ func Load(db *sql.DB) (*Verbrauchskosten, error) {
 
 // KostenAus computes the Verbrauchskosten of an already loaded Datenstand.
 func KostenAus(ds *store.Datenstand) *Verbrauchskosten {
-	return New(Daten{Periods: ds.Periods, Apartments: ds.Apartments, Haus: ds.Haus})
+	return New(Daten{Periods: ds.Periods, Eingaben: ds.Eingaben, Apartments: ds.Apartments, Haus: ds.Haus})
 }
 
 // New computes the Verbrauchskosten of every Ablesung in d.
 func New(d Daten) *Verbrauchskosten {
 	v := &Verbrauchskosten{alle: make([]Ablesung, len(d.Periods)), byID: make(map[int64]int, len(d.Periods))}
 	qmW1, qmW2 := apartmentValues(d.Apartments, func(a store.Apartment) float64 { return a.QM })
+	eingabeByMonat := make(map[string]*store.FixkostenEingabeDetails, len(d.Eingaben))
+	for _, e := range d.Eingaben {
+		eingabeByMonat[e.Monat] = e
+	}
 	for i, p := range d.Periods {
 		v.byID[p.ID] = i
 		v.alle[i] = Ablesung{Period: p}
@@ -157,6 +168,11 @@ func New(d Daten) *Verbrauchskosten {
 		}
 		if i == 0 {
 			v.alle[i].Grund = GrundKeineVorperiode
+			continue
+		}
+		e := eingabeByMonat[p.Monat]
+		if e == nil || e.Strompreis == nil || e.FrischwasserPreis == nil || e.AbwasserPreis == nil || e.EinspeisungPreis == nil {
+			v.alle[i].Grund = GrundFixkostenFehlen
 			continue
 		}
 		verbrauch := make(map[string]float64, len(store.MeterKeys))
@@ -169,17 +185,17 @@ func New(d Daten) *Verbrauchskosten {
 				einzel[key] = v
 			}
 		}
-		strom := berechneStrom(stromEingabe{Strompreis: *p.Strompreis, Verbrauch: verbrauch, EinzelVerbrauch: einzel, WallboxKomplettW1: p.WallboxKomplettW1})
+		strom := berechneStrom(stromEingabe{Strompreis: *e.Strompreis, Verbrauch: verbrauch, EinzelVerbrauch: einzel, WallboxKomplettW1: e.WallboxKomplettW1})
 		v.alle[i].Kosten = Kosten{
 			Strom: strom,
 			Wasser: berechneWasser(wasserEingabe{
-				FrischwasserPreis: *p.FrischwasserPreis, AbwasserPreis: *p.AbwasserPreis,
-				Verbrauch: verbrauch, PersonenW1: p.PersonenByApartment[1], PersonenW2: p.PersonenByApartment[2],
+				FrischwasserPreis: *e.FrischwasserPreis, AbwasserPreis: *e.AbwasserPreis,
+				Verbrauch: verbrauch, PersonenW1: e.Personen[1], PersonenW2: e.Personen[2],
 			}),
 			Heizung:     berechneHeizung(heizungEingabe{Strom: strom, WaermeGewichtung: d.Haus.HeizungWaermeGewichtung, Verbrauch: verbrauch, QMW1: qmW1, QMW2: qmW2}),
-			Einspeisung: berechneEinspeisung(einspeisungEingabe{EinspeisungPreis: *p.EinspeisungPreis, Verbrauch: verbrauch}),
+			Einspeisung: berechneEinspeisung(einspeisungEingabe{EinspeisungPreis: *e.EinspeisungPreis, Verbrauch: verbrauch}),
 		}
-		if p.PVGutschriftW1 {
+		if e.PVGutschriftW1 {
 			v.alle[i].Kosten.PVGutschriftW1 = v.alle[i].Kosten.Einspeisung.Ertrag
 		}
 	}

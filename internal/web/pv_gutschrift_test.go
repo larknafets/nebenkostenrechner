@@ -39,14 +39,14 @@ func TestWizard_PVSchalterAusLetzterAblesungVorbelegt(t *testing.T) {
 	db := openTestDB(t)
 	on := seedPeriodInputAt("2026-10-01")
 	on.PVGutschriftW1 = true
-	if _, err := store.CreatePeriod(db, on); err != nil {
+	if _, err := createPeriod(db, on); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 	if tag := inputTag(t, wizardBody(t, db), pvSchalter); !strings.Contains(tag, "checked") {
 		t.Errorf("Schalter der letzten Ablesung (an) nicht vorbelegt: %s", tag)
 	}
 
-	if _, err := store.CreatePeriod(db, seedPeriodInputAt("2026-11-01")); err != nil {
+	if _, err := createPeriod(db, seedPeriodInputAt("2026-11-01")); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 	if tag := inputTag(t, wizardBody(t, db), pvSchalter); strings.Contains(tag, "checked") {
@@ -58,11 +58,11 @@ func TestEditWizard_PVSchalterGiltAusDerAblesung(t *testing.T) {
 	db := openTestDB(t)
 	in := seedPeriodInputAt("2026-10-01")
 	in.PVGutschriftW1 = true
-	id, err := store.CreatePeriod(db, in)
+	id, err := createPeriod(db, in)
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
-	if _, err := store.CreatePeriod(db, seedPeriodInputAt("2026-11-01")); err != nil {
+	if _, err := createPeriod(db, seedPeriodInputAt("2026-11-01")); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 
@@ -106,13 +106,13 @@ func TestAblesungDetail_PVSchalterAlsJaNein(t *testing.T) {
 	}{{true, "Ja"}, {false, "Nein"}} {
 		db := openTestDB(t)
 		first := seedPeriodInputAt("2026-10-01")
-		if _, err := store.CreatePeriod(db, first); err != nil {
+		if _, err := createPeriod(db, first); err != nil {
 			t.Fatalf("CreatePeriod: %v", err)
 		}
 		second := seedPeriodInputAt("2026-11-01")
 		second.Readings["strom_einspeisung"] = 52.5 // * 0,08 EUR/kWh = 4,20 EUR
 		second.PVGutschriftW1 = c.an
-		id, err := store.CreatePeriod(db, second)
+		id, err := createPeriod(db, second)
 		if err != nil {
 			t.Fatalf("CreatePeriod: %v", err)
 		}
@@ -138,10 +138,10 @@ func TestCSV_PVSchalterAlsLetzteSpalte(t *testing.T) {
 	db := openTestDB(t)
 	in := seedPeriodInputAt("2026-06-01")
 	in.PVGutschriftW1 = true
-	if _, err := store.CreatePeriod(db, in); err != nil {
+	if _, err := createPeriod(db, in); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
-	if _, err := store.CreatePeriod(db, seedPeriodInputAt("2026-07-01")); err != nil {
+	if _, err := createPeriod(db, seedPeriodInputAt("2026-07-01")); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 	req := httptest.NewRequest(http.MethodGet, "/ablesungen/export.csv", nil)

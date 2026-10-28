@@ -9,7 +9,7 @@ import (
 
 func mustCreatePeriodMitEinspeisung(t *testing.T, db *sql.DB, date string, einspeisungPreis float64, readings map[string]float64) int64 {
 	t.Helper()
-	id, err := store.CreatePeriod(db, store.PeriodInput{
+	id, err := createPeriod(db, store.PeriodInput{
 		ReadingDate:       date,
 		Monat:             monatVon(date),
 		Strompreis:        store.Float64(0.22),

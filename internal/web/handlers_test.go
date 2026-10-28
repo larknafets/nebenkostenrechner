@@ -1,6 +1,7 @@
 package web
 
 import (
+	"database/sql"
 	"fmt"
 	"math"
 	"net/http"
@@ -1358,6 +1359,72 @@ func seedPeriodInputAt(date string) store.PeriodInput {
 	}
 }
 
+// createPeriod creates the Ablesung and, once per Abrechnungsmonat, the
+// Fixkosten-Eingabe that carries its Personenzahl, prices and switches: the
+// calculation reads them from there (#359). A second Ablesung in a month
+// finds the Eingabe and shares it.
+func createPeriod(db *sql.DB, in store.PeriodInput) (int64, error) {
+	id, err := store.CreatePeriod(db, in)
+	if err != nil || in.Monat == "" {
+		return id, err
+	}
+	eingaben, err := store.AllFixkostenEingabenDetails(db)
+	if err != nil {
+		return 0, err
+	}
+	for _, e := range eingaben {
+		if e.Monat == in.Monat {
+			return id, nil
+		}
+	}
+	fk := store.FixkostenInput{
+		Monat: in.Monat, Personen: in.Personen,
+		Strompreis: in.Strompreis, FrischwasserPreis: in.FrischwasserPreis,
+		AbwasserPreis: in.AbwasserPreis, EinspeisungPreis: in.EinspeisungPreis,
+	}
+	for _, sw := range store.Switches {
+		*sw.FixkostenInput(&fk) = *sw.Input(&in)
+	}
+	_, err = store.CreateFixkostenEingabe(db, fk)
+	return id, err
+}
+
+// fixkostenMitPreisen is a Fixkosten-Eingabe for monat with the standard
+// prices of seedPeriodInputAt and vollesFormular and Personenzahl 2 / 1, so
+// that the Ablesungen of that month are calculable (#359).
+func fixkostenMitPreisen(monat string) store.FixkostenInput {
+	return store.FixkostenInput{
+		Monat:             monat,
+		Personen:          map[int64]float64{1: 2, 2: 1},
+		Strompreis:        store.Float64(0.22),
+		FrischwasserPreis: store.Float64(1.46),
+		AbwasserPreis:     store.Float64(4.87),
+		EinspeisungPreis:  store.Float64(0.08),
+	}
+}
+
+// createFixkostenEingabe creates the Fixkosten-Eingabe for in.Monat. If
+// createPeriod already made one for an Ablesung of that month, in replaces
+// it but keeps that Eingabe's prices and switches, which in does not carry.
+func createFixkostenEingabe(db *sql.DB, in store.FixkostenInput) (int64, error) {
+	eingaben, err := store.AllFixkostenEingabenDetails(db)
+	if err != nil {
+		return 0, err
+	}
+	for _, e := range eingaben {
+		if e.Monat != in.Monat {
+			continue
+		}
+		in.Strompreis, in.FrischwasserPreis = e.Strompreis, e.FrischwasserPreis
+		in.AbwasserPreis, in.EinspeisungPreis = e.AbwasserPreis, e.EinspeisungPreis
+		for _, sw := range store.Switches {
+			*sw.FixkostenInput(&in) = *sw.FixkostenDetail(e)
+		}
+		return e.ID, store.UpdateFixkostenEingabe(db, e.ID, in)
+	}
+	return store.CreateFixkostenEingabe(db, in)
+}
+
 // periodFormValues builds a valid Ablesung form value set for the given
 // reading_date/monat ("YYYY-MM"), everything else a fixed valid default -
 // handleUpdateAblesung's seam tests only care about the previous-period/
@@ -1744,10 +1811,10 @@ func TestLoadDashboardData_ExcludesTeilstand(t *testing.T) {
 	// 2 complete Ablesungen, since consumption/costs are only computable
 	// from the second one on (needs a previous period) - independent of
 	// the Teilstand.
-	if _, err := store.CreatePeriod(db, seedPeriodInputAt("2026-08-01")); err != nil {
+	if _, err := createPeriod(db, seedPeriodInputAt("2026-08-01")); err != nil {
 		t.Fatalf("CreatePeriod (aelteste, vollstaendige Ablesung): %v", err)
 	}
-	if _, err := store.CreatePeriod(db, seedPeriodInputAt("2026-09-01")); err != nil {
+	if _, err := createPeriod(db, seedPeriodInputAt("2026-09-01")); err != nil {
 		t.Fatalf("CreatePeriod (2. vollstaendige Ablesung): %v", err)
 	}
 	if _, err := store.CreatePeriod(db, store.PeriodInput{

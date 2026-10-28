@@ -185,7 +185,7 @@ func handleWizardForm(z *Zugang) http.HandlerFunc {
 // Teilstand (Ticket #131), so prices go through store.OrZero and the
 // Erfasst flags carry the "missing" vs "0" distinction.
 func (d *wizardData) prefill(src *store.LatestPeriod, apartments []store.Apartment) {
-	status := src.Teilstand(apartments)
+	status := erfasseFelder(src, apartments)
 	d.PreviousStrompreis = store.OrZero(src.Strompreis)
 	d.PreviousFrischwasserPreis = store.OrZero(src.FrischwasserPreis)
 	d.PreviousAbwasserPreis = store.OrZero(src.AbwasserPreis)

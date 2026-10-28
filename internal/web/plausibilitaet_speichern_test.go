@@ -33,6 +33,9 @@ func TestCreateAblesung_PlausibilitaetsHinweisNachDemSpeichern(t *testing.T) {
 				t.Fatalf("CreatePeriod: %v", err)
 			}
 
+			if _, err := store.CreateFixkostenEingabe(db, fixkostenMitPreisen("2026-11-01")); err != nil {
+				t.Fatalf("CreateFixkostenEingabe: %v", err)
+			}
 			form := vollesFormular()
 			for _, key := range store.MeterKeys {
 				form.Set(key, "0")

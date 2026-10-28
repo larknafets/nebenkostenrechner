@@ -3,7 +3,6 @@ package abrechnung
 import (
 	"testing"
 
-	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -33,7 +32,7 @@ func TestBerechne_StromTabelle(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			d := wallboxDaten(tc.statusW1, tc.statusW2, true, true)
 			d.Pruef.Haus.StromWeiterberechnen = tc.flag
-			d.Kosten = calc.New(calc.Daten{Periods: d.Pruef.Periods, Apartments: d.Pruef.Apartments, Haus: d.Pruef.Haus})
+			d.Kosten = verbrauchskostenVon(d)
 			erg, err := Berechne(d, 2027, GanzesJahr, tc.wohnung)
 			if err != nil || erg.Abrechnung == nil {
 				t.Fatalf("Berechne: err %v, Maengel %v", err, maengelTexte(erg.Pruefung))

@@ -106,6 +106,17 @@ func pvFaktor(m time.Month) float64 {
 	}
 }
 
+// demoPreise are the prices of month i of monthCount: a slight increase over
+// the months (electricity/water/wastewater - realistic), whereas the feed-in
+// tariff (demoEinspeisungPreis) stays constant for the PV system's runtime,
+// fixed by law (EEG).
+func demoPreise(i, monthCount int) (strompreis, frischwasserPreis, abwasserPreis float64) {
+	progress := float64(i) / float64(monthCount-1)
+	return 0.19 + 0.03*progress, 1.35 + 0.11*progress, 4.60 + 0.27*progress
+}
+
+const demoEinspeisungPreis = 0.08
+
 // personenWohnung2 varies 1/2 across the 39 months (autumn/winter months
 // 10-14 and 27-29 have only 1 person - e.g. a temporary single occupancy) -
 // Wohnung 1 always stays at 2, as fixed by the user.
@@ -172,13 +183,7 @@ func seedDemoPeriods(db *sql.DB, now time.Time) error {
 		readings["waerme_wohnung1"] += 1.25 * hf
 		readings["waerme_wohnung2"] += 0.9 * hf
 
-		// Slight price increase over the 39 months (electricity/water/
-		// wastewater - realistic), whereas the feed-in tariff stays constant
-		// for the PV system's runtime, fixed by law (EEG).
-		progress := float64(i) / float64(monthCount-1)
-		strompreis := 0.19 + 0.03*progress
-		frischwasserPreis := 1.35 + 0.11*progress
-		abwasserPreis := 4.60 + 0.27*progress
+		strompreis, frischwasserPreis, abwasserPreis := demoPreise(i, monthCount)
 
 		readingsCopy := make(map[string]float64, len(readings))
 		for k, v := range readings {
@@ -192,7 +197,7 @@ func seedDemoPeriods(db *sql.DB, now time.Time) error {
 			Strompreis:        Float64(strompreis),
 			FrischwasserPreis: Float64(frischwasserPreis),
 			AbwasserPreis:     Float64(abwasserPreis),
-			EinspeisungPreis:  Float64(0.08),
+			EinspeisungPreis:  Float64(demoEinspeisungPreis),
 			Readings:          readingsCopy,
 			Personen:          map[int64]float64{1: 2, 2: personenWohnung2(i)},
 		}
@@ -292,12 +297,17 @@ func seedDemoFixkosten(db *sql.DB, now time.Time) error {
 	const monthCount = 39
 	for i := 0; i < monthCount; i++ {
 		date := demoMonth(now, i)
+		strompreis, frischwasserPreis, abwasserPreis := demoPreise(i, monthCount)
 		in := FixkostenInput{
-			Monat:    date.Format("2006-01") + "-01",
-			Personen: map[int64]float64{1: 2, 2: 2},
-			Werte:    werte,
-			Abschlag: demoAbschlag,
-			Miete:    demoMiete,
+			Monat:             date.Format("2006-01") + "-01",
+			Personen:          map[int64]float64{1: 2, 2: 2},
+			Werte:             werte,
+			Abschlag:          demoAbschlag,
+			Miete:             demoMiete,
+			Strompreis:        Float64(strompreis),
+			FrischwasserPreis: Float64(frischwasserPreis),
+			AbwasserPreis:     Float64(abwasserPreis),
+			EinspeisungPreis:  Float64(demoEinspeisungPreis),
 		}
 		if _, err := CreateFixkostenEingabe(db, in); err != nil {
 			return fmt.Errorf("fixkosten monat %s: %w", in.Monat, err)

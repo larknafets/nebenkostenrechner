@@ -87,7 +87,12 @@ func teiljahrDB(t *testing.T, stromWeiterberechnen bool) *sql.DB {
 		if i == 2 { // December: the Gebäudeversicherung switches to Je Wohneinheit
 			werte[2] = wert(store.LogikWohneinheit, store.TypJaehrlich, 600)
 		}
-		in := store.FixkostenInput{Monat: monat, Personen: map[int64]float64{1: 2, 2: 1}, Werte: werte, Abschlag: map[int64]float64{1: 200}}
+		in := store.FixkostenInput{
+			Monat: monat, Personen: map[int64]float64{1: 2, 2: 1}, Werte: werte, Abschlag: map[int64]float64{1: 200},
+			// The prices of the month (#359), the Verbrauchskosten read them here.
+			Strompreis: store.Float64(0.22), FrischwasserPreis: store.Float64(1.46),
+			AbwasserPreis: store.Float64(4.87), EinspeisungPreis: store.Float64(0.08),
+		}
 		if i < 2 {
 			in.Abschlag[2] = 100
 		}

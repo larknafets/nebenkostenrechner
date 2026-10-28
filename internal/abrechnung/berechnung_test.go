@@ -10,14 +10,13 @@ import (
 func TestZaehlerstaende_UntermonatigeAblesungenEigeneZeilenTeilstandFehlt(t *testing.T) {
 	apartments := []store.Apartment{{ID: 1}, {ID: 2}}
 	meters := []store.Meter{{Key: "strom_gesamt", Label: "Stromzähler Gesamt", Unit: "kWh"}}
-	preis := store.Float64(0.3)
 	ablesung := func(id int64, datum, monat string, stand float64, vollstaendig bool) *store.LatestPeriod {
 		p := &store.LatestPeriod{ID: id, ReadingDate: datum, Monat: monat, Readings: map[string]float64{}, PersonenByApartment: map[int64]float64{1: 1, 2: 1}}
-		if vollstaendig {
-			p.Strompreis, p.FrischwasserPreis, p.AbwasserPreis, p.EinspeisungPreis = preis, preis, preis, preis
-		}
 		for _, key := range store.MeterKeys {
 			p.Readings[key] = stand
+		}
+		if !vollstaendig {
+			delete(p.Readings, "strom_gesamt")
 		}
 		return p
 	}

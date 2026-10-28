@@ -20,7 +20,7 @@ func mieteEingabe(t *testing.T, db *sql.DB, monat string, miete map[int64]float6
 	t.Helper()
 	in := seedFixkostenInput(monat)
 	in.Miete = miete
-	if _, err := store.CreateFixkostenEingabe(db, in); err != nil {
+	if _, err := createFixkostenEingabe(db, in); err != nil {
 		t.Fatalf("CreateFixkostenEingabe %s: %v", monat, err)
 	}
 }

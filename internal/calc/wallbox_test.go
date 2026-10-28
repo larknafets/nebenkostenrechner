@@ -20,10 +20,12 @@ func wallboxKosten(t *testing.T, preis float64, komplettW1 bool, prev, cur map[s
 		cur2[k] = v
 	}
 	p2 := vollePeriode(2, "2026-11-01", cur2)
-	p2.Strompreis = store.Float64(preis)
-	p2.WallboxKomplettW1 = komplettW1
+	e := volleEingabe("2026-11-01")
+	e.Strompreis = store.Float64(preis)
+	e.WallboxKomplettW1 = komplettW1
 	v := calc.New(calc.Daten{
 		Periods:    []*store.LatestPeriod{p1, p2},
+		Eingaben:   []*store.FixkostenEingabeDetails{e},
 		Apartments: []store.Apartment{{ID: 1, QM: 116.23}, {ID: 2, QM: 86}},
 		Haus:       store.Haus{HeizungWaermeGewichtung: 0.7},
 	})

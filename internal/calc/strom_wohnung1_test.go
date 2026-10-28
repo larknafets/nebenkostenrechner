@@ -13,9 +13,11 @@ import (
 func stromW1(t *testing.T, verbrauch map[string]float64, wallboxKomplettW1 bool) calc.Kosten {
 	t.Helper()
 	p := vollePeriode(2, "2026-11-01", verbrauch)
-	p.WallboxKomplettW1 = wallboxKomplettW1
+	e := volleEingabe("2026-11-01")
+	e.WallboxKomplettW1 = wallboxKomplettW1
 	v := calc.New(calc.Daten{
 		Periods:    []*store.LatestPeriod{vollePeriode(1, "2026-10-01", nil), p},
+		Eingaben:   []*store.FixkostenEingabeDetails{e},
 		Apartments: []store.Apartment{{ID: 1, QM: 116.23}, {ID: 2, QM: 86}},
 		Haus:       store.Haus{HeizungWaermeGewichtung: 0.7},
 	})

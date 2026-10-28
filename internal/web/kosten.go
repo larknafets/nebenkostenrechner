@@ -10,6 +10,8 @@ func kostenHinweis(g calc.Grund) string {
 		return "Diese Ablesung ist ein Teilstand - Kosten werden erst berechnet, sobald sie vollständig ist."
 	case calc.GrundKeineVorperiode:
 		return "Kosten können erst ab der zweiten Ablesung berechnet werden (Verbrauch braucht eine Vorperiode)."
+	case calc.GrundFixkostenFehlen:
+		return "Die Fixkosten-Eingabe für den Abrechnungsmonat fehlt oder ist unvollständig - Kosten werden erst berechnet, sobald sie erfasst ist."
 	}
 	return ""
 }

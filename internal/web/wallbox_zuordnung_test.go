@@ -25,7 +25,7 @@ func wallboxAblesungen(t *testing.T, db *sql.DB, einzelW1, einzelW2 *float64, ko
 	t.Helper()
 	first := seedPeriodInputAt("2026-10-01")
 	first.Readings[wbW1], first.Readings[wbW2] = 0, 0
-	if _, err := store.CreatePeriod(db, first); err != nil {
+	if _, err := createPeriod(db, first); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 	second := seedPeriodInputAt("2026-11-01")
@@ -40,7 +40,7 @@ func wallboxAblesungen(t *testing.T, db *sql.DB, einzelW1, einzelW2 *float64, ko
 		second.Readings[wbW2] = *einzelW2
 	}
 	second.WallboxKomplettW1 = komplettW1
-	id, err := store.CreatePeriod(db, second)
+	id, err := createPeriod(db, second)
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
@@ -76,7 +76,7 @@ func TestWizard_SchalterAusLetzterAblesungVorbelegt(t *testing.T) {
 	}
 
 	off := seedPeriodInputAt("2026-12-01")
-	if _, err := store.CreatePeriod(db, off); err != nil {
+	if _, err := createPeriod(db, off); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 	if tag := inputTag(t, wizardBody(t, db), wbSchalter); strings.Contains(tag, "checked") {
@@ -89,7 +89,7 @@ func TestEditWizard_SchalterGiltAusDerAblesung(t *testing.T) {
 	id := wallboxAblesungen(t, db, nil, nil, true)
 	// The newest Ablesung has the switch off, the edited (older) one on.
 	newest := seedPeriodInputAt("2026-12-01")
-	if _, err := store.CreatePeriod(db, newest); err != nil {
+	if _, err := createPeriod(db, newest); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 
@@ -197,7 +197,7 @@ func TestAblesungDetail_WallboxKostenJeWohnung(t *testing.T) {
 
 func TestAblesungDetail_StromWohnung1(t *testing.T) {
 	db := openTestDB(t)
-	if _, err := store.CreatePeriod(db, seedPeriodInputAt("2026-10-01")); err != nil {
+	if _, err := createPeriod(db, seedPeriodInputAt("2026-10-01")); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 	second := seedPeriodInputAt("2026-11-01")
@@ -205,7 +205,7 @@ func TestAblesungDetail_StromWohnung1(t *testing.T) {
 	second.Readings["strom_wohnung2"] = 20
 	second.Readings["strom_waermepumpe"] = 30
 	second.Readings["strom_wallbox"] = 10
-	id, err := store.CreatePeriod(db, second)
+	id, err := createPeriod(db, second)
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
@@ -236,13 +236,13 @@ func TestAblesungDetail_PlausibilitaetsHinweis(t *testing.T) {
 			db := openTestDB(t)
 			first := seedPeriodInputAt("2026-10-01")
 			first.Readings[wbW1], first.Readings[wbW2] = 0, 0
-			if _, err := store.CreatePeriod(db, first); err != nil {
+			if _, err := createPeriod(db, first); err != nil {
 				t.Fatalf("CreatePeriod: %v", err)
 			}
 			second := seedPeriodInputAt("2026-11-01")
 			second.Readings["strom_gesamt"], second.Readings["strom_wallbox"] = 100, 40
 			second.Readings[wbW1], second.Readings[wbW2] = c.w1, c.w2
-			id, err := store.CreatePeriod(db, second)
+			id, err := createPeriod(db, second)
 			if err != nil {
 				t.Fatalf("CreatePeriod: %v", err)
 			}
@@ -271,10 +271,10 @@ func TestCSV_SchalterAlsLetzteSpalte(t *testing.T) {
 	db := openTestDB(t)
 	in := seedPeriodInputAt("2026-06-01")
 	in.WallboxKomplettW1 = true
-	if _, err := store.CreatePeriod(db, in); err != nil {
+	if _, err := createPeriod(db, in); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
-	if _, err := store.CreatePeriod(db, seedPeriodInputAt("2026-07-01")); err != nil {
+	if _, err := createPeriod(db, seedPeriodInputAt("2026-07-01")); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 	req := httptest.NewRequest(http.MethodGet, "/ablesungen/export.csv", nil)

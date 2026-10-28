@@ -1547,10 +1547,10 @@ Abrechnung 2024 Wohnung 1:
       Bis: "2024-12-01"
       Schluessel: "Gemessener Verbrauch"
       Gesamt: 1117.50
-      Betrag: 734.16
-      Prozent: 65.70
+      Betrag: 721.51
+      Prozent: 64.56
       Geteilt: false
-    Betriebskosten: 2868.67
+    Betriebskosten: 2856.02
     Strom:
       VerbrauchKWh: 4752.00
       Kosten: 942.11
@@ -1558,7 +1558,7 @@ Abrechnung 2024 Wohnung 1:
     PVGutschrift: nil
     Vorauszahlungen: 3120.00
     Saldo:
-      wert: -690.78
+      wert: -678.13
     Monatsverlauf:
       Zeilen: [12]
         [0]:
@@ -1599,52 +1599,52 @@ Abrechnung 2024 Wohnung 1:
         [5]:
           Monat: "2024-06-01"
           Fixkosten: 105.17
-          Verbrauch: 171.47
+          Verbrauch: 168.95
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -463.27
+          Saldo: -460.75
         [6]:
           Monat: "2024-07-01"
           Fixkosten: 105.17
-          Verbrauch: 171.98
+          Verbrauch: 169.45
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -480.42
+          Saldo: -475.37
         [7]:
           Monat: "2024-08-01"
           Fixkosten: 105.17
-          Verbrauch: 169.77
+          Verbrauch: 167.24
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -495.36
+          Saldo: -487.78
         [8]:
           Monat: "2024-09-01"
           Fixkosten: 105.17
-          Verbrauch: 185.12
+          Verbrauch: 182.58
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -525.65
+          Saldo: -515.53
         [9]:
           Monat: "2024-10-01"
           Fixkosten: 105.17
-          Verbrauch: 203.60
+          Verbrauch: 201.07
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -574.42
+          Saldo: -561.77
         [10]:
           Monat: "2024-11-01"
           Fixkosten: 105.17
           Verbrauch: 227.96
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -647.55
+          Saldo: -634.90
         [11]:
           Monat: "2024-12-01"
           Fixkosten: 105.17
           Verbrauch: 274.94
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -767.66
+          Saldo: -755.01
       Uebertrag:
         Vorhanden: true
         Betrag: -76.88
@@ -1652,10 +1652,10 @@ Abrechnung 2024 Wohnung 1:
         Bis: "2023-12-01"
         Hinweis: ""
       Fixkosten: 1262.04
-      Verbrauch: 2548.74
+      Verbrauch: 2536.09
       Abschlag: 3120.00
       Gutschrift: 0.00
-      Endsaldo: -767.66
+      Endsaldo: -755.01
     Zaehlerstaende:
       Spalten: [10]
         [0]:
@@ -2741,10 +2741,10 @@ Abrechnung 2024 Wohnung 2:
       Bis: "2024-12-01"
       Schluessel: "Gemessener Verbrauch"
       Gesamt: 1117.50
-      Betrag: 383.34
-      Prozent: 34.30
+      Betrag: 395.99
+      Prozent: 35.44
       Geteilt: false
-    Betriebskosten: 2104.02
+    Betriebskosten: 2116.67
     Strom:
       VerbrauchKWh: 2110.00
       Kosten: 418.30
@@ -2752,7 +2752,7 @@ Abrechnung 2024 Wohnung 2:
     PVGutschrift: nil
     Vorauszahlungen: 2280.00
     Saldo:
-      wert: -242.32
+      wert: -254.97
     Monatsverlauf:
       Zeilen: [12]
         [0]:
@@ -2793,52 +2793,52 @@ Abrechnung 2024 Wohnung 2:
         [5]:
           Monat: "2024-06-01"
           Fixkosten: 89.39
-          Verbrauch: 86.73
+          Verbrauch: 89.26
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -152.85
+          Saldo: -155.38
         [6]:
           Monat: "2024-07-01"
           Fixkosten: 89.39
-          Verbrauch: 87.01
+          Verbrauch: 89.53
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -139.25
+          Saldo: -144.30
         [7]:
           Monat: "2024-08-01"
           Fixkosten: 89.39
-          Verbrauch: 87.28
+          Verbrauch: 89.81
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -125.92
+          Saldo: -133.50
         [8]:
           Monat: "2024-09-01"
           Fixkosten: 89.39
-          Verbrauch: 96.82
+          Verbrauch: 99.35
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -122.13
+          Saldo: -132.24
         [9]:
           Monat: "2024-10-01"
           Fixkosten: 89.39
-          Verbrauch: 113.36
+          Verbrauch: 115.90
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -134.88
+          Saldo: -147.53
         [10]:
           Monat: "2024-11-01"
           Fixkosten: 89.39
           Verbrauch: 136.64
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -170.91
+          Saldo: -183.56
         [11]:
           Monat: "2024-12-01"
           Fixkosten: 89.39
           Verbrauch: 169.81
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -240.11
+          Saldo: -252.76
       Uebertrag:
         Vorhanden: true
         Betrag: 2.21
@@ -2846,10 +2846,10 @@ Abrechnung 2024 Wohnung 2:
         Bis: "2023-12-01"
         Hinweis: ""
       Fixkosten: 1072.68
-      Verbrauch: 1449.64
+      Verbrauch: 1462.29
       Abschlag: 2280.00
       Gutschrift: 0.00
-      Endsaldo: -240.11
+      Endsaldo: -252.76
     Zaehlerstaende:
       Spalten: [10]
         [0]:
@@ -3934,11 +3934,11 @@ Abrechnung 2025 Wohnung 1:
       Von: "2025-01-01"
       Bis: "2025-12-01"
       Schluessel: "Gemessener Verbrauch"
-      Gesamt: 1139.68
-      Betrag: 741.02
-      Prozent: 65.02
+      Gesamt: 1139.67
+      Betrag: 735.82
+      Prozent: 64.56
       Geteilt: false
-    Betriebskosten: 2917.27
+    Betriebskosten: 2912.07
     Strom:
       VerbrauchKWh: 4752.00
       Kosten: 987.13
@@ -3948,7 +3948,7 @@ Abrechnung 2025 Wohnung 1:
     PVGutschrift: nil
     Vorauszahlungen: 3120.00
     Saldo:
-      wert: -801.58
+      wert: -796.38
     Monatsverlauf:
       Zeilen: [12]
         [0]:
@@ -3957,95 +3957,95 @@ Abrechnung 2025 Wohnung 1:
           Verbrauch: 275.89
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -888.72
+          Saldo: -876.07
         [1]:
           Monat: "2025-02-01"
           Fixkosten: 105.17
           Verbrauch: 277.76
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1011.65
+          Saldo: -999.00
         [2]:
           Monat: "2025-03-01"
           Fixkosten: 105.17
           Verbrauch: 234.17
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1090.99
+          Saldo: -1078.34
         [3]:
           Monat: "2025-04-01"
           Fixkosten: 105.17
           Verbrauch: 210.56
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1146.72
+          Saldo: -1134.07
         [4]:
           Monat: "2025-05-01"
           Fixkosten: 105.17
           Verbrauch: 192.75
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1184.64
+          Saldo: -1171.99
         [5]:
           Monat: "2025-06-01"
           Fixkosten: 105.17
           Verbrauch: 175.08
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1204.89
+          Saldo: -1192.24
         [6]:
           Monat: "2025-07-01"
           Fixkosten: 105.17
           Verbrauch: 175.59
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1225.65
+          Saldo: -1213.00
         [7]:
           Monat: "2025-08-01"
           Fixkosten: 105.17
           Verbrauch: 173.31
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1244.13
+          Saldo: -1231.48
         [8]:
           Monat: "2025-09-01"
           Fixkosten: 105.17
           Verbrauch: 189.52
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1278.82
+          Saldo: -1266.17
         [9]:
           Monat: "2025-10-01"
           Fixkosten: 105.17
           Verbrauch: 208.99
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1332.98
+          Saldo: -1320.33
         [10]:
           Monat: "2025-11-01"
           Fixkosten: 105.17
-          Verbrauch: 239.78
+          Verbrauch: 237.18
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1417.93
+          Saldo: -1402.68
         [11]:
           Monat: "2025-12-01"
           Fixkosten: 105.17
-          Verbrauch: 306.14
+          Verbrauch: 303.54
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1569.24
+          Saldo: -1551.39
       Uebertrag:
         Vorhanden: true
-        Betrag: -767.66
+        Betrag: -755.01
         Von: "2023-08-01"
         Bis: "2024-12-01"
         Hinweis: ""
       Fixkosten: 1262.04
-      Verbrauch: 2659.54
+      Verbrauch: 2654.34
       Abschlag: 3120.00
       Gutschrift: 0.00
-      Endsaldo: -1569.24
+      Endsaldo: -1551.39
     Zaehlerstaende:
       Spalten: [12]
         [0]:
@@ -5260,11 +5260,11 @@ Abrechnung 2025 Wohnung 2:
       Von: "2025-01-01"
       Bis: "2025-12-01"
       Schluessel: "Gemessener Verbrauch"
-      Gesamt: 1139.68
-      Betrag: 398.66
-      Prozent: 34.98
+      Gesamt: 1139.67
+      Betrag: 403.85
+      Prozent: 35.44
       Geteilt: false
-    Betriebskosten: 2150.32
+    Betriebskosten: 2155.51
     Strom:
       VerbrauchKWh: 2110.00
       Kosten: 438.33
@@ -5274,7 +5274,7 @@ Abrechnung 2025 Wohnung 2:
     PVGutschrift: nil
     Vorauszahlungen: 2280.00
     Saldo:
-      wert: -320.10
+      wert: -325.29
     Monatsverlauf:
       Zeilen: [12]
         [0]:
@@ -5283,95 +5283,95 @@ Abrechnung 2025 Wohnung 2:
           Verbrauch: 170.40
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -309.90
+          Saldo: -322.55
         [1]:
           Monat: "2025-02-01"
           Fixkosten: 89.39
           Verbrauch: 170.98
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -380.27
+          Saldo: -392.92
         [2]:
           Monat: "2025-03-01"
           Fixkosten: 89.39
           Verbrauch: 138.49
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -418.15
+          Saldo: -430.80
         [3]:
           Monat: "2025-04-01"
           Fixkosten: 89.39
           Verbrauch: 118.17
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -435.71
+          Saldo: -448.36
         [4]:
           Monat: "2025-05-01"
           Fixkosten: 89.39
           Verbrauch: 101.88
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -436.98
+          Saldo: -449.63
         [5]:
           Monat: "2025-06-01"
           Fixkosten: 89.39
           Verbrauch: 92.60
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -428.97
+          Saldo: -441.62
         [6]:
           Monat: "2025-07-01"
           Fixkosten: 89.39
           Verbrauch: 92.88
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -421.24
+          Saldo: -433.89
         [7]:
           Monat: "2025-08-01"
           Fixkosten: 89.39
           Verbrauch: 93.17
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -413.80
+          Saldo: -426.45
         [8]:
           Monat: "2025-09-01"
           Fixkosten: 89.39
           Verbrauch: 103.14
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -416.33
+          Saldo: -428.98
         [9]:
           Monat: "2025-10-01"
           Fixkosten: 89.39
           Verbrauch: 120.46
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -436.18
+          Saldo: -448.83
         [10]:
           Monat: "2025-11-01"
           Fixkosten: 89.39
-          Verbrauch: 139.56
+          Verbrauch: 142.15
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -475.13
+          Saldo: -490.37
         [11]:
           Monat: "2025-12-01"
           Fixkosten: 89.39
-          Verbrauch: 185.69
+          Verbrauch: 188.29
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -560.21
+          Saldo: -578.05
       Uebertrag:
         Vorhanden: true
-        Betrag: -240.11
+        Betrag: -252.76
         Von: "2023-08-01"
         Bis: "2024-12-01"
         Hinweis: ""
       Fixkosten: 1072.68
-      Verbrauch: 1527.42
+      Verbrauch: 1532.61
       Abschlag: 2280.00
       Gutschrift: 0.00
-      Endsaldo: -560.21
+      Endsaldo: -578.05
     Zaehlerstaende:
       Spalten: [12]
         [0]:
@@ -7077,17 +7077,17 @@ Dashboard:
           WallboxEinzelAuffaellig: false
         Wasser:
           PersonenW1: 2.00
-          PersonenW2: 1.00
-          WWAnteilW1: 1.67
-          WWAnteilW2: 0.83
-          FrischwasserW1: 9.06
-          FrischwasserW2: 5.03
-          AbwasserW1: 9.06
-          AbwasserW2: 5.03
-          KostenFrischwasserW1: 12.99
-          KostenFrischwasserW2: 7.22
-          KostenAbwasserW1: 43.53
-          KostenAbwasserW2: 24.19
+          PersonenW2: 2.00
+          WWAnteilW1: 1.25
+          WWAnteilW2: 1.25
+          FrischwasserW1: 8.64
+          FrischwasserW2: 5.45
+          AbwasserW1: 8.64
+          AbwasserW2: 5.45
+          KostenFrischwasserW1: 12.39
+          KostenFrischwasserW2: 7.82
+          KostenAbwasserW1: 41.52
+          KostenAbwasserW2: 26.19
         Heizung:
           TotalHeizungskostenUnrounded: 244.83
           WaermeW1MWh: 1.25
@@ -7136,17 +7136,17 @@ Dashboard:
           WallboxEinzelAuffaellig: false
         Wasser:
           PersonenW1: 2.00
-          PersonenW2: 1.00
-          WWAnteilW1: 1.67
-          WWAnteilW2: 0.83
-          FrischwasserW1: 9.06
-          FrischwasserW2: 5.03
-          AbwasserW1: 9.06
-          AbwasserW2: 5.03
-          KostenFrischwasserW1: 12.96
-          KostenFrischwasserW2: 7.20
-          KostenAbwasserW1: 43.46
-          KostenAbwasserW2: 24.15
+          PersonenW2: 2.00
+          WWAnteilW1: 1.25
+          WWAnteilW2: 1.25
+          FrischwasserW1: 8.64
+          FrischwasserW2: 5.45
+          AbwasserW1: 8.64
+          AbwasserW2: 5.45
+          KostenFrischwasserW1: 12.36
+          KostenFrischwasserW2: 7.80
+          KostenAbwasserW1: 41.46
+          KostenAbwasserW2: 26.15
         Heizung:
           TotalHeizungskostenUnrounded: 243.92
           WaermeW1MWh: 1.25
@@ -7195,17 +7195,17 @@ Dashboard:
           WallboxEinzelAuffaellig: false
         Wasser:
           PersonenW1: 2.00
-          PersonenW2: 1.00
-          WWAnteilW1: 1.67
-          WWAnteilW2: 0.83
-          FrischwasserW1: 9.21
-          FrischwasserW2: 5.03
-          AbwasserW1: 9.21
-          AbwasserW2: 5.03
-          KostenFrischwasserW1: 13.15
-          KostenFrischwasserW2: 7.19
-          KostenAbwasserW1: 44.12
-          KostenAbwasserW2: 24.12
+          PersonenW2: 2.00
+          WWAnteilW1: 1.25
+          WWAnteilW2: 1.25
+          FrischwasserW1: 8.79
+          FrischwasserW2: 5.45
+          AbwasserW1: 8.79
+          AbwasserW2: 5.45
+          KostenFrischwasserW1: 12.55
+          KostenFrischwasserW2: 7.78
+          KostenAbwasserW1: 42.12
+          KostenAbwasserW2: 26.12
         Heizung:
           TotalHeizungskostenUnrounded: 166.94
           WaermeW1MWh: 0.75
@@ -7962,17 +7962,17 @@ Dashboard:
           WallboxEinzelAuffaellig: false
         Wasser:
           PersonenW1: 2.00
-          PersonenW2: 1.00
-          WWAnteilW1: 1.67
-          WWAnteilW2: 0.83
-          FrischwasserW1: 9.72
-          FrischwasserW2: 5.03
-          AbwasserW1: 9.72
-          AbwasserW2: 5.03
-          KostenFrischwasserW1: 13.51
-          KostenFrischwasserW2: 7.00
-          KostenAbwasserW1: 45.66
-          KostenAbwasserW2: 23.65
+          PersonenW2: 2.00
+          WWAnteilW1: 1.25
+          WWAnteilW2: 1.25
+          FrischwasserW1: 9.30
+          FrischwasserW2: 5.45
+          AbwasserW1: 9.30
+          AbwasserW2: 5.45
+          KostenFrischwasserW1: 12.93
+          KostenFrischwasserW2: 7.58
+          KostenAbwasserW1: 43.71
+          KostenAbwasserW2: 25.61
         Heizung:
           TotalHeizungskostenUnrounded: 113.59
           WaermeW1MWh: 0.44
@@ -8021,17 +8021,17 @@ Dashboard:
           WallboxEinzelAuffaellig: false
         Wasser:
           PersonenW1: 2.00
-          PersonenW2: 1.00
-          WWAnteilW1: 1.67
-          WWAnteilW2: 0.83
-          FrischwasserW1: 10.62
-          FrischwasserW2: 5.03
-          AbwasserW1: 10.62
-          AbwasserW2: 5.03
-          KostenFrischwasserW1: 14.73
-          KostenFrischwasserW2: 6.98
-          KostenAbwasserW1: 49.82
-          KostenAbwasserW2: 23.62
+          PersonenW2: 2.00
+          WWAnteilW1: 1.25
+          WWAnteilW2: 1.25
+          FrischwasserW1: 10.20
+          FrischwasserW2: 5.45
+          AbwasserW1: 10.20
+          AbwasserW2: 5.45
+          KostenFrischwasserW1: 14.15
+          KostenFrischwasserW2: 7.56
+          KostenAbwasserW1: 47.86
+          KostenAbwasserW2: 25.57
         Heizung:
           TotalHeizungskostenUnrounded: 77.10
           WaermeW1MWh: 0.19
@@ -8080,17 +8080,17 @@ Dashboard:
           WallboxEinzelAuffaellig: false
         Wasser:
           PersonenW1: 2.00
-          PersonenW2: 1.00
-          WWAnteilW1: 1.67
-          WWAnteilW2: 0.83
-          FrischwasserW1: 11.52
-          FrischwasserW2: 5.03
-          AbwasserW1: 11.52
-          AbwasserW2: 5.03
-          KostenFrischwasserW1: 15.95
-          KostenFrischwasserW2: 6.97
-          KostenAbwasserW1: 53.96
-          KostenAbwasserW2: 23.58
+          PersonenW2: 2.00
+          WWAnteilW1: 1.25
+          WWAnteilW2: 1.25
+          FrischwasserW1: 11.10
+          FrischwasserW2: 5.45
+          AbwasserW1: 11.10
+          AbwasserW2: 5.45
+          KostenFrischwasserW1: 15.37
+          KostenFrischwasserW2: 7.55
+          KostenAbwasserW1: 52.01
+          KostenAbwasserW2: 25.53
         Heizung:
           TotalHeizungskostenUnrounded: 49.87
           WaermeW1MWh: 0.00
@@ -8139,17 +8139,17 @@ Dashboard:
           WallboxEinzelAuffaellig: false
         Wasser:
           PersonenW1: 2.00
-          PersonenW2: 1.00
-          WWAnteilW1: 1.67
-          WWAnteilW2: 0.83
-          FrischwasserW1: 11.97
-          FrischwasserW2: 5.03
-          AbwasserW1: 11.97
-          AbwasserW2: 5.03
-          KostenFrischwasserW1: 16.54
-          KostenFrischwasserW2: 6.96
-          KostenAbwasserW1: 55.98
-          KostenAbwasserW2: 23.55
+          PersonenW2: 2.00
+          WWAnteilW1: 1.25
+          WWAnteilW2: 1.25
+          FrischwasserW1: 11.55
+          FrischwasserW2: 5.45
+          AbwasserW1: 11.55
+          AbwasserW2: 5.45
+          KostenFrischwasserW1: 15.96
+          KostenFrischwasserW2: 7.53
+          KostenAbwasserW1: 54.03
+          KostenAbwasserW2: 25.50
         Heizung:
           TotalHeizungskostenUnrounded: 49.67
           WaermeW1MWh: 0.00
@@ -8198,17 +8198,17 @@ Dashboard:
           WallboxEinzelAuffaellig: false
         Wasser:
           PersonenW1: 2.00
-          PersonenW2: 1.00
-          WWAnteilW1: 1.67
-          WWAnteilW2: 0.83
-          FrischwasserW1: 11.97
-          FrischwasserW2: 5.03
-          AbwasserW1: 11.97
-          AbwasserW2: 5.03
-          KostenFrischwasserW1: 16.50
-          KostenFrischwasserW2: 6.94
-          KostenAbwasserW1: 55.90
-          KostenAbwasserW2: 23.51
+          PersonenW2: 2.00
+          WWAnteilW1: 1.25
+          WWAnteilW2: 1.25
+          FrischwasserW1: 11.55
+          FrischwasserW2: 5.45
+          AbwasserW1: 11.55
+          AbwasserW2: 5.45
+          KostenFrischwasserW1: 15.93
+          KostenFrischwasserW2: 7.52
+          KostenAbwasserW1: 53.95
+          KostenAbwasserW2: 25.46
         Heizung:
           TotalHeizungskostenUnrounded: 49.47
           WaermeW1MWh: 0.00
