@@ -22,28 +22,21 @@ func ablesungGespeichertURL(r *http.Request, db *sql.DB, periodID int64) (string
 	if err != nil {
 		return "", err
 	}
-	if a, ok := v.Ablesung(periodID); ok && monatOffen(v, a.Period.Monat) {
-		return url + "?" + fixkostenFehlenParam + "=1", nil
+	if a, ok := v.Ablesung(periodID); ok {
+		if _, offen := v.OffenerMonatVon(a.Period.Monat); offen {
+			return url + "?" + fixkostenFehlenParam + "=1", nil
+		}
 	}
 	return url, nil
-}
-
-// monatOffen reports whether monat is an Abrechnungsmonat without a complete
-// Fixkosten-Eingabe. A Teilstand without Abrechnungsmonat ("") has none to miss.
-func monatOffen(v *calc.Verbrauchskosten, monat string) bool {
-	return monat != "" && !v.MonatVollstaendig(monat)
 }
 
 // ablesungFixkostenHinweis is the note of an Ablesung whose Abrechnungsmonat
 // lacks its Fixkosten (detail page and banner after saving), nil when it has
 // them (or no Abrechnungsmonat yet).
 func ablesungFixkostenHinweis(v *calc.Verbrauchskosten, monat string) *fixkostenHinweis {
-	if !monatOffen(v, monat) {
+	m, offen := v.OffenerMonatVon(monat)
+	if !offen {
 		return nil
-	}
-	m := calc.OffenerMonat{Monat: monat}
-	if e := v.Eingabe(monat); e != nil {
-		m.EingabeID = e.ID
 	}
 	return fixkostenFehlenHinweis(kontextAblesung, []calc.OffenerMonat{m}, nil)
 }

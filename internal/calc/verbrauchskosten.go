@@ -233,24 +233,35 @@ type OffenerMonat struct {
 	EingabeID int64
 }
 
+// OffenerMonatVon returns the OffenerMonat of monat, ok=false if monat has no
+// Abrechnungsmonat ("") or a complete Fixkosten-Eingabe.
+func (v *Verbrauchskosten) OffenerMonatVon(monat string) (OffenerMonat, bool) {
+	if monat == "" || v.MonatVollstaendig(monat) {
+		return OffenerMonat{}, false
+	}
+	o := OffenerMonat{Monat: monat}
+	if e := v.eingabeByMonat[monat]; e != nil {
+		o.EingabeID = e.ID
+	}
+	return o, true
+}
+
 // OffeneMonate lists the months with an Ablesung and no complete
 // Fixkosten-Eingabe, oldest first, each once. It does not matter whether the
-// Ablesung is a Teilstand or the first one. A Teilstand without Abrechnungsmonat
-// has no month to miss and is skipped.
+// Ablesung is a Teilstand or the first one. A Teilstand without
+// Abrechnungsmonat has no month to miss and is skipped.
 func (v *Verbrauchskosten) OffeneMonate() []OffenerMonat {
 	var out []OffenerMonat
 	seen := map[string]bool{}
 	for _, a := range v.alle {
 		m := a.Period.Monat
-		if m == "" || seen[m] || v.MonatVollstaendig(m) {
+		if seen[m] {
 			continue
 		}
 		seen[m] = true
-		o := OffenerMonat{Monat: m}
-		if e := v.eingabeByMonat[m]; e != nil {
-			o.EingabeID = e.ID
+		if o, ok := v.OffenerMonatVon(m); ok {
+			out = append(out, o)
 		}
-		out = append(out, o)
 	}
 	return out
 }
