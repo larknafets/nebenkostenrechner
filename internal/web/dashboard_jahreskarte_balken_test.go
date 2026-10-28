@@ -19,7 +19,7 @@ func TestJahreskarte_BalkenOhneFixkosten(t *testing.T) {
 	dd := mustLoadDashboard(t, db)
 
 	for _, id := range []int64{1, 2} {
-		card, _ := buildEntityView(dd, id)
+		card, _ := buildEntityView(dd, nil, id)
 		if card.FixkostenEUR <= 0 {
 			t.Fatalf("Wohnung %d: FixkostenEUR = %v, want > 0 (Testdaten ohne Fixkosten)", id, card.FixkostenEUR)
 		}

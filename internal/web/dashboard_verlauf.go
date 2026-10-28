@@ -17,6 +17,13 @@ type dashboardMonat struct {
 	Jahr      int
 	IsCurrent bool
 
+	// FixkostenFehlen: the month has an Ablesung but no Fixkosten-Eingabe (#364).
+	// It gets its own row without bars and amounts.
+	FixkostenFehlen bool
+	// VerbrauchOffen: the Eingabe of the month lacks a price, so the Ablesung is
+	// not calculable. The row shows the Fixkosten and "offen" for the Verbrauch.
+	VerbrauchOffen bool
+
 	HasVerbrauch      bool
 	VerbrauchSegmente []dashboardSegment
 	VerbrauchGesamt   float64
@@ -89,6 +96,11 @@ type dashboardVerlaufSpalte struct {
 	ApartmentName string
 	Eintraege     []dashboardVerlaufEintrag
 
+	// Base and MitLink are set by the handler for the rows of open months: the
+	// link to the Fixkosten form is only for the Vermieter:innen.
+	Base    string
+	MitLink bool
+
 	// LatestSaldo is the newest month with a balance (newest-first, skips
 	// year-summary rows and gapped months) - set directly from the
 	// backward loop in buildDashboardVerlauf, instead of a 2nd function
@@ -134,13 +146,16 @@ func groupKostenByMonat(apartmentID int64, periodenKosten []periodKosten) map[st
 // month Monatsverlauf. The 2 input series aren't forced 1:1 - a month with
 // only a reading, only a fixed-costs entry, or both, is equally valid;
 // when a month has 2+ periods/entries, the newest one wins (both inputs
-// are already newest-first).
-func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten) dashboardVerlaufSpalte {
+// are already newest-first). A month in offen (#364) gets a row of its own
+// even without data: "Fixkosten fehlen" if it has no Eingabe, "offen" for the
+// Verbrauch if it has an incomplete one.
+func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten, offen []offenerMonat) dashboardVerlaufSpalte {
 	type bucket struct {
 		label         string
 		jahr          int
 		verbrauchKats []kategorie
 		fixErg        *calc.FixkostenErgebnis
+		offen         bool
 	}
 	buckets := map[string]*bucket{}
 	var order []string
@@ -169,6 +184,11 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 			b.fixErg = fk.Erg
 		}
 	}
+	for _, o := range offen {
+		if b := ensure(o.Monat); b != nil {
+			b.offen = true
+		}
+	}
 
 	// What counts in the balance (Abschlag, PV-Gutschrift, the sums) is
 	// decided by calc.Monatswerte, the same fold the Jahresabrechnung reads.
@@ -194,6 +214,8 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 	for _, key := range order {
 		b := buckets[key]
 		dm := dashboardMonat{Label: b.label, Jahr: b.jahr}
+		dm.FixkostenFehlen = b.offen && b.fixErg == nil
+		dm.VerbrauchOffen = b.offen && b.fixErg != nil
 
 		if b.verbrauchKats != nil {
 			dm.HasVerbrauch = true

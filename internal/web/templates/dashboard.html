@@ -11,6 +11,9 @@
 <p class="muted">Noch keine Ablesung oder Fixkosten-Eingabe erfasst.</p>
 {{end}}
 {{else}}
+{{with .FixkostenHinweis}}<div class="dashboard-hinweis">
+  <p>{{.Text}}{{if $.Vermieter}} <a href="{{$.Base}}{{.Pfad}}">Fixkosten erfassen</a>{{end}}</p>
+</div>{{end}}
 <h2>Jahressummen {{.AnzeigeJahr}}{{if .AnzeigeJahrLaufend}} <span class="badge">laufend</span>{{end}}</h2>
 <div class="grid jahressummen-grid">
   {{range .Cards}}
@@ -21,6 +24,7 @@
       <span class="badge badge-icon" title="Personen-Schnitt"><svg viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" /></svg>{{de .PersonenSchnitt}}</span>
     </div>
     <div class="stat-value">{{deEUR .GesamtEUR}}&nbsp;€</div>
+    {{if .Vorlaeufig}}<div class="muted vorlaeufig">{{.Vorlaeufig}}</div>{{end}}
     <div class="stat-bar-track">
       {{range .Segmente}}{{if ne .Farbe "fix"}}
       <div class="stat-bar-seg cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%"></div>
@@ -46,6 +50,7 @@
       </div>
     </div>{{end}}
     {{with .Saldo}}{{template "abschlag-value" .}}{{end}}
+    {{if and .Saldo .Vorlaeufig}}<div class="muted vorlaeufig">{{.Vorlaeufig}}</div>{{end}}
     {{with .Mieteinnahmen}}<div class="abschlag-value">
       <div class="label">Miete</div>
       <div class="amount">{{deEUR .}}&nbsp;€</div>
