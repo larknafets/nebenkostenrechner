@@ -335,7 +335,7 @@ func fixkostenFormularFehler(err error, labels, names map[int64]string) error {
 	case store.FeldPersonen:
 		return fmt.Errorf("ungültige Personenzahl für %s: %w", names[ef.ID], ef.Err)
 	}
-	if p, ok := fixkostenPreisFuerFeld(ef.Feld); ok {
+	if p, ok := store.PreisFuerFeld(ef.Feld); ok {
 		return preisFormularFehler(p, ef.Err)
 	}
 	return err

@@ -32,7 +32,11 @@ var csvImportHeader = csvHeader[:len(csvHeader)-len(store.OptionalMeterKeys)]
 // the Fixkosten-Eingabe: the four prices, the Personenzahl per apartment and the
 // switches. An import accepts them and drops their values.
 var csvVerworfeneSpalten = func() []string {
-	cols := []string{"strompreis", "frischwasser_preis", "abwasser_preis", "einspeisung_preis", "personen_1", "personen_2"}
+	var cols []string
+	for _, p := range store.Preise {
+		cols = append(cols, p.Spalte)
+	}
+	cols = append(cols, "personen_1", "personen_2")
 	for _, s := range store.Switches {
 		cols = append(cols, s.CSVColumn)
 	}

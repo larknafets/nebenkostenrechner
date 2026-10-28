@@ -161,20 +161,6 @@ type FixkostenInput struct {
 	PVGutschriftW1    bool
 }
 
-type preisFeld struct {
-	feld Feldart
-	wert *float64
-}
-
-// preise returns the four prices with the field that reports a violation,
-// in the order Validate checks them.
-func (in FixkostenInput) preise() []preisFeld {
-	return []preisFeld{
-		{FeldStrompreis, in.Strompreis}, {FeldFrischwasserPreis, in.FrischwasserPreis},
-		{FeldAbwasserPreis, in.AbwasserPreis}, {FeldEinspeisungPreis, in.EinspeisungPreis},
-	}
-}
-
 // Validate checks the field rules every Fixkosten-Eingabe must meet, without a
 // database: Monat, then Logik and Typ per Kostenposition (ascending id), then
 // the Personenzahl per Wohnung (ascending id), then the four prices (Strom,
@@ -203,9 +189,10 @@ func (in FixkostenInput) Validate() error {
 			}
 		}
 	}
-	for _, p := range in.preise() {
-		if err := validierePreis(p.wert); err != nil {
-			return &EingabeFehler{Feld: p.feld, Err: err, Wert: strconv.FormatFloat(*p.wert, 'f', -1, 64)}
+	for _, p := range Preise {
+		wert := *p.FixkostenInput(&in)
+		if err := validierePreis(wert); err != nil {
+			return &EingabeFehler{Feld: p.Feld, Err: err, Wert: strconv.FormatFloat(*wert, 'f', -1, 64)}
 		}
 	}
 	return nil
@@ -518,7 +505,12 @@ type FixkostenEingabeDetails struct {
 // entered. It is the one rule behind "Fixkosten fehlen": an Ablesung whose
 // month has no Eingabe, or one without all prices, cannot be computed.
 func (f *FixkostenEingabeDetails) PreiseVollstaendig() bool {
-	return f.Strompreis != nil && f.FrischwasserPreis != nil && f.AbwasserPreis != nil && f.EinspeisungPreis != nil
+	for _, p := range Preise {
+		if *p.FixkostenDetail(f) == nil {
+			return false
+		}
+	}
+	return true
 }
 
 // GetFixkostenEingabeDetails returns the given Fixkosten-Eingabe with its
