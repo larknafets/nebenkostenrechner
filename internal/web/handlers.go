@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -103,7 +104,7 @@ var templateFuncs = template.FuncMap{
 // registers a route of this package (TestRegistrierungNurInNewMux).
 func NewMux(db, demoDB *sql.DB, version, buildDate string) *http.ServeMux {
 	vermieter, mieter := ladeKennwoerter()
-	a := auth{vermieter: vermieter, mieter: mieter, demoDB: demoDB}
+	a := auth{vermieter: vermieter, mieter: mieter, demoDB: demoDB, limit: newLoginLimit(time.Now)}
 	return muxFuer(zugangFuer(a), db, demoDB, version, buildDate)
 }
 

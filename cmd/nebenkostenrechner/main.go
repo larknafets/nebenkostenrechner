@@ -133,7 +133,12 @@ func main() {
 	}
 
 	log.Printf("listening on %s (db: %s)", addr, dbPath)
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	if err := (&http.Server{
+		Addr:              addr,
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       2 * time.Minute, // no Read/WriteTimeout: CSV uploads and slow pages
+	}).ListenAndServe(); err != nil {
 		log.Fatalf("serve: %v", err)
 	}
 }
