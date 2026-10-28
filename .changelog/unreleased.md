@@ -49,7 +49,7 @@ Keep every section, an empty one included. Do not change the headings.
 
 - Ablesungsseite, Speichern und CSV-Import zeigen "Fixkosten fehlen" jetzt auch bei Teilstand, erster Ablesung und unvollständiger Fixkosten-Eingabe, der Link heißt dann "Fixkosten ergänzen" und führt zur Eingabe des Monats (#383)
 
-- Die Anmeldung bremst Kennwort-Raten: Nach 10 falschen Kennwörtern innerhalb einer Minute lehnt die App weitere Kennwort-Anmeldungen bis zum Ende der Minute ab (auch das richtige Kennwort). Die Demo-Anmeldung setzt die Demo-Daten höchstens alle 10 Sekunden zurück.
+- Die Anmeldung bremst Kennwort-Raten: Nach 10 falschen Kennwörtern innerhalb einer Minute lehnt die App weitere Kennwort-Anmeldungen bis zum Ende der Minute ab (auch das richtige Kennwort) und zeigt dazu im Anmelde-Fenster einen Hinweis. Die Demo-Anmeldung setzt die Demo-Daten höchstens alle 10 Sekunden zurück.
 
 ## Wartung
 

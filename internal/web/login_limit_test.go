@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -38,11 +39,12 @@ func TestLoginLimit_FehlversucheSperren(t *testing.T) {
 	}
 	// Locked: even the correct password is refused until the window passes.
 	w := loginPost(a, rolleFormVermieter, "v")
-	if w.Code != http.StatusTooManyRequests {
-		t.Fatalf("gesperrt: Status %d, want 429", w.Code)
+	loc := w.Header().Get("Location")
+	if w.Code != http.StatusFound || !strings.Contains(loc, "login=1") || !strings.Contains(loc, "gesperrt=1") || strings.Contains(loc, "fehler=1") {
+		t.Fatalf("gesperrt: Status %d, Location %q, want Overlay mit gesperrt=1 ohne fehler=1", w.Code, loc)
 	}
-	if w.Header().Get("Retry-After") == "" {
-		t.Error("Retry-After fehlt")
+	if hatCookie(w, sessionCookieName) {
+		t.Error("gesperrt: Cookie gesetzt")
 	}
 
 	jetzt = jetzt.Add(loginFensterDauer)
@@ -65,17 +67,38 @@ func TestLoginLimit_ErfolgZaehltNicht(t *testing.T) {
 func TestLoginLimit_DemoResetGedrosselt(t *testing.T) {
 	jetzt := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	l := newLoginLimit(func() time.Time { return jetzt })
+	n := 0
+	reset := func() error { n++; return nil }
 
-	if !l.demoResetErlaubt() {
-		t.Fatal("erster Demo-Reset muss erlaubt sein")
+	for i, c := range []struct {
+		nach time.Duration
+		want int
+	}{{0, 1}, {demoResetAbstand - time.Second, 1}, {time.Second, 2}} {
+		jetzt = jetzt.Add(c.nach)
+		if err := l.demoReset(reset); err != nil || n != c.want {
+			t.Fatalf("Schritt %d: err %v, Resets %d, want %d", i, err, n, c.want)
+		}
 	}
-	jetzt = jetzt.Add(demoResetAbstand - time.Second)
-	if l.demoResetErlaubt() {
-		t.Error("Demo-Reset innerhalb von 10 s muss gedrosselt werden")
+}
+
+func TestLoginLimit_FehlgeschlagenerDemoResetStartetKeineSperre(t *testing.T) {
+	jetzt := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	l := newLoginLimit(func() time.Time { return jetzt })
+	if err := l.demoReset(func() error { return errors.New("kaputt") }); err == nil {
+		t.Fatal("Fehler des Resets muss durchgereicht werden")
 	}
-	jetzt = jetzt.Add(time.Second)
-	if !l.demoResetErlaubt() {
-		t.Error("Demo-Reset nach 10 s muss wieder erlaubt sein")
+	n := 0
+	if err := l.demoReset(func() error { n++; return nil }); err != nil || n != 1 {
+		t.Errorf("nach fehlgeschlagenem Reset: err %v, Resets %d, want 1", err, n)
+	}
+}
+
+func TestLoginOverlay_ZeigtSperrmeldung(t *testing.T) {
+	mux := rollenMux(t, "geheim", "")
+	w := getMitCookies(t, mux, "/dashboard?login=1&gesperrt=1", nil)
+	body := w.Body.String()
+	if !strings.Contains(body, "Zu viele fehlgeschlagene Anmeldungen, bitte eine Minute warten.") || !strings.Contains(body, `params.get("gesperrt")`) {
+		t.Error("Login-Overlay zeigt die Sperrmeldung nicht")
 	}
 }
 
