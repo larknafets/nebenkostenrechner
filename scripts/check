@@ -45,6 +45,15 @@ if [ -n "$strays" ]; then
   exit 1
 fi
 
+# BSD `sed -i` without an empty suffix argument leaves "file.go-E", a merge or
+# patch leaves ".orig" or ".rej". A tracked one stays in the repository.
+leftovers=$(git ls-files | grep -E '(-E|\.orig|\.rej)$' || true)
+if [ -n "$leftovers" ]; then
+  echo "Tracked leftovers of sed, merge or patch, delete them:"
+  echo "$leftovers"
+  exit 1
+fi
+
 step "go vet"
 go vet ./...
 
