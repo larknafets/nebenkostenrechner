@@ -169,7 +169,7 @@ func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 		data := struct {
 			navData
 			Aktuell            string
-			FixkostenHinweis   *offenHinweis
+			FixkostenHinweis   *fixkostenHinweis
 			HasAnyData         bool
 			AnzeigeJahr        int
 			AnzeigeJahrLaufend bool
@@ -184,7 +184,7 @@ func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 		}{
 			navData:            nav,
 			Aktuell:            "dashboard",
-			FixkostenHinweis:   offenerHinweis(offen),
+			FixkostenHinweis:   fixkostenFehlenHinweis(kontextDashboard, offen, nil),
 			HasAnyData:         true,
 			AnzeigeJahr:        jahr,
 			AnzeigeJahrLaufend: jahr == time.Now().Year(),

@@ -119,7 +119,7 @@ func TestFixkostenLoeschen_UnvollstaendigeEingabeKeineBestaetigungAberBanner(t *
 	// The target page derives the note from the data: with the incomplete
 	// Eingabe still there it links to its edit page.
 	body := fixkostenListeHTML(t, db, newZugang("", nil), "?geloescht=2026-07-01")
-	for _, want := range []string{"Für Juli 2026 fehlt die Fixkosten-Eingabe.", "10.07.2026", fmt.Sprintf(`href="/fixkosten/%d/bearbeiten"`, id)} {
+	for _, want := range []string{"Für Juli 2026 fehlen die Fixkosten (oder sind unvollständig).", "10.07.2026", fmt.Sprintf(`href="/fixkosten/%d/bearbeiten"`, id)} {
 		if !strings.Contains(body, want) {
 			t.Errorf("Hinweis bei unvollständiger Eingabe ohne %q", want)
 		}
@@ -133,7 +133,7 @@ func TestFixkostenLoeschen_UnvollstaendigeEingabeKeineBestaetigungAberBanner(t *
 func TestFixkostenListe_VollstaendigerMonatKeinHinweis(t *testing.T) {
 	db := openTestDB(t)
 	hinweisSeed(t, db)
-	if body := fixkostenListeHTML(t, db, newZugang("", nil), "?geloescht=2026-07-01"); strings.Contains(body, "fehlt die Fixkosten-Eingabe") {
+	if body := fixkostenListeHTML(t, db, newZugang("", nil), "?geloescht=2026-07-01"); strings.Contains(body, "fehlen die Fixkosten") {
 		t.Error("Hinweis trotz vollständiger Eingabe")
 	}
 }
@@ -154,7 +154,7 @@ func TestFixkostenLoeschen_BannerMitLinkNurFuerVermieter(t *testing.T) {
 
 	vermieter := fixkostenListeHTML(t, db, newZugang("", nil), query)
 	for _, want := range []string{
-		"Für Juli 2026 fehlt die Fixkosten-Eingabe.",
+		"Für Juli 2026 fehlen die Fixkosten (oder sind unvollständig).",
 		"10.07.2026", "20.07.2026", "unvollständig, bis sie erfasst ist",
 		`href="/fixkosten/neu"`, "Fixkosten erfassen",
 	} {
@@ -163,7 +163,7 @@ func TestFixkostenLoeschen_BannerMitLinkNurFuerVermieter(t *testing.T) {
 		}
 	}
 	andere := fixkostenListeHTML(t, db, newZugang("pw", nil), query)
-	if !strings.Contains(andere, "Für Juli 2026 fehlt die Fixkosten-Eingabe.") {
+	if !strings.Contains(andere, "Für Juli 2026 fehlen die Fixkosten (oder sind unvollständig).") {
 		t.Error("Banner fehlt für andere Rollen")
 	}
 	if strings.Contains(andere, "Fixkosten erfassen") {
@@ -179,7 +179,7 @@ func TestFixkostenLoeschen_OhneBetroffeneKeinBanner(t *testing.T) {
 		t.Errorf("Location = %q, want den Monat auch ohne Ablesungen", loc)
 	}
 	query := strings.TrimPrefix(w.Header().Get("Location"), "/fixkosten")
-	if body := fixkostenListeHTML(t, db, newZugang("", nil), query); strings.Contains(body, "fehlt die Fixkosten-Eingabe") {
+	if body := fixkostenListeHTML(t, db, newZugang("", nil), query); strings.Contains(body, "fehlen die Fixkosten") {
 		t.Error("Banner ohne betroffene Ablesungen")
 	}
 }
@@ -192,7 +192,7 @@ func TestFixkostenLoeschen_BannerEntfaelltWennMonatWiederErfasst(t *testing.T) {
 	if _, err := store.CreateFixkostenEingabe(db, hinweisFixkosten("2026-07-01")); err != nil {
 		t.Fatal(err)
 	}
-	if body := fixkostenListeHTML(t, db, newZugang("", nil), query); strings.Contains(body, "fehlt die Fixkosten-Eingabe") {
+	if body := fixkostenListeHTML(t, db, newZugang("", nil), query); strings.Contains(body, "fehlen die Fixkosten") {
 		t.Error("Banner trotz neu erfasster Eingabe")
 	}
 }
@@ -219,7 +219,7 @@ func TestFixkostenAendern_MonatswechselHinweisAltInfoNeu(t *testing.T) {
 	body := fixkostenDetailHTMLQuery(t, db, newZugang("", nil), id, loc)
 
 	for _, want := range []string{
-		"Für Juli 2026 fehlt die Fixkosten-Eingabe.", "10.07.2026", "20.07.2026",
+		"Für Juli 2026 fehlen die Fixkosten (oder sind unvollständig).", "10.07.2026", "20.07.2026",
 		"Für August 2026 ist die Fixkosten-Eingabe erfasst.", "05.08.2026", "berechenbar",
 		"Fixkosten erfassen",
 	} {

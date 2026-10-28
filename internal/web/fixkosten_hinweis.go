@@ -17,13 +17,14 @@ import (
 
 // fixkostenHinweis is one note above a Fixkosten page. Info marks the friendly
 // variant (an Ablesung became berechenbar), Link the "Fixkosten erfassen"
-// link, which only the Vermieter get (the template checks the role). Pfad is
-// its target (fixkostenErfassenPfad).
+// link, which only the Vermieter get (the template checks the role). Pfad and
+// LinkText are its target and text (fixkostenFehlenHinweis).
 type fixkostenHinweis struct {
-	Text string
-	Info bool
-	Link bool
-	Pfad string
+	Text     string
+	Info     bool
+	Link     bool
+	Pfad     string
+	LinkText string
 }
 
 // fixkostenErfassenPfad is where "Fixkosten erfassen" leads: the edit page of
@@ -71,25 +72,59 @@ func monateListe(labels []string) string {
 	return strings.Join(labels[:len(labels)-1], ", ") + " und " + labels[len(labels)-1]
 }
 
-// fixkostenFehlenSatz is the one sentence that says the Fixkosten of the given
-// Monate ("YYYY-MM-01") are missing or incomplete. Dashboard banner, Ablesung
-// page, banner after saving and the CSV import note all start with it and add
-// their own consequence. Only the note after a delete or a move
-// (fixkostenFehlenText) names the missing Eingabe itself, and the wizard keeps
-// its short state (wallboxHinweisFehlt, Story 44).
-func fixkostenFehlenSatz(monate []string) string {
-	labels := make([]string, len(monate))
-	for i, m := range monate {
-		labels[i] = store.MonatLabel(m)
-	}
-	return "Für " + monateListe(labels) + " fehlen die Fixkosten (oder sind unvollständig)."
+// fixkostenKontext is the page a note about missing Fixkosten appears on. It
+// only decides the consequence sentence (fixkostenFolgen).
+type fixkostenKontext int
+
+const (
+	kontextDashboard fixkostenKontext = iota
+	kontextAblesung                   // detail page and banner after saving
+	kontextCSVImport
+	kontextLoeschen // after deleting or moving an Eingabe, names the Ablesungen
+)
+
+// fixkostenFolgen is the sentence after the generic one, per Kontext.
+var fixkostenFolgen = map[fixkostenKontext]func(ablesungen []calc.Ablesung) string{
+	kontextDashboard: func([]calc.Ablesung) string {
+		return "Die Ablesungen dieser Monate sind noch nicht berechnet, Jahressummen und Saldo enthalten sie nicht."
+	},
+	kontextAblesung: func([]calc.Ablesung) string {
+		return "Die Ablesung ist noch nicht berechnet, bis die Fixkosten erfasst sind."
+	},
+	kontextCSVImport: func([]calc.Ablesung) string {
+		return "Die Ablesungen dieser Monate sind noch nicht berechnet, bis die Fixkosten erfasst sind."
+	},
+	kontextLoeschen: func(ps []calc.Ablesung) string {
+		s, v := ablesungenVom(ps)
+		return "Die " + s + " " + v + " unvollständig, bis sie erfasst ist."
+	},
 }
 
-// fixkostenFehlenText is the one wording of the note that an Eingabe is
-// missing (also used for the banner after a deletion).
-func fixkostenFehlenText(monat string, ps []calc.Ablesung) string {
-	s, v := ablesungenVom(ps)
-	return "Für " + store.MonatLabel(monat) + " fehlt die Fixkosten-Eingabe. Die " + s + " " + v + " unvollständig, bis sie erfasst ist."
+// fixkostenFehlenHinweis is the one note that the Fixkosten of monate are
+// missing or incomplete, nil without a Monat. The sentence is generic, the
+// consequence follows the Kontext (ablesungen only names them after a delete).
+// The link leads to the edit page of the one Monat with an Eingabe, to the new
+// form if any Monat has none, else to the list; its text follows: "ergänzen"
+// when every Monat has an Eingabe, else "erfassen". The wizard keeps its own
+// short state (wallboxHinweisFehlt, Story 44).
+func fixkostenFehlenHinweis(kontext fixkostenKontext, monate []calc.OffenerMonat, ablesungen []calc.Ablesung) *fixkostenHinweis {
+	if len(monate) == 0 {
+		return nil
+	}
+	pfad, text := "/fixkosten", "Fixkosten ergänzen"
+	if len(monate) == 1 {
+		pfad = fixkostenErfassenPfad(monate[0].EingabeID)
+	}
+	for _, m := range monate {
+		if m.EingabeID == 0 {
+			pfad, text = fixkostenErfassenPfad(0), "Fixkosten erfassen"
+			break
+		}
+	}
+	return &fixkostenHinweis{
+		Text: "Für " + monateText(monate) + " fehlen die Fixkosten (oder sind unvollständig). " + fixkostenFolgen[kontext](ablesungen),
+		Link: true, Pfad: pfad, LinkText: text,
+	}
 }
 
 // fixkostenLoeschenFrage is the additional confirmation before deleting an
@@ -132,7 +167,7 @@ func fehlenHinweisAusQuery(v *calc.Verbrauchskosten, q url.Values, param string)
 	if e := v.Eingabe(monat); e != nil {
 		eingabeID = e.ID
 	}
-	return &fixkostenHinweis{Text: fixkostenFehlenText(monat, ps), Link: true, Pfad: fixkostenErfassenPfad(eingabeID)}
+	return fixkostenFehlenHinweis(kontextLoeschen, []calc.OffenerMonat{{Monat: monat, EingabeID: eingabeID}}, ps)
 }
 
 // berechenbarHinweis is the information for the new Monat of a moved Eingabe,

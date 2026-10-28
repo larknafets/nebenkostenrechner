@@ -34,11 +34,16 @@ func monatOffen(v *calc.Verbrauchskosten, monat string) bool {
 	return monat != "" && !v.MonatVollstaendig(monat)
 }
 
-// fixkostenFehlenBanner is the banner text of an Ablesung whose Abrechnungsmonat
-// lacks its Fixkosten, empty when it has them (or no Abrechnungsmonat yet).
-func fixkostenFehlenBanner(v *calc.Verbrauchskosten, monat string) string {
+// ablesungFixkostenHinweis is the note of an Ablesung whose Abrechnungsmonat
+// lacks its Fixkosten (detail page and banner after saving), nil when it has
+// them (or no Abrechnungsmonat yet).
+func ablesungFixkostenHinweis(v *calc.Verbrauchskosten, monat string) *fixkostenHinweis {
 	if !monatOffen(v, monat) {
-		return ""
+		return nil
 	}
-	return fixkostenFehlenSatz([]string{monat}) + " Die Ablesung ist noch nicht berechnet, bis sie erfasst sind."
+	m := calc.OffenerMonat{Monat: monat}
+	if e := v.Eingabe(monat); e != nil {
+		m.EingabeID = e.ID
+	}
+	return fixkostenFehlenHinweis(kontextAblesung, []calc.OffenerMonat{m}, nil)
 }

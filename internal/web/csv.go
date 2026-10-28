@@ -324,15 +324,15 @@ func importHinweise(db *sql.DB, rows []importRow) ([]string, error) {
 		importiert[row.input.Monat] = true
 		verworfen = verworfen || row.verworfen
 	}
-	var fehlen []string
+	var fehlen []calc.OffenerMonat
 	for _, o := range v.OffeneMonate() {
 		if importiert[o.Monat] && o.Monat != "" {
-			fehlen = append(fehlen, o.Monat)
+			fehlen = append(fehlen, o)
 		}
 	}
 	var hinweise []string
-	if len(fehlen) > 0 {
-		hinweise = append(hinweise, fixkostenFehlenSatz(fehlen)+" Die Ablesungen dieser Monate sind noch nicht berechnet, bis die Fixkosten erfasst sind.")
+	if h := fixkostenFehlenHinweis(kontextCSVImport, fehlen, nil); h != nil {
+		hinweise = append(hinweise, h.Text)
 	}
 	if verworfen {
 		hinweise = append(hinweise, "Die Datei enthält Preise, Personenzahlen oder Häkchen. Sie gehören zur Fixkosten-Eingabe und werden nicht übernommen.")

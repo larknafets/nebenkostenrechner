@@ -12,7 +12,7 @@
 {{end}}
 {{else}}
 {{with .FixkostenHinweis}}<div class="dashboard-hinweis">
-  <p>{{.Text}}{{if $.Vermieter}} <a href="{{$.Base}}{{.Pfad}}">Fixkosten erfassen</a>{{end}}</p>
+  <p>{{.Text}}{{if $.Vermieter}} <a href="{{$.Base}}{{.Pfad}}">{{.LinkText}}</a>{{end}}</p>
 </div>{{end}}
 <h2>Jahressummen {{.AnzeigeJahr}}{{if .AnzeigeJahrLaufend}} <span class="badge">laufend</span>{{end}}</h2>
 <div class="grid jahressummen-grid">

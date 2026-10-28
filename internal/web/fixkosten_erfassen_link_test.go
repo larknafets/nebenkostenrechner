@@ -15,18 +15,28 @@ import (
 // of an incomplete Eingabe of the month, to the new form without one (#359,
 // Story 13 and 14).
 
-func TestFixkostenFehlenSatz(t *testing.T) {
-	for _, tc := range []struct {
-		monate []string
-		want   string
+func TestFixkostenFehlenHinweis_TextJeKontext(t *testing.T) {
+	ps := []calc.Ablesung{{Period: &store.LatestPeriod{ReadingDate: "2026-07-10"}}}
+	juli := []calc.OffenerMonat{{Monat: "2026-07-01"}}
+	satz := "Für Juli 2026 fehlen die Fixkosten (oder sind unvollständig). "
+	for name, tc := range map[string]struct {
+		kontext fixkostenKontext
+		monate  []calc.OffenerMonat
+		want    string
 	}{
-		{[]string{"2026-07-01"}, "Für Juli 2026 fehlen die Fixkosten (oder sind unvollständig)."},
-		{[]string{"2026-06-01", "2026-08-01"}, "Für Juni 2026 und August 2026 fehlen die Fixkosten (oder sind unvollständig)."},
-		{[]string{"2026-06-01", "2026-07-01", "2026-08-01"}, "Für Juni 2026, Juli 2026 und August 2026 fehlen die Fixkosten (oder sind unvollständig)."},
+		"Dashboard":  {kontextDashboard, juli, satz + "Die Ablesungen dieser Monate sind noch nicht berechnet, Jahressummen und Saldo enthalten sie nicht."},
+		"Ablesung":   {kontextAblesung, juli, satz + "Die Ablesung ist noch nicht berechnet, bis die Fixkosten erfasst sind."},
+		"CSV-Import": {kontextCSVImport, juli, satz + "Die Ablesungen dieser Monate sind noch nicht berechnet, bis die Fixkosten erfasst sind."},
+		"Löschen":    {kontextLoeschen, juli, satz + "Die Ablesung vom 10.07.2026 ist unvollständig, bis sie erfasst ist."},
+		"mehrere": {kontextAblesung, []calc.OffenerMonat{{Monat: "2026-06-01"}, {Monat: "2026-08-01"}},
+			"Für Juni 2026 und August 2026 fehlen die Fixkosten (oder sind unvollständig). Die Ablesung ist noch nicht berechnet, bis die Fixkosten erfasst sind."},
 	} {
-		if got := fixkostenFehlenSatz(tc.monate); got != tc.want {
-			t.Errorf("fixkostenFehlenSatz(%v) = %q, want %q", tc.monate, got, tc.want)
+		if got := fixkostenFehlenHinweis(tc.kontext, tc.monate, ps).Text; got != tc.want {
+			t.Errorf("%s: Text = %q, want %q", name, got, tc.want)
 		}
+	}
+	if fixkostenFehlenHinweis(kontextDashboard, nil, nil) != nil {
+		t.Error("ohne Monat: Hinweis, want nil")
 	}
 }
 
@@ -66,19 +76,21 @@ func TestAblesungDetail_FixkostenErfassenLinkJeFall(t *testing.T) {
 	}
 }
 
-func TestOffenerHinweis_PfadJeFall(t *testing.T) {
+func TestFixkostenFehlenHinweis_PfadUndLinktextJeFall(t *testing.T) {
 	for name, tc := range map[string]struct {
-		offen []calc.OffenerMonat
-		want  string
+		offen    []calc.OffenerMonat
+		pfad     string
+		linkText string
 	}{
-		"keine Eingabe":            {[]calc.OffenerMonat{{Monat: "2026-10-01"}}, "/fixkosten/neu"},
-		"eine unvollständige":      {[]calc.OffenerMonat{{Monat: "2026-11-01", EingabeID: 7}}, "/fixkosten/7/bearbeiten"},
-		"mehrere unvollständige":   {[]calc.OffenerMonat{{Monat: "2026-10-01", EingabeID: 6}, {Monat: "2026-11-01", EingabeID: 7}}, "/fixkosten"},
-		"eine ohne, eine mit":      {[]calc.OffenerMonat{{Monat: "2026-10-01"}, {Monat: "2026-11-01", EingabeID: 7}}, "/fixkosten/neu"},
-		"unvollständige und keine": {[]calc.OffenerMonat{{Monat: "2026-10-01", EingabeID: 6}, {Monat: "2026-11-01"}}, "/fixkosten/neu"},
+		"keine Eingabe":            {[]calc.OffenerMonat{{Monat: "2026-10-01"}}, "/fixkosten/neu", "Fixkosten erfassen"},
+		"eine unvollständige":      {[]calc.OffenerMonat{{Monat: "2026-11-01", EingabeID: 7}}, "/fixkosten/7/bearbeiten", "Fixkosten ergänzen"},
+		"mehrere unvollständige":   {[]calc.OffenerMonat{{Monat: "2026-10-01", EingabeID: 6}, {Monat: "2026-11-01", EingabeID: 7}}, "/fixkosten", "Fixkosten ergänzen"},
+		"eine ohne, eine mit":      {[]calc.OffenerMonat{{Monat: "2026-10-01"}, {Monat: "2026-11-01", EingabeID: 7}}, "/fixkosten/neu", "Fixkosten erfassen"},
+		"unvollständige und keine": {[]calc.OffenerMonat{{Monat: "2026-10-01", EingabeID: 6}, {Monat: "2026-11-01"}}, "/fixkosten/neu", "Fixkosten erfassen"},
 	} {
-		if got := offenerHinweis(tc.offen).Pfad; got != tc.want {
-			t.Errorf("%s: Pfad = %q, want %q", name, got, tc.want)
+		h := fixkostenFehlenHinweis(kontextDashboard, tc.offen, nil)
+		if h.Pfad != tc.pfad || h.LinkText != tc.linkText {
+			t.Errorf("%s: Pfad, Linktext = %q, %q, want %q, %q", name, h.Pfad, h.LinkText, tc.pfad, tc.linkText)
 		}
 	}
 }
@@ -95,7 +107,7 @@ func TestDashboard_BannerLinkZurUnvollstaendigenEingabe(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := dashboardHTML(t, db)
-	want := fmt.Sprintf(`href="/fixkosten/%d/bearbeiten">Fixkosten erfassen</a>`, id)
+	want := fmt.Sprintf(`href="/fixkosten/%d/bearbeiten">Fixkosten ergänzen</a>`, id)
 	if !strings.Contains(body, want) {
 		t.Errorf("Banner ohne %q", want)
 	}
