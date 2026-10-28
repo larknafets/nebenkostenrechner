@@ -73,6 +73,8 @@ type fixkostenFormData struct {
 	PreviousPersonen map[int64]float64
 	Vermietet        []fixkostenMieteRow // Abschlag and Miete fields, one per apartment with Status Vermietung only
 	Positionen       []fixkostenPositionRow
+	Preise           []fixkostenPreisFeld    // the four prices of the month
+	Haekchen         []fixkostenHaekchenFeld // the two switches of the month
 }
 
 // fixkostenMieteRow is the Abschlag and Miete input pair of one rented
@@ -175,6 +177,7 @@ func handleFixkostenForm(z *Zugang) http.HandlerFunc {
 			data.Vermietet = buildFixkostenMieteRows(apartments, nil, nil, false)
 		}
 		data.Positionen = buildFixkostenPositionRows(kostenpositionen, werte)
+		data.Preise, data.Haekchen = buildFixkostenPreisFelder(latest)
 
 		if err := fixkostenFormTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -228,6 +231,7 @@ func handleFixkostenEditForm(z *Zugang) http.HandlerFunc {
 			Vermietet:        buildFixkostenMieteRows(apartments, target.Abschlag, target.Miete, true),
 			Positionen:       positionen,
 		}
+		data.Preise, data.Haekchen = buildFixkostenPreisFelder(target)
 
 		if err := fixkostenFormTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -298,6 +302,9 @@ func parseFixkostenInput(r *http.Request, apartments []store.Apartment) (store.F
 	}
 
 	in := store.FixkostenInput{Monat: monat, Personen: personen, Werte: werte, Abschlag: abschlag, Miete: miete}
+	if err := parseFixkostenPreise(r.FormValue, &in); err != nil {
+		return store.FixkostenInput{}, err
+	}
 	if err := in.Validate(); err != nil {
 		return store.FixkostenInput{}, fixkostenFormularFehler(err, labels, names)
 	}
@@ -327,6 +334,9 @@ func fixkostenFormularFehler(err error, labels, names map[int64]string) error {
 		return fmt.Errorf("ungültiger Typ für %s", labels[ef.ID])
 	case store.FeldPersonen:
 		return fmt.Errorf("ungültige Personenzahl für %s: %w", names[ef.ID], ef.Err)
+	}
+	if p, ok := fixkostenPreisFuerFeld(ef.Feld); ok {
+		return preisFormularFehler(p, ef.Err)
 	}
 	return err
 }
@@ -605,6 +615,8 @@ func handleFixkostenDetail(z *Zugang) http.HandlerFunc {
 			AllEingaben []fixkostenListItem
 			Wohnungen   []fixkostenDetailApartment
 			Positionen  []fixkostenDetailPosition
+			Preise      []fixkostenDetailPreis
+			Haekchen    []fixkostenDetailHaekchen
 			KostenW1    float64
 			KostenW2    float64
 		}{
@@ -618,6 +630,7 @@ func handleFixkostenDetail(z *Zugang) http.HandlerFunc {
 			KostenW1:    erg.KostenW1,
 			KostenW2:    erg.KostenW2,
 		}
+		data.Preise, data.Haekchen = buildFixkostenDetailPreise(eingabe)
 
 		if err := fixkostenDetailTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -18,6 +18,18 @@
     <input type="month" name="monat" value="{{.Monat}}" required>
   </div>
 
+  {{/* Prices and switches of the month (#359): required, prefilled from the latest Eingabe */}}
+  <h3>Preise und Einstellungen des Monats</h3>
+  <div class="grid grid-4">
+    {{range .Preise}}
+    <div class="field"><label>{{.Label}}</label><input type="number" step="any" min="0" name="{{.Name}}" {{if .Wert}}value="{{.Wert}}"{{end}} required></div>
+    {{end}}
+  </div>
+  {{range .Haekchen}}
+  <div class="field"><label><input type="checkbox" name="{{.Name}}" value="1" {{if .An}}checked{{end}}> {{.Label}}</label><div class="muted">{{.Hinweis}}</div></div>
+  {{end}}
+  <div class="abschlag-divider"></div>
+
   {{/* Abschlag and Miete only exist for apartments with Status Vermietung (#277) */}}
   {{if .Vermietet}}
   <h3>Nebenkostenabschlag und Miete</h3>

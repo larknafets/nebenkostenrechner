@@ -53,7 +53,7 @@ func TestHandleImportFixkostenCSV_UngueltigeFelderMeldungen(t *testing.T) {
 		for _, k := range store.KostenpositionDefaults[1:] {
 			cells = append(cells, k.Logik, k.Typ, "100")
 		}
-		return strings.Join(append(cells, "2", "1", "150", "90", "", "800"), ";")
+		return strings.Join(append(cells, "2", "1", "150", "90", "", "800"), ";") + ";" + fixkostenCSVPreiseTail
 	}
 	for _, c := range []struct {
 		name, row, want string
