@@ -46,6 +46,7 @@ Keep every section, an empty one included. Do not change the headings.
 - Dashboard und Monatsverlauf zeigen den Hinweis "Fixkosten fehlen" jetzt auch für Monate mit Teilstand und für die erste Ablesung, bisher erschien er erst, sobald die Ablesung berechenbar war (#380)
 
 - Ablesungsseite, Speichern und CSV-Import zeigen "Fixkosten fehlen" jetzt auch bei Teilstand, erster Ablesung und unvollständiger Fixkosten-Eingabe, der Link heißt dann "Fixkosten ergänzen" und führt zur Eingabe des Monats (#383)
+- Dashboard und Monatsverlauf zeigen "Fixkosten fehlen" nicht mehr für einen Teilstand ohne Abrechnungsmonat (#380)
 
 ## Wartung
 

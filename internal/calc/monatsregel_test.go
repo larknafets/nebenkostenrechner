@@ -55,6 +55,21 @@ func TestVerbrauchskosten_OffeneMonate(t *testing.T) {
 	}
 }
 
+// A Teilstand without Abrechnungsmonat is valid input and has no month to miss.
+func TestVerbrauchskosten_OffeneMonateOhneAbrechnungsmonat(t *testing.T) {
+	ohneMonat := vollePeriode(5, "2026-12-15", nil)
+	ohneMonat.Monat = ""
+	delete(ohneMonat.Readings, "strom_gesamt")
+	v := calc.New(calc.Daten{
+		Periods:    []*store.LatestPeriod{vollePeriode(1, "2026-10-01", nil), ohneMonat},
+		Apartments: wohnungen,
+	})
+	got := v.OffeneMonate()
+	if len(got) != 1 || got[0].Monat != "2026-10-01" {
+		t.Errorf("OffeneMonate = %+v, want only 2026-10-01", got)
+	}
+}
+
 func TestVerbrauchskosten_BetroffeneAblesungen(t *testing.T) {
 	ids := func(as []calc.Ablesung) (out []int64) {
 		for _, a := range as {

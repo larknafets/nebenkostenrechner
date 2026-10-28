@@ -326,7 +326,7 @@ func importHinweise(db *sql.DB, rows []importRow) ([]string, error) {
 	}
 	var fehlen []calc.OffenerMonat
 	for _, o := range v.OffeneMonate() {
-		if importiert[o.Monat] && o.Monat != "" {
+		if importiert[o.Monat] {
 			fehlen = append(fehlen, o)
 		}
 	}

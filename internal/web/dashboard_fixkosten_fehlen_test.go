@@ -183,6 +183,31 @@ func TestDashboard_OffenerMonatAuchBeiTeilstand(t *testing.T) {
 	}
 }
 
+// A Teilstand without Abrechnungsmonat is no open month: no banner, no row.
+func TestDashboard_TeilstandOhneAbrechnungsmonatKeinOffenerMonat(t *testing.T) {
+	db := openTestDB(t)
+	wallboxPVAblesungen(t, db, false)
+	teil := seedPeriodInputAt("2027-01-15")
+	teil.Monat = ""
+	delete(teil.Readings, "strom_gesamt")
+	if _, err := store.CreatePeriod(db, teil); err != nil {
+		t.Fatal(err)
+	}
+	_, _, offen, err := loadDashboardData(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(offen) != 0 {
+		t.Errorf("offene Monate = %+v, want none", offen)
+	}
+	body := dashboardHTML(t, db)
+	for _, s := range []string{bannerFixkostenFehlen, "Fixkosten fehlen", `class="verlauf-row verlauf-row-offen`} {
+		if strings.Contains(body, s) {
+			t.Errorf("%q im Dashboard", s)
+		}
+	}
+}
+
 func TestDashboard_JahreskarteNurOffeneMonateDesAnzeigejahres(t *testing.T) {
 	dd := dashboardData{Jahr: 2026}
 	offen := []calc.OffenerMonat{{Monat: "2025-12-01"}, {Monat: "2026-01-01"}}

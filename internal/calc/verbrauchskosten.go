@@ -235,13 +235,14 @@ type OffenerMonat struct {
 
 // OffeneMonate lists the months with an Ablesung and no complete
 // Fixkosten-Eingabe, oldest first, each once. It does not matter whether the
-// Ablesung is a Teilstand or the first one.
+// Ablesung is a Teilstand or the first one. A Teilstand without Abrechnungsmonat
+// has no month to miss and is skipped.
 func (v *Verbrauchskosten) OffeneMonate() []OffenerMonat {
 	var out []OffenerMonat
 	seen := map[string]bool{}
 	for _, a := range v.alle {
 		m := a.Period.Monat
-		if seen[m] || v.MonatVollstaendig(m) {
+		if m == "" || seen[m] || v.MonatVollstaendig(m) {
 			continue
 		}
 		seen[m] = true
