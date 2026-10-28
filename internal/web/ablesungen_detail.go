@@ -180,6 +180,9 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			// FixkostenBanner is set right after saving an Ablesung whose
 			// Abrechnungsmonat lacks its Fixkosten (#366).
 			FixkostenBanner string
+			// FixkostenPfad is the target of the "Fixkosten erfassen" links:
+			// the edit page of an incomplete Eingabe, else the new form.
+			FixkostenPfad string
 
 			// Fix reads the Fixkosten-Eingabe of the month, FixkostenHinweis
 			// is set when it is missing (#359), instead of the Euro blocks.
@@ -202,6 +205,7 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			MonatLabel:       store.MonatLabel(period.Monat),
 			Fix:              fix,
 			FixkostenHinweis: hinweis,
+			FixkostenPfad:    fixkostenErfassenPfad(eingabeIDFuerMonat(ds.Eingaben, period.Monat)),
 		}
 		if r.URL.Query().Get(fixkostenFehlenParam) != "" {
 			data.FixkostenBanner = fixkostenFehlenBanner(ds.Eingaben, period.Monat)

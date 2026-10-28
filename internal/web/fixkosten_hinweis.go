@@ -17,11 +17,33 @@ import (
 
 // fixkostenHinweis is one note above a Fixkosten page. Info marks the friendly
 // variant (an Ablesung became berechenbar), Link the "Fixkosten erfassen"
-// link, which only the Vermieter get (the template checks the role).
+// link, which only the Vermieter get (the template checks the role). Pfad is
+// its target (fixkostenErfassenPfad).
 type fixkostenHinweis struct {
 	Text string
 	Info bool
 	Link bool
+	Pfad string
+}
+
+// fixkostenErfassenPfad is where "Fixkosten erfassen" leads: the edit page of
+// the Eingabe of the month if there is one (it lacks a price and gets
+// completed), the form for a new one otherwise (eingabeID 0).
+func fixkostenErfassenPfad(eingabeID int64) string {
+	if eingabeID == 0 {
+		return "/fixkosten/neu"
+	}
+	return "/fixkosten/" + strconv.FormatInt(eingabeID, 10) + "/bearbeiten"
+}
+
+// eingabeIDFuerMonat is the id of the Eingabe of monat, 0 = there is none.
+func eingabeIDFuerMonat(eingaben []*store.FixkostenEingabeDetails, monat string) int64 {
+	for _, e := range eingaben {
+		if e.Monat == monat {
+			return e.ID
+		}
+	}
+	return 0
 }
 
 // Query parameters of the redirect targets.
@@ -118,18 +140,18 @@ func gueltigerMonat(s string) bool {
 	return err == nil && t.Day() == 1
 }
 
-// hatFixkostenEingabe reports whether monat has an Eingabe.
-func hatFixkostenEingabe(db *sql.DB, monat string) (bool, error) {
+// eingabeFuerMonat is the id of the Eingabe of monat, 0 = there is none.
+func eingabeFuerMonat(db *sql.DB, monat string) (int64, error) {
 	alle, err := store.AllFixkostenEingaben(db)
 	if err != nil {
-		return false, err
+		return 0, err
 	}
 	for _, e := range alle {
 		if e.Monat == monat {
-			return true, nil
+			return e.ID, nil
 		}
 	}
-	return false, nil
+	return 0, nil
 }
 
 // fehlenHinweisAusQuery is the warning for the Monat named by param (geloescht
@@ -140,14 +162,15 @@ func fehlenHinweisAusQuery(db *sql.DB, q url.Values, param string) (*fixkostenHi
 	if !gueltigerMonat(monat) {
 		return nil, nil
 	}
-	if da, err := hatFixkostenEingabe(db, monat); err != nil || da {
+	id, err := eingabeFuerMonat(db, monat)
+	if err != nil || id != 0 {
 		return nil, err
 	}
 	ps, err := ablesungenAusQuery(db, q, monat)
 	if err != nil || len(ps) == 0 {
 		return nil, err
 	}
-	return &fixkostenHinweis{Text: fixkostenFehlenText(monat, ps), Link: true}, nil
+	return &fixkostenHinweis{Text: fixkostenFehlenText(monat, ps), Link: true, Pfad: fixkostenErfassenPfad(0)}, nil
 }
 
 // berechenbarHinweis is the information for the new Monat of a moved Eingabe,

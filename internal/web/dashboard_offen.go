@@ -53,7 +53,8 @@ func monateText(monate []offenerMonat) string {
 type offenHinweis struct {
 	Text string
 	// Pfad is where the Vermieter:innen fix it: the new form if a month has no
-	// Eingabe at all, the list otherwise.
+	// Eingabe at all, the edit page if a single month has an incomplete one,
+	// the list if several do.
 	Pfad string
 }
 
@@ -63,9 +64,12 @@ func offenerHinweis(offen []offenerMonat) *offenHinweis {
 		return nil
 	}
 	pfad := "/fixkosten"
+	if len(offen) == 1 {
+		pfad = fixkostenErfassenPfad(offen[0].EingabeID)
+	}
 	for _, o := range offen {
 		if o.EingabeID == 0 {
-			pfad = "/fixkosten/neu"
+			pfad = fixkostenErfassenPfad(0)
 			break
 		}
 	}
