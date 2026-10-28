@@ -321,11 +321,7 @@ func importHinweise(db *sql.DB, rows []importRow) ([]string, error) {
 	}
 	var hinweise []string
 	if fehlen := fixkostenFehlenMonate(eingaben, monate); len(fehlen) > 0 {
-		labels := make([]string, len(fehlen))
-		for i, m := range fehlen {
-			labels[i] = store.MonatLabel(m)
-		}
-		hinweise = append(hinweise, "Für "+strings.Join(labels, ", ")+" fehlen die Fixkosten (oder sind unvollständig). Die Ablesungen dieser Monate sind noch nicht berechnet, bis die Fixkosten erfasst sind.")
+		hinweise = append(hinweise, fixkostenFehlenSatz(fehlen)+" Die Ablesungen dieser Monate sind noch nicht berechnet, bis die Fixkosten erfasst sind.")
 	}
 	if verworfen {
 		hinweise = append(hinweise, "Die Datei enthält Preise, Personenzahlen oder Häkchen. Sie gehören zur Fixkosten-Eingabe und werden nicht übernommen.")

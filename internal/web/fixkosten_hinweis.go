@@ -74,6 +74,28 @@ func ablesungenVom(ps []store.PeriodSummary) (subjekt, verb string) {
 	return "Ablesungen vom " + datumListe(ps), "sind"
 }
 
+// monateListe joins month labels in German: "A", "A und B", "A, B und C".
+func monateListe(labels []string) string {
+	if len(labels) < 2 {
+		return strings.Join(labels, "")
+	}
+	return strings.Join(labels[:len(labels)-1], ", ") + " und " + labels[len(labels)-1]
+}
+
+// fixkostenFehlenSatz is the one sentence that says the Fixkosten of the given
+// Monate ("YYYY-MM-01") are missing or incomplete. Dashboard banner, Ablesung
+// page, banner after saving and the CSV import note all start with it and add
+// their own consequence. Only the note after a delete or a move
+// (fixkostenFehlenText) names the missing Eingabe itself, and the wizard keeps
+// its short state (wallboxHinweisFehlt, Story 44).
+func fixkostenFehlenSatz(monate []string) string {
+	labels := make([]string, len(monate))
+	for i, m := range monate {
+		labels[i] = store.MonatLabel(m)
+	}
+	return "Für " + monateListe(labels) + " fehlen die Fixkosten (oder sind unvollständig)."
+}
+
 // fixkostenFehlenText is the one wording of the note that an Eingabe is
 // missing (also used for the banner after a deletion).
 func fixkostenFehlenText(monat string, ps []store.PeriodSummary) string {

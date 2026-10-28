@@ -36,5 +36,5 @@ func fixkostenFehlenBanner(eingaben []*store.FixkostenEingabeDetails, monat stri
 	if len(fixkostenFehlenMonate(eingaben, []string{monat})) == 0 {
 		return ""
 	}
-	return "Für " + store.MonatLabel(monat) + " fehlen die Fixkosten (oder sind unvollständig). Die Ablesung ist noch nicht berechnet, bis sie erfasst sind."
+	return fixkostenFehlenSatz([]string{monat}) + " Die Ablesung ist noch nicht berechnet, bis sie erfasst sind."
 }

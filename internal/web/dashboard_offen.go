@@ -1,8 +1,6 @@
 package web
 
 import (
-	"strings"
-
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -37,16 +35,22 @@ func offeneMonate(ds *store.Datenstand, kosten *calc.Verbrauchskosten) []offener
 	return out
 }
 
-// monateText lists month labels in German: "A", "A und B", "A, B und C".
+// monateText lists the labels of the open months in German.
 func monateText(monate []offenerMonat) string {
 	labels := make([]string, len(monate))
 	for i, m := range monate {
 		labels[i] = store.MonatLabel(m.Monat)
 	}
-	if len(labels) < 2 {
-		return strings.Join(labels, "")
+	return monateListe(labels)
+}
+
+// monateStored are the Monate ("YYYY-MM-01") of the open months.
+func monateStored(monate []offenerMonat) []string {
+	out := make([]string, len(monate))
+	for i, m := range monate {
+		out[i] = m.Monat
 	}
-	return strings.Join(labels[:len(labels)-1], ", ") + " und " + labels[len(labels)-1]
+	return out
 }
 
 // offenHinweis is the Dashboard banner for open months.
@@ -74,7 +78,7 @@ func offenerHinweis(offen []offenerMonat) *offenHinweis {
 		}
 	}
 	return &offenHinweis{
-		Text: "Für " + monateText(offen) + " fehlen die Fixkosten (oder sind unvollständig). Die Ablesungen dieser Monate sind noch nicht berechnet, Jahressummen und Saldo enthalten sie nicht.",
+		Text: fixkostenFehlenSatz(monateStored(offen)) + " Die Ablesungen dieser Monate sind noch nicht berechnet, Jahressummen und Saldo enthalten sie nicht.",
 		Pfad: pfad,
 	}
 }

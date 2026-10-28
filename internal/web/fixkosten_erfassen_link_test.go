@@ -12,6 +12,21 @@ import (
 // of an incomplete Eingabe of the month, to the new form without one (#359,
 // Story 13 and 14).
 
+func TestFixkostenFehlenSatz(t *testing.T) {
+	for _, tc := range []struct {
+		monate []string
+		want   string
+	}{
+		{[]string{"2026-07-01"}, "Für Juli 2026 fehlen die Fixkosten (oder sind unvollständig)."},
+		{[]string{"2026-06-01", "2026-08-01"}, "Für Juni 2026 und August 2026 fehlen die Fixkosten (oder sind unvollständig)."},
+		{[]string{"2026-06-01", "2026-07-01", "2026-08-01"}, "Für Juni 2026, Juli 2026 und August 2026 fehlen die Fixkosten (oder sind unvollständig)."},
+	} {
+		if got := fixkostenFehlenSatz(tc.monate); got != tc.want {
+			t.Errorf("fixkostenFehlenSatz(%v) = %q, want %q", tc.monate, got, tc.want)
+		}
+	}
+}
+
 func TestFixkostenErfassenPfad(t *testing.T) {
 	if got := fixkostenErfassenPfad(0); got != "/fixkosten/neu" {
 		t.Errorf("ohne Eingabe = %q", got)

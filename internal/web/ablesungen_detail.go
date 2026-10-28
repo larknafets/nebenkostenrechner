@@ -258,5 +258,5 @@ type ablesungKostenHinweis struct {
 
 // ablesungKostenFehlenText is the one wording for "this month lacks its Fixkosten".
 func ablesungKostenFehlenText(monat string) string {
-	return "Für " + store.MonatLabel(monat) + " fehlen die Fixkosten (oder sind unvollständig). Die Kosten dieser Ablesung sind noch nicht berechnet."
+	return fixkostenFehlenSatz([]string{monat}) + " Die Kosten dieser Ablesung sind noch nicht berechnet."
 }

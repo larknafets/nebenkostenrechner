@@ -224,7 +224,7 @@ func TestHandleImportCSV_SammelmeldungNenntMonateOhneFixkosten(t *testing.T) {
 			sammel = h
 		}
 	}
-	if !strings.HasPrefix(sammel, "Für Juni 2026, August 2026 fehlen die Fixkosten") || strings.Contains(sammel, "Juli") {
+	if !strings.HasPrefix(sammel, "Für Juni 2026 und August 2026 fehlen die Fixkosten") || strings.Contains(sammel, "Juli") {
 		t.Errorf("Sammelmeldung = %q, want Juni 2026 and August 2026 once, not Juli", sammel)
 	}
 }
