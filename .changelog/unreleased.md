@@ -26,8 +26,18 @@ Sections:
   "Interne Aufräumarbeiten am Code ohne sichtbare Änderung", added at the
   release, never one line per refactoring.
 
+Optional first section "Vor dem Update": ONE short notice for the top of the
+release notes, written as plain text starting with "**Vor dem Update:**" (the
+release script turns it into a quote block). Only when a migration cannot be
+undone (no way back to the old version) or when numbers of months already
+recorded change (balance, settlement, calculation). Say what happens and what
+changes, not what the user must do. Leave it empty otherwise, the Wartung line
+stays as the detail.
+
 Keep every section, an empty one included. Do not change the headings.
 -->
+
+## Vor dem Update
 
 ## Neue Funktionen
 
