@@ -69,8 +69,14 @@ CREATE TABLE IF NOT EXISTS haus (
 );
 
 CREATE TABLE IF NOT EXISTS fixkosten_eingaben (
-    id    INTEGER PRIMARY KEY,
-    monat TEXT NOT NULL
+    id                  INTEGER PRIMARY KEY,
+    monat               TEXT NOT NULL,
+    strompreis          REAL,
+    frischwasser_preis  REAL,
+    abwasser_preis      REAL,
+    einspeisung_preis   REAL,
+    wallbox_komplett_w1 INTEGER NOT NULL DEFAULT 0,
+    pv_gutschrift_w1    INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS fixkosten_werte (

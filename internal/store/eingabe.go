@@ -28,6 +28,11 @@ const (
 	FeldLogik    // ID = Kostenposition
 	FeldTyp      // ID = Kostenposition
 	FeldPersonen // ID = Wohnung
+	// The four prices of a Fixkosten-Eingabe, Err gives the reason.
+	FeldStrompreis
+	FeldFrischwasserPreis
+	FeldAbwasserPreis
+	FeldEinspeisungPreis
 )
 
 // EingabeFehler is the typed error for an invalid input. It carries no German
@@ -36,7 +41,7 @@ type EingabeFehler struct {
 	Feld Feldart
 	ID   int64  // Kostenposition or Wohnung, 0 without reference
 	Wert string // the offending value as text
-	Err  error  // reason, only set for Personenzahl
+	Err  error  // reason, only set for Personenzahl and prices
 }
 
 func (e *EingabeFehler) Error() string {
@@ -53,6 +58,21 @@ func idsAufsteigend[V any](m map[int64]V) []int64 {
 	}
 	slices.Sort(ids)
 	return ids
+}
+
+// validierePreis is the single check for a price of a Fixkosten-Eingabe: finite
+// and not negative (0 stays allowed). nil is "nicht erfasst" and valid.
+func validierePreis(p *float64) error {
+	if p == nil {
+		return nil
+	}
+	if math.IsNaN(*p) || math.IsInf(*p, 0) {
+		return errors.New("Preis muss eine Zahl sein")
+	}
+	if *p < 0 {
+		return errors.New("Preis darf nicht negativ sein")
+	}
+	return nil
 }
 
 // ValidierePersonenzahl is the single check for an occupant count: finite,
