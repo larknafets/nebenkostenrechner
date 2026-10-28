@@ -254,6 +254,8 @@ func TestBetroffeneAblesungen(t *testing.T) {
 	teil := completePeriodInput("2026-07-25", map[string]float64{})
 	mustInsertUnchecked(t, db, teil)
 	mustInsertUnchecked(t, db, completePeriodInput("2026-08-05", baseReadings(nil)))
+	seedFixkostenInput(t, db, "2026-07-01")
+	seedFixkostenInput(t, db, "2026-06-01")
 
 	got, err := BetroffeneAblesungen(db, "2026-07-01")
 	if err != nil {
@@ -276,6 +278,38 @@ func TestBetroffeneAblesungen(t *testing.T) {
 	}
 	if got, _ := BetroffeneAblesungen(db, "2026-12-01"); len(got) != 0 {
 		t.Errorf("Monat ohne Ablesung: %v, want leer", got)
+	}
+}
+
+func TestBetroffeneAblesungen_NurMitVollstaendigerEingabe(t *testing.T) {
+	db := openTestDB(t)
+	mustCreatePeriod(t, db, "2026-06-30", baseReadings(nil))
+	juli := mustInsertUnchecked(t, db, completePeriodInput("2026-07-10", baseReadings(nil)))
+
+	// No Eingabe for the month: nothing was berechenbar, nothing is affected.
+	if got, _ := BetroffeneAblesungen(db, "2026-07-01"); len(got) != 0 {
+		t.Errorf("ohne Eingabe: %v, want leer", got)
+	}
+
+	// An incomplete Eingabe (a price missing) does not make it berechenbar.
+	in := fixkostenInputMitPreisen("2026-07-01")
+	in.AbwasserPreis = nil
+	id, err := CreateFixkostenEingabe(db, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := BetroffeneAblesungen(db, "2026-07-01"); len(got) != 0 {
+		t.Errorf("unvollständige Eingabe: %v, want leer", got)
+	}
+
+	// Completing it makes the Ablesung affected.
+	in.AbwasserPreis = Float64(4.87)
+	if err := UpdateFixkostenEingabe(db, id, in); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := BetroffeneAblesungen(db, "2026-07-01")
+	if len(got) != 1 || got[0].ID != juli {
+		t.Errorf("vollständige Eingabe: %v, want [%d]", got, juli)
 	}
 }
 

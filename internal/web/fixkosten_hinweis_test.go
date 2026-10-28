@@ -15,6 +15,17 @@ import (
 // fixkosten_hinweis_test.go: Hinweise beim Löschen und Ändern einer
 // Fixkosten-Eingabe (#367, Spec #359 Schritt 3).
 
+// hinweisFixkosten is a complete Eingabe (all four prices): only then are the
+// Ablesungen of its month berechenbar.
+func hinweisFixkosten(monat string) store.FixkostenInput {
+	in := seedFixkostenInput(monat)
+	in.Strompreis = store.Float64(0.22)
+	in.FrischwasserPreis = store.Float64(1.46)
+	in.AbwasserPreis = store.Float64(4.87)
+	in.EinspeisungPreis = store.Float64(0.08)
+	return in
+}
+
 // hinweisSeed: Ausgangsstand im Juni, zwei Ablesungen im Juli (betroffen) und
 // eine Fixkosten-Eingabe für Juli. Returns the Eingabe id.
 func hinweisSeed(t *testing.T, db *sql.DB) int64 {
@@ -28,7 +39,7 @@ func hinweisSeed(t *testing.T, db *sql.DB) int64 {
 			t.Fatalf("CreatePeriod %s: %v", datum, err)
 		}
 	}
-	id, err := store.CreateFixkostenEingabe(db, seedFixkostenInput("2026-07-01"))
+	id, err := store.CreateFixkostenEingabe(db, hinweisFixkosten("2026-07-01"))
 	if err != nil {
 		t.Fatalf("CreateFixkostenEingabe: %v", err)
 	}
@@ -73,7 +84,7 @@ func TestFixkostenDetail_LoeschenBestaetigungNenntBetroffeneAblesungen(t *testin
 
 func TestFixkostenDetail_OhneBetroffeneAblesungenKeineZusatzBestaetigung(t *testing.T) {
 	db := openTestDB(t)
-	id, err := store.CreateFixkostenEingabe(db, seedFixkostenInput("2026-07-01"))
+	id, err := store.CreateFixkostenEingabe(db, hinweisFixkosten("2026-07-01"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,6 +94,30 @@ func TestFixkostenDetail_OhneBetroffeneAblesungenKeineZusatzBestaetigung(t *test
 	}
 	if n := strings.Count(body, "confirm("); n != 1 {
 		t.Errorf("confirm( kommt %d mal vor, want 1", n)
+	}
+}
+
+func TestFixkostenLoeschen_UnvollstaendigeEingabeKeineBestaetigungKeinBanner(t *testing.T) {
+	db := openTestDB(t)
+	hinweisSeed(t, db)
+	// Replace the complete Eingabe by an incomplete one: the Ablesungen were
+	// not berechenbar, so deleting it changes nothing for them.
+	alle, _ := store.AllFixkostenEingaben(db)
+	if err := store.DeleteFixkostenEingabe(db, alle[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	unvollstaendig := hinweisFixkosten("2026-07-01")
+	unvollstaendig.Strompreis = nil
+	id, err := store.CreateFixkostenEingabe(db, unvollstaendig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if body := fixkostenDetailHTML(t, db, newZugang("", nil), id); strings.Contains(body, "unvollständig, bis") {
+		t.Error("Zusatz-Bestätigung beim Löschen einer unvollständigen Eingabe")
+	}
+	w := fixkostenPost(t, db, handleDeleteFixkosten(), "/fixkosten/x/loeschen", id, nil)
+	if loc := w.Header().Get("Location"); strings.Contains(loc, "ablesungen=") {
+		t.Errorf("Location = %q, want ohne betroffene Ablesungen", loc)
 	}
 }
 
@@ -121,7 +156,7 @@ func TestFixkostenLoeschen_BannerMitLinkNurFuerVermieter(t *testing.T) {
 
 func TestFixkostenLoeschen_OhneBetroffeneKeinBanner(t *testing.T) {
 	db := openTestDB(t)
-	id, _ := store.CreateFixkostenEingabe(db, seedFixkostenInput("2026-07-01"))
+	id, _ := store.CreateFixkostenEingabe(db, hinweisFixkosten("2026-07-01"))
 	w := fixkostenPost(t, db, handleDeleteFixkosten(), "/fixkosten/x/loeschen", id, nil)
 	query := strings.TrimPrefix(w.Header().Get("Location"), "/fixkosten")
 	if body := fixkostenListeHTML(t, db, newZugang("", nil), query); strings.Contains(body, "fehlt die Fixkosten-Eingabe") {
@@ -134,7 +169,7 @@ func TestFixkostenLoeschen_BannerEntfaelltWennMonatWiederErfasst(t *testing.T) {
 	id := hinweisSeed(t, db)
 	w := fixkostenPost(t, db, handleDeleteFixkosten(), "/fixkosten/x/loeschen", id, nil)
 	query := strings.TrimPrefix(w.Header().Get("Location"), "/fixkosten")
-	if _, err := store.CreateFixkostenEingabe(db, seedFixkostenInput("2026-07-01")); err != nil {
+	if _, err := store.CreateFixkostenEingabe(db, hinweisFixkosten("2026-07-01")); err != nil {
 		t.Fatal(err)
 	}
 	if body := fixkostenListeHTML(t, db, newZugang("", nil), query); strings.Contains(body, "fehlt die Fixkosten-Eingabe") {

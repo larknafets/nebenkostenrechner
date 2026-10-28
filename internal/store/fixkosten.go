@@ -678,13 +678,28 @@ func ImportFixkostenEingaben(db *sql.DB, inputs []FixkostenInput) (ids []int64, 
 }
 
 // BetroffeneAblesungen returns the Ablesungen a Fixkosten-Eingabe for monat
-// ("YYYY-MM-01") affects: those with this Abrechnungsmonat that were
-// berechenbar until now, oldest first. For the confirmation before deleting an
-// Eingabe and for the banner (#359). Until the calculation reads the
-// Eingabe (a later step), "berechenbar" means a complete Ablesung
-// (LatestPeriod.Teilstand) with a Vorperiode, so not the first of the series;
-// the final rule comes with the calculation.
+// ("YYYY-MM-01") affects: those with this Abrechnungsmonat that are berechenbar
+// right now, oldest first. For the confirmation before deleting an Eingabe, for
+// the banner and for the information after a move (#359). "Berechenbar" is the
+// rule of the calculation: the Ablesung is complete (LatestPeriod.Teilstand),
+// has a Vorperiode (so it is not the first of the series), and the month has an
+// Eingabe with all prices (PreiseVollstaendig). Without such an Eingabe nothing
+// is berechenbar, so the list is empty. Callers ask while the Eingabe exists:
+// before a delete or a move for the old month, after a move for the new one.
 func BetroffeneAblesungen(db *sql.DB, monat string) ([]PeriodSummary, error) {
+	eingaben, err := AllFixkostenEingabenDetails(db)
+	if err != nil {
+		return nil, err
+	}
+	vollstaendig := false
+	for _, e := range eingaben {
+		if e.Monat == monat && e.PreiseVollstaendig() {
+			vollstaendig = true
+		}
+	}
+	if !vollstaendig {
+		return nil, nil
+	}
 	periods, err := AllPeriodDetails(db)
 	if err != nil {
 		return nil, err
