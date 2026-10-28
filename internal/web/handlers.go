@@ -72,6 +72,7 @@ var templateFuncs = template.FuncMap{
 	"de2":           formatDecimalDE2,
 	"de3":           formatDecimalDE3,
 	"deEUR":         formatEuroDE,
+	"dePreis":       formatPreisDE,
 	"deDatum":       formatDatumDE,
 	"monat":         store.MonatLabel,
 	"monatKurz":     germanPeriodLabelShort,

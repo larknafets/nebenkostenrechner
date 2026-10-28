@@ -15,12 +15,15 @@ import (
 // Kostenposition (in store.KostenpositionDefaults' fixed order, not the display order, since
 // Logik/Typ are editable per Eingabe and can't be omitted like a period's
 // static meter keys), then Personen/Abschlag/Miete per apartment (fixed ids
-// 1/2, see store's seed()). The export always has all columns, an empty cell
-// means "not recorded" (#277).
+// 1/2, see store's seed()), then the four prices and the two switches of the
+// month (fixkostenCsvPreisSpalten, #359). The export always has all columns,
+// an empty cell means "not recorded" (#277).
 var fixkostenCsvHeader = buildFixkostenCsvHeader()
 
-// fixkostenCsvMieteSpalten are the columns an import may lack: files exported
-// before the Miete existed stay importable.
+// fixkostenCsvMieteSpalten are columns an import may lack: files exported
+// before the Miete existed stay importable. So are the prices and switches
+// (fixkostenCsvPreisSpalten): a missing price is "nicht erfasst", a missing
+// switch is off.
 var fixkostenCsvMieteSpalten = []string{"miete_1", "miete_2"}
 
 func buildFixkostenCsvHeader() []string {
@@ -29,13 +32,14 @@ func buildFixkostenCsvHeader() []string {
 		header = append(header, kd.Key+"_logik", kd.Key+"_typ", kd.Key+"_wert")
 	}
 	header = append(header, "personen_1", "personen_2", "abschlag_1", "abschlag_2")
-	return append(header, fixkostenCsvMieteSpalten...)
+	header = append(header, fixkostenCsvMieteSpalten...)
+	return append(header, fixkostenCsvPreisSpalten...)
 }
 
 // fixkostenCsvPflichtSpalten is the header an import requires: everything
-// the export writes except the optional Miete columns.
+// the export writes except the optional Miete, price and switch columns.
 func fixkostenCsvPflichtSpalten() []string {
-	return fixkostenCsvHeader[:len(fixkostenCsvHeader)-len(fixkostenCsvMieteSpalten)]
+	return fixkostenCsvHeader[:len(fixkostenCsvHeader)-len(fixkostenCsvMieteSpalten)-len(fixkostenCsvPreisSpalten)]
 }
 
 // formatErfasst renders a recorded value, "" for a value that is not recorded.
@@ -83,7 +87,7 @@ func formatFixkostenCSVRow(f *store.FixkostenEingabeDetails) []string {
 		formatErfasst(f.Miete, 1),
 		formatErfasst(f.Miete, 2),
 	)
-	return row
+	return append(row, formatFixkostenPreisCSVZellen(f)...)
 }
 
 // handleImportFixkostenCSV bootstraps a completely empty Fixkosten history
@@ -237,6 +241,9 @@ func parseImportFixkostenRow(record []string, colIdx map[string]int, line int) (
 		Abschlag: abschlag,
 		Miete:    miete,
 	}
+	if err := parseFixkostenPreisCSV(record, colIdx, cell, line, &in); err != nil {
+		return fixkostenImportRow{}, err
+	}
 	if err := in.Validate(); err != nil {
 		return fixkostenImportRow{}, fixkostenCsvFehler(err, line, colIdx, record)
 	}
@@ -272,6 +279,13 @@ func fixkostenCsvFehler(err error, line int, colIdx map[string]int, record []str
 			raw = record[i]
 		}
 		return fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q (%w)", line, ef.ID, raw, ef.Err)
+	}
+	if p, ok := fixkostenPreisFuerFeld(ef.Feld); ok {
+		raw := ef.Wert
+		if i, ok := colIdx[p.Name]; ok {
+			raw = record[i]
+		}
+		return fmt.Errorf("Zeile %d: ungültiger Preis für %s: %q (%w)", line, p.Fehler, raw, ef.Err)
 	}
 	return err
 }

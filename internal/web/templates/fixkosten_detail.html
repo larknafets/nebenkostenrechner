@@ -22,6 +22,18 @@
   </table>
 
   <table class="letzte" style="margin-top:1.25rem">
+    <thead><tr><th style="width:40%">Preise und Einstellungen</th><th></th></tr></thead>
+    <tbody>
+      {{range .Preise}}
+      <tr><td>{{.Label}}</td><td>{{if .Erfasst}}{{dePreis .Wert}}&nbsp;{{.Einheit}}{{else}}<span class="muted">nicht erfasst</span>{{end}}</td></tr>
+      {{end}}
+      {{range .Haekchen}}
+      <tr><td>{{.Label}}</td><td>{{if .An}}Ja{{else}}Nein{{end}}</td></tr>
+      {{end}}
+    </tbody>
+  </table>
+
+  <table class="letzte" style="margin-top:1.25rem">
     <thead><tr><th style="width:40%">Position</th><th class="hide-mobil">Logik</th><th>Wohnung 1</th><th>Wohnung 2</th></tr></thead>
     <tbody>
       {{range .Positionen}}
