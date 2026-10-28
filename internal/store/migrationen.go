@@ -19,8 +19,9 @@ import (
 // idempotent and checks the schema itself, so a database in an unknown state
 // is migrated the same way as before. Version 2: table mieten (#277), created
 // by schema.sql, so there is no step in migrationen for it. Version 3: prices
-// and switches on fixkosten_eingaben (#359).
-const schemaVersion = 3
+// and switches on fixkosten_eingaben (#359). Version 4: they are filled from
+// the Ablesungen of the same month (#361).
+const schemaVersion = 4
 
 // sicherungenBehalten is how many saves made before a migration are kept.
 const sicherungenBehalten = 3
@@ -64,6 +65,7 @@ var migrationen = []migration{
 	{"dropKostenpositionenJahreTable", dropKostenpositionenJahreTable},
 	{"ensureFixkostenEingabenMonatUnique", ensureFixkostenEingabenMonatUnique},
 	{"ensureFixkostenEingabenPreisColumns", ensureFixkostenEingabenPreisColumns},
+	{"backfillFixkostenEingabenAusAblesungen", backfillFixkostenEingabenAusAblesungen},
 }
 
 // migrate runs every step in order and stops at the first error, which names
