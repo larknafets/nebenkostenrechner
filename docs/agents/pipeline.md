@@ -9,6 +9,12 @@ The standard order for a larger change: `/wayfinder` (map and decision tickets),
 - With a pipeline order from the user, do not end the turn after a resolved Wayfinder ticket. Open the next frontier ticket and put its question round right away. The rule "one ticket per session" limits the work, not the turn, and the user's answers gate the next step anyway.
 - Ask before opening the PR and before switching on auto-merge.
 
+## Context between the phases
+
+- The state of the pipeline lives on the tracker (map, spec, tickets), so `/clear` before the next phase, in particular before `to-spec` and before `/implement-spec`. `/clear` costs nothing, `/compact` costs a call with the whole context. A fresh session loads `AGENTS.md` and this file by itself.
+- Check first that no decision exists only in the conversation: it belongs in the map, spec or ticket text.
+- Inside a long phase compact at about 250k tokens (25 % of a 1M window), not at 600k: every call re-reads the whole context.
+
 ## Writing the spec and the tickets
 
 - A claim that something stays unchanged ("golden file unchanged", "tests untouched") needs proof at spec time, by reading the data or running it. Otherwise write "check first, name every change". Once the demo data held two truths and the golden file had to change.

@@ -38,7 +38,7 @@
 - **One Wayfinder map or spec = one `epic/<name>` branch and one PR to `main`.** Tickets and subagents commit onto it. A subagent in its own worktree branch is merged into the epic branch by the main agent and opens no PR.
 - **Small unrelated product tweaks of one session** (labels, order of fields, layout) go onto one branch with one PR at the end of the session.
 - One logical change per commit (`git-commit-messages.md`). The release notes come from `CHANGELOG.md`, not from the commit messages: a PR with a user-visible change carries its line in `.changelog/unreleased.md`.
-- Merge a multi-commit PR with `gh pr merge --auto --rebase` so every commit reaches `main` with its own message. Squash-merge only a single-commit PR.
+- Merge a multi-commit PR with `gh pr merge --auto --rebase` so every commit reaches `main` with its own message. Squash-merge only a single-commit PR. An epic branch with merge commits (from `scripts/merge-ticket`) cannot be rebased ("This branch can't be rebased"): use `gh pr merge --auto --merge` there, it keeps every ticket commit.
 - After the user agreed to the PR, switch on auto-merge with `--auto` (ask first, a classifier blocks it otherwise), then it merges as soon as the `test` check is green. The branch must be up to date with `main` (strict check): if it falls behind, `gh pr update-branch <nr> --rebase`.
 - Before pushing to an existing branch, check `gh pr view`: a commit pushed after the merge misses `main`.
 - `gh pr create` can answer `HTTP 504` and still have created the PR. Run `gh pr list --head <branch>` before trying again, or a second PR appears.
