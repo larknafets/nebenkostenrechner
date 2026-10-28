@@ -149,15 +149,26 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 		ablesung, _ := calc.KostenAus(ds).Ablesung(period.ID)
 		k := ablesung.Kosten
 
+		fix := fixkostenAnsicht(ds, period)
+		var hinweis *fixkostenHinweis
+		if ablesung.Grund == calc.GrundFixkostenFehlen {
+			hinweis = &fixkostenHinweis{Text: fixkostenFehlenText(period.Monat)}
+			if len(vorperiode) > 0 {
+				verbrauch := make(map[string]float64, len(store.MeterKeys))
+				for _, key := range store.MeterKeys {
+					verbrauch[key], _ = store.Verbrauch(period.Readings, vorperiode[0].Readings, key)
+				}
+				hinweis.WallboxKWh = calc.WallboxNetzbezugKWh(verbrauch)
+			}
+		}
+
 		data := struct {
 			navData
 			store.TeilstandStatus
-			ablesungFelder
 			Aktuell       string
 			Period        *store.LatestPeriod
 			AllPeriods    []periodListItem
 			Apartments    []store.Apartment
-			Personen      map[int64]float64
 			ZeitraumStart string
 			Meters        []meterZeile
 			Strom         *calc.StromErgebnis
@@ -166,27 +177,75 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			Einspeisung   *calc.EinspeisungErgebnis
 			KostenNote    string
 			MonatLabel    string
+			// Fix reads the Fixkosten-Eingabe of the month, FixkostenHinweis
+			// is set when it is missing (#359), instead of the Euro blocks.
+			Fix              ablesungFixkosten
+			FixkostenHinweis *fixkostenHinweis
 		}{
-			navData:         z.NavData(r),
-			TeilstandStatus: status,
-			ablesungFelder:  erfasseFelder(period, apartments),
-			Aktuell:         "ablesungen-detail",
-			Period:          period,
-			AllPeriods:      periodListItems(allPeriods),
-			Apartments:      apartments,
-			Personen:        period.PersonenByApartment,
-			ZeitraumStart:   zeitraumStart,
-			Meters:          meters,
-			Strom:           k.Strom,
-			Wasser:          k.Wasser,
-			Heizung:         k.Heizung,
-			Einspeisung:     k.Einspeisung,
-			KostenNote:      kostenHinweis(ablesung.Grund),
-			MonatLabel:      store.MonatLabel(period.Monat),
+			navData:          z.NavData(r),
+			TeilstandStatus:  status,
+			Aktuell:          "ablesungen-detail",
+			Period:           period,
+			AllPeriods:       periodListItems(allPeriods),
+			Apartments:       apartments,
+			ZeitraumStart:    zeitraumStart,
+			Meters:           meters,
+			Strom:            k.Strom,
+			Wasser:           k.Wasser,
+			Heizung:          k.Heizung,
+			Einspeisung:      k.Einspeisung,
+			KostenNote:       kostenHinweis(ablesung.Grund),
+			MonatLabel:       store.MonatLabel(period.Monat),
+			Fix:              fix,
+			FixkostenHinweis: hinweis,
 		}
 
 		if err := ablesungTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
+}
+
+// ablesungFixkosten is what the Ablesung detail view reads from the
+// Fixkosten-Eingabe of the Abrechnungsmonat: prices and the two switches
+// (#359). Vorhanden is false when the month has no Eingabe.
+type ablesungFixkosten struct {
+	Vorhanden         bool
+	EingabeID         int64
+	Preise            []fixkostenDetailPreis
+	WallboxKomplettW1 bool
+	PVGutschriftW1    bool
+}
+
+// fixkostenAnsicht finds the Fixkosten-Eingabe of the period's Abrechnungsmonat
+// (the last one if there are several, like the calculation does).
+func fixkostenAnsicht(ds *store.Datenstand, period *store.LatestPeriod) ablesungFixkosten {
+	var eingabe *store.FixkostenEingabeDetails
+	for _, e := range ds.Eingaben {
+		if e.Monat == period.Monat {
+			eingabe = e
+		}
+	}
+	if eingabe == nil {
+		return ablesungFixkosten{}
+	}
+	preise, _ := buildFixkostenDetailPreise(eingabe)
+	return ablesungFixkosten{
+		Vorhanden: true, EingabeID: eingabe.ID, Preise: preise,
+		WallboxKomplettW1: eingabe.WallboxKomplettW1, PVGutschriftW1: eingabe.PVGutschriftW1,
+	}
+}
+
+// fixkostenHinweis is the hint section of the detail view for an Ablesung
+// without Verbrauchskosten because its Fixkosten-Eingabe is missing. It is
+// its own field, not part of kostenHinweis. WallboxKWh is the grid-draw share
+// of the Wallboxen, a pure meter value.
+type fixkostenHinweis struct {
+	Text       string
+	WallboxKWh float64
+}
+
+// fixkostenFehlenText is the one wording for "this month lacks its Fixkosten".
+func fixkostenFehlenText(monat string) string {
+	return "Für " + store.MonatLabel(monat) + " fehlen die Fixkosten (oder sind unvollständig). Die Kosten dieser Ablesung sind noch nicht berechnet."
 }

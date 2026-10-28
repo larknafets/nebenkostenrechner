@@ -1,5 +1,5 @@
 {{define "content"}}
-<h1>Ablesung {{deDatum .Period.ReadingDate}}{{if .IstTeilstand}} <span class="badge badge-warning">unvollständig</span>{{end}}</h1>
+<h1>Ablesung {{deDatum .Period.ReadingDate}}{{if or .IstTeilstand .FixkostenHinweis}} <span class="badge badge-warning">unvollständig{{if .FixkostenHinweis}} · Fixkosten fehlen{{end}}</span>{{end}}</h1>
 {{template "nav" .}}
 
 <div class="field" style="max-width:220px">
@@ -15,13 +15,12 @@
   <p><strong>Ablesedatum:</strong> {{deDatum .Period.ReadingDate}}</p>
   <p><strong>Zeitraum:</strong> {{if .ZeitraumStart}}{{deDatum .ZeitraumStart}} – {{deDatum .Period.ReadingDate}}{{else}}bis {{deDatum .Period.ReadingDate}} (keine Vorperiode){{end}}</p>
   <p><strong>Abrechnungsmonat:</strong> {{if .MonatErfasst}}{{.MonatLabel}}{{else}}<span class="text-warning">noch offen</span>{{end}}</p>
-  <p><strong>Wallboxen vollständig Wohnung 1:</strong> {{if .Period.WallboxKomplettW1}}Ja{{else}}Nein{{end}}</p>
-  <p><strong>PV-Gutschrift Wohnung 1:</strong> {{if .Period.PVGutschriftW1}}Ja{{else}}Nein{{end}}</p>
+  <p><strong>Wallboxen vollständig Wohnung 1:</strong> {{if .Fix.Vorhanden}}{{if .Fix.WallboxKomplettW1}}Ja{{else}}Nein{{end}}{{else}}<span class="text-warning">Fixkosten fehlen</span>{{end}}</p>
+  <p><strong>PV-Gutschrift Wohnung 1:</strong> {{if .Fix.Vorhanden}}{{if .Fix.PVGutschriftW1}}Ja{{else}}Nein{{end}}{{else}}<span class="text-warning">Fixkosten fehlen</span>{{end}}</p>
   <p><strong>Preise:</strong>
-    Strom {{if .StrompreisErfasst}}{{deEUR (orZero .Period.Strompreis)}}&nbsp;EUR/kWh{{else}}<span class="text-warning">noch offen</span>{{end}} ·
-    Frischwasser {{if .FrischwasserErfasst}}{{deEUR (orZero .Period.FrischwasserPreis)}}&nbsp;EUR/m³{{else}}<span class="text-warning">noch offen</span>{{end}} ·
-    Abwasser {{if .AbwasserErfasst}}{{deEUR (orZero .Period.AbwasserPreis)}}&nbsp;EUR/m³{{else}}<span class="text-warning">noch offen</span>{{end}} ·
-    Einspeisung {{if .EinspeisungPreisErfasst}}{{deEUR (orZero .Period.EinspeisungPreis)}}&nbsp;EUR/kWh{{else}}<span class="text-warning">noch offen</span>{{end}}
+    {{if .Fix.Vorhanden}}{{range $i, $p := .Fix.Preise}}{{if $i}} · {{end}}{{$p.Label}} {{if $p.Erfasst}}{{dePreis $p.Wert}}&nbsp;{{$p.Einheit}}{{else}}<span class="muted">nicht erfasst</span>{{end}}{{end}}
+    {{if .KannFixkostenAnsehen}}<a href="{{.Base}}/fixkosten/{{.Fix.EingabeID}}">Fixkosten ansehen</a>{{end}}
+    {{else}}<span class="text-warning">Fixkosten fehlen</span>{{end}}
   </p>
 
   <table class="letzte">
@@ -34,14 +33,26 @@
   </table>
 
   <table class="letzte" style="margin-top:1rem">
-    <thead><tr><th>Wohnung</th><th>Personen</th><th>Wohnungsgröße</th></tr></thead>
+    <thead><tr><th>Wohnung</th><th>Wohnungsgröße</th></tr></thead>
     <tbody>
       {{range .Apartments}}
-      <tr><td>{{.Name}}</td><td>{{if index $.PersonenErfasst .ID}}{{de (index $.Personen .ID)}}{{else}}<span class="text-warning">noch offen</span>{{end}}</td><td>{{de .QM}}&nbsp;m²</td></tr>
+      <tr><td>{{.Name}}</td><td>{{de .QM}}&nbsp;m²</td></tr>
       {{end}}
     </tbody>
   </table>
 
+  {{if .FixkostenHinweis}}
+  <h3 style="margin-top:1.25rem">Kosten</h3>
+  <p class="text-warning">{{.FixkostenHinweis.Text}}{{if .Vermieter}} <a href="{{.Base}}/fixkosten/neu">Fixkosten erfassen</a>{{end}}</p>
+
+  <h3 style="margin-top:1.25rem">Wallbox</h3>
+  <table class="letzte">
+    <tbody>
+      <tr><td>Wallbox Anteil (Netzbezug)</td><td>{{de2 .FixkostenHinweis.WallboxKWh}}&nbsp;kWh</td></tr>
+    </tbody>
+  </table>
+  <p class="muted">Die Aufteilung der Wallbox auf die Wohnungen hängt am Häkchen "Wallboxen vollständig Wohnung 1" der Fixkosten. Sie ist offen, bis die Fixkosten erfasst sind.</p>
+  {{else}}
   <h3 style="margin-top:1.25rem">Stromkosten (PV-Netzbezug-Zuteilung)</h3>
   {{if .KostenNote}}
   <p class="muted">{{.KostenNote}}</p>
@@ -116,9 +127,10 @@
     <tbody>
       <tr><td>Einspeisung</td><td>{{de2 .Einspeisung.EinspeisungKWh}}&nbsp;kWh</td></tr>
       <tr><td><strong>Ertrag</strong></td><td><strong>{{deEUR .Einspeisung.Ertrag}}&nbsp;EUR</strong></td></tr>
-      {{if .Period.PVGutschriftW1}}<tr><td>Davon PV-Gutschrift Wohnung 1</td><td>{{deEUR .Einspeisung.Ertrag}}&nbsp;EUR</td></tr>{{end}}
+      {{if .Fix.PVGutschriftW1}}<tr><td>Davon PV-Gutschrift Wohnung 1</td><td>{{deEUR .Einspeisung.Ertrag}}&nbsp;EUR</td></tr>{{end}}
     </tbody>
   </table>
+  {{end}}
   {{end}}
 </div>
 

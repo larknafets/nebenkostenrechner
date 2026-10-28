@@ -44,7 +44,7 @@ func TestAnsichten_AblesungenOhneFixkostenEingabe(t *testing.T) {
 
 	dashboardHTML(t, db)
 	for _, id := range ids[1:] {
-		if detail := detailBody(t, db, id); !strings.Contains(detail, kostenHinweis(calc.GrundFixkostenFehlen)) {
+		if detail := detailBody(t, db, id); !strings.Contains(detail, "fehlen die Fixkosten") {
 			t.Errorf("Detail der Ablesung %d zeigt den Hinweis auf die fehlenden Fixkosten nicht", id)
 		}
 	}
