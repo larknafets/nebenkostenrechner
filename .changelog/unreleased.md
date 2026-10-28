@@ -41,6 +41,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Fehlerkorrekturen
 
+- Wenn zwei Personen gleichzeitig speichern, kommt nicht mehr sporadisch der Fehler "database is locked", die Datenbank wartet jetzt bis zu 5 Sekunden. Außerdem wurden Fremdschlüssel bisher nur auf einer der Datenbankverbindungen geprüft, jetzt auf allen.
+
 - Die Abrechnungsprüfung meldet eine Fixkosten-Eingabe ohne vollständige Preise jetzt als eigenen Mangel "Fixkosten-Eingabe ist unvollständig" mit dem Link "Fixkosten ergänzen". Bisher bestand eine solche Eingabe die Prüfung, der Verbrauch dieses Monats fiel aber still aus der Jahresabrechnung (#381)
 
 - Dashboard und Monatsverlauf zeigen den Hinweis "Fixkosten fehlen" jetzt auch für Monate mit Teilstand und für die erste Ablesung, bisher erschien er erst, sobald die Ablesung berechenbar war (#380)

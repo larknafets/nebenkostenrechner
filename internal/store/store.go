@@ -37,14 +37,12 @@ func open(path string, sichern bool) (*sql.DB, error) {
 		}
 	}
 
-	db, err := sql.Open("sqlite", path)
+	// Pragmas are per connection, so they go into the DSN to reach every pooled
+	// connection. shortcut: a path containing "?" would be cut at it, not
+	// expected for the data path.
+	db, err := sql.Open("sqlite", path+"?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)")
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite: %w", err)
-	}
-
-	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("enable foreign keys: %w", err)
 	}
 
 	// Before the schema is applied: even CREATE TABLE IF NOT EXISTS would

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"path/filepath"
@@ -15,6 +16,45 @@ func openTestDB(t *testing.T) *sql.DB {
 	}
 	t.Cleanup(func() { db.Close() })
 	return db
+}
+
+// Pragmas are per connection: every pooled connection needs foreign_keys and
+// busy_timeout, not only the one that happened to run the first Exec.
+func TestOpenSetztPragmasAufJederVerbindung(t *testing.T) {
+	opener := map[string]func(string) (*sql.DB, error){"Open": Open, "OpenDemo": OpenDemo}
+	for name, open := range opener {
+		t.Run(name, func(t *testing.T) {
+			db, err := open(filepath.Join(t.TempDir(), "test.db"))
+			if err != nil {
+				t.Fatalf("open: %v", err)
+			}
+			defer db.Close()
+
+			ctx := context.Background()
+			c1, err := db.Conn(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer c1.Close()
+			c2, err := db.Conn(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer c2.Close()
+
+			for i, c := range []*sql.Conn{c1, c2} {
+				for pragma, want := range map[string]int{"foreign_keys": 1, "busy_timeout": 5000} {
+					var got int
+					if err := c.QueryRowContext(ctx, "PRAGMA "+pragma).Scan(&got); err != nil {
+						t.Fatalf("conn %d %s: %v", i+1, pragma, err)
+					}
+					if got != want {
+						t.Errorf("conn %d %s = %d, want %d", i+1, pragma, got, want)
+					}
+				}
+			}
+		})
+	}
 }
 
 func baseReadings(overrides map[string]float64) map[string]float64 {
