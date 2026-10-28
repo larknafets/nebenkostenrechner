@@ -37,6 +37,10 @@ Keep every section, an empty one included. Do not change the headings.
 
 - Dashboard: Die Badges für Fläche, Flurstück und Personen bei den Jahressummen sind kleiner und passen häufiger in eine Zeile.
 
+- Personenzahl, Preise und die Häkchen "Wallboxen vollständig Wohnung 1" und "PV-Gutschrift Wohnung 1" werden nur noch bei der Fixkosten-Eingabe des Monats erfasst, der Ablesungs-Wizard hat nur noch drei Schritte (Strom, Wärme, Wasser). Gibt es für den Monat keine Fixkosten-Eingabe, zeigen Dashboard, Monatsverlauf, Ablesungen und Jahreskarte "Fixkosten fehlen" statt falscher Zahlen. Das Fixkosten-CSV hat sechs neue Spalten für Preise und Häkchen, das Ablesungs-CSV nimmt ältere Dateien weiter an (#359)
+
 ## Fehlerkorrekturen
 
 ## Wartung
+
+- Update: Preise und Häkchen wandern beim ersten Start aus den Ablesungen in die Fixkosten-Eingaben desselben Monats, die Berechnung alter Monate kann sich dadurch ändern (Abweichungen stehen im Log). Monate ohne Fixkosten-Eingabe zeigen "Fixkosten fehlen", Ablesungen ohne Preise gelten als vollständig. Die Spalten für Preise, Häkchen und Personenzahl der Ablesung und die Tabelle der Ablesungs-Personenzahlen entfallen. Die Sicherung `.vor-schema-<alte Version>-<UTC-Zeit>` entsteht vor dem Start (#359)
