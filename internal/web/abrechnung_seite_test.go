@@ -62,7 +62,7 @@ func TestAbrechnungJahreUndStandard(t *testing.T) {
 		{ID: 2, ReadingDate: "2025-06-10", Monat: "2025-06-01"},
 		{ID: 1, ReadingDate: "2024-12-30", Monat: ""}, // a Teilstand: the reading date counts
 	}
-	eingaben := []store.FixkostenEingabeSummary{{ID: 1, Monat: "2027-02-01"}}
+	eingaben := []*store.FixkostenEingabeDetails{{ID: 1, Monat: "2027-02-01"}}
 	got := abrechnungJahre(abr.Daten{Periods: periods, Eingaben: eingaben})
 	if len(got) != 3 || got[0] != 2027 || got[1] != 2025 || got[2] != 2024 {
 		t.Errorf("abrechnungJahre = %v, want [2027 2025 2024] newest first, each once", got)
@@ -129,6 +129,26 @@ func TestAbrechnungSeite_Maengelliste(t *testing.T) {
 		`href="/api/hassio_ingress/abc/ablesungen/neu"`,
 		`href="/api/hassio_ingress/abc/fixkosten/neu"`)
 	mustNotContain(t, body, "Nebenkostenabrechnung 2026", "Drucken")
+}
+
+func TestAbrechnungSeite_FixkostenUnvollstaendig(t *testing.T) {
+	db := openTestDB(t)
+	if err := store.SeedDemoData(db, time.Date(2026, time.October, 15, 0, 0, 0, 0, time.UTC)); err != nil {
+		t.Fatalf("SeedDemoData: %v", err)
+	}
+	var id int64
+	if err := db.QueryRow(`SELECT id FROM fixkosten_eingaben WHERE monat = '2025-06-01'`).Scan(&id); err != nil {
+		t.Fatalf("Eingabe Juni 2025: %v", err)
+	}
+	if _, err := db.Exec(`UPDATE fixkosten_eingaben SET strompreis = NULL WHERE id = ?`, id); err != nil {
+		t.Fatalf("Strompreis entfernen: %v", err)
+	}
+	_, body := getAbrechnung(t, NewMux(db, openTestDB(t), "", ""), "?jahr=2025&wohnung=2", map[string]string{"X-Ingress-Path": "/api/hassio_ingress/abc"})
+	mustContain(t, body,
+		"Abrechnung 2025 nicht möglich",
+		"Fixkosten-Eingabe ist unvollständig: Juni 2025",
+		"Fixkosten ergänzen",
+		fmt.Sprintf(`href="/api/hassio_ingress/abc/fixkosten/%d/bearbeiten"`, id))
 }
 
 func TestAbrechnungSeite_Eigennutzung(t *testing.T) {

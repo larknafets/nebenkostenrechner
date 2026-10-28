@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -22,7 +23,10 @@ const (
 	MangelAblesungTeilstand MangelArt = "ablesung_teilstand"
 	MangelFixkostenFehlt    MangelArt = "fixkosten_fehlt"
 	MangelFixkostenMehrfach MangelArt = "fixkosten_mehrfach"
-	MangelStammdaten        MangelArt = "stammdaten"
+	// MangelFixkostenUnvollstaendig: the one Eingabe of the month lacks a
+	// price, so the Ablesungen of the month are not computable.
+	MangelFixkostenUnvollstaendig MangelArt = "fixkosten_unvollstaendig"
+	MangelStammdaten              MangelArt = "stammdaten"
 )
 
 // Mangel is one reason a Jahresabrechnung cannot be produced
@@ -108,8 +112,10 @@ func (p Pruefung) Abrechenbar() bool { return len(p.Maengel) == 0 }
 // rules themselves are a pure function of this data.
 type Daten struct {
 	// Periods are all Ablesungen, oldest first (store.AllPeriodDetails).
-	Periods    []*store.LatestPeriod
-	Eingaben   []store.FixkostenEingabeSummary
+	Periods []*store.LatestPeriod
+	// Eingaben are the Fixkosten-Eingaben with their prices: the Prüfung asks
+	// calc whether a month is complete instead of counting itself.
+	Eingaben   []*store.FixkostenEingabeDetails
 	Apartments []store.Apartment
 	Haus       store.Haus
 }
@@ -128,8 +134,9 @@ type Daten struct {
 // Rules for the months of the period:
 //  1. Every month from the one of the first Ablesung needs at least one
 //     complete Ablesung (no Teilstand) with that Abrechnungsmonat.
-//  2. Every month needs exactly one Fixkosten-Eingabe - except the month of
-//     the first Ablesung in the first year, where none is needed (one that
+//  2. Every month needs exactly one complete Fixkosten-Eingabe (all prices,
+//     calc.Verbrauchskosten.MonatVollstaendig) - except the month of the
+//     first Ablesung in the first year, where none is needed (one that
 //     exists counts, two are still ambiguous).
 //  3. A missing Nebenkostenabschlag is not a finding, it counts as 0.
 //  4. Stammdaten: Vermieter name/address, Objektanschrift and both
@@ -210,6 +217,7 @@ func PruefeMonate(d Daten, ablesungVon, letzter, fixkostenVon time.Time) []Mange
 		})
 	}
 
+	kosten := calc.New(calc.Daten{Periods: d.Periods, Eingaben: d.Eingaben, Apartments: d.Apartments, Haus: d.Haus})
 	eingabenJeMonat := map[string]int{}
 	for _, e := range d.Eingaben {
 		eingabenJeMonat[e.Monat]++
@@ -225,6 +233,14 @@ func PruefeMonate(d Daten, ablesungVon, letzter, fixkostenVon time.Time) []Mange
 				Text:   "Mehr als eine Fixkosten-Eingabe: " + store.MonatLabel(key),
 				Aktion: "Fixkosten korrigieren",
 				Pfad:   "/fixkosten",
+			})
+		case n == 1 && !m.Before(fixkostenVon) && !kosten.MonatVollstaendig(key):
+			maengel = append(maengel, Mangel{
+				Art:    MangelFixkostenUnvollstaendig,
+				Monat:  key,
+				Text:   "Fixkosten-Eingabe ist unvollständig: " + store.MonatLabel(key),
+				Aktion: "Fixkosten ergänzen",
+				Pfad:   "/fixkosten/" + strconv.FormatInt(kosten.Eingabe(key).ID, 10) + "/bearbeiten",
 			})
 		case n == 0 && !m.Before(fixkostenVon):
 			maengel = append(maengel, Mangel{

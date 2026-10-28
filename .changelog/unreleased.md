@@ -41,6 +41,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Fehlerkorrekturen
 
+- Die Abrechnungsprüfung meldet eine Fixkosten-Eingabe ohne vollständige Preise jetzt als eigenen Mangel "Fixkosten-Eingabe ist unvollständig" mit dem Link "Fixkosten ergänzen". Bisher bestand eine solche Eingabe die Prüfung, der Verbrauch dieses Monats fiel aber still aus der Jahresabrechnung (#381)
+
 - Dashboard und Monatsverlauf zeigen den Hinweis "Fixkosten fehlen" jetzt auch für Monate mit Teilstand und für die erste Ablesung, bisher erschien er erst, sobald die Ablesung berechenbar war (#380)
 
 ## Wartung
