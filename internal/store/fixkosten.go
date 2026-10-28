@@ -704,13 +704,9 @@ func BetroffeneAblesungen(db *sql.DB, monat string) ([]PeriodSummary, error) {
 	if err != nil {
 		return nil, err
 	}
-	aps, err := apartments(db)
-	if err != nil {
-		return nil, err
-	}
 	var out []PeriodSummary
 	for i, p := range periods { // oldest first
-		if i == 0 || p.Monat != monat || p.Teilstand(aps).IstTeilstand {
+		if i == 0 || p.Monat != monat || p.Teilstand().IstTeilstand {
 			continue
 		}
 		out = append(out, PeriodSummary{ID: p.ID, ReadingDate: p.ReadingDate, Monat: p.Monat})

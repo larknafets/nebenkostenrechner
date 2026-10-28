@@ -8,7 +8,6 @@ import (
 )
 
 func TestZaehlerstaende_UntermonatigeAblesungenEigeneZeilenTeilstandFehlt(t *testing.T) {
-	apartments := []store.Apartment{{ID: 1}, {ID: 2}}
 	meters := []store.Meter{{Key: "strom_gesamt", Label: "Stromzähler Gesamt", Unit: "kWh"}}
 	ablesung := func(id int64, datum, monat string, stand float64, vollstaendig bool) *store.LatestPeriod {
 		p := &store.LatestPeriod{ID: id, ReadingDate: datum, Monat: monat, Readings: map[string]float64{}}
@@ -27,7 +26,7 @@ func TestZaehlerstaende_UntermonatigeAblesungenEigeneZeilenTeilstandFehlt(t *tes
 		ablesung(1, "2026-01-10", "2026-01-01", 10, true),
 	}
 	imZeitraum := map[string]bool{"2026-02-01": true, "2026-03-01": true}
-	z := zaehlerstaende(periods, apartments, meters, imZeitraum, 2)
+	z := zaehlerstaende(periods, meters, imZeitraum, 2)
 	var datum []string
 	for _, r := range z.Zeilen {
 		datum = append(datum, r.Ablesedatum)

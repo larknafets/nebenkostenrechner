@@ -488,9 +488,5 @@ func periodComplete(q querier, periodID int64) (bool, error) {
 	if len(periods) == 0 {
 		return false, fmt.Errorf("%w: period %d", ErrPeriodNotFound, periodID)
 	}
-	aps, err := apartments(q)
-	if err != nil {
-		return false, err
-	}
-	return !periods[0].Teilstand(aps).IstTeilstand, nil
+	return !periods[0].Teilstand().IstTeilstand, nil
 }

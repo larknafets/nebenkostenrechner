@@ -81,7 +81,7 @@ func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, []offenerMonat,
 	// stays completely excluded here (no yearly-totals/monthly-history
 	// entry, no effect on HasAnyData or the display year) until it's
 	// completed.
-	if len(ds.Periods) > 0 && ds.Periods[len(ds.Periods)-1].Teilstand(apartments).IstTeilstand {
+	if len(ds.Periods) > 0 && ds.Periods[len(ds.Periods)-1].Teilstand().IstTeilstand {
 		allPeriods = allPeriods[1:]
 	}
 	fixkostenEingaben := make([]store.FixkostenEingabeSummary, len(ds.Eingaben))

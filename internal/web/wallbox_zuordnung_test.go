@@ -192,7 +192,7 @@ func TestAblesung_OhnePreiseAnlegenAendernVervollstaendigen(t *testing.T) {
 		t.Fatalf("Teilstand anlegen: status = %d (body: %s)", w.Code, w.Body.String())
 	}
 	open, err := store.GetLatestPeriod(db)
-	if err != nil || open == nil || !open.Teilstand(nil).IstTeilstand {
+	if err != nil || open == nil || !open.Teilstand().IstTeilstand {
 		t.Fatalf("Teilstand = %+v, %v", open, err)
 	}
 	full := vollesFormular()
@@ -207,7 +207,7 @@ func TestAblesung_OhnePreiseAnlegenAendernVervollstaendigen(t *testing.T) {
 		t.Fatalf("vervollständigen: status = %d (body: %s)", w.Code, w.Body.String())
 	}
 	done, err := store.GetPeriodDetails(db, open.ID)
-	if err != nil || done == nil || done.Teilstand(nil).IstTeilstand {
+	if err != nil || done == nil || done.Teilstand().IstTeilstand {
 		t.Errorf("Ablesung nach dem Vervollständigen = %+v, %v, want vollständig", done, err)
 	}
 }

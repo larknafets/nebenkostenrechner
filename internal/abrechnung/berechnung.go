@@ -369,8 +369,8 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	uebertrag := berechneUebertrag(d, z, apartment, p)
 	ab.Monatsverlauf = f.verlauf(uebertrag.Betrag)
 	ab.Monatsverlauf.Uebertrag = uebertrag
-	ab.Verbrauch = verbrauchUebersicht(periods, apartments, meters, f.imBereich, apartmentID)
-	ab.Zaehlerstaende = zaehlerstaende(periods, apartments, meters, f.imBereich, apartmentID)
+	ab.Verbrauch = verbrauchUebersicht(periods, meters, f.imBereich, apartmentID)
+	ab.Zaehlerstaende = zaehlerstaende(periods, meters, f.imBereich, apartmentID)
 	ab.Bezugsgroessen = bezugsgroessen(apartments)
 	ab.PersonenMonate = personenMonate(f.monate, f.fixkosten)
 
@@ -594,9 +594,9 @@ func heizungSchluessel(gewichtung float64) string {
 // ablesungenImZeitraum returns the complete Ablesungen (no Teilstände) oldest
 // first and the index range [first, last] of those whose Abrechnungsmonat is
 // in the period, first == -1 if there is none.
-func ablesungenImZeitraum(periods []*store.LatestPeriod, apartments []store.Apartment, imZeitraum map[string]bool) (complete []*store.LatestPeriod, first, last int) {
+func ablesungenImZeitraum(periods []*store.LatestPeriod, imZeitraum map[string]bool) (complete []*store.LatestPeriod, first, last int) {
 	for _, p := range periods {
-		if !p.Teilstand(apartments).IstTeilstand {
+		if !p.Teilstand().IstTeilstand {
 			complete = append(complete, p)
 		}
 	}
@@ -620,8 +620,8 @@ func ablesungenImZeitraum(periods []*store.LatestPeriod, apartments []store.Apar
 // one, or in the first Erfassungsjahr that first Ablesung itself, the same
 // start the Verbrauchsübersicht uses. Several Ablesungen of one month are
 // separate rows.
-func zaehlerstaende(periods []*store.LatestPeriod, apartments []store.Apartment, meters []store.Meter, imZeitraum map[string]bool, apartmentID int64) Zaehlerstaende {
-	complete, first, last := ablesungenImZeitraum(periods, apartments, imZeitraum)
+func zaehlerstaende(periods []*store.LatestPeriod, meters []store.Meter, imZeitraum map[string]bool, apartmentID int64) Zaehlerstaende {
+	complete, first, last := ablesungenImZeitraum(periods, imZeitraum)
 	if first == -1 {
 		return Zaehlerstaende{}
 	}
@@ -695,8 +695,8 @@ func zaehlerKurzname(m store.Meter) string {
 // period's first one - or, in the first Erfassungsjahr, the stand of that
 // first Ablesung itself (the Ausgangsstand). The end is the stand of the
 // period's last Ablesung. Teilstände are ignored.
-func verbrauchUebersicht(periods []*store.LatestPeriod, apartments []store.Apartment, meters []store.Meter, imZeitraum map[string]bool, apartmentID int64) []VerbrauchZeile {
-	complete, first, last := ablesungenImZeitraum(periods, apartments, imZeitraum)
+func verbrauchUebersicht(periods []*store.LatestPeriod, meters []store.Meter, imZeitraum map[string]bool, apartmentID int64) []VerbrauchZeile {
+	complete, first, last := ablesungenImZeitraum(periods, imZeitraum)
 	if first == -1 {
 		return nil
 	}

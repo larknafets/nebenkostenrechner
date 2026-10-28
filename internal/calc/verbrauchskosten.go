@@ -162,7 +162,7 @@ func New(d Daten) *Verbrauchskosten {
 	for i, p := range d.Periods {
 		v.byID[p.ID] = i
 		v.alle[i] = Ablesung{Period: p}
-		if p.Teilstand(d.Apartments).IstTeilstand {
+		if p.Teilstand().IstTeilstand {
 			v.alle[i].Grund = GrundTeilstand
 			continue
 		}

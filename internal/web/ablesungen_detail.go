@@ -122,7 +122,7 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			zeitraumStart = vorperiode[0].ReadingDate
 		}
 
-		status := period.Teilstand(apartments)
+		status := period.Teilstand()
 
 		// Diff is each meter's absolute change since the previous reading
 		// ("+23,00" / "-5,00"), formatted ready-to-print - empty for the
