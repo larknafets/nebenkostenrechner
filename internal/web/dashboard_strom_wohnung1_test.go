@@ -39,7 +39,7 @@ func TestStromWohnung1_RestInKarteVerlaufUndGesamt(t *testing.T) {
 	stromRestAblesungen(t, db, 200)
 	dd := mustLoadDashboard(t, db)
 
-	card, verlauf := buildEntityView(dd, 1)
+	card, verlauf := buildEntityView(dd, nil, 1)
 	if card.StromEUR != 17.60 {
 		t.Errorf("StromEUR = %v, want 17.60", card.StromEUR)
 	}
@@ -62,7 +62,7 @@ func TestStromWohnung1_RestInKarteVerlaufUndGesamt(t *testing.T) {
 		t.Errorf("WallboxEUR = %v, want 0", card.WallboxEUR)
 	}
 	// Wohnung 2 is unchanged: 30 kWh * 0,22.
-	card2, _ := buildEntityView(dd, 2)
+	card2, _ := buildEntityView(dd, nil, 2)
 	if card2.StromEUR != 6.60 {
 		t.Errorf("Wohnung 2 StromEUR = %v, want 6.60", card2.StromEUR)
 	}
@@ -72,7 +72,7 @@ func TestStromWohnung1_SaldoEnthaeltDenStrom(t *testing.T) {
 	db := openTestDB(t)
 	stromRestAblesungen(t, db, 200)
 	dd := mustLoadDashboard(t, db)
-	_, verlauf := buildEntityView(dd, 1)
+	_, verlauf := buildEntityView(dd, nil, 1)
 	m := verlauf.Eintraege[0].Monat
 	if m.VerbrauchGesamt < 17.60 {
 		t.Errorf("VerbrauchGesamt = %v, want at least the Strom 17.60", m.VerbrauchGesamt)
@@ -90,7 +90,7 @@ func TestStromWohnung1_ImmerSichtbarAuchMitNull(t *testing.T) {
 			db := openTestDB(t)
 			stromRestAblesungen(t, db, netz)
 
-			card, verlauf := buildEntityView(mustLoadDashboard(t, db), 1)
+			card, verlauf := buildEntityView(mustLoadDashboard(t, db), nil, 1)
 			if seg := segmentByLabel(card.Segmente, "Strom"); seg == nil || seg.Kosten != 0 {
 				t.Errorf("Segment Strom = %+v, want 0 EUR", seg)
 			}

@@ -84,10 +84,10 @@ func TestJahreskarte_WallboxBlockAusblendenAendertGesamtNicht(t *testing.T) {
 	einzelW2 := 15.0
 	wallboxAblesungen(t, db, nil, &einzelW2, false)
 	saveStammdaten(t, db, func(s *store.StammdatenSave) { s.Flags.WallboxWeiterberechnen = true })
-	vorher, _ := buildEntityView(mustLoadDashboard(t, db), 2)
+	vorher, _ := buildEntityView(mustLoadDashboard(t, db), nil, 2)
 
 	saveStammdaten(t, db, func(s *store.StammdatenSave) { s.Flags.WallboxWeiterberechnen = false })
-	nachher, _ := buildEntityView(mustLoadDashboard(t, db), 2)
+	nachher, _ := buildEntityView(mustLoadDashboard(t, db), nil, 2)
 
 	if vorher.Wallbox == nil || nachher.Wallbox != nil {
 		t.Fatalf("Block vorher %v, nachher %v, want vorhanden und dann weg", vorher.Wallbox, nachher.Wallbox)
@@ -99,7 +99,7 @@ func TestJahreskarte_WallboxBlockAusblendenAendertGesamtNicht(t *testing.T) {
 
 func mustLoadDashboard(t *testing.T, db *sql.DB) dashboardData {
 	t.Helper()
-	dd, _, err := loadDashboardData(db)
+	dd, _, _, err := loadDashboardData(db)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}

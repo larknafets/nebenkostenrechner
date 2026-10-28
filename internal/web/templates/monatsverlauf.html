@@ -41,14 +41,21 @@
   </div>
   {{else}}
   {{$m := .Monat}}
+  {{if $m.FixkostenFehlen}}
+  <div class="verlauf-row verlauf-row-offen {{if $m.IsCurrent}}is-current{{end}}">
+    <span class="month-label">{{$m.Label}}</span>
+    <span class="badge badge-warning">Fixkosten fehlen</span>
+    {{if $.MitLink}}<a href="{{$.Base}}/fixkosten/neu">Fixkosten erfassen</a>{{end}}
+  </div>
+  {{else}}
   <div class="verlauf-row {{if $m.IsCurrent}}is-current{{end}}">
     <span class="month-label">{{$m.Label}}</span>
 
     <div class="bar-track" data-modus="verbrauch">
-      {{if $m.HasVerbrauch}}{{range $m.VerbrauchSegmente}}<div class="cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{deEUR .Kosten}}&nbsp;€"><span>{{deEUR .Kosten}}&nbsp;€</span></div>{{end}}{{else}}<span class="verlauf-none" data-modus="verbrauch">– keine Ablesung –</span>{{end}}
+      {{if $m.HasVerbrauch}}{{range $m.VerbrauchSegmente}}<div class="cat-{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{deEUR .Kosten}}&nbsp;€"><span>{{deEUR .Kosten}}&nbsp;€</span></div>{{end}}{{else if $m.VerbrauchOffen}}<span class="verlauf-none" data-modus="verbrauch">offen</span>{{else}}<span class="verlauf-none" data-modus="verbrauch">– keine Ablesung –</span>{{end}}
     </div>
     <div class="verbrauch-liste" data-modus="verbrauchswerte">
-      {{if $m.HasVerbrauch}}{{range $i2, $seg := $m.VerbrauchSegmente}}{{if $i2}} · {{end}}{{$seg.Label}} <span class="v-{{$seg.Farbe}}">{{de2 $seg.Verbrauch}}&nbsp;{{$seg.Einheit}}{{if $seg.Einheit2}} ({{de2 $seg.Verbrauch2}}&nbsp;{{$seg.Einheit2}}){{end}}</span>{{end}}{{else}}– keine Ablesung{{end}}
+      {{if $m.HasVerbrauch}}{{range $i2, $seg := $m.VerbrauchSegmente}}{{if $i2}} · {{end}}{{$seg.Label}} <span class="v-{{$seg.Farbe}}">{{de2 $seg.Verbrauch}}&nbsp;{{$seg.Einheit}}{{if $seg.Einheit2}} ({{de2 $seg.Verbrauch2}}&nbsp;{{$seg.Einheit2}}){{end}}</span>{{end}}{{else if $m.VerbrauchOffen}}offen{{else}}– keine Ablesung{{end}}
     </div>
     <div class="bar-track" data-modus="fixkosten">
       {{if $m.HasFixkosten}}{{range $m.FixkostenSegmente}}<div class="{{.Farbe}}" style="width:{{.ProzentNeuestesGesamt}}%" data-eur="{{deEUR .Kosten}}&nbsp;€"><span>{{deEUR .Kosten}}&nbsp;€</span></div>{{end}}{{else}}<span class="verlauf-none" data-modus="fixkosten">– keine Fixkosten-Eingabe –</span>{{end}}
@@ -66,6 +73,7 @@
     <span class="value-label" data-modus="kombiniert">{{if $m.HasKombiniert}}{{deEUR $m.KombiniertGesamt}}&nbsp;€{{if $m.PVGutschrift}} <small class="muted" title="PV-Gutschrift">(PV-Gutschrift &minus;{{deEUR $m.PVGutschrift}}&nbsp;€)</small>{{end}}{{end}}</span>
     <span class="value-label {{with $m.Saldo}}{{.CSSClass}}{{end}}" data-modus="abschlag">{{with $m.Saldo}}{{if .Guthaben}}+{{else if .Nachzahlung}}&minus;{{end}}{{deEUR .Betrag}}&nbsp;€{{end}}</span>
   </div>
+  {{end}}
   {{end}}
   {{end}}
 </div>
