@@ -31,9 +31,9 @@ var (
 	stammdatenTemplate        = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/stammdaten.html"))
 	abrechnungTemplate        = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/abrechnung.html"))
 
-	fixkostenListeTemplate  = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten.html"))
+	fixkostenListeTemplate  = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_hinweise.html", "templates/fixkosten.html"))
 	fixkostenFormTemplate   = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_form.html"))
-	fixkostenDetailTemplate = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_detail.html"))
+	fixkostenDetailTemplate = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_hinweise.html", "templates/fixkosten_detail.html"))
 )
 
 // kategorieIconPaths maps a yearly-totals card category row's exact Label

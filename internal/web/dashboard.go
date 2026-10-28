@@ -58,11 +58,12 @@ type mieteMonat struct {
 // before), every fixed-costs entry's result, and the auto-following
 // display year. HasAnyData=false (zero-value everything else) when
 // neither readings nor fixed-costs entries exist yet. The second return value
-// is the Miete projection taken from the same Datenstand (no second query).
-func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, error) {
+// is the Miete projection taken from the same Datenstand (no second query),
+// the third the months whose Ablesungen wait for their Fixkosten (#364).
+func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, []offenerMonat, error) {
 	ds, err := store.LadeDatenstand(db)
 	if err != nil {
-		return dashboardData{}, nil, err
+		return dashboardData{}, nil, nil, err
 	}
 	miete := make([]mieteMonat, len(ds.Eingaben))
 	for i, e := range ds.Eingaben {
@@ -89,7 +90,7 @@ func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, error) {
 	}
 
 	if len(allPeriods) == 0 && len(fixkostenEingaben) == 0 {
-		return dashboardData{Apartments: apartments}, miete, nil
+		return dashboardData{Apartments: apartments}, miete, nil, nil
 	}
 
 	// Verbrauchskosten newest -> oldest. The very first period ever
@@ -112,7 +113,7 @@ func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, error) {
 		FixkostenListe:         fixkostenListe,
 		Jahr:                   anzeigeJahr(allPeriods, fixkostenEingaben),
 		WallboxWeiterberechnen: ds.Haus.WallboxWeiterberechnen,
-	}, miete, nil
+	}, miete, offeneMonate(ds, verbrauchskosten), nil
 }
 
 // handleDashboard serves the redesigned Dashboard (Issue #60): yearly-
@@ -121,7 +122,7 @@ func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, error) {
 // history (4 modes).
 func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		dd, miete, err := loadDashboardData(dbFromContext(r.Context()))
+		dd, miete, offen, err := loadDashboardData(dbFromContext(r.Context()))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -159,10 +160,16 @@ func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 		}
 
 		// What the viewer may see is decided in one place (#293, #311).
-		view := sichtbareAnsicht(nav.Zugriff, dd, miete)
+		view := sichtbareAnsicht(nav.Zugriff, dd, miete, offen)
+		// The rows of open months link to the form, the template needs the
+		// base path and the right for that.
+		for i := range view.VerlaufSpalten {
+			view.VerlaufSpalten[i].Base, view.VerlaufSpalten[i].MitLink = nav.Base, nav.Vermieter
+		}
 		data := struct {
 			navData
 			Aktuell            string
+			FixkostenHinweis   *offenHinweis
 			HasAnyData         bool
 			AnzeigeJahr        int
 			AnzeigeJahrLaufend bool
@@ -177,6 +184,7 @@ func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 		}{
 			navData:            nav,
 			Aktuell:            "dashboard",
+			FixkostenHinweis:   offenerHinweis(offen),
 			HasAnyData:         true,
 			AnzeigeJahr:        jahr,
 			AnzeigeJahrLaufend: jahr == time.Now().Year(),

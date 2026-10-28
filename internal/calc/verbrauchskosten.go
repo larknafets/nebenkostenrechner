@@ -211,6 +211,18 @@ func (v *Verbrauchskosten) Ablesung(periodID int64) (Ablesung, bool) {
 	return v.alle[i], true
 }
 
+// FixkostenOffen returns the Ablesungen that wait for their Fixkosten-Eingabe
+// (GrundFixkostenFehlen), oldest first.
+func (v *Verbrauchskosten) FixkostenOffen() []Ablesung {
+	var out []Ablesung
+	for _, a := range v.alle {
+		if a.Grund == GrundFixkostenFehlen {
+			out = append(out, a)
+		}
+	}
+	return out
+}
+
 // Berechenbare returns the Ablesungen that have Verbrauchskosten, oldest
 // first.
 func (v *Verbrauchskosten) Berechenbare() []Ablesung {

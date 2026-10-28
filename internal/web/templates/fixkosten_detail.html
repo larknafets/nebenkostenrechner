@@ -2,6 +2,8 @@
 <h1>Fixkosten {{.MonatLabel}}</h1>
 {{template "nav" .}}
 
+{{template "fixkostenHinweise" .}}
+
 <div class="field" style="max-width:220px">
   <label>Andere Eingabe anzeigen</label>
   <select onchange="if(this.value) location.href=this.value">
@@ -48,7 +50,7 @@
 <div class="btn-row">
   <a href="{{.Base}}/fixkosten/neu" class="button success">Neue Fixkosteneingabe</a>
   <a href="{{.Base}}/fixkosten/{{.Eingabe.ID}}/bearbeiten" class="button secondary">Eingabe korrigieren</a>
-  <form method="post" action="{{.Base}}/fixkosten/{{.Eingabe.ID}}/loeschen" onsubmit="return confirm('Fixkosten-Eingabe {{.MonatLabel}} wirklich löschen?');">
+  <form method="post" action="{{.Base}}/fixkosten/{{.Eingabe.ID}}/loeschen" onsubmit="return confirm('Fixkosten-Eingabe {{.MonatLabel}} wirklich löschen?'){{if .LoeschenFrage}} && confirm({{.LoeschenFrage}}){{end}};">
     <button type="submit" class="danger">Eingabe löschen</button>
   </form>
 </div>

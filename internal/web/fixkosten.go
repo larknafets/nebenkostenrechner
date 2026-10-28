@@ -442,6 +442,18 @@ func handleUpdateFixkosten() http.HandlerFunc {
 			return
 		}
 
+		// A move to another Monat takes the Eingabe away from the old Monat:
+		// its Ablesungen are asked before the update.
+		var query string
+		if in.Monat != existing.Monat {
+			betroffene, err := store.BetroffeneAblesungen(db, existing.Monat)
+			if err != nil {
+				http.Error(w, "betroffene ablesungen: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			query = ablesungenQuery(paramAlterMonat, existing.Monat, betroffene)
+		}
+
 		if err := store.UpdateFixkostenEingabe(db, eingabeID, in); err != nil {
 			if errors.Is(err, store.ErrFixkostenMonatBelegt) {
 				badRequestFeld(w, monatBelegtMessage(in.Monat), "monat")
@@ -455,7 +467,7 @@ func handleUpdateFixkosten() http.HandlerFunc {
 			return
 		}
 
-		http.Redirect(w, r, fmt.Sprintf("%s/fixkosten/%d", requestBase(r), eingabeID), http.StatusFound)
+		http.Redirect(w, r, fmt.Sprintf("%s/fixkosten/%d%s", requestBase(r), eingabeID, query), http.StatusFound)
 	}
 }
 
@@ -468,6 +480,20 @@ func handleDeleteFixkosten() http.HandlerFunc {
 			return
 		}
 
+		// The affected Ablesungen are asked before the deletion, the banner
+		// on the target page names them from the redirect.
+		var query string
+		if eingabe, err := store.GetFixkostenEingabeDetails(db, eingabeID); err == nil && eingabe != nil {
+			betroffene, err := store.BetroffeneAblesungen(db, eingabe.Monat)
+			if err != nil {
+				http.Error(w, "betroffene ablesungen: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if len(betroffene) > 0 {
+				query = ablesungenQuery(paramGeloescht, eingabe.Monat, betroffene)
+			}
+		}
+
 		if err := store.DeleteFixkostenEingabe(db, eingabeID); err != nil {
 			if errors.Is(err, store.ErrFixkostenEingabeNotFound) {
 				http.NotFound(w, r)
@@ -477,7 +503,7 @@ func handleDeleteFixkosten() http.HandlerFunc {
 			return
 		}
 
-		http.Redirect(w, r, requestBase(r)+"/fixkosten", http.StatusFound)
+		http.Redirect(w, r, requestBase(r)+"/fixkosten"+query, http.StatusFound)
 	}
 }
 
@@ -514,16 +540,26 @@ func handleFixkostenListe(z *Zugang) http.HandlerFunc {
 
 		importedCount, _ := strconv.Atoi(r.URL.Query().Get("imported"))
 
+		var hinweise []fixkostenHinweis
+		if h, err := fehlenHinweisAusQuery(db, r.URL.Query(), paramGeloescht); err != nil {
+			http.Error(w, "hinweis: "+err.Error(), http.StatusInternalServerError)
+			return
+		} else if h != nil {
+			hinweise = append(hinweise, *h)
+		}
+
 		data := struct {
 			navData
 			Aktuell       string
 			Eingaben      []fixkostenListItem
 			ImportedCount int
+			Hinweise      []fixkostenHinweis
 		}{
 			navData:       z.NavData(r),
 			Aktuell:       "fixkosten",
 			Eingaben:      items,
 			ImportedCount: importedCount,
+			Hinweise:      hinweise,
 		}
 
 		if err := fixkostenListeTemplate.ExecuteTemplate(w, "layout", data); err != nil {
@@ -607,28 +643,43 @@ func handleFixkostenDetail(z *Zugang) http.HandlerFunc {
 			wohnungen = append(wohnungen, w)
 		}
 
+		hinweise, err := fixkostenHinweiseNachAenderung(db, r.URL.Query(), eingabe.Monat)
+		if err != nil {
+			http.Error(w, "hinweis: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		betroffene, err := store.BetroffeneAblesungen(db, eingabe.Monat)
+		if err != nil {
+			http.Error(w, "betroffene ablesungen: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		data := struct {
 			navData
-			Aktuell     string
-			Eingabe     *store.FixkostenEingabeDetails
-			MonatLabel  string
-			AllEingaben []fixkostenListItem
-			Wohnungen   []fixkostenDetailApartment
-			Positionen  []fixkostenDetailPosition
-			Preise      []fixkostenDetailPreis
-			Haekchen    []fixkostenDetailHaekchen
-			KostenW1    float64
-			KostenW2    float64
+			Aktuell       string
+			Hinweise      []fixkostenHinweis
+			LoeschenFrage string // extra confirmation, "" without affected Ablesungen
+			Eingabe       *store.FixkostenEingabeDetails
+			MonatLabel    string
+			AllEingaben   []fixkostenListItem
+			Wohnungen     []fixkostenDetailApartment
+			Positionen    []fixkostenDetailPosition
+			Preise        []fixkostenDetailPreis
+			Haekchen      []fixkostenDetailHaekchen
+			KostenW1      float64
+			KostenW2      float64
 		}{
-			navData:     z.NavData(r),
-			Aktuell:     "fixkosten-detail",
-			Eingabe:     eingabe,
-			MonatLabel:  store.MonatLabel(eingabe.Monat),
-			AllEingaben: allItems,
-			Wohnungen:   wohnungen,
-			Positionen:  positionen,
-			KostenW1:    erg.KostenW1,
-			KostenW2:    erg.KostenW2,
+			navData:       z.NavData(r),
+			Aktuell:       "fixkosten-detail",
+			Hinweise:      hinweise,
+			LoeschenFrage: fixkostenLoeschenFrage(eingabe.Monat, betroffene),
+			Eingabe:       eingabe,
+			MonatLabel:    store.MonatLabel(eingabe.Monat),
+			AllEingaben:   allItems,
+			Wohnungen:     wohnungen,
+			Positionen:    positionen,
+			KostenW1:      erg.KostenW1,
+			KostenW2:      erg.KostenW2,
 		}
 		data.Preise, data.Haekchen = buildFixkostenDetailPreise(eingabe)
 

@@ -40,7 +40,7 @@ func TestSichtbareAnsicht_JeRolle(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v := sichtbareAnsicht(zugriffMitDefaults(tt.rolle), dd, miete)
+			v := sichtbareAnsicht(zugriffMitDefaults(tt.rolle), dd, miete, nil)
 
 			if len(v.Cards) != len(tt.wohnungen) || len(v.VerlaufSpalten) != len(tt.wohnungen) {
 				t.Fatalf("Cards/Verlauf = %d/%d, want %d each", len(v.Cards), len(v.VerlaufSpalten), len(tt.wohnungen))
@@ -96,14 +96,14 @@ func TestSichtbareAnsicht_WallboxKarteNachWohnungsstatus(t *testing.T) {
 					{ID: 2, Name: "Wohnung 2", Status: tt.w2},
 				},
 			}
-			got := sichtbareAnsicht(zugriffMitDefaults(RolleVermieter), dd, nil)
+			got := sichtbareAnsicht(zugriffMitDefaults(RolleVermieter), dd, nil, nil)
 			if (got.haus("wallbox") != nil) != tt.sichtbar {
 				t.Errorf("Wallbox sichtbar = %v, want %v", got.haus("wallbox") != nil, tt.sichtbar)
 			}
 			if got.haus("waermepumpe") == nil || got.haus("pv") == nil {
 				t.Errorf("WP/PV present = %v/%v, want both", got.haus("waermepumpe") != nil, got.haus("pv") != nil)
 			}
-			if anon := sichtbareAnsicht(zugriffMitDefaults(store.RolleNichtAngemeldet), dd, nil); anon.haus("wallbox") != nil || anon.haus("waermepumpe") == nil {
+			if anon := sichtbareAnsicht(zugriffMitDefaults(store.RolleNichtAngemeldet), dd, nil, nil); anon.haus("wallbox") != nil || anon.haus("waermepumpe") == nil {
 				t.Errorf("anonym Wallbox/WP = %v/%v, want nil/present", anon.haus("wallbox") != nil, anon.haus("waermepumpe") != nil)
 			}
 		})
@@ -123,7 +123,7 @@ func TestLoadDashboardData_LiefertMieteProjektion(t *testing.T) {
 		t.Fatalf("import status %d (%s)", w.Code, w.Body.String())
 	}
 
-	_, miete, err := loadDashboardData(db)
+	_, miete, _, err := loadDashboardData(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +146,7 @@ func TestVerlaufAuswahl(t *testing.T) {
 	}
 	ids := func(rolle store.Rolle) []string {
 		var out []string
-		for _, o := range verlaufAuswahl(sichtbareAnsicht(zugriffMitDefaults(rolle), dd, nil)) {
+		for _, o := range verlaufAuswahl(sichtbareAnsicht(zugriffMitDefaults(rolle), dd, nil, nil)) {
 			out = append(out, o.ID)
 		}
 		return out

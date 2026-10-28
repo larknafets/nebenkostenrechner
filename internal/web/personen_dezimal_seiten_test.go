@@ -101,8 +101,7 @@ func TestAbrechnungSeite_Anlage4_PersonenDezimal(t *testing.T) {
 	}
 	section := body[i : i+strings.Index(body[i:], "</section>")]
 	mustContain(t, section,
-		`data-l="Fixkosten Wohnung 1">1,25</td>`,
-		`data-l="Ablesung Wohnung 1">1,25</td>`)
+		`data-l="Fixkosten Wohnung 1">1,25</td>`)
 }
 
 func TestPersonenDezimal_VorbelegungAusVorperiode(t *testing.T) {

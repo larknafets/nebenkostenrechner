@@ -92,11 +92,11 @@ func (dd dashboardData) wallboxInAbrechnung() bool {
 // sichtbareAnsicht decides the visibility for z and calls the builders (kept
 // apart, ADR 0002) for what stays visible. miete is read only when z may see
 // the Miete (#278); it is ignored otherwise, so the caller may pass nil.
-func sichtbareAnsicht(z Zugriff, dd dashboardData, miete []mieteMonat) ansicht {
+func sichtbareAnsicht(z Zugriff, dd dashboardData, miete []mieteMonat, offen []offenerMonat) ansicht {
 	var v ansicht
 	for _, a := range dd.Apartments {
 		if dd.sichtbar(z, wohnungEntitaet(a.ID)) {
-			v.addWohnung(z, dd, a, miete)
+			v.addWohnung(z, dd, a, miete, offen)
 		}
 	}
 	// The one place that fixes the order of the whole-house cards and dropdown
@@ -113,8 +113,8 @@ func sichtbareAnsicht(z Zugriff, dd dashboardData, miete []mieteMonat) ansicht {
 }
 
 // addWohnung builds card and Verlauf of one visible apartment.
-func (v *ansicht) addWohnung(z Zugriff, dd dashboardData, a store.Apartment, miete []mieteMonat) {
-	card, verlauf := buildEntityView(dd, a.ID)
+func (v *ansicht) addWohnung(z Zugriff, dd dashboardData, a store.Apartment, miete []mieteMonat, offen []offenerMonat) {
+	card, verlauf := buildEntityView(dd, offen, a.ID)
 	// Miete (#278, #311): only for a rented apartment and a role that has the
 	// right, so the rent stays out of the view otherwise.
 	if store.NewWohnungsregelnOhneHaus(a).Mieteinnahmen() && z.Darf(store.RechtMiete) {

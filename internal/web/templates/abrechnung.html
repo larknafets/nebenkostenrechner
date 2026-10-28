@@ -363,9 +363,8 @@
     <h3>{{anlage "personen"}}</h3>
     <table>
       <thead>
-        <tr><th rowspan="2">Monat</th><th colspan="2" class="r">Fixkosten-Eingabe (Schlüssel Personen)</th><th colspan="2" class="r">Ablesung (Warmwasser)</th></tr>
+        <tr><th rowspan="2">Monat</th><th colspan="2" class="r">Fixkosten-Eingabe (Schlüssel Personen)</th></tr>
         <tr>
-          <th class="r{{if eq $.ApartmentID 1}} sel{{end}}">Wohnung 1</th><th class="r{{if eq $.ApartmentID 2}} sel{{end}}">Wohnung 2</th>
           <th class="r{{if eq $.ApartmentID 1}} sel{{end}}">Wohnung 1</th><th class="r{{if eq $.ApartmentID 2}} sel{{end}}">Wohnung 2</th>
         </tr>
       </thead>
@@ -375,13 +374,11 @@
           <td data-l="Monat">{{monat .Monat}}</td>
           <td class="r{{if eq $.ApartmentID 1}} b{{end}}" data-l="Fixkosten Wohnung 1">{{personen .Fixkosten 1}}</td>
           <td class="r{{if eq $.ApartmentID 2}} b{{end}}" data-l="Fixkosten Wohnung 2">{{personen .Fixkosten 2}}</td>
-          <td class="r{{if eq $.ApartmentID 1}} b{{end}}" data-l="Ablesung Wohnung 1">{{personen .Ablesung 1}}</td>
-          <td class="r{{if eq $.ApartmentID 2}} b{{end}}" data-l="Ablesung Wohnung 2">{{personen .Ablesung 2}}</td>
         </tr>
         {{end}}
       </tbody>
     </table>
-    <p class="muted klein">Die Personenzahl der Fixkosten-Eingabe bestimmt den Schlüssel "Personen", die der Ablesung verteilt den Verbrauch der Warmwasseraufbereitung auf beide Wohnungen.</p>
+    <p class="muted klein">Die Personenzahl der Fixkosten-Eingabe bestimmt den Schlüssel "Personen" und verteilt den Verbrauch der Warmwasseraufbereitung auf beide Wohnungen.</p>
     </section>
     <section class="anlage" id="anlage-schluessel">
     <h3>{{anlage "schluessel"}}</h3>

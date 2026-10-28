@@ -710,13 +710,13 @@ func TestJahressaldo_GleichtDashboardSaldoAufDenCent(t *testing.T) {
 	saveStammdaten(t, db, func(s *store.StammdatenSave) {
 		s.Flags = store.StammdatenFlags{Umlagefaehig: all, StromWeiterberechnen: true, WallboxWeiterberechnen: true}
 	})
-	dd, _, err := loadDashboardData(db)
+	dd, _, _, err := loadDashboardData(db)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
 	var diffs []string
 	for _, apt := range dd.Apartments {
-		verlauf := buildDashboardVerlauf(apt.ID, apt.Name, dd.PeriodenKosten, dd.FixkostenListe)
+		verlauf := buildDashboardVerlauf(apt.ID, apt.Name, dd.PeriodenKosten, dd.FixkostenListe, nil)
 		endstand := map[int]float64{}
 		for _, e := range verlauf.Eintraege {
 			if e.Jahreszeile != nil && e.Jahreszeile.Endstand != nil {
