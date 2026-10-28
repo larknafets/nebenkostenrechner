@@ -1,6 +1,6 @@
 # Zähler-Verschachtelung und PV-Verrechnung beim Strom
 
-Ergänzt die Formeln in [README.md](../README.md#strom-pv-netzbezug-zuteilung) und [Berechnungslogik](../internal/web/templates/berechnungslogik.html) um eine visuelle Übersicht.
+Ergänzt die Formeln in [README.md](../README.md#berechnung) und [Berechnungslogik](../internal/web/templates/berechnungslogik.html) um eine visuelle Übersicht.
 
 ## Zähler-Verschachtelung
 
