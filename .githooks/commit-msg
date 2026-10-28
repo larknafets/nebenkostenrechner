@@ -42,3 +42,25 @@ ascii_stems='aender|aendr|ergaenz|unveraender|entfaell|laed[te]|ueber|fuer|ausfu
 if hit=$(printf '%s\n' "$message" | grep -iEo "\\b[a-z]*($ascii_stems)[a-z]*" | head -3 | tr '\n' ' ') && [ -n "$hit" ]; then
   fail "message spells Umlaute as ae, oe, ue (${hit% }), write ä, ö, ü, ß"
 fi
+
+# The commit type has to match the files (docs/agents/git-workflow.md): steering
+# docs and documentation-only changes never travel as a product commit, so they
+# do not end up in a feature PR. Skipped when nothing is staged (message-only
+# amend).
+type=${subject%%[(:!]*}
+staged=$(git diff --cached --name-only || true)
+if [ -n "$staged" ]; then
+  product='feat|fix|refactor|perf'
+  doc_path='(\.md$|^docs/)'
+  if printf '%s' "$type" | grep -qE "^($product)$"; then
+    if steering=$(printf '%s\n' "$staged" | grep -E '^(AGENTS\.md|CLAUDE\.md|docs/agents/)' | head -3 | tr '\n' ' ') && [ -n "$steering" ]; then
+      fail "a $type commit changes steering docs (${steering% }), commit them separately as docs on main"
+    fi
+    if ! printf '%s\n' "$staged" | grep -qvE "$doc_path"; then
+      fail "a $type commit changes only documentation, use the type docs"
+    fi
+  fi
+  if [ "$type" != docs ] && printf '%s\n' "$subject" | grep -qE '^[a-z]+\(docs\)'; then
+    fail "the scope docs belongs to the type docs"
+  fi
+fi
