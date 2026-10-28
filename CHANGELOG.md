@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.21.0 - 2026-10-28
+
+### Verbesserungen
+
+- Geschlechtergerechte Sprache: Rollen und Felder heißen jetzt Mieter:in/Mieter:innen und Vermieter:in/Vermieter:innen (Anmeldung, Stammdaten, Berechtigungen, Jahresabrechnung). Die Kennwort-Variablen `VERMIETER_PASSWORD` und `MIETER_PASSWORD` bleiben unverändert.
+
+- Dashboard: Die Badges für Fläche, Flurstück und Personen bei den Jahressummen sind kleiner und passen häufiger in eine Zeile.
+
+- Personenzahl, Preise und die Häkchen "Wallboxen vollständig Wohnung 1" und "PV-Gutschrift Wohnung 1" werden nur noch bei der Fixkosten-Eingabe des Monats erfasst, der Ablesungs-Wizard hat nur noch drei Schritte (Strom, Wärme, Wasser). Gibt es für den Monat keine Fixkosten-Eingabe, zeigen Dashboard, Monatsverlauf, Ablesungen und Jahreskarte "Fixkosten fehlen" statt falscher Zahlen. Das Fixkosten-CSV hat sechs neue Spalten für Preise und Häkchen, das Ablesungs-CSV nimmt ältere Dateien weiter an (#359)
+
+### Fehlerkorrekturen
+
+- Wenn zwei Personen gleichzeitig speichern, kommt nicht mehr sporadisch der Fehler "database is locked", die Datenbank wartet jetzt bis zu 5 Sekunden. Außerdem wurden Fremdschlüssel bisher nur auf einer der Datenbankverbindungen geprüft, jetzt auf allen.
+
+- Die Abrechnungsprüfung meldet eine Fixkosten-Eingabe ohne vollständige Preise jetzt als eigenen Mangel "Fixkosten-Eingabe ist unvollständig" mit dem Link "Fixkosten ergänzen". Bisher bestand eine solche Eingabe die Prüfung, der Verbrauch dieses Monats fiel aber still aus der Jahresabrechnung (#381)
+
+- Dashboard und Monatsverlauf zeigen den Hinweis "Fixkosten fehlen" jetzt auch für Monate mit Teilstand und für die erste Ablesung, bisher erschien er erst, sobald die Ablesung berechenbar war (#380)
+
+- Ablesungsseite, Speichern und CSV-Import zeigen "Fixkosten fehlen" jetzt auch bei Teilstand, erster Ablesung und unvollständiger Fixkosten-Eingabe, der Link heißt dann "Fixkosten ergänzen" und führt zur Eingabe des Monats (#383)
+
+- Die Anmeldung bremst Kennwort-Raten: Nach 10 falschen Kennwörtern innerhalb einer Minute lehnt die App weitere Kennwort-Anmeldungen bis zum Ende der Minute ab (auch das richtige Kennwort) und zeigt dazu im Anmelde-Fenster einen Hinweis. Die Demo-Anmeldung setzt die Demo-Daten höchstens alle 10 Sekunden zurück.
+
+### Wartung
+
+- Update: Preise und Häkchen wandern beim ersten Start aus den Ablesungen in die Fixkosten-Eingaben desselben Monats, die Berechnung alter Monate kann sich dadurch ändern (Abweichungen stehen im Log). Monate ohne Fixkosten-Eingabe zeigen "Fixkosten fehlen", Ablesungen ohne Preise gelten als vollständig. Die Spalten für Preise, Häkchen und Personenzahl der Ablesung und die Tabelle der Ablesungs-Personenzahlen entfallen. Die Sicherung `.vor-schema-<alte Version>-<UTC-Zeit>` entsteht vor dem Start (#359)
+- Interne Aufräumarbeiten am Code ohne sichtbare Änderung
+
 ## v0.20.0 - 2026-10-27
 
 ### Neue Funktionen
