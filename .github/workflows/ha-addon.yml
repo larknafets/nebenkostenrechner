@@ -42,22 +42,13 @@ jobs:
           version="${RELEASE_TAG#v}"
           sed -i -e "s/^version:.*/version: \"${version}\"/" ./hassio/nebenkostenrechner/config.yaml
 
-      - name: Generate changelog
+      - name: Copy changelog
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.tag.outputs.name }}
         run: |
-          gh api repos/larknafets/nebenkostenrechner/releases --paginate | jq -s '
-            [.[][] | select(.draft == false and .prerelease == false)]
-            | sort_by(.published_at)
-            | reverse
-            | .[]
-            | "## \(.tag_name) - \(.published_at | split("T")[0])\n\n\((.body // "No release notes.")
-            | gsub("(?m)^## "; "### ")
-            )"
-          ' -r > /tmp/changelog_entries.md
-
-          printf '%s\n\n%s\n\n' '# Changelog' 'Alle Release-Details: https://github.com/larknafets/nebenkostenrechner/releases' > ./hassio/nebenkostenrechner/CHANGELOG.md
-          cat /tmp/changelog_entries.md >> ./hassio/nebenkostenrechner/CHANGELOG.md
+          gh api "repos/larknafets/nebenkostenrechner/contents/CHANGELOG.md?ref=${RELEASE_TAG}" \
+            -H 'Accept: application/vnd.github.raw' > ./hassio/nebenkostenrechner/CHANGELOG.md
 
       - name: Push
         env:
