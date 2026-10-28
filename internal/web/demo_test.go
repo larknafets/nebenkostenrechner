@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -129,7 +130,8 @@ func TestDemoMode_WritesIsolatedFromRealDB(t *testing.T) {
 func TestDemoLogin_ResetsPreviousDemoSession(t *testing.T) {
 	realDB := openTestDB(t)
 	demoDB := openTestDB(t)
-	mux := NewMux(realDB, demoDB, "", "")
+	jetzt := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	mux := muxFuer(zugangFuer(auth{demoDB: demoDB, limit: newLoginLimit(func() time.Time { return jetzt })}), realDB, demoDB, "", "")
 
 	firstSession := demoLoginCookies(t, mux)
 	baseline, err := store.AllPeriods(demoDB)
@@ -160,7 +162,9 @@ func TestDemoLogin_ResetsPreviousDemoSession(t *testing.T) {
 	}
 
 	// A renewed demo login (2nd session) must discard the reading from the
-	// 1st session and show exactly the baseline again.
+	// 1st session and show exactly the baseline again (the reset throttle of
+	// demoResetAbstand has passed).
+	jetzt = jetzt.Add(demoResetAbstand)
 	demoLoginCookies(t, mux)
 
 	afterReset, err := store.AllPeriods(demoDB)

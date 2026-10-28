@@ -284,6 +284,7 @@ type auth struct {
 	vermieter string
 	mieter    string
 	demoDB    *sql.DB
+	limit     *loginLimit // nil: no throttling (tests)
 }
 
 // refererPath extracts just the path(+query) off the Referer header - never
@@ -341,7 +342,17 @@ func (a auth) HandleLogin() http.HandlerFunc {
 			return
 		}
 		rolle := r.FormValue("rolle")
-		fehler := func() { redirectToLoginOverlay(w, r, r.FormValue("next"), rolle, true) }
+		if rolle != rolleFormDemo {
+			if gesperrt, rest := a.limit.gesperrt(); gesperrt {
+				w.Header().Set("Retry-After", strconv.Itoa(int(rest.Seconds())+1))
+				http.Error(w, "Zu viele fehlgeschlagene Anmeldungen, bitte kurz warten.", http.StatusTooManyRequests)
+				return
+			}
+		}
+		fehler := func() {
+			a.limit.fehlversuch()
+			redirectToLoginOverlay(w, r, r.FormValue("next"), rolle, true)
+		}
 		passt := func(want string) bool {
 			return subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte(want)) == 1
 		}
@@ -352,9 +363,13 @@ func (a auth) HandleLogin() http.HandlerFunc {
 			// its fresh 39-month initial state on every login (Issue #121) -
 			// before setting the session cookie, so a granted demo session
 			// always sees the fresh state, never that of a previous session.
-			if err := store.ResetDemoData(a.demoDB, time.Now()); err != nil {
-				http.Error(w, "demo reset: "+err.Error(), http.StatusInternalServerError)
-				return
+			// Throttled to one reset per demoResetAbstand: within it the
+			// session is granted without resetting again.
+			if a.limit.demoResetErlaubt() {
+				if err := store.ResetDemoData(a.demoDB, time.Now()); err != nil {
+					http.Error(w, "demo reset: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
 			}
 			// A still-valid real session cookie must not be left lying
 			// around: a clean login switch cleans up all sides instead of

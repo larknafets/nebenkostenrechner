@@ -49,6 +49,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 - Ablesungsseite, Speichern und CSV-Import zeigen "Fixkosten fehlen" jetzt auch bei Teilstand, erster Ablesung und unvollständiger Fixkosten-Eingabe, der Link heißt dann "Fixkosten ergänzen" und führt zur Eingabe des Monats (#383)
 
+- Die Anmeldung bremst Kennwort-Raten: Nach 10 falschen Kennwörtern innerhalb einer Minute lehnt die App weitere Kennwort-Anmeldungen bis zum Ende der Minute ab (auch das richtige Kennwort). Die Demo-Anmeldung setzt die Demo-Daten höchstens alle 10 Sekunden zurück.
+
 ## Wartung
 
 - Update: Preise und Häkchen wandern beim ersten Start aus den Ablesungen in die Fixkosten-Eingaben desselben Monats, die Berechnung alter Monate kann sich dadurch ändern (Abweichungen stehen im Log). Monate ohne Fixkosten-Eingabe zeigen "Fixkosten fehlen", Ablesungen ohne Preise gelten als vollständig. Die Spalten für Preise, Häkchen und Personenzahl der Ablesung und die Tabelle der Ablesungs-Personenzahlen entfallen. Die Sicherung `.vor-schema-<alte Version>-<UTC-Zeit>` entsteht vor dem Start (#359)
