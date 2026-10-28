@@ -42,26 +42,11 @@ type PeriodInput struct {
 	// empty string means "nicht erfasst" (Teilstand, Ticket #128), the
 	// column's own DEFAULT ''.
 	Monat string
-	// Strompreis/FrischwasserPreis/AbwasserPreis/EinspeisungPreis are nil
-	// when not (yet) entered - a Teilstand (Ticket #128). CreatePeriod
-	// persists nil as SQL NULL; UpdatePeriod leaves the existing stored
-	// value untouched for a nil field, same "don't touch what wasn't
-	// given" rule Readings/Personen below already followed.
-	Strompreis        *float64
-	FrischwasserPreis *float64
-	AbwasserPreis     *float64
-	EinspeisungPreis  *float64
-	// WallboxKomplettW1 is the per-Ablesung switch "Wallboxen vollständig
-	// Wohnung 1" (#225): all Wallbox costs go to apartment 1.
-	WallboxKomplettW1 bool
-	// PVGutschriftW1 is the per-Ablesung switch "PV-Gutschrift Wohnung 1" (#226):
-	// the Einspeisevergütung of this Ablesung is credited to apartment 1.
-	PVGutschriftW1 bool
-	// Readings/Personen: a missing key means "nicht erfasst" (Teilstand,
-	// Ticket #128) - CreatePeriod/UpdatePeriod simply don't write a row for
-	// it, rather than requiring every MeterKeys/apartment id to be present.
+	// Readings: a missing key means "nicht erfasst" (Teilstand, Ticket #128)
+	// - CreatePeriod/UpdatePeriod simply don't write a row for it, rather
+	// than requiring every MeterKeys entry to be present. Prices, switches
+	// and Personenzahl belong to the Fixkosten-Eingabe (#359, #368).
 	Readings map[string]float64 // meter key -> Zählerstand
-	Personen map[int64]float64  // apartment id -> Personenzahl
 }
 
 // Validate checks the field rules of one reading, pure and without the
@@ -81,22 +66,12 @@ func (in PeriodInput) Validate() error {
 	return nil
 }
 
-// Float64 returns a pointer to v - a constructor for PeriodInput/
-// LatestPeriod's optional price fields (Ticket #128), since Go has no
-// address-of operator for a literal.
+// Float64 returns a pointer to v - a constructor for the optional price
+// fields of FixkostenInput (Ticket #128), since Go has no address-of operator
+// for a literal.
 func Float64(v float64) *float64 { return &v }
 
-// OrZero dereferences a Teilstand-fähiges Preis-Feld, treating "nicht
-// erfasst" (nil) as 0 - for callers that don't (yet) distinguish "fehlt"
-// from "0", such as a prefill or an export column (Ticket #128).
-func OrZero(p *float64) float64 {
-	if p == nil {
-		return 0
-	}
-	return *p
-}
-
-// insertPeriodTx inserts one period with its meter readings and occupancy.
+// insertPeriodTx inserts one period with its meter readings.
 // Wohnungsgröße/Flurstücksgröße live on apartments and are edited separately on
 // /stammdaten (Issue #61), not per period. Shared by CreatePeriod (one
 // period, own transaction) and ImportPeriods (many periods, one shared
@@ -105,7 +80,7 @@ func OrZero(p *float64) float64 {
 func insertPeriodTx(tx *sql.Tx, in PeriodInput) (periodID int64, err error) {
 	res, err := tx.Exec(
 		insertPeriodSQL(),
-		append([]any{in.ReadingDate, in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.EinspeisungPreis}, switchArgs(in)...)...,
+		in.ReadingDate, in.Monat,
 	)
 	if err != nil {
 		return 0, fmt.Errorf("insert period: %w", err)
@@ -128,15 +103,6 @@ func insertPeriodTx(tx *sql.Tx, in PeriodInput) (periodID int64, err error) {
 			periodID, value, key,
 		); err != nil {
 			return 0, fmt.Errorf("insert reading for %q: %w", key, err)
-		}
-	}
-
-	for apartmentID, personen := range in.Personen {
-		if _, err := tx.Exec(
-			`INSERT INTO period_occupancy (period_id, apartment_id, personen) VALUES (?, ?, ?)`,
-			periodID, apartmentID, personen,
-		); err != nil {
-			return 0, fmt.Errorf("insert occupancy for apartment %d: %w", apartmentID, err)
 		}
 	}
 
@@ -193,8 +159,7 @@ func ImportPeriods(db *sql.DB, inputs []PeriodInput) (ids []int64, err error) {
 	return ids, nil
 }
 
-// UpdatePeriod overwrites an existing period's fields, readings, and
-// occupancy in place - no new row, no history of the previous values
+// UpdatePeriod overwrites an existing period's fields and readings in place - no new row, no history of the previous values
 // (Ticket #34: only the latest period is ever editable, in-place, no
 // audit log). Costs aren't stored anywhere (calc.Verbrauchskosten reads
 // live from the DB on every request), so overwriting here is all that's
@@ -219,9 +184,7 @@ func UpdatePeriod(db *sql.DB, periodID int64, in PeriodInput) error {
 		// Teilstand (Ticket #128): only overwrite monat when this round
 		// brings a value (Monat != ''), a deliberately empty field must not
 		// silently delete a previously-entered value. The same "only touch
-		// what was given" rule applies to Readings below. Prices, switches
-		// and Personenzahl belong to the Fixkosten-Eingabe (#359) and are
-		// never written here.
+		// what was given" rule applies to Readings below.
 		updatePeriodSQL(),
 		in.ReadingDate, in.Monat, periodID,
 	)
@@ -257,24 +220,13 @@ func UpdatePeriod(db *sql.DB, periodID int64, in PeriodInput) error {
 	return nil
 }
 
-// LatestPeriod is a period together with its readings and occupancy, as
-// shown on the "letzte Ablesung" view.
+// LatestPeriod is a period together with its readings, as shown on the
+// "letzte Ablesung" view.
 type LatestPeriod struct {
 	ID          int64
 	ReadingDate string
 	Monat       string
-	// Strompreis/FrischwasserPreis/AbwasserPreis/EinspeisungPreis are nil
-	// when not (yet) entered - a Teilstand (Ticket #128).
-	Strompreis        *float64
-	FrischwasserPreis *float64
-	AbwasserPreis     *float64
-	EinspeisungPreis  *float64
-	// WallboxKomplettW1: see PeriodInput.WallboxKomplettW1.
-	WallboxKomplettW1 bool
-	// PVGutschriftW1: see PeriodInput.PVGutschriftW1.
-	PVGutschriftW1      bool
-	Readings            map[string]float64
-	PersonenByApartment map[int64]float64
+	Readings    map[string]float64
 }
 
 // PeriodReadings is one period's per-meter Zählerstand, as used for the
@@ -361,15 +313,15 @@ func AllPeriods(db *sql.DB) ([]PeriodSummary, error) {
 	return out, rows.Err()
 }
 
-// AllPeriodDetails returns every period with its full readings and
-// occupancy, oldest first - the CSV export's data source (Ticket #53). 3
-// batched queries total (periods, readings, occupancy), not one per period.
+// AllPeriodDetails returns every period with its full readings, oldest first
+// - the CSV export's data source (Ticket #53). 2 batched queries total
+// (periods, readings), not one per period.
 func AllPeriodDetails(db *sql.DB) ([]*LatestPeriod, error) {
 	return loadPeriodDetails(db, 0)
 }
 
 // loadPeriodDetails is the single hydration path of AllPeriodDetails (id 0)
-// and GetPeriodDetails (one id): the same three queries, the latter filtered
+// and GetPeriodDetails (one id): the same two queries, the latter filtered
 // to the one period.
 func loadPeriodDetails(q querier, id int64) ([]*LatestPeriod, error) {
 	periodWhere, childWhere, args := "", "", []any{}
@@ -418,25 +370,6 @@ func loadPeriodDetails(q querier, id int64) ([]*LatestPeriod, error) {
 		return nil, err
 	}
 
-	occRows, err := q.Query(`SELECT r.period_id, r.apartment_id, r.personen FROM period_occupancy r `+childWhere, args...)
-	if err != nil {
-		return nil, fmt.Errorf("query occupancy: %w", err)
-	}
-	defer occRows.Close()
-	for occRows.Next() {
-		var periodID, apartmentID int64
-		var personen float64
-		if err := occRows.Scan(&periodID, &apartmentID, &personen); err != nil {
-			return nil, fmt.Errorf("scan occupancy: %w", err)
-		}
-		if p, ok := byID[periodID]; ok {
-			p.PersonenByApartment[apartmentID] = personen
-		}
-	}
-	if err := occRows.Err(); err != nil {
-		return nil, err
-	}
-
 	return out, nil
 }
 
@@ -454,8 +387,7 @@ func GetLatestPeriod(db *sql.DB) (*LatestPeriod, error) {
 	return GetPeriodDetails(db, id)
 }
 
-// GetPeriodDetails returns the given period together with its readings and
-// occupancy, or nil if it doesn't exist - the per-id generalization of
+// GetPeriodDetails returns the given period together with its readings, or nil if it doesn't exist - the per-id generalization of
 // GetLatestPeriod (Ticket #43/#44: viewing/editing an Ablesung isn't limited
 // to the latest period anymore). Uses AllPeriodDetails' hydration path,
 // filtered to this one period.
@@ -509,8 +441,7 @@ func PeriodReadingsBefore(db *sql.DB, periodID int64, limit int) ([]PeriodReadin
 // 500).
 var ErrPeriodNotFound = errors.New("period not found")
 
-// DeletePeriod removes a period together with its readings and occupancy in
-// one transaction (Ticket #45). No soft-delete, no restriction on which
+// DeletePeriod removes a period together with its readings in one transaction (Ticket #45). No soft-delete, no restriction on which
 // period can be deleted - Verbrauch/Kosten are computed live from the DB
 // (see internal/store/verbrauch.go), so a neighboring period's consumption
 // simply recomputes against its new adjacent period on the next read.
@@ -523,9 +454,6 @@ func DeletePeriod(db *sql.DB, periodID int64) error {
 
 	if _, err := tx.Exec(`DELETE FROM meter_readings WHERE period_id = ?`, periodID); err != nil {
 		return fmt.Errorf("delete readings: %w", err)
-	}
-	if _, err := tx.Exec(`DELETE FROM period_occupancy WHERE period_id = ?`, periodID); err != nil {
-		return fmt.Errorf("delete occupancy: %w", err)
 	}
 
 	res, err := tx.Exec(`DELETE FROM periods WHERE id = ?`, periodID)
@@ -565,28 +493,4 @@ func periodComplete(q querier, periodID int64) (bool, error) {
 		return false, err
 	}
 	return !periods[0].Teilstand(aps).IstTeilstand, nil
-}
-
-// PersonenByApartment returns the given period's occupancy (apartment id ->
-// Personenzahl), as recorded at that period's Ablesung.
-func PersonenByApartment(db *sql.DB, periodID int64) (map[int64]float64, error) {
-	rows, err := db.Query(
-		`SELECT apartment_id, personen FROM period_occupancy WHERE period_id = ?`,
-		periodID,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("query occupancy: %w", err)
-	}
-	defer rows.Close()
-
-	out := map[int64]float64{}
-	for rows.Next() {
-		var apartmentID int64
-		var personen float64
-		if err := rows.Scan(&apartmentID, &personen); err != nil {
-			return nil, fmt.Errorf("scan occupancy: %w", err)
-		}
-		out[apartmentID] = personen
-	}
-	return out, rows.Err()
 }

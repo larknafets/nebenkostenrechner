@@ -21,14 +21,9 @@ func seedPeriodInput() store.PeriodInput {
 		readings[key] = 0
 	}
 	return store.PeriodInput{
-		ReadingDate:       "2026-06-01",
-		Monat:             "2026-06-01",
-		Strompreis:        store.Float64(0.22),
-		FrischwasserPreis: store.Float64(1.46),
-		AbwasserPreis:     store.Float64(4.87),
-		EinspeisungPreis:  store.Float64(0.08),
-		Readings:          readings,
-		Personen:          map[int64]float64{1: 2, 2: 1},
+		ReadingDate: "2026-06-01",
+		Monat:       "2026-06-01",
+		Readings:    readings,
 	}
 }
 
@@ -162,12 +157,9 @@ func TestHandleImportCSV_AlteDateiVerwirftWerte(t *testing.T) {
 	if err != nil || len(periods) != 1 {
 		t.Fatalf("AllPeriods = %v, %v, want 1 period", periods, err)
 	}
-	got, err := store.GetPeriodDetails(db, periods[0].ID)
-	if err != nil || got == nil {
-		t.Fatalf("GetPeriodDetails = %v, %v", got, err)
-	}
-	if got.Strompreis != nil || len(got.PersonenByApartment) != 0 {
-		t.Errorf("Ablesung trägt Preise oder Personen: %+v", got)
+	// The dropped values reach no Fixkosten-Eingabe either.
+	if eingaben, err := store.AllFixkostenEingabenDetails(db); err != nil || len(eingaben) != 0 {
+		t.Errorf("Fixkosten-Eingaben nach dem Import = %v, %v, want keine", eingaben, err)
 	}
 }
 

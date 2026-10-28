@@ -9,6 +9,56 @@ import (
 	"strings"
 )
 
+// periodsHatAblesungsPreise reports whether periods still carries the Ablesung
+// prices, which is the mark of a database from before #368. The older steps
+// that work on those columns (add einspeisung_preis, make the prices nullable,
+// add the switch columns) run only then: on a fresh or already migrated
+// database they would add the columns back just for the drop at the end of
+// the list to remove them again. strompreis is the mark because
+// dropPeriodsAblesungsFelder drops it last, so an interrupted drop is still
+// recognised and finished.
+func periodsHatAblesungsPreise(db *sql.DB) (bool, error) {
+	return hasColumn(db, "periods", "strompreis")
+}
+
+// periodsAblesungsFelder are the columns dropPeriodsAblesungsFelder removes
+// from periods (#368), in the order of dropping: strompreis last, see
+// periodsHatAblesungsPreise.
+var periodsAblesungsFelder = []string{
+	"einspeisung_preis", "abwasser_preis", "frischwasser_preis",
+	"wallbox_komplett_w1", "pv_gutschrift_w1", "strompreis",
+}
+
+// dropPeriodsAblesungsFelder removes the prices and switches from periods
+// (#368, spec #359 step 4, destructive): they live on fixkosten_eingaben now,
+// where backfillFixkostenEingabenAusAblesungen has copied them. Needs no
+// index drop and no table rebuild. A column that is already gone is skipped,
+// so the step is idempotent. It runs at the end of the list, with
+// dropPeriodOccupancyTable.
+func dropPeriodsAblesungsFelder(db *sql.DB) error {
+	for _, c := range periodsAblesungsFelder {
+		has, err := hasColumn(db, "periods", c)
+		if err != nil {
+			return fmt.Errorf("drop periods.%s: %w", c, err)
+		}
+		if !has {
+			continue
+		}
+		if _, err := db.Exec(`ALTER TABLE periods DROP COLUMN ` + c); err != nil {
+			return fmt.Errorf("drop periods.%s: %w", c, err)
+		}
+	}
+	return nil
+}
+
+// dropPeriodOccupancyTable removes period_occupancy (#368, destructive): the
+// Personenzahl belongs to the Fixkosten-Eingabe (fixkosten_personen) since
+// #359. IF EXISTS makes the step idempotent.
+func dropPeriodOccupancyTable(db *sql.DB) error {
+	_, err := db.Exec(`DROP TABLE IF EXISTS period_occupancy`)
+	return err
+}
+
 // dropKostenpositionenJahreTable removes kostenpositionen_jahre (Issue
 // #105/#109): its data has already migrated into fixkosten_werte's
 // logik/typ columns (see ensureFixkostenWerteLogikTypColumns, which always
@@ -60,8 +110,12 @@ func ensurePeriodsHeizungGewichtungColumn(db *sql.DB) error {
 // ensurePeriodsEinspeisungPreisColumn adds the einspeisung_preis column to
 // an existing periods table that predates it (Issue #47), defaulting
 // existing rows to 0 - historical periods simply show no Einspeisevergütung
-// until corrected.
+// until corrected. Skipped once the Ablesung prices are gone (#368), see
+// periodsHatAblesungsPreise.
 func ensurePeriodsEinspeisungPreisColumn(db *sql.DB) error {
+	if legacy, err := periodsHatAblesungsPreise(db); err != nil || !legacy {
+		return err
+	}
 	rows, err := db.Query(`PRAGMA table_info(periods)`)
 	if err != nil {
 		return fmt.Errorf("inspect periods columns: %w", err)
@@ -430,8 +484,12 @@ func ensurePeriodsMonatColumn(db *sql.DB) error {
 // Idempotent: checks strompreis's current NOT NULL-ness first and returns
 // immediately once it's already nullable. Must run after every ADD COLUMN
 // migration above - it assumes periods already has heizung_waerme_gewichtung/
-// einspeisung_preis/monat.
+// einspeisung_preis/monat. Skipped once the Ablesung prices are gone (#368),
+// see periodsHatAblesungsPreise.
 func ensurePeriodsNullablePriceColumns(db *sql.DB) error {
+	if legacy, err := periodsHatAblesungsPreise(db); err != nil || !legacy {
+		return err
+	}
 	ctx := context.Background()
 	conn, err := db.Conn(ctx)
 	if err != nil {

@@ -10,10 +10,7 @@ import (
 func vollePeriode(id int64, date string, readings map[string]float64) *store.LatestPeriod {
 	return &store.LatestPeriod{
 		ID: id, ReadingDate: date, Monat: date,
-		Strompreis: store.Float64(0.22), FrischwasserPreis: store.Float64(1.46),
-		AbwasserPreis: store.Float64(4.87), EinspeisungPreis: store.Float64(0.08),
-		Readings:            baseReadings(readings),
-		PersonenByApartment: map[int64]float64{1: 2, 2: 1},
+		Readings: baseReadings(readings),
 	}
 }
 
@@ -107,16 +104,8 @@ func TestVerbrauchskosten_FixkostenFehlen(t *testing.T) {
 // Abrechnungsmonat, not from the Ablesung, and every Ablesung of that month
 // uses the same values.
 func TestVerbrauchskosten_WerteAusDerEingabeDesMonats(t *testing.T) {
-	// The Ablesungen carry other values, which must not be read.
-	abweichend := func(p *store.LatestPeriod) *store.LatestPeriod {
-		p.Strompreis, p.FrischwasserPreis = store.Float64(9), store.Float64(9)
-		p.AbwasserPreis, p.EinspeisungPreis = store.Float64(9), store.Float64(9)
-		p.PersonenByApartment = map[int64]float64{1: 9, 2: 9}
-		p.WallboxKomplettW1, p.PVGutschriftW1 = false, false
-		return p
-	}
-	p2 := abweichend(vollePeriode(2, "2026-11-01", map[string]float64{"strom_gesamt": 100, "strom_einspeisung": 50, "wasser_gesamt": 10, "wasser_warmwasseraufbereitung": 4}))
-	p3 := abweichend(vollePeriode(3, "2026-11-01", map[string]float64{"strom_gesamt": 200, "strom_einspeisung": 100, "wasser_gesamt": 20, "wasser_warmwasseraufbereitung": 8}))
+	p2 := vollePeriode(2, "2026-11-01", map[string]float64{"strom_gesamt": 100, "strom_einspeisung": 50, "wasser_gesamt": 10, "wasser_warmwasseraufbereitung": 4})
+	p3 := vollePeriode(3, "2026-11-01", map[string]float64{"strom_gesamt": 200, "strom_einspeisung": 100, "wasser_gesamt": 20, "wasser_warmwasseraufbereitung": 8})
 	e := volleEingabe("2026-11-01")
 	e.Strompreis, e.EinspeisungPreis = store.Float64(0.5), store.Float64(0.1)
 	e.FrischwasserPreis, e.AbwasserPreis = store.Float64(2), store.Float64(3)
@@ -157,7 +146,7 @@ func TestLoad_NurBerechenbareAblesungenInReihenfolge(t *testing.T) {
 	var ids []int64
 	for i, date := range []string{"2026-09-01", "2026-10-01", "2026-11-01", "2026-11-15"} {
 		n := float64(i)
-		id, err := createPeriod(db, store.PeriodInput{
+		id, err := createPeriod(db, ablesungMitFixkosten{
 			ReadingDate: date, Monat: monatVon(date),
 			Strompreis: store.Float64(0.22), FrischwasserPreis: store.Float64(1.46),
 			AbwasserPreis: store.Float64(4.87), EinspeisungPreis: store.Float64(0.08),

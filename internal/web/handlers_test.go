@@ -1330,29 +1330,35 @@ func TestFormatDatumDE(t *testing.T) {
 // seedPeriodInputAt builds a valid PeriodInput at the given "YYYY-MM-DD"
 // date, ReadingDate and Monat both set to it - everything else a fixed
 // valid default (exact values don't matter for the ordering tests using
-// this).
+// this). Prices, Personenzahl and switches are not part of an Ablesung
+// (#368): createPeriod gives the month a Fixkosten-Eingabe with the
+// standard ones.
 func seedPeriodInputAt(date string) store.PeriodInput {
 	readings := make(map[string]float64, len(store.MeterKeys))
 	for _, key := range store.MeterKeys {
 		readings[key] = 0
 	}
 	return store.PeriodInput{
-		ReadingDate:       date,
-		Monat:             date,
-		Strompreis:        store.Float64(0.22),
-		FrischwasserPreis: store.Float64(1.46),
-		AbwasserPreis:     store.Float64(4.87),
-		EinspeisungPreis:  store.Float64(0.08),
-		Readings:          readings,
-		Personen:          map[int64]float64{1: 2, 2: 1},
+		ReadingDate: date,
+		Monat:       date,
+		Readings:    readings,
+	}
+}
+
+// mitHaekchen sets the two switches of the Fixkosten-Eingabe that
+// createPeriod makes for the month.
+func mitHaekchen(wallboxKomplettW1, pvGutschriftW1 bool) func(*store.FixkostenInput) {
+	return func(f *store.FixkostenInput) {
+		f.WallboxKomplettW1, f.PVGutschriftW1 = wallboxKomplettW1, pvGutschriftW1
 	}
 }
 
 // createPeriod creates the Ablesung and, once per Abrechnungsmonat, the
 // Fixkosten-Eingabe that carries its Personenzahl, prices and switches: the
-// calculation reads them from there (#359). A second Ablesung in a month
-// finds the Eingabe and shares it.
-func createPeriod(db *sql.DB, in store.PeriodInput) (int64, error) {
+// calculation reads them from there (#359). The Eingabe has the standard
+// values of fixkostenMitPreisen, einstellen changes them (mitHaekchen). A
+// second Ablesung in a month finds the Eingabe and shares it.
+func createPeriod(db *sql.DB, in store.PeriodInput, einstellen ...func(*store.FixkostenInput)) (int64, error) {
 	id, err := store.CreatePeriod(db, in)
 	if err != nil || in.Monat == "" {
 		return id, err
@@ -1366,13 +1372,9 @@ func createPeriod(db *sql.DB, in store.PeriodInput) (int64, error) {
 			return id, nil
 		}
 	}
-	fk := store.FixkostenInput{
-		Monat: in.Monat, Personen: in.Personen,
-		Strompreis: in.Strompreis, FrischwasserPreis: in.FrischwasserPreis,
-		AbwasserPreis: in.AbwasserPreis, EinspeisungPreis: in.EinspeisungPreis,
-	}
-	for _, sw := range store.Switches {
-		*sw.FixkostenInput(&fk) = *sw.Input(&in)
+	fk := fixkostenMitPreisen(in.Monat)
+	for _, f := range einstellen {
+		f(&fk)
 	}
 	_, err = store.CreateFixkostenEingabe(db, fk)
 	return id, err
@@ -1609,23 +1611,16 @@ func TestHandleUpdateAblesung_Teilstand_Vervollstaendigen(t *testing.T) {
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate: "2026-11-01",
-		Strompreis:  store.Float64(0.22),
 		Readings:    map[string]float64{"strom_gesamt": 100},
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod (Teilstand seed): %v", err)
 	}
 
-	// Completing it: add Monat + the remaining fields, Strompreis left
-	// empty this time (must not delete the value already set).
+	// Completing it: add Monat + the remaining fields.
 	form := url.Values{}
 	form.Set("reading_date", "2026-11-01")
 	form.Set("monat", "2026-11")
-	form.Set("frischwasser_preis", "1.46")
-	form.Set("abwasser_preis", "4.87")
-	form.Set("einspeisung_preis", "0.08")
-	form.Set("personen_1", "2")
-	form.Set("personen_2", "1")
 	for _, key := range store.MeterKeys {
 		if key == "strom_gesamt" {
 			continue // schon gesetzt, bleibt unangetastet
@@ -1655,9 +1650,6 @@ func TestHandleUpdateAblesung_Teilstand_Vervollstaendigen(t *testing.T) {
 	got, err := store.GetPeriodDetails(db, id)
 	if err != nil {
 		t.Fatalf("GetPeriodDetails: %v", err)
-	}
-	if store.OrZero(got.Strompreis) != 0.22 {
-		t.Errorf("Strompreis = %v, want 0.22 (aus dem Teilstand erhalten, nicht überschrieben)", store.OrZero(got.Strompreis))
 	}
 	if got.Readings["strom_gesamt"] != 100 {
 		t.Errorf("Readings[strom_gesamt] = %v, want 100 (aus dem Teilstand erhalten)", got.Readings["strom_gesamt"])

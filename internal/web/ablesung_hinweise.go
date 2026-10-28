@@ -79,7 +79,7 @@ func (d wallboxHinweisDaten) json() string {
 func fixkostenFehlenMonate(eingaben []*store.FixkostenEingabeDetails, monate []string) []string {
 	komplett := make(map[string]bool, len(eingaben))
 	for _, e := range eingaben {
-		komplett[e.Monat] = e.Strompreis != nil && e.FrischwasserPreis != nil && e.AbwasserPreis != nil && e.EinspeisungPreis != nil
+		komplett[e.Monat] = e.PreiseVollstaendig()
 	}
 	var out []string
 	seen := make(map[string]bool, len(monate))

@@ -54,8 +54,8 @@ func TestFixkostenEingabe_PreiseUndHaekchenRoundtrip(t *testing.T) {
 	if err != nil || got == nil {
 		t.Fatalf("GetFixkostenEingabeDetails = %v, %v", got, err)
 	}
-	if OrZero(got.Strompreis) != 0.22 || OrZero(got.FrischwasserPreis) != 1.46 ||
-		OrZero(got.AbwasserPreis) != 4.87 || OrZero(got.EinspeisungPreis) != 0.08 {
+	if orZero(got.Strompreis) != 0.22 || orZero(got.FrischwasserPreis) != 1.46 ||
+		orZero(got.AbwasserPreis) != 4.87 || orZero(got.EinspeisungPreis) != 0.08 {
 		t.Errorf("Preise = %v %v %v %v, want 0.22 1.46 4.87 0.08",
 			got.Strompreis, got.FrischwasserPreis, got.AbwasserPreis, got.EinspeisungPreis)
 	}
@@ -66,7 +66,7 @@ func TestFixkostenEingabe_PreiseUndHaekchenRoundtrip(t *testing.T) {
 	}
 
 	all, err := AllFixkostenEingabenDetails(db)
-	if err != nil || len(all) != 1 || OrZero(all[0].Strompreis) != 0.22 {
+	if err != nil || len(all) != 1 || orZero(all[0].Strompreis) != 0.22 {
 		t.Errorf("AllFixkostenEingabenDetails = %+v, %v, want one with Strompreis 0.22", all, err)
 	}
 	for _, s := range Switches {
@@ -111,7 +111,7 @@ func TestFixkostenEingabe_UpdateUeberschreibtPreiseUndHaekchenImmer(t *testing.T
 	if got.Strompreis != nil {
 		t.Errorf("Strompreis = %v, want nil nach Überschreiben mit leer", *got.Strompreis)
 	}
-	if OrZero(got.AbwasserPreis) != 5.5 {
+	if orZero(got.AbwasserPreis) != 5.5 {
 		t.Errorf("AbwasserPreis = %v, want 5.5", got.AbwasserPreis)
 	}
 	for _, s := range Switches {
@@ -252,7 +252,6 @@ func TestBetroffeneAblesungen(t *testing.T) {
 	juli1 := mustInsertUnchecked(t, db, completePeriodInput("2026-07-10", baseReadings(nil)))
 	juli2 := mustInsertUnchecked(t, db, completePeriodInput("2026-07-20", baseReadings(nil)))
 	teil := completePeriodInput("2026-07-25", map[string]float64{})
-	teil.Strompreis = nil
 	mustInsertUnchecked(t, db, teil)
 	mustInsertUnchecked(t, db, completePeriodInput("2026-08-05", baseReadings(nil)))
 
@@ -278,4 +277,12 @@ func TestBetroffeneAblesungen(t *testing.T) {
 	if got, _ := BetroffeneAblesungen(db, "2026-12-01"); len(got) != 0 {
 		t.Errorf("Monat ohne Ablesung: %v, want leer", got)
 	}
+}
+
+// orZero reads a price that may be empty (nicht erfasst) as 0.
+func orZero(p *float64) float64 {
+	if p == nil {
+		return 0
+	}
+	return *p
 }

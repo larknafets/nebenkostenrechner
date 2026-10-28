@@ -20,8 +20,10 @@ import (
 // is migrated the same way as before. Version 2: table mieten (#277), created
 // by schema.sql, so there is no step in migrationen for it. Version 3: prices
 // and switches on fixkosten_eingaben (#359). Version 4: they are filled from
-// the Ablesungen of the same month (#361).
-const schemaVersion = 4
+// the Ablesungen of the same month (#361). Version 5: the Ablesung fields are
+// dropped (#368, destructive): the six columns of periods and the table
+// period_occupancy. The save .vor-schema-4-<time> is made before that.
+const schemaVersion = 5
 
 // sicherungenBehalten is how many saves made before a migration are kept.
 const sicherungenBehalten = 3
@@ -40,6 +42,8 @@ type migration struct {
 // the contract (see TestMigrationen_Reihenfolge):
 //   - ensurePeriodSwitchColumns after the periods rebuild of
 //     ensurePeriodsNullablePriceColumns, which would drop the columns again,
+//   - dropPeriodsAblesungsFelder and dropPeriodOccupancyTable last, after the
+//     backfill that reads the columns (#368),
 //   - seed before migrateHeizungGewichtungToHaus, which needs the haus row,
 //   - ensureFixkostenWerteLogikTypColumns before dropKostenpositionenJahreTable
 //     (ADR 0001): the table is dropped only after its data has moved.
@@ -66,6 +70,10 @@ var migrationen = []migration{
 	{"ensureFixkostenEingabenMonatUnique", ensureFixkostenEingabenMonatUnique},
 	{"ensureFixkostenEingabenPreisColumns", ensureFixkostenEingabenPreisColumns},
 	{"backfillFixkostenEingabenAusAblesungen", backfillFixkostenEingabenAusAblesungen},
+	// Destructive, always last (#368): only after everything that reads the
+	// columns has run.
+	{"dropPeriodsAblesungsFelder", dropPeriodsAblesungsFelder},
+	{"dropPeriodOccupancyTable", dropPeriodOccupancyTable},
 }
 
 // migrate runs every step in order and stops at the first error, which names

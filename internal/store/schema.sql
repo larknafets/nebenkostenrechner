@@ -21,13 +21,7 @@ CREATE TABLE IF NOT EXISTS meters (
 CREATE TABLE IF NOT EXISTS periods (
     id                         INTEGER PRIMARY KEY,
     reading_date               TEXT NOT NULL,
-    strompreis                 REAL,
-    frischwasser_preis         REAL,
-    abwasser_preis             REAL,
-    einspeisung_preis          REAL,
-    monat                      TEXT NOT NULL DEFAULT '',
-    wallbox_komplett_w1        INTEGER NOT NULL DEFAULT 0,
-    pv_gutschrift_w1           INTEGER NOT NULL DEFAULT 0
+    monat                      TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS meter_readings (
@@ -36,14 +30,6 @@ CREATE TABLE IF NOT EXISTS meter_readings (
     meter_id     INTEGER NOT NULL REFERENCES meters(id),
     zaehlerstand REAL NOT NULL,
     UNIQUE(period_id, meter_id)
-);
-
-CREATE TABLE IF NOT EXISTS period_occupancy (
-    id           INTEGER PRIMARY KEY,
-    period_id    INTEGER NOT NULL REFERENCES periods(id),
-    apartment_id INTEGER NOT NULL REFERENCES apartments(id),
-    personen     REAL NOT NULL,
-    UNIQUE(period_id, apartment_id)
 );
 
 CREATE TABLE IF NOT EXISTS kostenpositionen (

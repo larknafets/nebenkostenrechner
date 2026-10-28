@@ -79,27 +79,6 @@ func TestSeedDemoData(t *testing.T) {
 	if winterDelta <= 1.0 {
 		t.Errorf("waerme_wohnung1 Winter-Delta = %v, want > 1.0 (Heizsaison)", winterDelta)
 	}
-
-	// Occupancy count for Wohnung 2 varies between 1 and 2, Wohnung 1 always 2.
-	sawOne, sawTwo := false, false
-	for _, p := range periods {
-		details, err := GetPeriodDetails(db, p.ID)
-		if err != nil {
-			t.Fatalf("GetPeriodDetails: %v", err)
-		}
-		if details.PersonenByApartment[1] != 2 {
-			t.Errorf("period %s: Personen Wohnung 1 = %v, want 2", p.Monat, details.PersonenByApartment[1])
-		}
-		switch details.PersonenByApartment[2] {
-		case 1:
-			sawOne = true
-		case 2:
-			sawTwo = true
-		}
-	}
-	if !sawOne || !sawTwo {
-		t.Errorf("Personen Wohnung 2 varies: sawOne=%v sawTwo=%v, want both true", sawOne, sawTwo)
-	}
 }
 
 // TestResetDemoData covers Issue #121: a repeated demo login must fully
@@ -121,7 +100,6 @@ func TestResetDemoData(t *testing.T) {
 	if _, err := CreatePeriod(db, PeriodInput{
 		ReadingDate: "2099-01-01",
 		Monat:       "2099-01-01",
-		Personen:    map[int64]float64{1: 2, 2: 2},
 		Readings:    readings,
 	}); err != nil {
 		t.Fatalf("CreatePeriod (simulierte Demo-Änderung): %v", err)

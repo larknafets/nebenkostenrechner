@@ -171,7 +171,7 @@ func New(d Daten) *Verbrauchskosten {
 			continue
 		}
 		e := eingabeByMonat[p.Monat]
-		if e == nil || e.Strompreis == nil || e.FrischwasserPreis == nil || e.AbwasserPreis == nil || e.EinspeisungPreis == nil {
+		if e == nil || !e.PreiseVollstaendig() {
 			v.alle[i].Grund = GrundFixkostenFehlen
 			continue
 		}

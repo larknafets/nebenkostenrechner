@@ -21,8 +21,7 @@ func TestAblesungDetail_PVSchalterAlsJaNein(t *testing.T) {
 		}
 		second := seedPeriodInputAt("2026-11-01")
 		second.Readings["strom_einspeisung"] = 52.5 // * 0,08 EUR/kWh = 4,20 EUR
-		second.PVGutschriftW1 = c.an
-		id, err := createPeriod(db, second)
+		id, err := createPeriod(db, second, mitHaekchen(false, c.an))
 		if err != nil {
 			t.Fatalf("CreatePeriod: %v", err)
 		}

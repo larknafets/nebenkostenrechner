@@ -20,9 +20,7 @@ func TestKostenAus_HandgebauterDatenstand(t *testing.T) {
 	periode := func(id int64, datum string, strom float64) *store.LatestPeriod {
 		return &store.LatestPeriod{
 			ID: id, ReadingDate: datum, Monat: datum,
-			Strompreis: store.Float64(0.3), FrischwasserPreis: store.Float64(1), AbwasserPreis: store.Float64(1), EinspeisungPreis: store.Float64(0.1),
-			Readings:            readings(strom),
-			PersonenByApartment: map[int64]float64{1: 2, 2: 1},
+			Readings: readings(strom),
 		}
 	}
 	eingabe := &store.FixkostenEingabeDetails{

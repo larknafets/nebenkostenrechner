@@ -20,14 +20,9 @@ func vollePeriode(date string, extra map[string]float64) PeriodInput {
 		r[k] = v
 	}
 	return PeriodInput{
-		ReadingDate:       date,
-		Monat:             date[:7] + "-01",
-		Strompreis:        Float64(0.22),
-		FrischwasserPreis: Float64(1.46),
-		AbwasserPreis:     Float64(4.87),
-		EinspeisungPreis:  Float64(0.08),
-		Readings:          r,
-		Personen:          map[int64]float64{1: 2, 2: 1},
+		ReadingDate: date,
+		Monat:       date[:7] + "-01",
+		Readings:    r,
 	}
 }
 

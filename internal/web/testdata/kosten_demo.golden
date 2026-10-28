@@ -635,15 +635,9 @@ Abrechnung 2023 Wohnung 1:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [1]:
         Monat: "2023-09-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [2]:
@@ -651,23 +645,14 @@ Abrechnung 2023 Wohnung 1:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [3]:
         Monat: "2023-11-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [4]:
         Monat: "2023-12-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
     Bezugsgroessen: [2]
@@ -1316,15 +1301,9 @@ Abrechnung 2023 Wohnung 2:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [1]:
         Monat: "2023-09-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [2]:
@@ -1332,23 +1311,14 @@ Abrechnung 2023 Wohnung 2:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [3]:
         Monat: "2023-11-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [4]:
         Monat: "2023-12-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
     Bezugsgroessen: [2]
@@ -2454,15 +2424,9 @@ Abrechnung 2024 Wohnung 1:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [1]:
         Monat: "2024-02-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [2]:
@@ -2470,15 +2434,9 @@ Abrechnung 2024 Wohnung 1:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [3]:
         Monat: "2024-04-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [4]:
@@ -2486,63 +2444,39 @@ Abrechnung 2024 Wohnung 1:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [5]:
         Monat: "2024-06-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 1.00
       [6]:
         Monat: "2024-07-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 1.00
       [7]:
         Monat: "2024-08-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 1.00
       [8]:
         Monat: "2024-09-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 1.00
       [9]:
         Monat: "2024-10-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 1.00
       [10]:
         Monat: "2024-11-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [11]:
         Monat: "2024-12-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
     Bezugsgroessen: [2]
@@ -3648,15 +3582,9 @@ Abrechnung 2024 Wohnung 2:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [1]:
         Monat: "2024-02-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [2]:
@@ -3664,15 +3592,9 @@ Abrechnung 2024 Wohnung 2:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [3]:
         Monat: "2024-04-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [4]:
@@ -3680,63 +3602,39 @@ Abrechnung 2024 Wohnung 2:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [5]:
         Monat: "2024-06-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 1.00
       [6]:
         Monat: "2024-07-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 1.00
       [7]:
         Monat: "2024-08-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 1.00
       [8]:
         Monat: "2024-09-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 1.00
       [9]:
         Monat: "2024-10-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 1.00
       [10]:
         Monat: "2024-11-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [11]:
         Monat: "2024-12-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
     Bezugsgroessen: [2]
@@ -4974,15 +4872,9 @@ Abrechnung 2025 Wohnung 1:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [1]:
         Monat: "2025-02-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [2]:
@@ -4990,15 +4882,9 @@ Abrechnung 2025 Wohnung 1:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [3]:
         Monat: "2025-04-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [4]:
@@ -5006,15 +4892,9 @@ Abrechnung 2025 Wohnung 1:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [5]:
         Monat: "2025-06-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [6]:
@@ -5022,15 +4902,9 @@ Abrechnung 2025 Wohnung 1:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [7]:
         Monat: "2025-08-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [8]:
@@ -5038,15 +4912,9 @@ Abrechnung 2025 Wohnung 1:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [9]:
         Monat: "2025-10-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [10]:
@@ -5054,17 +4922,11 @@ Abrechnung 2025 Wohnung 1:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 1.00
       [11]:
         Monat: "2025-12-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 1.00
     Bezugsgroessen: [2]
       [0]:
         Schluessel: "Wohnfläche (m²)"
@@ -6300,15 +6162,9 @@ Abrechnung 2025 Wohnung 2:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [1]:
         Monat: "2025-02-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [2]:
@@ -6316,15 +6172,9 @@ Abrechnung 2025 Wohnung 2:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [3]:
         Monat: "2025-04-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [4]:
@@ -6332,15 +6182,9 @@ Abrechnung 2025 Wohnung 2:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [5]:
         Monat: "2025-06-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [6]:
@@ -6348,15 +6192,9 @@ Abrechnung 2025 Wohnung 2:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [7]:
         Monat: "2025-08-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [8]:
@@ -6364,15 +6202,9 @@ Abrechnung 2025 Wohnung 2:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 2.00
       [9]:
         Monat: "2025-10-01"
         Fixkosten: {2}
-          1: 2.00
-          2: 2.00
-        Ablesung: {2}
           1: 2.00
           2: 2.00
       [10]:
@@ -6380,17 +6212,11 @@ Abrechnung 2025 Wohnung 2:
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 1.00
       [11]:
         Monat: "2025-12-01"
         Fixkosten: {2}
           1: 2.00
           2: 2.00
-        Ablesung: {2}
-          1: 2.00
-          2: 1.00
     Bezugsgroessen: [2]
       [0]:
         Schluessel: "Wohnfläche (m²)"

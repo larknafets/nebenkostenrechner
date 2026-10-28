@@ -85,7 +85,6 @@ func TestAbrechnungSeite_Anlage4_PersonenDezimal(t *testing.T) {
 		t.Fatalf("SeedDemoData: %v", err)
 	}
 	for _, q := range []string{
-		`UPDATE period_occupancy SET personen = 1.25 WHERE apartment_id = 1`,
 		`UPDATE fixkosten_personen SET personen = 1.25 WHERE apartment_id = 1`,
 	} {
 		if _, err := db.Exec(q); err != nil {

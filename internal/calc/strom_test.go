@@ -43,12 +43,23 @@ func baseReadings(overrides map[string]float64) map[string]float64 {
 	return out
 }
 
+// ablesungMitFixkosten is what a test says about one month: the Ablesung and
+// the Fixkosten-Eingabe that carries its Personenzahl, prices and switches
+// (the Ablesung itself has none of them since #368).
+type ablesungMitFixkosten struct {
+	ReadingDate, Monat                                             string
+	Strompreis, FrischwasserPreis, AbwasserPreis, EinspeisungPreis *float64
+	WallboxKomplettW1, PVGutschriftW1                              bool
+	Readings                                                       map[string]float64
+	Personen                                                       map[int64]float64
+}
+
 // createPeriod creates the Ablesung and, once per Abrechnungsmonat, the
 // Fixkosten-Eingabe that carries its Personenzahl, prices and switches: the
 // calculation reads them from there (#359). A second Ablesung in a month
 // finds the Eingabe and shares it.
-func createPeriod(db *sql.DB, in store.PeriodInput) (int64, error) {
-	id, err := store.CreatePeriod(db, in)
+func createPeriod(db *sql.DB, in ablesungMitFixkosten) (int64, error) {
+	id, err := store.CreatePeriod(db, store.PeriodInput{ReadingDate: in.ReadingDate, Monat: in.Monat, Readings: in.Readings})
 	if err != nil || in.Monat == "" {
 		return id, err
 	}
@@ -65,9 +76,7 @@ func createPeriod(db *sql.DB, in store.PeriodInput) (int64, error) {
 		Monat: in.Monat, Personen: in.Personen,
 		Strompreis: in.Strompreis, FrischwasserPreis: in.FrischwasserPreis,
 		AbwasserPreis: in.AbwasserPreis, EinspeisungPreis: in.EinspeisungPreis,
-	}
-	for _, sw := range store.Switches {
-		*sw.FixkostenInput(&fk) = *sw.Input(&in)
+		WallboxKomplettW1: in.WallboxKomplettW1, PVGutschriftW1: in.PVGutschriftW1,
 	}
 	_, err = store.CreateFixkostenEingabe(db, fk)
 	return id, err
@@ -75,7 +84,7 @@ func createPeriod(db *sql.DB, in store.PeriodInput) (int64, error) {
 
 func mustCreatePeriod(t *testing.T, db *sql.DB, date string, strompreis float64, readings map[string]float64) int64 {
 	t.Helper()
-	id, err := createPeriod(db, store.PeriodInput{
+	id, err := createPeriod(db, ablesungMitFixkosten{
 		ReadingDate:       date,
 		Monat:             monatVon(date),
 		EinspeisungPreis:  store.Float64(0.08),

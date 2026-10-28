@@ -83,7 +83,7 @@ func logAbfangen(t *testing.T) *bytes.Buffer {
 }
 
 func TestBackfillFixkostenEingaben_NimmtJuengsteAblesungDesMonats(t *testing.T) {
-	db := openTestDB(t)
+	db := datenbankMitAblesungsFeldern(t)
 	id := eingabeRoh(t, db, "2026-07-01")
 	ablesungRoh(t, db, "2026-07-10", "2026-07-01", Float64(0.20), Float64(1.40), Float64(4.00), Float64(0.05), false, false)
 	ablesungRoh(t, db, "2026-07-31", "2026-07-01", Float64(0.22), Float64(1.46), Float64(4.87), Float64(0.08), true, false)
@@ -97,7 +97,7 @@ func TestBackfillFixkostenEingaben_NimmtJuengsteAblesungDesMonats(t *testing.T) 
 }
 
 func TestBackfillFixkostenEingaben_GleichesDatumEntscheidetDieId(t *testing.T) {
-	db := openTestDB(t)
+	db := datenbankMitAblesungsFeldern(t)
 	id := eingabeRoh(t, db, "2026-07-01")
 	ablesungRoh(t, db, "2026-07-31", "2026-07-01", Float64(0.20), nil, nil, nil, false, false)
 	ablesungRoh(t, db, "2026-07-31", "2026-07-01", Float64(0.25), nil, nil, nil, false, false)
@@ -109,7 +109,7 @@ func TestBackfillFixkostenEingaben_GleichesDatumEntscheidetDieId(t *testing.T) {
 }
 
 func TestBackfillFixkostenEingaben_PreisNimmtJuengstenNichtLeerenWert(t *testing.T) {
-	db := openTestDB(t)
+	db := datenbankMitAblesungsFeldern(t)
 	id := eingabeRoh(t, db, "2026-07-01")
 	ablesungRoh(t, db, "2026-07-10", "2026-07-01", Float64(0.22), Float64(1.46), Float64(4.87), Float64(0.08), true, true)
 	// Teilstand: newest, no prices, switches differ. It deletes no price,
@@ -123,7 +123,7 @@ func TestBackfillFixkostenEingaben_PreisNimmtJuengstenNichtLeerenWert(t *testing
 }
 
 func TestBackfillFixkostenEingaben_MonatOhneAblesungBleibtLeer(t *testing.T) {
-	db := openTestDB(t)
+	db := datenbankMitAblesungsFeldern(t)
 	id := eingabeRoh(t, db, "2026-05-01")
 	ablesungRoh(t, db, "2026-07-31", "2026-07-01", Float64(0.22), nil, nil, nil, true, true)
 
@@ -134,7 +134,7 @@ func TestBackfillFixkostenEingaben_MonatOhneAblesungBleibtLeer(t *testing.T) {
 }
 
 func TestBackfillFixkostenEingaben_WiederholungAendertNichtsUndLaesstGefuelltes(t *testing.T) {
-	db := openTestDB(t)
+	db := datenbankMitAblesungsFeldern(t)
 	leer := eingabeRoh(t, db, "2026-07-01")
 	erfasst := eingabeRoh(t, db, "2026-08-01")
 	ablesungRoh(t, db, "2026-07-31", "2026-07-01", Float64(0.22), Float64(1.46), nil, nil, true, false)
@@ -154,7 +154,7 @@ func TestBackfillFixkostenEingaben_WiederholungAendertNichtsUndLaesstGefuelltes(
 }
 
 func TestBackfillFixkostenEingaben_KonfliktErzeugtEineLogzeileJeMonat(t *testing.T) {
-	db := openTestDB(t)
+	db := datenbankMitAblesungsFeldern(t)
 	eingabeRoh(t, db, "2026-07-01")
 	eingabeRoh(t, db, "2026-08-01")
 	eingabeRoh(t, db, "2026-09-01")
@@ -189,7 +189,7 @@ func TestBackfillFixkostenEingaben_KonfliktErzeugtEineLogzeileJeMonat(t *testing
 }
 
 func TestBackfillFixkostenEingaben_OhneQuellspaltenKeinFehler(t *testing.T) {
-	db := openTestDB(t)
+	db := datenbankMitAblesungsFeldern(t)
 	id := eingabeRoh(t, db, "2026-07-01")
 	if _, err := db.Exec(`ALTER TABLE periods DROP COLUMN wallbox_komplett_w1`); err != nil {
 		t.Fatal(err)

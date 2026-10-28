@@ -115,13 +115,12 @@ type HeizungMonat struct {
 	WPStromKWh, WaermeW1MWh, WaermeW2MWh, Anteil float64
 }
 
-// PersonenMonat is the occupant count of one month from its two
-// independent sources. A nil map means the source has no value that month
-// (e.g. no Fixkosten-Eingabe in the month of the first Ablesung).
+// PersonenMonat is the occupant count of one month from its Fixkosten-Eingabe.
+// A nil map means there is no Eingabe that month (e.g. in the month of the
+// first Ablesung).
 type PersonenMonat struct {
 	Monat     string
 	Fixkosten map[int64]float64
-	Ablesung  map[int64]float64
 }
 
 // MonatZeile is one Abrechnungsmonat of the Monatsverlauf (Anlage
@@ -373,7 +372,7 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	ab.Verbrauch = verbrauchUebersicht(periods, apartments, meters, f.imBereich, apartmentID)
 	ab.Zaehlerstaende = zaehlerstaende(periods, apartments, meters, f.imBereich, apartmentID)
 	ab.Bezugsgroessen = bezugsgroessen(apartments)
-	ab.PersonenMonate = personenMonate(f.monate, f.fixkosten, periods, apartments)
+	ab.PersonenMonate = personenMonate(f.monate, f.fixkosten)
 
 	return Ergebnis{Pruefung: pruefung, Abrechnung: ab}, nil
 }
@@ -749,26 +748,13 @@ func bezugsgroessen(apartments []store.Apartment) []Bezugsgroesse {
 	return []Bezugsgroesse{wohnflaeche, flurstueck}
 }
 
-// personenMonate lists the occupant count of every month from both sources:
-// the Fixkosten-Eingabe (for the Schlüssel "Personen") and the Ablesung (for
-// the warm water split). With several Ablesungen in a month the latest one
-// is shown.
-func personenMonate(monate []string, fixkosten map[string]calc.FixkostenMonat, periods []*store.LatestPeriod, apartments []store.Apartment) []PersonenMonat {
-	ablesung := map[string]map[int64]float64{}
-	spaetestes := map[string]string{}
-	for _, p := range periods {
-		if p.Teilstand(apartments).IstTeilstand {
-			continue
-		}
-		if prev, ok := spaetestes[p.Monat]; !ok || p.ReadingDate >= prev {
-			spaetestes[p.Monat] = p.ReadingDate
-			ablesung[p.Monat] = p.PersonenByApartment
-		}
-	}
-
+// personenMonate lists the occupant count of every month: the one of the
+// Fixkosten-Eingabe, which decides the Schlüssel "Personen" and the warm water
+// split.
+func personenMonate(monate []string, fixkosten map[string]calc.FixkostenMonat) []PersonenMonat {
 	out := make([]PersonenMonat, 0, len(monate))
 	for _, m := range monate {
-		row := PersonenMonat{Monat: m, Ablesung: ablesung[m]}
+		row := PersonenMonat{Monat: m}
 		if fm, ok := fixkosten[m]; ok {
 			row.Fixkosten = fm.Eingabe.Personen
 		}

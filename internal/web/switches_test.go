@@ -18,9 +18,10 @@ func TestSwitches_NichtMehrInFormularUndCSV(t *testing.T) {
 		t.Run(s.Name, func(t *testing.T) {
 			form := vollesFormular()
 			form.Set(s.FormName, "1")
-			in, err := parsePeriodInput(formRequest(t, form))
-			if err != nil || *s.Input(&in) {
-				t.Errorf("Formular mit Feld: Schalter %v, %v, want aus (Feld ignoriert)", *s.Input(&in), err)
+			// The field is ignored: parsing succeeds and the Ablesung has no
+			// place to keep it.
+			if _, err := parsePeriodInput(formRequest(t, form)); err != nil {
+				t.Errorf("Formular mit Feld: %v, want kein Fehler (Feld ignoriert)", err)
 			}
 
 			db := openTestDB(t)
@@ -43,9 +44,6 @@ func TestSwitches_NichtMehrInFormularUndCSV(t *testing.T) {
 			rows, err := parseImportCSV(strings.NewReader(alt))
 			if err != nil || len(rows) != 1 {
 				t.Fatalf("parseImportCSV (alte Datei) = %d Zeilen, %v", len(rows), err)
-			}
-			if *s.Input(&rows[0].input) {
-				t.Errorf("Schalter %s aus der alten Datei übernommen", s.CSVColumn)
 			}
 		})
 	}

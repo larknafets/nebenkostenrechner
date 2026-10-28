@@ -10,7 +10,7 @@ import (
 
 // backfillFixkostenEingabenAusAblesungen gives every Fixkosten-Eingabe the
 // prices and switches of the Ablesungen of its Abrechnungsmonat (#361, spec
-// #359, step 1, non-destructive: the Ablesung columns stay).
+// #359, step 1, non-destructive; dropPeriodsAblesungsFelder removes the Ablesung columns afterwards, #368).
 //
 // The Ablesungen of a month are read newest first (reading_date, then id).
 // Each price takes the newest value that is not empty, so a Teilstand without

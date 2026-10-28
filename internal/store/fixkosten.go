@@ -141,7 +141,7 @@ type FixkostenPositionWert struct {
 // FixkostenInput is one monthly Fixkosten-Eingabe, ready to be persisted.
 type FixkostenInput struct {
 	Monat    string                          // YYYY-MM-01, same convention as PeriodInput.ReadingDate
-	Personen map[int64]float64               // apartment id -> Personenzahl - own to Fixkosten, not period_occupancy (Issue #60 Story 8)
+	Personen map[int64]float64               // apartment id -> Personenzahl - own to Fixkosten (Issue #60 Story 8)
 	Werte    map[int64]FixkostenPositionWert // kostenposition id -> Logik/Typ/Wert for this Eingabe
 	Abschlag map[int64]float64               // apartment id -> Nebenkostenabschlag value - not a Kostenposition, covers Fixkosten AND consumption costs together, see nebenkosten_abschlaege
 	// Miete: apartment id -> monthly rent, see mieten. A missing entry is "not recorded"
@@ -512,6 +512,13 @@ type FixkostenEingabeDetails struct {
 	EinspeisungPreis  *float64
 	WallboxKomplettW1 bool
 	PVGutschriftW1    bool
+}
+
+// PreiseVollstaendig reports whether all four prices of the Eingabe are
+// entered. It is the one rule behind "Fixkosten fehlen": an Ablesung whose
+// month has no Eingabe, or one without all prices, cannot be computed.
+func (f *FixkostenEingabeDetails) PreiseVollstaendig() bool {
+	return f.Strompreis != nil && f.FrischwasserPreis != nil && f.AbwasserPreis != nil && f.EinspeisungPreis != nil
 }
 
 // GetFixkostenEingabeDetails returns the given Fixkosten-Eingabe with its

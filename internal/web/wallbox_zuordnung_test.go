@@ -42,8 +42,7 @@ func wallboxAblesungen(t *testing.T, db *sql.DB, einzelW1, einzelW2 *float64, ko
 	if einzelW2 != nil {
 		second.Readings[wbW2] = *einzelW2
 	}
-	second.WallboxKomplettW1 = komplettW1
-	id, err := createPeriod(db, second)
+	id, err := createPeriod(db, second, mitHaekchen(komplettW1, false))
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
@@ -168,8 +167,9 @@ func TestAblesung_OhnePreiseAnlegenAendernVervollstaendigen(t *testing.T) {
 	if err != nil || latest == nil {
 		t.Fatalf("GetLatestPeriod = %v, %v", latest, err)
 	}
-	if latest.WallboxKomplettW1 || latest.Strompreis != nil || len(latest.PersonenByApartment) != 0 {
-		t.Errorf("gespeicherte Ablesung trägt Preise, Personen oder Häkchen: %+v", latest)
+	// The posted values reach no Fixkosten-Eingabe.
+	if eingaben, err := store.AllFixkostenEingabenDetails(db); err != nil || len(eingaben) != 0 {
+		t.Errorf("Fixkosten-Eingaben nach dem Anlegen = %v, %v, want keine", eingaben, err)
 	}
 
 	// Change: new date and a meter reading, nothing else posted.

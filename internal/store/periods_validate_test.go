@@ -16,8 +16,6 @@ func TestPeriodInput_Validate(t *testing.T) {
 	}{
 		{"gültig", func(in *PeriodInput) {}, 0, 0, "", false},
 		{"Teilstand: Monat leer", func(in *PeriodInput) { in.Monat = "" }, 0, 0, "", false},
-		// Personenzahl, Preise und Häkchen gehören zur Fixkosten-Eingabe (#359).
-		{"Personenzahl der Ablesung wird nicht geprüft", func(in *PeriodInput) { in.Personen[1] = -1 }, 0, 0, "", false},
 		{"Ablesedatum leer", func(in *PeriodInput) { in.ReadingDate = "" }, FeldReadingDate, 0, "", true},
 		{"Ablesedatum falsches Format", func(in *PeriodInput) { in.ReadingDate = "01.07.2026" }, FeldReadingDate, 0, "01.07.2026", true},
 		{"Ablesedatum nur Monat", func(in *PeriodInput) { in.ReadingDate = "2026-07" }, FeldReadingDate, 0, "2026-07", true},

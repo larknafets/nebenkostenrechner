@@ -42,8 +42,7 @@ func wallboxPVAblesungen(t *testing.T, db *sql.DB, pvSchalter bool) {
 	second.Readings["strom_wallbox"] = 40
 	second.Readings["strom_einspeisung"] = 52.5
 	second.Readings[wbW2] = w2
-	second.PVGutschriftW1 = pvSchalter
-	if _, err := createPeriod(db, second); err != nil {
+	if _, err := createPeriod(db, second, mitHaekchen(false, pvSchalter)); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 }

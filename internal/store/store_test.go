@@ -28,19 +28,13 @@ func baseReadings(overrides map[string]float64) map[string]float64 {
 	return out
 }
 
-// completePeriodInput is a fully entered Ablesung (Monat and all prices
-// set), so a series of them passes the Ablesungsreihe rules (only the
-// newest may be a Teilstand).
+// completePeriodInput is a fully entered Ablesung (Monat set), so a series of
+// them passes the Ablesungsreihe rules (only the newest may be a Teilstand).
 func completePeriodInput(date string, readings map[string]float64) PeriodInput {
 	return PeriodInput{
-		ReadingDate:       date,
-		Monat:             date[:7] + "-01",
-		Strompreis:        Float64(0.22),
-		FrischwasserPreis: Float64(1.46),
-		AbwasserPreis:     Float64(4.87),
-		EinspeisungPreis:  Float64(0.08),
-		Readings:          readings,
-		Personen:          map[int64]float64{1: 2, 2: 1},
+		ReadingDate: date,
+		Monat:       date[:7] + "-01",
+		Readings:    readings,
 	}
 }
 
@@ -87,14 +81,8 @@ func TestCreatePeriod_GetLatestPeriod_AllPeriods_Roundtrip(t *testing.T) {
 	if latest.ReadingDate != "2026-10-01" {
 		t.Errorf("GetLatestPeriod.ReadingDate = %q, want 2026-10-01", latest.ReadingDate)
 	}
-	if OrZero(latest.Strompreis) != 0.22 || OrZero(latest.FrischwasserPreis) != 1.46 || OrZero(latest.AbwasserPreis) != 4.87 {
-		t.Errorf("GetLatestPeriod prices = %v/%v/%v, want 0.22/1.46/4.87", OrZero(latest.Strompreis), OrZero(latest.FrischwasserPreis), OrZero(latest.AbwasserPreis))
-	}
 	if latest.Readings["strom_gesamt"] != 200 {
 		t.Errorf("GetLatestPeriod.Readings[strom_gesamt] = %v, want 200", latest.Readings["strom_gesamt"])
-	}
-	if latest.PersonenByApartment[1] != 2 || latest.PersonenByApartment[2] != 1 {
-		t.Errorf("GetLatestPeriod.PersonenByApartment = %v, want {1:2, 2:1}", latest.PersonenByApartment)
 	}
 
 	all, err := AllPeriods(db)
@@ -115,13 +103,9 @@ func TestCreatePeriod_GetLatestPeriod_AllPeriods_Roundtrip(t *testing.T) {
 func TestPeriod_Monat_Roundtrip(t *testing.T) {
 	db := openTestDB(t)
 	p1, err := CreatePeriod(db, PeriodInput{
-		ReadingDate:       "2026-08-31",
-		Monat:             "2026-08-01",
-		Strompreis:        Float64(0.22),
-		FrischwasserPreis: Float64(1.46),
-		AbwasserPreis:     Float64(4.87),
-		Readings:          baseReadings(nil),
-		Personen:          map[int64]float64{1: 2, 2: 1},
+		ReadingDate: "2026-08-31",
+		Monat:       "2026-08-01",
+		Readings:    baseReadings(nil),
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
@@ -266,7 +250,6 @@ func TestImportPeriods_AllOrNothing(t *testing.T) {
 			// longer an error - but a nonexistent apartment_id still
 			// violates the FK constraint on period_occupancy, so it stays
 			// a genuine error trigger.
-			Personen: map[int64]float64{999: 1},
 		},
 	})
 	if err == nil {
@@ -381,9 +364,6 @@ func TestAllPeriodDetails_OrderAndData(t *testing.T) {
 	}
 	if details[0].Readings["strom_gesamt"] != 100 {
 		t.Errorf("details[0].Readings[strom_gesamt] = %v, want 100", details[0].Readings["strom_gesamt"])
-	}
-	if details[0].PersonenByApartment[1] != 2 || details[0].PersonenByApartment[2] != 1 {
-		t.Errorf("details[0].PersonenByApartment = %v, want {1:2, 2:1}", details[0].PersonenByApartment)
 	}
 }
 
@@ -853,10 +833,13 @@ func TestEnsurePeriodsEinspeisungPreisColumn(t *testing.T) {
 		}
 	})
 
-	t.Run("neue Tabelle hat die Spalte bereits - no-op", func(t *testing.T) {
+	t.Run("frische Tabelle ohne Ablesungspreise - übersprungen, die Spalte kommt nicht zurück (#368)", func(t *testing.T) {
 		db := openTestDB(t)
 		if err := ensurePeriodsEinspeisungPreisColumn(db); err != nil {
 			t.Fatalf("ensurePeriodsEinspeisungPreisColumn on an already-current schema: %v", err)
+		}
+		if has, err := hasColumn(db, "periods", "einspeisung_preis"); err != nil || has {
+			t.Errorf("periods.einspeisung_preis = %v, %v, want nicht vorhanden", has, err)
 		}
 	})
 }
@@ -984,32 +967,6 @@ func TestSeed_AddsNewMeterToExistingDB(t *testing.T) {
 	}
 	if count != 1 {
 		t.Errorf("strom_einspeisung meters count after seed = %d, want 1 (backfilled)", count)
-	}
-}
-
-func TestEinspeisungPreis_Roundtrip(t *testing.T) {
-	db := openTestDB(t)
-	in := completePeriodInput("2026-09-01", baseReadings(nil))
-	in.EinspeisungPreis = Float64(0.082)
-	p1, err := CreatePeriod(db, in)
-	if err != nil {
-		t.Fatalf("CreatePeriod: %v", err)
-	}
-
-	got, err := GetPeriodDetails(db, p1)
-	if err != nil {
-		t.Fatalf("GetPeriodDetails: %v", err)
-	}
-	if OrZero(got.EinspeisungPreis) != 0.082 {
-		t.Errorf("EinspeisungPreis = %v, want 0.082", OrZero(got.EinspeisungPreis))
-	}
-
-	byID, err := GetPeriodByID(db, p1)
-	if err != nil {
-		t.Fatalf("GetPeriodByID: %v", err)
-	}
-	if byID.EinspeisungPreis != 0.082 {
-		t.Errorf("GetPeriodByID.EinspeisungPreis = %v, want 0.082", byID.EinspeisungPreis)
 	}
 }
 
@@ -1322,22 +1279,16 @@ func columnNotNull(t *testing.T, db *sql.DB, table, column string) bool {
 // TestEnsurePeriodsNullablePriceColumns verifies the table-rebuild
 // migration (Ticket #128): it makes periods' 4 price columns nullable,
 // preserves existing data and FK-linked meter_readings/period_occupancy
-// rows, and is idempotent. "Works on an empty DB" is covered pervasively
-// by every other test in this file - openTestDB always runs this migration
-// against a brand-new, empty database via Open().
+// rows, and is idempotent. Since #368 a brand-new database has no price
+// columns and the step skips it (second subtest).
 func TestEnsurePeriodsNullablePriceColumns(t *testing.T) {
 	t.Run("macht Preis-Spalten einer alten NOT-NULL-Tabelle nullable, Bestandsdaten und FK-Bezüge bleiben erhalten", func(t *testing.T) {
 		db := openTestDB(t)
 
 		p1, err := CreatePeriod(db, PeriodInput{
-			ReadingDate:       "2026-01-01",
-			Monat:             "2026-01-01",
-			Strompreis:        Float64(0.22),
-			FrischwasserPreis: Float64(1.46),
-			AbwasserPreis:     Float64(4.87),
-			EinspeisungPreis:  Float64(0.08),
-			Readings:          baseReadings(map[string]float64{"strom_gesamt": 123}),
-			Personen:          map[int64]float64{1: 2, 2: 1},
+			ReadingDate: "2026-01-01",
+			Monat:       "2026-01-01",
+			Readings:    baseReadings(map[string]float64{"strom_gesamt": 123}),
 		})
 		if err != nil {
 			t.Fatalf("CreatePeriod: %v", err)
@@ -1358,7 +1309,15 @@ func TestEnsurePeriodsNullablePriceColumns(t *testing.T) {
 			    monat                      TEXT NOT NULL DEFAULT ''
 			)`,
 			`INSERT INTO periods_old_shape (id, reading_date, strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis, monat)
-			 SELECT id, reading_date, strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis, monat FROM periods`,
+			 SELECT id, reading_date, 0.22, 1.46, 4.87, 0.08, monat FROM periods`,
+			`CREATE TABLE period_occupancy (
+			    id           INTEGER PRIMARY KEY,
+			    period_id    INTEGER NOT NULL REFERENCES periods(id),
+			    apartment_id INTEGER NOT NULL REFERENCES apartments(id),
+			    personen     REAL NOT NULL,
+			    UNIQUE(period_id, apartment_id)
+			)`,
+			`INSERT INTO period_occupancy (period_id, apartment_id, personen) SELECT id, 1, 2 FROM periods`,
 			`PRAGMA foreign_keys = OFF`,
 			`DROP TABLE periods`,
 			`ALTER TABLE periods_old_shape RENAME TO periods`,
@@ -1388,14 +1347,19 @@ func TestEnsurePeriodsNullablePriceColumns(t *testing.T) {
 		if err != nil {
 			t.Fatalf("GetPeriodDetails after migration: %v", err)
 		}
-		if got.ReadingDate != "2026-01-01" || OrZero(got.Strompreis) != 0.22 || OrZero(got.EinspeisungPreis) != 0.08 {
-			t.Errorf("period data after migration = %+v, want ReadingDate=2026-01-01 Strompreis=0.22 EinspeisungPreis=0.08", got)
+		var strompreis, einspeisungPreis float64
+		if err := db.QueryRow(`SELECT strompreis, einspeisung_preis FROM periods WHERE id = ?`, p1).Scan(&strompreis, &einspeisungPreis); err != nil {
+			t.Fatalf("read prices after migration: %v", err)
+		}
+		if got.ReadingDate != "2026-01-01" || strompreis != 0.22 || einspeisungPreis != 0.08 {
+			t.Errorf("period data after migration = %+v, %v, %v, want ReadingDate=2026-01-01 Strompreis=0.22 EinspeisungPreis=0.08", got, strompreis, einspeisungPreis)
 		}
 		if got.Readings["strom_gesamt"] != 123 {
 			t.Errorf("Readings[strom_gesamt] after migration = %v, want 123 (FK-verknüpfte meter_readings-Row erhalten)", got.Readings["strom_gesamt"])
 		}
-		if got.PersonenByApartment[1] != 2 || got.PersonenByApartment[2] != 1 {
-			t.Errorf("PersonenByApartment after migration = %v, want {1:2, 2:1} (FK-verknüpfte period_occupancy-Rows erhalten)", got.PersonenByApartment)
+		var personen int
+		if err := db.QueryRow(`SELECT COUNT(*) FROM period_occupancy WHERE period_id = ?`, p1).Scan(&personen); err != nil || personen != 1 {
+			t.Errorf("period_occupancy rows after migration = %d, %v, want 1 (FK-verknüpfte Row erhalten)", personen, err)
 		}
 
 		// Idempotent: a second call must not fail or rebuild again.
@@ -1404,30 +1368,32 @@ func TestEnsurePeriodsNullablePriceColumns(t *testing.T) {
 		}
 	})
 
-	t.Run("neue Tabelle hat die Spalten schon nullable - no-op", func(t *testing.T) {
+	t.Run("frische Tabelle ohne Ablesungspreise - übersprungen, kein Fehler (#368)", func(t *testing.T) {
 		db := openTestDB(t)
 		if err := ensurePeriodsNullablePriceColumns(db); err != nil {
 			t.Fatalf("ensurePeriodsNullablePriceColumns on an already-current schema: %v", err)
 		}
+		if err := ensurePeriodSwitchColumns(db); err != nil {
+			t.Fatalf("ensurePeriodSwitchColumns on an already-current schema: %v", err)
+		}
+		for _, c := range ablesungsSpalten {
+			if has, err := hasColumn(db, "periods", c); err != nil || has {
+				t.Errorf("periods.%s = %v, %v, want nicht vorhanden", c, has, err)
+			}
+		}
 	})
 }
 
-// TestCreatePeriod_Teilstand verifies AC2: CreatePeriod accepts nil
-// prices, an empty Monat, and Readings/Personen maps that don't cover
-// every MeterKeys entry/apartment - no error, the missing values simply
-// aren't persisted.
+// TestCreatePeriod_Teilstand verifies AC2: CreatePeriod accepts an empty
+// Monat and a Readings map that doesn't cover every MeterKeys entry - no
+// error, the missing values simply aren't persisted.
 func TestCreatePeriod_Teilstand(t *testing.T) {
 	db := openTestDB(t)
 
 	id, err := CreatePeriod(db, PeriodInput{
-		ReadingDate:       "2026-05-01",
-		Monat:             "", // Teilstand: Abrechnungsmonat fehlt
-		Strompreis:        Float64(0.22),
-		FrischwasserPreis: nil, // Teilstand: Preis fehlt
-		AbwasserPreis:     nil,
-		EinspeisungPreis:  nil,
-		Readings:          map[string]float64{"strom_gesamt": 100}, // nur 1 von 10 Metern
-		Personen:          map[int64]float64{1: 2},                 // nur 1 von 2 Wohnungen
+		ReadingDate: "2026-05-01",
+		Monat:       "",                                      // Teilstand: Abrechnungsmonat fehlt
+		Readings:    map[string]float64{"strom_gesamt": 100}, // nur 1 von 10 Metern
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod mit Teilstand-Daten: %v", err)
@@ -1440,23 +1406,8 @@ func TestCreatePeriod_Teilstand(t *testing.T) {
 	if got.Monat != "" {
 		t.Errorf("Monat = %q, want \"\" (nicht erfasst)", got.Monat)
 	}
-	if got.Strompreis == nil || *got.Strompreis != 0.22 {
-		t.Errorf("Strompreis = %v, want 0.22", got.Strompreis)
-	}
-	if got.FrischwasserPreis != nil {
-		t.Errorf("FrischwasserPreis = %v, want nil (nicht erfasst)", *got.FrischwasserPreis)
-	}
-	if got.AbwasserPreis != nil {
-		t.Errorf("AbwasserPreis = %v, want nil (nicht erfasst)", *got.AbwasserPreis)
-	}
-	if got.EinspeisungPreis != nil {
-		t.Errorf("EinspeisungPreis = %v, want nil (nicht erfasst)", *got.EinspeisungPreis)
-	}
 	if len(got.Readings) != 1 || got.Readings["strom_gesamt"] != 100 {
 		t.Errorf("Readings = %v, want nur {strom_gesamt: 100}", got.Readings)
-	}
-	if len(got.PersonenByApartment) != 1 || got.PersonenByApartment[1] != 2 {
-		t.Errorf("PersonenByApartment = %v, want nur {1: 2}", got.PersonenByApartment)
 	}
 
 	complete, err := PeriodComplete(db, id)
@@ -1478,14 +1429,9 @@ func TestUpdatePeriod_Teilstand_PreservesUnspecifiedFields(t *testing.T) {
 	db := openTestDB(t)
 
 	id, err := CreatePeriod(db, PeriodInput{
-		ReadingDate:       "2026-05-01",
-		Monat:             "2026-05-01",
-		Strompreis:        Float64(0.22),
-		FrischwasserPreis: Float64(1.46),
-		AbwasserPreis:     Float64(4.87),
-		EinspeisungPreis:  Float64(0.08),
-		Readings:          baseReadings(map[string]float64{"strom_gesamt": 100}),
-		Personen:          map[int64]float64{1: 2, 2: 1},
+		ReadingDate: "2026-05-01",
+		Monat:       "2026-05-01",
+		Readings:    baseReadings(map[string]float64{"strom_gesamt": 100}),
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
@@ -1498,9 +1444,7 @@ func TestUpdatePeriod_Teilstand_PreservesUnspecifiedFields(t *testing.T) {
 	if err := UpdatePeriod(db, id, PeriodInput{
 		ReadingDate: "2026-05-01",
 		Monat:       "",
-		Strompreis:  Float64(0.25),
 		Readings:    map[string]float64{},
-		Personen:    map[int64]float64{1: 9},
 	}); err != nil {
 		t.Fatalf("UpdatePeriod: %v", err)
 	}
@@ -1512,14 +1456,8 @@ func TestUpdatePeriod_Teilstand_PreservesUnspecifiedFields(t *testing.T) {
 	if got.Monat != "2026-05-01" {
 		t.Errorf("Monat = %q, want 2026-05-01 (unverändert, da diese Runde leer war)", got.Monat)
 	}
-	if OrZero(got.Strompreis) != 0.22 || OrZero(got.FrischwasserPreis) != 1.46 || OrZero(got.AbwasserPreis) != 4.87 || OrZero(got.EinspeisungPreis) != 0.08 {
-		t.Errorf("Preise = %v/%v/%v/%v, want unverändert 0.22/1.46/4.87/0.08", OrZero(got.Strompreis), OrZero(got.FrischwasserPreis), OrZero(got.AbwasserPreis), OrZero(got.EinspeisungPreis))
-	}
 	if got.Readings["strom_gesamt"] != 100 {
 		t.Errorf("Readings[strom_gesamt] = %v, want 100 (unverändert, da diese Runde keinen neuen Wert mitgab)", got.Readings["strom_gesamt"])
-	}
-	if got.PersonenByApartment[1] != 2 || got.PersonenByApartment[2] != 1 {
-		t.Errorf("PersonenByApartment = %v, want {1:2, 2:1} (unverändert)", got.PersonenByApartment)
 	}
 }
 
@@ -1535,13 +1473,9 @@ func TestUpdatePeriod_EmptyMonat_NoNeighborConflict(t *testing.T) {
 	mustCreatePeriod(t, db, "2026-03-01", baseReadings(nil))
 
 	if err := UpdatePeriod(db, p2, PeriodInput{
-		ReadingDate:       "2026-02-01",
-		Monat:             "", // partial reading: would collide with a neighbor as "2026-01-01" or "2026-04-01", but gets skipped
-		Strompreis:        Float64(0.22),
-		FrischwasserPreis: Float64(1.46),
-		AbwasserPreis:     Float64(4.87),
-		Readings:          baseReadings(nil),
-		Personen:          map[int64]float64{1: 2, 2: 1},
+		ReadingDate: "2026-02-01",
+		Monat:       "", // partial reading: would collide with a neighbor as "2026-01-01" or "2026-04-01", but gets skipped
+		Readings:    baseReadings(nil),
 	}); err != nil {
 		t.Fatalf("UpdatePeriod mit leerem Monat: %v, want kein Fehler (Nachbar-Prüfung übersprungen)", err)
 	}
@@ -1575,14 +1509,9 @@ func TestPeriodComplete(t *testing.T) {
 
 	full := func() PeriodInput {
 		return PeriodInput{
-			ReadingDate:       "2026-05-01",
-			Monat:             "2026-05-01",
-			Strompreis:        Float64(0.22),
-			FrischwasserPreis: Float64(1.46),
-			AbwasserPreis:     Float64(4.87),
-			EinspeisungPreis:  Float64(0.08),
-			Readings:          baseReadings(nil),
-			Personen:          map[int64]float64{1: 2, 2: 1},
+			ReadingDate: "2026-05-01",
+			Monat:       "2026-05-01",
+			Readings:    baseReadings(nil),
 		}
 	}
 
@@ -1591,25 +1520,11 @@ func TestPeriodComplete(t *testing.T) {
 			t.Error("PeriodComplete = false, want true")
 		}
 	})
-	t.Run("Preis fehlt: bleibt vollständig, Preise gehören zur Fixkosten-Eingabe", func(t *testing.T) {
-		in := full()
-		in.EinspeisungPreis = nil
-		if !complete(t, in) {
-			t.Error("PeriodComplete = false, want true (Preise sind kein Teil der Vollständigkeit, #359)")
-		}
-	})
 	t.Run("Zählerstand fehlt", func(t *testing.T) {
 		in := full()
 		delete(in.Readings, "strom_gesamt")
 		if complete(t, in) {
 			t.Error("PeriodComplete = true, want false (Zählerstand fehlt)")
-		}
-	})
-	t.Run("Personenzahl fehlt: bleibt vollständig, die Personenzahl gehört zur Fixkosten-Eingabe", func(t *testing.T) {
-		in := full()
-		delete(in.Personen, 2)
-		if !complete(t, in) {
-			t.Error("PeriodComplete = false, want true (Personenzahl ist kein Teil der Vollständigkeit, #359)")
 		}
 	})
 	t.Run("Monat fehlt", func(t *testing.T) {
@@ -1628,11 +1543,9 @@ func TestPeriodComplete(t *testing.T) {
 	})
 }
 
-// TestGetPeriodByID_TeilstandPricesReadAsZero verifies GetPeriodByID
-// doesn't crash on a Teilstand's NULL prices - it coalesces them to 0,
-// since Period only ever feeds calc's Kosten-Berechnung, which never runs
-// against an incomplete period by design (see PeriodComplete).
-func TestGetPeriodByID_TeilstandPricesReadAsZero(t *testing.T) {
+// TestGetPeriodByID_Teilstand verifies GetPeriodByID reads a Teilstand (no
+// Monat) and fails with an error for an unknown id.
+func TestGetPeriodByID_Teilstand(t *testing.T) {
 	db := openTestDB(t)
 
 	id, err := CreatePeriod(db, PeriodInput{
@@ -1647,8 +1560,11 @@ func TestGetPeriodByID_TeilstandPricesReadAsZero(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetPeriodByID: %v", err)
 	}
-	if got.Strompreis != 0 || got.FrischwasserPreis != 0 || got.AbwasserPreis != 0 || got.EinspeisungPreis != 0 {
-		t.Errorf("prices = %v/%v/%v/%v, want alle 0", got.Strompreis, got.FrischwasserPreis, got.AbwasserPreis, got.EinspeisungPreis)
+	if got.ID != id || got.ReadingDate != "2026-05-01" {
+		t.Errorf("GetPeriodByID = %+v, want id %d and date 2026-05-01", got, id)
+	}
+	if _, err := GetPeriodByID(db, id+1000); err == nil {
+		t.Error("GetPeriodByID(unknown) = nil error, want error")
 	}
 }
 
