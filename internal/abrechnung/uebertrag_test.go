@@ -36,7 +36,6 @@ func uebertragDaten(ablesungVon, eingabeVon time.Time, ohneAblesung, ohneEingabe
 
 	kostenpositionen := []store.Kostenposition{{ID: 1, Key: "grundsteuer", Label: "Grundsteuer", Umlagefaehig: true}}
 	var details []*store.FixkostenEingabeDetails
-	var summaries []store.FixkostenEingabeSummary
 	id = 1
 	for m := eingabeVon; !m.After(ende); m = m.AddDate(0, 1, 0) {
 		key := m.Format("2006-01-02")
@@ -52,11 +51,10 @@ func uebertragDaten(ablesungVon, eingabeVon time.Time, ohneAblesung, ohneEingabe
 			Werte:    map[int64]store.FixkostenPositionWert{1: {Logik: store.LogikWohnung2, Typ: store.TypMonatlich, Wert: uebertragKosten}},
 			Abschlag: map[int64]float64{1: 0, 2: uebertragAbschlag},
 		})
-		summaries = append(summaries, store.FixkostenEingabeSummary{ID: id, Monat: key})
 		id++
 	}
 	d := BerechnungsDaten{
-		Pruef:            Daten{Periods: periods, Eingaben: summaries, Apartments: apartments, Haus: haus},
+		Pruef:            Daten{Periods: periods, Eingaben: details, Apartments: apartments, Haus: haus},
 		Kostenpositionen: kostenpositionen,
 		Fixkosten:        calc.NewFixkostenreihe(calc.FixkostenDaten{Eingaben: details, Kostenpositionen: kostenpositionen, Apartments: apartments}),
 	}
@@ -183,5 +181,19 @@ func TestBerechne_Uebertrag(t *testing.T) {
 				t.Errorf("Saldo of January = %v, want Übertrag %v - 10 = %v", v.Zeilen[0].Saldo, got.Betrag, want)
 			}
 		})
+	}
+}
+
+// An incomplete Fixkosten-Eingabe before the period stops the Übertrag.
+func TestBerechne_UebertragFixkostenUnvollstaendig(t *testing.T) {
+	d := uebertragDaten(monat(2026, time.October), monat(2026, time.November), nil, nil)
+	ohnePreis(d.Pruef, "2026-12-01")
+	d.Kosten = verbrauchskostenVon(d)
+	erg, err := Berechne(d, 2027, GanzesJahr, 2)
+	if err != nil || erg.Abrechnung == nil {
+		t.Fatalf("Berechne: err %v, Maengel %v", err, maengelTexte(erg.Pruefung))
+	}
+	if got, want := erg.Abrechnung.Monatsverlauf.Uebertrag.Hinweis, "Übertrag nicht berechenbar: Fixkosten-Eingabe ist unvollständig: Dezember 2026"; got != want {
+		t.Errorf("Hinweis = %q, want %q", got, want)
 	}
 }

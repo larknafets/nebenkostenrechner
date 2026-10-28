@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -335,7 +336,7 @@ func fixkostenFormularFehler(err error, labels, names map[int64]string) error {
 	case store.FeldPersonen:
 		return fmt.Errorf("ungültige Personenzahl für %s: %w", names[ef.ID], ef.Err)
 	}
-	if p, ok := fixkostenPreisFuerFeld(ef.Feld); ok {
+	if p, ok := store.PreisFuerFeld(ef.Feld); ok {
 		return preisFormularFehler(p, ef.Err)
 	}
 	return err
@@ -443,15 +444,10 @@ func handleUpdateFixkosten() http.HandlerFunc {
 		}
 
 		// A move to another Monat takes the Eingabe away from the old Monat:
-		// its Ablesungen are asked before the update.
+		// the target page words the note from the data.
 		var query string
 		if in.Monat != existing.Monat {
-			betroffene, err := store.BetroffeneAblesungen(db, existing.Monat)
-			if err != nil {
-				http.Error(w, "betroffene ablesungen: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			query = ablesungenQuery(paramAlterMonat, existing.Monat, betroffene)
+			query = "?" + url.Values{paramAlterMonat: {existing.Monat}}.Encode()
 		}
 
 		if err := store.UpdateFixkostenEingabe(db, eingabeID, in); err != nil {
@@ -480,18 +476,11 @@ func handleDeleteFixkosten() http.HandlerFunc {
 			return
 		}
 
-		// The affected Ablesungen are asked before the deletion, the banner
-		// on the target page names them from the redirect.
+		// The banner on the target page derives the affected Ablesungen from
+		// the data, the redirect only names the Monat.
 		var query string
 		if eingabe, err := store.GetFixkostenEingabeDetails(db, eingabeID); err == nil && eingabe != nil {
-			betroffene, err := store.BetroffeneAblesungen(db, eingabe.Monat)
-			if err != nil {
-				http.Error(w, "betroffene ablesungen: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if len(betroffene) > 0 {
-				query = ablesungenQuery(paramGeloescht, eingabe.Monat, betroffene)
-			}
+			query = "?" + url.Values{paramGeloescht: {eingabe.Monat}}.Encode()
 		}
 
 		if err := store.DeleteFixkostenEingabe(db, eingabeID); err != nil {
@@ -541,11 +530,15 @@ func handleFixkostenListe(z *Zugang) http.HandlerFunc {
 		importedCount, _ := strconv.Atoi(r.URL.Query().Get("imported"))
 
 		var hinweise []fixkostenHinweis
-		if h, err := fehlenHinweisAusQuery(db, r.URL.Query(), paramGeloescht); err != nil {
-			http.Error(w, "hinweis: "+err.Error(), http.StatusInternalServerError)
-			return
-		} else if h != nil {
-			hinweise = append(hinweise, *h)
+		if len(r.URL.Query()[paramGeloescht]) > 0 {
+			v, err := calc.Load(db)
+			if err != nil {
+				http.Error(w, "hinweis: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if h := fehlenHinweisAusQuery(v, r.URL.Query(), paramGeloescht); h != nil {
+				hinweise = append(hinweise, *h)
+			}
 		}
 
 		data := struct {
@@ -643,15 +636,15 @@ func handleFixkostenDetail(z *Zugang) http.HandlerFunc {
 			wohnungen = append(wohnungen, w)
 		}
 
-		hinweise, err := fixkostenHinweiseNachAenderung(db, r.URL.Query(), eingabe.Monat)
+		v, err := calc.Load(db)
 		if err != nil {
-			http.Error(w, "hinweis: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "verbrauchskosten: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		betroffene, err := store.BetroffeneAblesungen(db, eingabe.Monat)
-		if err != nil {
-			http.Error(w, "betroffene ablesungen: "+err.Error(), http.StatusInternalServerError)
-			return
+		hinweise := fixkostenHinweiseNachAenderung(v, r.URL.Query(), eingabe.Monat)
+		var betroffene []calc.Ablesung // only a complete Eingabe makes them berechenbar
+		if v.MonatVollstaendig(eingabe.Monat) {
+			betroffene = v.BetroffeneAblesungen(eingabe.Monat)
 		}
 
 		data := struct {

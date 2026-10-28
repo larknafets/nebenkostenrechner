@@ -149,7 +149,7 @@ func groupKostenByMonat(apartmentID int64, periodenKosten []periodKosten) map[st
 // are already newest-first). A month in offen (#364) gets a row of its own
 // even without data: "Fixkosten fehlen" if it has no Eingabe, "offen" for the
 // Verbrauch if it has an incomplete one.
-func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten, offen []offenerMonat) dashboardVerlaufSpalte {
+func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten, offen []calc.OffenerMonat) dashboardVerlaufSpalte {
 	type bucket struct {
 		label         string
 		jahr          int

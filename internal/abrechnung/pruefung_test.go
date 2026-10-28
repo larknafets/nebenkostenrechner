@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -42,10 +43,19 @@ func monatlichePerioden(startID int64, vonJahr int, vonMonat time.Month, bisJahr
 	return out
 }
 
-func eingabenFuer(jahr int, von, bis time.Month) []store.FixkostenEingabeSummary {
-	var out []store.FixkostenEingabeSummary
+// volleEingabe is a Fixkosten-Eingabe with all four prices.
+func volleEingabe(id int64, monat string) *store.FixkostenEingabeDetails {
+	return &store.FixkostenEingabeDetails{
+		ID: id, Monat: monat,
+		Strompreis: store.Float64(0.22), FrischwasserPreis: store.Float64(1.46),
+		AbwasserPreis: store.Float64(4.87), EinspeisungPreis: store.Float64(0.08),
+	}
+}
+
+func eingabenFuer(jahr int, von, bis time.Month) []*store.FixkostenEingabeDetails {
+	var out []*store.FixkostenEingabeDetails
 	for m := von; m <= bis; m++ {
-		out = append(out, store.FixkostenEingabeSummary{ID: int64(jahr*100) + int64(m), Monat: monatKey(jahr, m)})
+		out = append(out, volleEingabe(int64(jahr*100)+int64(m), monatKey(jahr, m)))
 	}
 	return out
 }
@@ -127,14 +137,14 @@ func TestPruefeAbrechnung_AblesungUndFixkosten(t *testing.T) {
 	}
 	d.Periods = periods
 	// November: no Fixkosten-Eingabe. Februar: two.
-	var eingaben []store.FixkostenEingabeSummary
+	var eingaben []*store.FixkostenEingabeDetails
 	for _, e := range d.Eingaben {
 		if e.Monat == "2027-11-01" {
 			continue
 		}
 		eingaben = append(eingaben, e)
 	}
-	eingaben = append(eingaben, store.FixkostenEingabeSummary{ID: 999, Monat: "2027-02-01"})
+	eingaben = append(eingaben, volleEingabe(999, "2027-02-01"))
 	d.Eingaben = eingaben
 
 	got, err := Pruefe(d, 2027, GanzesJahr, 2)
@@ -201,14 +211,14 @@ func TestPruefeAbrechnung_ErstesErfassungsjahr(t *testing.T) {
 
 	t.Run("Fixkosten-Eingabe im ersten Monat ist erlaubt", func(t *testing.T) {
 		d := ersteJahrDaten()
-		d.Eingaben = append(d.Eingaben, store.FixkostenEingabeSummary{ID: 1, Monat: "2026-09-01"})
+		d.Eingaben = append(d.Eingaben, volleEingabe(1, "2026-09-01"))
 		if got, _ := Pruefe(d, 2026, GanzesJahr, 2); !got.Abrechenbar() {
 			t.Errorf("Maengel = %v, want none", maengelTexte(got))
 		}
 	})
 	t.Run("zwei Eingaben im ersten Monat sind mehrdeutig", func(t *testing.T) {
 		d := ersteJahrDaten()
-		d.Eingaben = append(d.Eingaben, store.FixkostenEingabeSummary{ID: 1, Monat: "2026-09-01"}, store.FixkostenEingabeSummary{ID: 2, Monat: "2026-09-01"})
+		d.Eingaben = append(d.Eingaben, volleEingabe(1, "2026-09-01"), volleEingabe(2, "2026-09-01"))
 		got, _ := Pruefe(d, 2026, GanzesJahr, 2)
 		if fmt.Sprint(maengelTexte(got)) != "[Mehr als eine Fixkosten-Eingabe: September 2026]" {
 			t.Errorf("Maengel = %v, want the duplicate September entry", maengelTexte(got))
@@ -348,5 +358,83 @@ func TestPruefeAbrechnung_Stammdaten(t *testing.T) {
 func TestPruefeAbrechnung_UnbekannteWohnung(t *testing.T) {
 	if _, err := Pruefe(vollesJahrDaten(), 2027, GanzesJahr, 3); err == nil {
 		t.Error("unknown apartment: err = nil, want an error")
+	}
+}
+
+// ohnePreis drops the Strompreis of the Eingabe of monat: it becomes
+// unvollständig.
+func ohnePreis(d Daten, monat string) {
+	for _, e := range d.Eingaben {
+		if e.Monat == monat {
+			e.Strompreis = nil
+		}
+	}
+}
+
+func TestPruefeAbrechnung_FixkostenUnvollstaendig(t *testing.T) {
+	t.Run("Monat im Bereich: Mangel mit Aktion und Link", func(t *testing.T) {
+		d := vollesJahrDaten()
+		ohnePreis(d, "2027-03-01")
+		got, _ := Pruefe(d, 2027, GanzesJahr, 2)
+		if fmt.Sprint(maengelTexte(got)) != "[Fixkosten-Eingabe ist unvollständig: März 2027]" {
+			t.Fatalf("Maengel = %v", maengelTexte(got))
+		}
+		m := got.Maengel[0]
+		if m.Art != MangelFixkostenUnvollstaendig || m.Aktion != "Fixkosten ergänzen" || m.Pfad != "/fixkosten/202703/bearbeiten" {
+			t.Errorf("Mangel = %+v, want Art, Aktion and the edit page of the Eingabe", m)
+		}
+	})
+	t.Run("Monat der ersten Ablesung ist ausgenommen", func(t *testing.T) {
+		d := ersteJahrDaten()
+		d.Eingaben = append(d.Eingaben, &store.FixkostenEingabeDetails{ID: 1, Monat: "2026-09-01"})
+		if got, _ := Pruefe(d, 2026, GanzesJahr, 2); !got.Abrechenbar() {
+			t.Errorf("Maengel = %v, want none", maengelTexte(got))
+		}
+	})
+	t.Run("zwei Eingaben melden nur mehrfach", func(t *testing.T) {
+		d := vollesJahrDaten()
+		d.Eingaben = append(d.Eingaben, &store.FixkostenEingabeDetails{ID: 999, Monat: "2027-02-01"})
+		ohnePreis(d, "2027-02-01")
+		got, _ := Pruefe(d, 2027, GanzesJahr, 2)
+		if fmt.Sprint(arten(got)) != fmt.Sprint([]MangelArt{MangelFixkostenMehrfach}) {
+			t.Errorf("Arten = %v, want only fixkosten_mehrfach", arten(got))
+		}
+	})
+	t.Run("ausserhalb des Bereichs kein Mangel", func(t *testing.T) {
+		d := vollesJahrDaten()
+		ohnePreis(d, "2027-03-01")
+		got, _ := Pruefe(d, 2027, Monatsbereich{Von: 6, Bis: 12}, 2)
+		if !got.Abrechenbar() {
+			t.Errorf("Maengel = %v, want none outside the range", maengelTexte(got))
+		}
+	})
+}
+
+// Invariant: if the Prüfung passes, no Ablesung of the range waits for its
+// Fixkosten (GrundFixkostenFehlen), except the first month without a need.
+func TestPruefeAbrechnung_AbrechenbarHeisstKeineOffeneAblesung(t *testing.T) {
+	unvollstaendig := vollesJahrDaten()
+	ohnePreis(unvollstaendig, "2027-05-01")
+	for name, tc := range map[string]struct {
+		d    Daten
+		jahr int
+	}{"voll": {vollesJahrDaten(), 2027}, "unvollstaendig": {unvollstaendig, 2027}, "erstes Jahr": {ersteJahrDaten(), 2026}} {
+		got, _ := Pruefe(tc.d, tc.jahr, GanzesJahr, 2)
+		if (name == "unvollstaendig") == got.Abrechenbar() {
+			t.Fatalf("%s: Abrechenbar = %v, Maengel %v", name, got.Abrechenbar(), maengelTexte(got))
+		}
+		if !got.Abrechenbar() {
+			continue
+		}
+		_, ersterMonat, _ := Erfassungsbeginn(tc.d.Periods[0])
+		von := fixkostenBeginn(ersterMonat, got.Zeitraum.ErsterMonat).Format("2006-01-02")
+		bis := got.Zeitraum.LetzterMonat.Format("2006-01-02")
+		kosten := calc.New(calc.Daten{Periods: tc.d.Periods, Eingaben: tc.d.Eingaben, Apartments: tc.d.Apartments, Haus: tc.d.Haus})
+		for _, p := range tc.d.Periods {
+			a, ok := kosten.Ablesung(p.ID)
+			if ok && a.Grund == calc.GrundFixkostenFehlen && a.Period.Monat >= von && a.Period.Monat <= bis {
+				t.Errorf("%s: abrechenbar, but Ablesung %d (%s) has GrundFixkostenFehlen", name, a.Period.ID, a.Period.Monat)
+			}
+		}
 	}
 }

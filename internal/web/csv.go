@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -32,7 +33,11 @@ var csvImportHeader = csvHeader[:len(csvHeader)-len(store.OptionalMeterKeys)]
 // the Fixkosten-Eingabe: the four prices, the Personenzahl per apartment and the
 // switches. An import accepts them and drops their values.
 var csvVerworfeneSpalten = func() []string {
-	cols := []string{"strompreis", "frischwasser_preis", "abwasser_preis", "einspeisung_preis", "personen_1", "personen_2"}
+	var cols []string
+	for _, p := range store.Preise {
+		cols = append(cols, p.Spalte)
+	}
+	cols = append(cols, "personen_1", "personen_2")
 	for _, s := range store.Switches {
 		cols = append(cols, s.CSVColumn)
 	}
@@ -309,19 +314,25 @@ func importWarnings(rows []importRow, ids []int64) []string {
 // Fixkosten-Eingabe, and that the file held prices, Personenzahlen or switches,
 // which are no longer taken over.
 func importHinweise(db *sql.DB, rows []importRow) ([]string, error) {
-	eingaben, err := store.AllFixkostenEingabenDetails(db)
+	v, err := calc.Load(db)
 	if err != nil {
 		return nil, err
 	}
-	monate := make([]string, len(rows))
+	importiert := make(map[string]bool, len(rows))
 	verworfen := false
-	for i, row := range rows {
-		monate[i] = row.input.Monat
+	for _, row := range rows {
+		importiert[row.input.Monat] = true
 		verworfen = verworfen || row.verworfen
 	}
+	var fehlen []calc.OffenerMonat
+	for _, o := range v.OffeneMonate() {
+		if importiert[o.Monat] {
+			fehlen = append(fehlen, o)
+		}
+	}
 	var hinweise []string
-	if fehlen := fixkostenFehlenMonate(eingaben, monate); len(fehlen) > 0 {
-		hinweise = append(hinweise, fixkostenFehlenSatz(fehlen)+" Die Ablesungen dieser Monate sind noch nicht berechnet, bis die Fixkosten erfasst sind.")
+	if h := fixkostenFehlenHinweis(kontextCSVImport, fehlen, nil); h != nil {
+		hinweise = append(hinweise, h.Text)
 	}
 	if verworfen {
 		hinweise = append(hinweise, "Die Datei enthält Preise, Personenzahlen oder Häkchen. Sie gehören zur Fixkosten-Eingabe und werden nicht übernommen.")

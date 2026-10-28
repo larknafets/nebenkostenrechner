@@ -1,5 +1,5 @@
 {{define "fixkostenHinweise"}}
 {{range .Hinweise}}
-<p class="panel" style="border-color:{{if .Info}}#2e7d32{{else}}#e6a700{{end}}; margin-top:1rem">{{if .Info}}✓{{else}}⚠{{end}} {{.Text}}{{if and .Link $.Vermieter}} <a href="{{$.Base}}{{.Pfad}}">Fixkosten erfassen</a>{{end}}</p>
+<p class="panel" style="border-color:{{if .Info}}#2e7d32{{else}}#e6a700{{end}}; margin-top:1rem">{{if .Info}}✓{{else}}⚠{{end}} {{.Text}}{{if and .Link $.Vermieter}} <a href="{{$.Base}}{{.Pfad}}">{{.LinkText}}</a>{{end}}</p>
 {{end}}
 {{end}}

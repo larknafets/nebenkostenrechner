@@ -70,27 +70,3 @@ func (d wallboxHinweisDaten) json() string {
 	}
 	return string(b)
 }
-
-// fixkostenFehlenMonate returns the given Abrechnungsmonate ("YYYY-MM-01",
-// without duplicates, in the order given) that have no complete Fixkosten-
-// Eingabe: none at all or one that lacks a price, the same rule that makes an
-// Ablesung nicht berechenbar (calc.GrundFixkostenFehlen). Empty months are
-// skipped, a Teilstand without Abrechnungsmonat has none to miss.
-func fixkostenFehlenMonate(eingaben []*store.FixkostenEingabeDetails, monate []string) []string {
-	komplett := make(map[string]bool, len(eingaben))
-	for _, e := range eingaben {
-		komplett[e.Monat] = e.PreiseVollstaendig()
-	}
-	var out []string
-	seen := make(map[string]bool, len(monate))
-	for _, m := range monate {
-		if m == "" || seen[m] {
-			continue
-		}
-		seen[m] = true
-		if !komplett[m] {
-			out = append(out, m)
-		}
-	}
-	return out
-}

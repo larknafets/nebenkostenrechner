@@ -122,13 +122,20 @@ func scanPeriodRow(rows *sql.Rows) (*LatestPeriod, error) {
 // fixkostenEingabeSpalten are the columns of fixkosten_eingaben besides id:
 // the Monat, the four prices and the switches (Switches order).
 func fixkostenEingabeSpalten() []string {
-	return append([]string{"monat", "strompreis", "frischwasser_preis", "abwasser_preis", "einspeisung_preis"}, switchColumns()...)
+	cols := []string{"monat"}
+	for _, p := range Preise {
+		cols = append(cols, p.Spalte)
+	}
+	return append(cols, switchColumns()...)
 }
 
 // fixkostenEingabeArgs returns the INSERT/UPDATE arguments for
 // fixkostenEingabeSpalten.
 func fixkostenEingabeArgs(in FixkostenInput) []any {
-	args := []any{in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.EinspeisungPreis}
+	args := []any{in.Monat}
+	for _, p := range Preise {
+		args = append(args, *p.FixkostenInput(&in))
+	}
 	for _, s := range Switches {
 		args = append(args, boolToInt(*s.FixkostenInput(&in)))
 	}
@@ -160,7 +167,10 @@ func selectFixkostenEingabeSQL() string {
 // scanFixkostenEingabeRow scans one row of selectFixkostenEingabeSQL into f.
 func scanFixkostenEingabeRow(rows *sql.Rows, f *FixkostenEingabeDetails) error {
 	flags := make([]int, len(Switches))
-	dest := []any{&f.ID, &f.Monat, &f.Strompreis, &f.FrischwasserPreis, &f.AbwasserPreis, &f.EinspeisungPreis}
+	dest := []any{&f.ID, &f.Monat}
+	for _, p := range Preise {
+		dest = append(dest, p.FixkostenDetail(f))
+	}
 	for i := range flags {
 		dest = append(dest, &flags[i])
 	}

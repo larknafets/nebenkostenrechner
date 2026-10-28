@@ -280,12 +280,12 @@ func fixkostenCsvFehler(err error, line int, colIdx map[string]int, record []str
 		}
 		return fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q (%w)", line, ef.ID, raw, ef.Err)
 	}
-	if p, ok := fixkostenPreisFuerFeld(ef.Feld); ok {
+	if p, ok := store.PreisFuerFeld(ef.Feld); ok {
 		raw := ef.Wert
-		if i, ok := colIdx[p.Name]; ok {
+		if i, ok := colIdx[p.Spalte]; ok {
 			raw = record[i]
 		}
-		return fmt.Errorf("Zeile %d: ungültiger Preis für %s: %q (%w)", line, p.Fehler, raw, ef.Err)
+		return fmt.Errorf("Zeile %d: ungültiger Preis für %s: %q (%w)", line, p.Kurz, raw, ef.Err)
 	}
 	return err
 }

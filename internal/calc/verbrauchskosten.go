@@ -102,7 +102,7 @@ const (
 	// diff its Zählerstände against, so it has no Verbrauch.
 	GrundKeineVorperiode
 	// GrundFixkostenFehlen: the Fixkosten-Eingabe of the Abrechnungsmonat
-	// is missing or lacks a price. Personenzahl, the four prices and both
+	// is missing or lacks a price (not MonatVollstaendig). Personenzahl, the four prices and both
 	// switches come from it (#359), there is no fallback to another month.
 	GrundFixkostenFehlen
 )
@@ -135,6 +135,9 @@ type Daten struct {
 type Verbrauchskosten struct {
 	alle []Ablesung
 	byID map[int64]int
+	// eingabeByMonat holds the Fixkosten-Eingabe per Monat, the last one wins
+	// if a month has several.
+	eingabeByMonat map[string]*store.FixkostenEingabeDetails
 }
 
 // Load reads the Datenstand and computes the Verbrauchskosten of it.
@@ -153,11 +156,10 @@ func KostenAus(ds *store.Datenstand) *Verbrauchskosten {
 
 // New computes the Verbrauchskosten of every Ablesung in d.
 func New(d Daten) *Verbrauchskosten {
-	v := &Verbrauchskosten{alle: make([]Ablesung, len(d.Periods)), byID: make(map[int64]int, len(d.Periods))}
+	v := &Verbrauchskosten{alle: make([]Ablesung, len(d.Periods)), byID: make(map[int64]int, len(d.Periods)), eingabeByMonat: make(map[string]*store.FixkostenEingabeDetails, len(d.Eingaben))}
 	qmW1, qmW2 := apartmentValues(d.Apartments, func(a store.Apartment) float64 { return a.QM })
-	eingabeByMonat := make(map[string]*store.FixkostenEingabeDetails, len(d.Eingaben))
 	for _, e := range d.Eingaben {
-		eingabeByMonat[e.Monat] = e
+		v.eingabeByMonat[e.Monat] = e
 	}
 	for i, p := range d.Periods {
 		v.byID[p.ID] = i
@@ -170,8 +172,8 @@ func New(d Daten) *Verbrauchskosten {
 			v.alle[i].Grund = GrundKeineVorperiode
 			continue
 		}
-		e := eingabeByMonat[p.Monat]
-		if e == nil || !e.PreiseVollstaendig() {
+		e := v.eingabeByMonat[p.Monat]
+		if !v.MonatVollstaendig(p.Monat) {
 			v.alle[i].Grund = GrundFixkostenFehlen
 			continue
 		}
@@ -211,12 +213,67 @@ func (v *Verbrauchskosten) Ablesung(periodID int64) (Ablesung, bool) {
 	return v.alle[i], true
 }
 
-// FixkostenOffen returns the Ablesungen that wait for their Fixkosten-Eingabe
-// (GrundFixkostenFehlen), oldest first.
-func (v *Verbrauchskosten) FixkostenOffen() []Ablesung {
+// Eingabe returns the Fixkosten-Eingabe of monat, nil if there is none.
+func (v *Verbrauchskosten) Eingabe(monat string) *store.FixkostenEingabeDetails {
+	return v.eingabeByMonat[monat]
+}
+
+// MonatVollstaendig reports whether monat has a Fixkosten-Eingabe with all
+// prices. The one rule behind GrundFixkostenFehlen.
+func (v *Verbrauchskosten) MonatVollstaendig(monat string) bool {
+	e := v.eingabeByMonat[monat]
+	return e != nil && e.PreiseVollstaendig()
+}
+
+// OffenerMonat is a month with an Ablesung but without a complete
+// Fixkosten-Eingabe.
+type OffenerMonat struct {
+	Monat string
+	// EingabeID is the incomplete Eingabe of the month, 0 = there is none.
+	EingabeID int64
+}
+
+// OffenerMonatVon returns the OffenerMonat of monat, ok=false if monat has no
+// Abrechnungsmonat ("") or a complete Fixkosten-Eingabe.
+func (v *Verbrauchskosten) OffenerMonatVon(monat string) (OffenerMonat, bool) {
+	if monat == "" || v.MonatVollstaendig(monat) {
+		return OffenerMonat{}, false
+	}
+	o := OffenerMonat{Monat: monat}
+	if e := v.eingabeByMonat[monat]; e != nil {
+		o.EingabeID = e.ID
+	}
+	return o, true
+}
+
+// OffeneMonate lists the months with an Ablesung and no complete
+// Fixkosten-Eingabe, oldest first, each once. It does not matter whether the
+// Ablesung is a Teilstand or the first one. A Teilstand without
+// Abrechnungsmonat has no month to miss and is skipped.
+func (v *Verbrauchskosten) OffeneMonate() []OffenerMonat {
+	var out []OffenerMonat
+	seen := map[string]bool{}
+	for _, a := range v.alle {
+		m := a.Period.Monat
+		if seen[m] {
+			continue
+		}
+		seen[m] = true
+		if o, ok := v.OffenerMonatVon(m); ok {
+			out = append(out, o)
+		}
+	}
+	return out
+}
+
+// BetroffeneAblesungen returns the Ablesungen of monat that are neither a
+// Teilstand nor the first one (Grund empty or GrundFixkostenFehlen), whether
+// or not the Eingabe is complete: the ones a change of the Eingabe turns
+// (un)calculable. The caller checks MonatVollstaendig.
+func (v *Verbrauchskosten) BetroffeneAblesungen(monat string) []Ablesung {
 	var out []Ablesung
 	for _, a := range v.alle {
-		if a.Grund == GrundFixkostenFehlen {
+		if a.Period.Monat == monat && (a.Grund == GrundKeiner || a.Grund == GrundFixkostenFehlen) {
 			out = append(out, a)
 		}
 	}

@@ -22,12 +22,8 @@ func ladeAbrechnungDaten(db *sql.DB) (abr.BerechnungsDaten, error) {
 
 // abrechnungsDaten is the Abrechnung's view of a Datenstand.
 func abrechnungsDaten(ds *store.Datenstand) abr.BerechnungsDaten {
-	summaries := make([]store.FixkostenEingabeSummary, len(ds.Eingaben))
-	for i, e := range ds.Eingaben {
-		summaries[i] = store.FixkostenEingabeSummary{ID: e.ID, Monat: e.Monat}
-	}
 	return abr.BerechnungsDaten{
-		Pruef:            abr.Daten{Periods: ds.Periods, Eingaben: summaries, Apartments: ds.Apartments, Haus: ds.Haus},
+		Pruef:            abr.Daten{Periods: ds.Periods, Eingaben: ds.Eingaben, Apartments: ds.Apartments, Haus: ds.Haus},
 		Kostenpositionen: ds.Kostenpositionen,
 		Meters:           ds.Meters,
 		Fixkosten:        calc.FixkostenreiheAus(ds),

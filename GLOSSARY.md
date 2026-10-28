@@ -52,7 +52,7 @@ _Avoid_: Einspeisevergütung (das ist der haus-weite Ertrag, nicht die Zuordnung
 Die Differenz zwischen dem Zählerstand einer Ablesung und dem der chronologisch nächst-älteren Ablesung desselben Zählers.
 
 **Verbrauchskosten**:
-Die aus dem Verbrauch einer Ablesung berechneten Kosten (Strom, Wasser, Heizung, Einspeisung), noch ohne Fixkosten. Nur für eine vollständige Ablesung mit Vorperiode und mit Fixkosten-Eingabe ihres Abrechnungsmonats berechenbar, ein Teilstand, die erste Ablesung oder **Fixkosten fehlen** ist es nicht. Je Ablesung, nicht je Monat: mehrere Ablesungen desselben Abrechnungsmonats haben je eigene Verbrauchskosten.
+Die aus dem Verbrauch einer Ablesung berechneten Kosten (Strom, Wasser, Heizung, Einspeisung), noch ohne Fixkosten. Nur für eine vollständige Ablesung mit Vorperiode und mit vollständiger Fixkosten-Eingabe ihres Abrechnungsmonats berechenbar, ein Teilstand, die erste Ablesung oder **Fixkosten fehlen** ist es nicht. Je Ablesung, nicht je Monat: mehrere Ablesungen desselben Abrechnungsmonats haben je eigene Verbrauchskosten.
 _Avoid_: Monatskosten (mehrere Ablesungen pro Abrechnungsmonat möglich)
 
 **Abrechnungsmonat**:
@@ -159,11 +159,12 @@ Ein haus-weites Ja/Nein-Flag in den Stammdaten (Startwert Ja, auch für bestehen
 
 **Fixkosten-Eingabe**:
 Eine monatliche Erfassung, analog zur Ablesung, aber **genau eine je Monat** (beim Anlegen, beim Ändern des Monats und beim CSV-Import erzwungen, per UNIQUE-Index abgesichert; anders als bei Ablesungen gibt es keine untermonatigen Zusatzeingaben): Personenzahl je Wohnung (Dezimalzahl mit höchstens 2 Nachkommastellen, z. B. 1,25; 0 erlaubt; die einzige Personenzahl der App), die vier Preise (Strom, Frischwasser, Abwasser, Einspeisung; Pflicht im Formular, 0 erlaubt) und die zwei Häkchen "Wallboxen vollständig Wohnung 1" und "PV-Gutschrift Wohnung 1" (Gruppe "Preise und Einstellungen des Monats"), für Wohnungen mit Status Vermietung Nebenkostenabschlag und **Miete / Mieteinnahmen** und für jede Kostenposition ihre Berechnungslogik, ihr Typ und ihr Wert.
+Eine **vollständige Eingabe** hat alle vier Preise erfasst, sonst ist sie unvollständig.
 Anders als die Ablesung hängt sie nicht von einer Vorperiode ab (kein Verbrauch, keine Zählerstand-Differenz); Logik/Typ/Wert sind, wie Personen und der Nebenkostenabschlag, je Eingabe unabhängig gespeichert und von der letzten Eingabe vorbelegt, nicht jahresweise zentral gepflegt.
 _Avoid_: Fixkosten-Eintrag, Fixkosten-Periode
 
 **Fixkosten fehlen**:
-Der Zustand einer Ablesung, deren Abrechnungsmonat keine Fixkosten-Eingabe hat oder deren Eingabe ohne Preise ist ("Fixkosten für <Monat> fehlen" bzw. "sind unvollständig"). Die Ablesung ist dann nicht berechenbar, ohne Rückgriff auf einen anderen Monat; Zählerstände und Differenzen bleiben sichtbar. Technisch ein eigener Grund neben dem **Teilstand**, deshalb darf auch eine ältere Ablesung ihn haben.
+Der Zustand einer Ablesung, deren Abrechnungsmonat keine vollständige Fixkosten-Eingabe hat, also keine Eingabe oder eine unvollständige ("Fixkosten für <Monat> fehlen" bzw. "sind unvollständig"). Die Ablesung ist dann nicht berechenbar, ohne Rückgriff auf einen anderen Monat; Zählerstände und Differenzen bleiben sichtbar. Technisch ein eigener Grund neben dem **Teilstand**, deshalb darf auch eine ältere Ablesung ihn haben.
 _Avoid_: Preise fehlen, Personen fehlen
 
 **Kostenposition**:
@@ -209,7 +210,7 @@ Die Frist nach § 556 Abs. 3 BGB endet am Ende des zwölften Monats nach dem Zei
 Ein Zeitraum liegt immer innerhalb eines Kalenderjahres.
 
 **Mangel** (Abrechnungsprüfung):
-Ein Grund, warum für ein Jahr und eine Wohnung noch keine Jahresabrechnung entstehen kann: fehlende oder unvollständige Ablesung (Teilstand) eines Abrechnungsmonats, fehlende oder mehrfache Fixkosten-Eingabe eines Monats, fehlende Pflicht-Stammdaten. Die Prüfung liefert alle Mängel auf einmal, jeweils mit dem Ort zum Beheben, statt einer Abrechnung. Ein fehlender Nebenkostenabschlag ist kein Mangel (zählt als 0).
+Ein Grund, warum für ein Jahr und eine Wohnung noch keine Jahresabrechnung entstehen kann: fehlende oder unvollständige Ablesung (Teilstand) eines Abrechnungsmonats, fehlende, unvollständige oder mehrfache Fixkosten-Eingabe eines Monats, fehlende Pflicht-Stammdaten. Die Prüfung liefert alle Mängel auf einmal, jeweils mit dem Ort zum Beheben, statt einer Abrechnung. Ein fehlender Nebenkostenabschlag ist kein Mangel (zählt als 0).
 _Avoid_: Fehler, Warnung
 
 **Jahresabrechnung**:

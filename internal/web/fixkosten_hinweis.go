@@ -1,29 +1,30 @@
 package web
 
 import (
-	"database/sql"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
 // fixkosten_hinweis.go: the notes after a Fixkosten-Eingabe was deleted or its
 // Monat changed (#359, Entscheidung #355). The app has no flash mechanism, so
-// the redirect carries the Monat and the ids of the affected Ablesungen as
-// query parameters and the target page words the note from them.
+// the redirect carries only the Monat as a query parameter and the target page
+// derives the affected Ablesungen and the note from the stored data (#382).
 
 // fixkostenHinweis is one note above a Fixkosten page. Info marks the friendly
 // variant (an Ablesung became berechenbar), Link the "Fixkosten erfassen"
-// link, which only the Vermieter get (the template checks the role). Pfad is
-// its target (fixkostenErfassenPfad).
+// link, which only the Vermieter get (the template checks the role). Pfad and
+// LinkText are its target and text (fixkostenFehlenHinweis).
 type fixkostenHinweis struct {
-	Text string
-	Info bool
-	Link bool
-	Pfad string
+	Text     string
+	Info     bool
+	Link     bool
+	Pfad     string
+	LinkText string
 }
 
 // fixkostenErfassenPfad is where "Fixkosten erfassen" leads: the edit page of
@@ -36,28 +37,17 @@ func fixkostenErfassenPfad(eingabeID int64) string {
 	return "/fixkosten/" + strconv.FormatInt(eingabeID, 10) + "/bearbeiten"
 }
 
-// eingabeIDFuerMonat is the id of the Eingabe of monat, 0 = there is none.
-func eingabeIDFuerMonat(eingaben []*store.FixkostenEingabeDetails, monat string) int64 {
-	for _, e := range eingaben {
-		if e.Monat == monat {
-			return e.ID
-		}
-	}
-	return 0
-}
-
 // Query parameters of the redirect targets.
 const (
-	paramGeloescht  = "geloescht"  // Monat of a deleted Eingabe
-	paramAlterMonat = "alt"        // Monat an Eingabe moved away from
-	paramAblesungen = "ablesungen" // comma separated ids of the affected Ablesungen
+	paramGeloescht  = "geloescht" // Monat of a deleted Eingabe
+	paramAlterMonat = "alt"       // Monat an Eingabe moved away from
 )
 
 // datumListe renders the Ablesedaten as "a", "a und b" or "a, b und c".
-func datumListe(ps []store.PeriodSummary) string {
+func datumListe(ps []calc.Ablesung) string {
 	daten := make([]string, len(ps))
 	for i, p := range ps {
-		daten[i] = formatDatumDE(p.ReadingDate)
+		daten[i] = formatDatumDE(p.Period.ReadingDate)
 	}
 	if len(daten) <= 1 {
 		return strings.Join(daten, "")
@@ -67,7 +57,7 @@ func datumListe(ps []store.PeriodSummary) string {
 
 // ablesungenVom is "Ablesung vom <Datum>" / "Ablesungen vom <Daten>" together
 // with the matching form of the verb ("ist" or "sind").
-func ablesungenVom(ps []store.PeriodSummary) (subjekt, verb string) {
+func ablesungenVom(ps []calc.Ablesung) (subjekt, verb string) {
 	if len(ps) == 1 {
 		return "Ablesung vom " + datumListe(ps), "ist"
 	}
@@ -82,30 +72,64 @@ func monateListe(labels []string) string {
 	return strings.Join(labels[:len(labels)-1], ", ") + " und " + labels[len(labels)-1]
 }
 
-// fixkostenFehlenSatz is the one sentence that says the Fixkosten of the given
-// Monate ("YYYY-MM-01") are missing or incomplete. Dashboard banner, Ablesung
-// page, banner after saving and the CSV import note all start with it and add
-// their own consequence. Only the note after a delete or a move
-// (fixkostenFehlenText) names the missing Eingabe itself, and the wizard keeps
-// its short state (wallboxHinweisFehlt, Story 44).
-func fixkostenFehlenSatz(monate []string) string {
-	labels := make([]string, len(monate))
-	for i, m := range monate {
-		labels[i] = store.MonatLabel(m)
-	}
-	return "Für " + monateListe(labels) + " fehlen die Fixkosten (oder sind unvollständig)."
+// fixkostenKontext is the page a note about missing Fixkosten appears on. It
+// only decides the consequence sentence (fixkostenFolgen).
+type fixkostenKontext int
+
+const (
+	kontextDashboard fixkostenKontext = iota
+	kontextAblesung                   // detail page and banner after saving
+	kontextCSVImport
+	kontextLoeschen // after deleting or moving an Eingabe, names the Ablesungen
+)
+
+// fixkostenFolgen is the sentence after the generic one, per Kontext.
+var fixkostenFolgen = map[fixkostenKontext]func(ablesungen []calc.Ablesung) string{
+	kontextDashboard: func([]calc.Ablesung) string {
+		return "Die Ablesungen dieser Monate sind noch nicht berechnet, Jahressummen und Saldo enthalten sie nicht."
+	},
+	kontextAblesung: func([]calc.Ablesung) string {
+		return "Die Ablesung ist noch nicht berechnet, bis die Fixkosten erfasst sind."
+	},
+	kontextCSVImport: func([]calc.Ablesung) string {
+		return "Die Ablesungen dieser Monate sind noch nicht berechnet, bis die Fixkosten erfasst sind."
+	},
+	kontextLoeschen: func(ps []calc.Ablesung) string {
+		s, v := ablesungenVom(ps)
+		return "Die " + s + " " + v + " unvollständig, bis sie erfasst ist."
+	},
 }
 
-// fixkostenFehlenText is the one wording of the note that an Eingabe is
-// missing (also used for the banner after a deletion).
-func fixkostenFehlenText(monat string, ps []store.PeriodSummary) string {
-	s, v := ablesungenVom(ps)
-	return "Für " + store.MonatLabel(monat) + " fehlt die Fixkosten-Eingabe. Die " + s + " " + v + " unvollständig, bis sie erfasst ist."
+// fixkostenFehlenHinweis is the one note that the Fixkosten of monate are
+// missing or incomplete, nil without a Monat. The sentence is generic, the
+// consequence follows the Kontext (ablesungen only names them after a delete).
+// The link leads to the edit page of the one Monat with an Eingabe, to the new
+// form if any Monat has none, else to the list; its text follows: "ergänzen"
+// when every Monat has an Eingabe, else "erfassen". The wizard keeps its own
+// short state (wallboxHinweisFehlt).
+func fixkostenFehlenHinweis(kontext fixkostenKontext, monate []calc.OffenerMonat, ablesungen []calc.Ablesung) *fixkostenHinweis {
+	if len(monate) == 0 {
+		return nil
+	}
+	pfad, text := "/fixkosten", "Fixkosten ergänzen"
+	if len(monate) == 1 {
+		pfad = fixkostenErfassenPfad(monate[0].EingabeID)
+	}
+	for _, m := range monate {
+		if m.EingabeID == 0 {
+			pfad, text = fixkostenErfassenPfad(0), "Fixkosten erfassen"
+			break
+		}
+	}
+	return &fixkostenHinweis{
+		Text: "Für " + monateText(monate) + " fehlen die Fixkosten (oder sind unvollständig). " + fixkostenFolgen[kontext](ablesungen),
+		Link: true, Pfad: pfad, LinkText: text,
+	}
 }
 
 // fixkostenLoeschenFrage is the additional confirmation before deleting an
 // Eingabe that affects Ablesungen, "" when it affects none.
-func fixkostenLoeschenFrage(monat string, ps []store.PeriodSummary) string {
+func fixkostenLoeschenFrage(monat string, ps []calc.Ablesung) string {
 	if len(ps) == 0 {
 		return ""
 	}
@@ -115,45 +139,9 @@ func fixkostenLoeschenFrage(monat string, ps []store.PeriodSummary) string {
 
 // fixkostenBerechenbarText is the information for the new Monat of a moved
 // Eingabe: its Ablesungen can be calculated now.
-func fixkostenBerechenbarText(monat string, ps []store.PeriodSummary) string {
+func fixkostenBerechenbarText(monat string, ps []calc.Ablesung) string {
 	s, v := ablesungenVom(ps)
 	return "Für " + store.MonatLabel(monat) + " ist die Fixkosten-Eingabe erfasst. Die " + s + " " + v + " damit berechenbar."
-}
-
-// ablesungenQuery encodes the Monat and the affected Ablesungen for a redirect.
-func ablesungenQuery(param, monat string, ps []store.PeriodSummary) string {
-	ids := make([]string, len(ps))
-	for i, p := range ps {
-		ids[i] = strconv.FormatInt(p.ID, 10)
-	}
-	q := url.Values{param: {monat}}
-	if len(ids) > 0 {
-		q.Set(paramAblesungen, strings.Join(ids, ","))
-	}
-	return "?" + q.Encode()
-}
-
-// ablesungenAusQuery resolves the ids of the query against the stored
-// Ablesungen of monat, oldest first. Unknown ids and other months are dropped,
-// so a hand-written URL cannot show anything the data does not back.
-func ablesungenAusQuery(db *sql.DB, q url.Values, monat string) ([]store.PeriodSummary, error) {
-	gewollt := map[int64]bool{}
-	for _, s := range strings.Split(q.Get(paramAblesungen), ",") {
-		if id, err := strconv.ParseInt(s, 10, 64); err == nil {
-			gewollt[id] = true
-		}
-	}
-	alle, err := store.AllPeriods(db) // newest first
-	if err != nil {
-		return nil, err
-	}
-	var out []store.PeriodSummary
-	for i := len(alle) - 1; i >= 0; i-- {
-		if p := alle[i]; gewollt[p.ID] && p.Monat == monat {
-			out = append(out, p)
-		}
-	}
-	return out, nil
 }
 
 // gueltigerMonat reports whether s is a stored Monat ("YYYY-MM-01").
@@ -162,66 +150,49 @@ func gueltigerMonat(s string) bool {
 	return err == nil && t.Day() == 1
 }
 
-// eingabeFuerMonat is the id of the Eingabe of monat, 0 = there is none.
-func eingabeFuerMonat(db *sql.DB, monat string) (int64, error) {
-	alle, err := store.AllFixkostenEingaben(db)
-	if err != nil {
-		return 0, err
-	}
-	for _, e := range alle {
-		if e.Monat == monat {
-			return e.ID, nil
-		}
-	}
-	return 0, nil
-}
-
 // fehlenHinweisAusQuery is the warning for the Monat named by param (geloescht
-// or alt), or nil: no such parameter, no Ablesung left to name, or the Monat
-// got an Eingabe in the meantime.
-func fehlenHinweisAusQuery(db *sql.DB, q url.Values, param string) (*fixkostenHinweis, error) {
+// or alt), or nil: no such parameter, the Monat is complete, or there is no
+// Ablesung to name. The link leads to the incomplete Eingabe of the Monat or
+// to the form for a new one.
+func fehlenHinweisAusQuery(v *calc.Verbrauchskosten, q url.Values, param string) *fixkostenHinweis {
 	monat := q.Get(param)
-	if !gueltigerMonat(monat) {
-		return nil, nil
+	if !gueltigerMonat(monat) || v.MonatVollstaendig(monat) {
+		return nil
 	}
-	id, err := eingabeFuerMonat(db, monat)
-	if err != nil || id != 0 {
-		return nil, err
+	ps := v.BetroffeneAblesungen(monat)
+	if len(ps) == 0 {
+		return nil
 	}
-	ps, err := ablesungenAusQuery(db, q, monat)
-	if err != nil || len(ps) == 0 {
-		return nil, err
+	var eingabeID int64
+	if e := v.Eingabe(monat); e != nil {
+		eingabeID = e.ID
 	}
-	return &fixkostenHinweis{Text: fixkostenFehlenText(monat, ps), Link: true, Pfad: fixkostenErfassenPfad(0)}, nil
+	return fixkostenFehlenHinweis(kontextLoeschen, []calc.OffenerMonat{{Monat: monat, EingabeID: eingabeID}}, ps)
 }
 
 // berechenbarHinweis is the information for the new Monat of a moved Eingabe,
-// or nil when it has no Ablesung that was waiting for it.
-func berechenbarHinweis(db *sql.DB, monat string) (*fixkostenHinweis, error) {
-	ps, err := store.BetroffeneAblesungen(db, monat)
-	if err != nil || len(ps) == 0 {
-		return nil, err
+// or nil when it is not complete or has no Ablesung that was waiting for it.
+func berechenbarHinweis(v *calc.Verbrauchskosten, monat string) *fixkostenHinweis {
+	ps := v.BetroffeneAblesungen(monat)
+	if !v.MonatVollstaendig(monat) || len(ps) == 0 {
+		return nil
 	}
-	return &fixkostenHinweis{Text: fixkostenBerechenbarText(monat, ps), Info: true}, nil
+	return &fixkostenHinweis{Text: fixkostenBerechenbarText(monat, ps), Info: true}
 }
 
 // fixkostenHinweiseNachAenderung are the notes on the detail page after a move
 // of the Eingabe to another Monat: the warning for the old Monat and the
 // information for the new one (the query carries "alt" only after a move).
-func fixkostenHinweiseNachAenderung(db *sql.DB, q url.Values, neuerMonat string) ([]fixkostenHinweis, error) {
+func fixkostenHinweiseNachAenderung(v *calc.Verbrauchskosten, q url.Values, neuerMonat string) []fixkostenHinweis {
 	if !gueltigerMonat(q.Get(paramAlterMonat)) {
-		return nil, nil
+		return nil
 	}
 	var out []fixkostenHinweis
-	if h, err := fehlenHinweisAusQuery(db, q, paramAlterMonat); err != nil {
-		return nil, err
-	} else if h != nil {
+	if h := fehlenHinweisAusQuery(v, q, paramAlterMonat); h != nil {
 		out = append(out, *h)
 	}
-	if h, err := berechenbarHinweis(db, neuerMonat); err != nil {
-		return nil, err
-	} else if h != nil {
+	if h := berechenbarHinweis(v, neuerMonat); h != nil {
 		out = append(out, *h)
 	}
-	return out, nil
+	return out
 }

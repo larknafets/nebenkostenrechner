@@ -1,6 +1,7 @@
 package web
 
 import (
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -35,7 +36,7 @@ func wallboxBlock(card dashboardJahresCard) *dashboardSimpleCard {
 // speculative generality). Only intended for the 2 apartments - Wallboxen/
 // PV-Anlage have no balance concept and run via buildSimpleJahresCard/
 // buildSimpleVerlauf.
-func buildEntityView(dd dashboardData, offen []offenerMonat, apartmentID int64) (dashboardJahresCard, dashboardVerlaufSpalte) {
+func buildEntityView(dd dashboardData, offen []calc.OffenerMonat, apartmentID int64) (dashboardJahresCard, dashboardVerlaufSpalte) {
 	a := findApartment(dd.Apartments, apartmentID)
 	verlauf := buildDashboardVerlauf(a.ID, a.Name, dd.PeriodenKosten, dd.FixkostenListe, offen)
 	card := buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, dd.Jahr, dd.PeriodenKosten, dd.FixkostenListe)

@@ -3,7 +3,7 @@
 {{template "nav" .}}
 
 {{if .FixkostenBanner}}
-<div class="panel" style="border-color:#e6a700">{{.FixkostenBanner}}{{if .Vermieter}} <a href="{{.Base}}{{.FixkostenPfad}}">Fixkosten erfassen</a>{{end}}</div>
+<div class="panel" style="border-color:#e6a700">{{.FixkostenBanner.Text}}{{if .Vermieter}} <a href="{{.Base}}{{.FixkostenBanner.Pfad}}">{{.FixkostenBanner.LinkText}}</a>{{end}}</div>
 {{end}}
 
 <div class="field" style="max-width:220px">
@@ -47,12 +47,12 @@
 
   {{if .FixkostenHinweis}}
   <h3 style="margin-top:1.25rem">Kosten</h3>
-  <p class="text-warning">{{.FixkostenHinweis.Text}}{{if .Vermieter}} <a href="{{.Base}}{{.FixkostenPfad}}">Fixkosten erfassen</a>{{end}}</p>
+  <p class="text-warning">{{.FixkostenHinweis.Text}}{{if .Vermieter}} <a href="{{.Base}}{{.FixkostenHinweis.Pfad}}">{{.FixkostenHinweis.LinkText}}</a>{{end}}</p>
 
   <h3 style="margin-top:1.25rem">Wallbox</h3>
   <table class="letzte">
     <tbody>
-      <tr><td>Wallbox Anteil (Netzbezug)</td><td>{{de2 .FixkostenHinweis.WallboxKWh}}&nbsp;kWh</td></tr>
+      <tr><td>Wallbox Anteil (Netzbezug)</td><td>{{de2 .WallboxKWh}}&nbsp;kWh</td></tr>
     </tbody>
   </table>
   <p class="muted">Die Aufteilung der Wallbox auf die Wohnungen hängt am Häkchen "Wallboxen vollständig Wohnung 1" der Fixkosten. Sie ist offen, bis die Fixkosten erfasst sind.</p>

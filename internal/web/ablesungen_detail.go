@@ -146,19 +146,21 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			meters = append(meters, entry)
 		}
 
-		ablesung, _ := calc.KostenAus(ds).Ablesung(period.ID)
+		v := calc.KostenAus(ds)
+		ablesung, _ := v.Ablesung(period.ID)
 		k := ablesung.Kosten
 
 		fix := fixkostenAnsicht(ds, period)
-		var hinweis *ablesungKostenHinweis
+		var hinweis *fixkostenHinweis
+		var wallboxKWh float64
 		if ablesung.Grund == calc.GrundFixkostenFehlen {
-			hinweis = &ablesungKostenHinweis{Text: ablesungKostenFehlenText(period.Monat)}
+			hinweis = ablesungFixkostenHinweis(v, period.Monat)
 			if len(vorperiode) > 0 {
 				verbrauch := make(map[string]float64, len(store.MeterKeys))
 				for _, key := range store.MeterKeys {
 					verbrauch[key], _ = store.Verbrauch(period.Readings, vorperiode[0].Readings, key)
 				}
-				hinweis.WallboxKWh = calc.WallboxNetzbezugKWh(verbrauch)
+				wallboxKWh = calc.WallboxNetzbezugKWh(verbrauch)
 			}
 		}
 
@@ -179,15 +181,15 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			MonatLabel    string
 			// FixkostenBanner is set right after saving an Ablesung whose
 			// Abrechnungsmonat lacks its Fixkosten (#366).
-			FixkostenBanner string
-			// FixkostenPfad is the target of the "Fixkosten erfassen" links:
-			// the edit page of an incomplete Eingabe, else the new form.
-			FixkostenPfad string
+			FixkostenBanner *fixkostenHinweis
 
 			// Fix reads the Fixkosten-Eingabe of the month, FixkostenHinweis
 			// is set when it is missing (#359), instead of the Euro blocks.
 			Fix              ablesungFixkosten
-			FixkostenHinweis *ablesungKostenHinweis
+			FixkostenHinweis *fixkostenHinweis
+			// WallboxKWh is the grid-draw share of the Wallboxen, a pure meter
+			// value shown next to the hint.
+			WallboxKWh float64
 		}{
 			navData:          z.NavData(r),
 			TeilstandStatus:  status,
@@ -205,10 +207,12 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			MonatLabel:       store.MonatLabel(period.Monat),
 			Fix:              fix,
 			FixkostenHinweis: hinweis,
-			FixkostenPfad:    fixkostenErfassenPfad(eingabeIDFuerMonat(ds.Eingaben, period.Monat)),
+			WallboxKWh:       wallboxKWh,
 		}
-		if r.URL.Query().Get(fixkostenFehlenParam) != "" {
-			data.FixkostenBanner = fixkostenFehlenBanner(ds.Eingaben, period.Monat)
+		// One note per page: the banner only where the Kostenbereich shows none
+		// (Teilstand, first Ablesung).
+		if r.URL.Query().Get(fixkostenFehlenParam) != "" && hinweis == nil {
+			data.FixkostenBanner = ablesungFixkostenHinweis(v, period.Monat)
 		}
 
 		if err := ablesungTemplate.ExecuteTemplate(w, "layout", data); err != nil {
@@ -245,18 +249,4 @@ func fixkostenAnsicht(ds *store.Datenstand, period *store.LatestPeriod) ablesung
 		Vorhanden: true, EingabeID: eingabe.ID, Preise: preise,
 		WallboxKomplettW1: eingabe.WallboxKomplettW1, PVGutschriftW1: eingabe.PVGutschriftW1,
 	}
-}
-
-// ablesungKostenHinweis is the hint section of the detail view for an Ablesung
-// without Verbrauchskosten because its Fixkosten-Eingabe is missing. It is
-// its own field, not part of kostenHinweis. WallboxKWh is the grid-draw share
-// of the Wallboxen, a pure meter value.
-type ablesungKostenHinweis struct {
-	Text       string
-	WallboxKWh float64
-}
-
-// ablesungKostenFehlenText is the one wording for "this month lacks its Fixkosten".
-func ablesungKostenFehlenText(monat string) string {
-	return fixkostenFehlenSatz([]string{monat}) + " Die Kosten dieser Ablesung sind noch nicht berechnet."
 }

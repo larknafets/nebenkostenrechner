@@ -10,51 +10,6 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// fixkostenPreis describes one of the four prices of a Fixkosten-Eingabe
-// (#359). Name is the form field and the CSV column (the old Ablesung CSV
-// column names), Label the row label, Fehler the short name in messages.
-type fixkostenPreis struct {
-	Name, Label, Fehler, Einheit string
-	feld                         store.Feldart
-	eingabe                      func(*store.FixkostenInput) **float64
-	detail                       func(*store.FixkostenEingabeDetails) *float64
-}
-
-// fixkostenPreise is the ordered list of the four prices, in the order of the
-// form, the detail and the CSV.
-var fixkostenPreise = []fixkostenPreis{
-	{
-		Name: "strompreis", Label: "Strompreis", Fehler: "Strom", Einheit: "EUR/kWh", feld: store.FeldStrompreis,
-		eingabe: func(in *store.FixkostenInput) **float64 { return &in.Strompreis },
-		detail:  func(f *store.FixkostenEingabeDetails) *float64 { return f.Strompreis },
-	},
-	{
-		Name: "frischwasser_preis", Label: "Frischwasser", Fehler: "Frischwasser", Einheit: "EUR/m³", feld: store.FeldFrischwasserPreis,
-		eingabe: func(in *store.FixkostenInput) **float64 { return &in.FrischwasserPreis },
-		detail:  func(f *store.FixkostenEingabeDetails) *float64 { return f.FrischwasserPreis },
-	},
-	{
-		Name: "abwasser_preis", Label: "Abwasser", Fehler: "Abwasser", Einheit: "EUR/m³", feld: store.FeldAbwasserPreis,
-		eingabe: func(in *store.FixkostenInput) **float64 { return &in.AbwasserPreis },
-		detail:  func(f *store.FixkostenEingabeDetails) *float64 { return f.AbwasserPreis },
-	},
-	{
-		Name: "einspeisung_preis", Label: "Einspeisung", Fehler: "Einspeisung", Einheit: "EUR/kWh", feld: store.FeldEinspeisungPreis,
-		eingabe: func(in *store.FixkostenInput) **float64 { return &in.EinspeisungPreis },
-		detail:  func(f *store.FixkostenEingabeDetails) *float64 { return f.EinspeisungPreis },
-	},
-}
-
-// fixkostenPreisFuerFeld returns the price a store field belongs to.
-func fixkostenPreisFuerFeld(feld store.Feldart) (fixkostenPreis, bool) {
-	for _, p := range fixkostenPreise {
-		if p.feld == feld {
-			return p, true
-		}
-	}
-	return fixkostenPreis{}, false
-}
-
 // fixkostenSwitchHinweis explains a switch in the form, by Switch.Name.
 var fixkostenSwitchHinweis = map[string]string{
 	"WallboxKomplettW1": "Alle Wallbox-Kosten (kWh und EUR) dieses Monats gehen an Wohnung 1, die Einzelzähler werden dann nicht verwendet.",
@@ -76,11 +31,11 @@ type fixkostenHaekchenFeld struct {
 // from (nil on the very first Eingabe: empty prices, switches off). A price
 // that is not recorded stays empty, so the required field asks for it.
 func buildFixkostenPreisFelder(vorlage *store.FixkostenEingabeDetails) ([]fixkostenPreisFeld, []fixkostenHaekchenFeld) {
-	preise := make([]fixkostenPreisFeld, 0, len(fixkostenPreise))
-	for _, p := range fixkostenPreise {
-		f := fixkostenPreisFeld{Name: p.Name, Label: p.Label + " (" + p.Einheit + ")"}
+	preise := make([]fixkostenPreisFeld, 0, len(store.Preise))
+	for _, p := range store.Preise {
+		f := fixkostenPreisFeld{Name: p.Spalte, Label: p.Label + " (" + p.Einheit + ")"}
 		if vorlage != nil {
-			if v := p.detail(vorlage); v != nil {
+			if v := *p.FixkostenDetail(vorlage); v != nil {
 				f.Wert = inputNumber(*v)
 			}
 		}
@@ -103,16 +58,16 @@ var (
 )
 
 // preisFormularFehler words a price problem for the form.
-func preisFormularFehler(p fixkostenPreis, grund error) error {
-	return fmt.Errorf("ungültiger Preis für %s: %w", p.Fehler, grund)
+func preisFormularFehler(p store.Preis, grund error) error {
+	return fmt.Errorf("ungültiger Preis für %s: %w", p.Kurz, grund)
 }
 
 // parseFixkostenPreise reads the four required prices and the switches of a
 // submitted form into in. A price is required (0 is allowed). Whether it is
 // finite and not negative is checked by FixkostenInput.Validate.
 func parseFixkostenPreise(formValue func(string) string, in *store.FixkostenInput) error {
-	for _, p := range fixkostenPreise {
-		raw := strings.TrimSpace(formValue(p.Name))
+	for _, p := range store.Preise {
+		raw := strings.TrimSpace(formValue(p.Spalte))
 		if raw == "" {
 			return preisFormularFehler(p, errPreisFehlt)
 		}
@@ -120,7 +75,7 @@ func parseFixkostenPreise(formValue func(string) string, in *store.FixkostenInpu
 		if err != nil {
 			return preisFormularFehler(p, errPreisKeineZahl)
 		}
-		*p.eingabe(in) = &v
+		*p.FixkostenInput(in) = &v
 	}
 	// An unchecked checkbox sends no field: absent means off.
 	for _, s := range store.Switches {
@@ -143,10 +98,10 @@ type fixkostenDetailHaekchen struct {
 }
 
 func buildFixkostenDetailPreise(f *store.FixkostenEingabeDetails) ([]fixkostenDetailPreis, []fixkostenDetailHaekchen) {
-	preise := make([]fixkostenDetailPreis, 0, len(fixkostenPreise))
-	for _, p := range fixkostenPreise {
+	preise := make([]fixkostenDetailPreis, 0, len(store.Preise))
+	for _, p := range store.Preise {
 		row := fixkostenDetailPreis{Label: p.Label, Einheit: p.Einheit}
-		if v := p.detail(f); v != nil {
+		if v := *p.FixkostenDetail(f); v != nil {
 			row.Erfasst, row.Wert = true, *v
 		}
 		preise = append(preise, row)
@@ -165,8 +120,8 @@ var fixkostenCsvPreisSpalten = buildFixkostenCsvPreisSpalten()
 
 func buildFixkostenCsvPreisSpalten() []string {
 	var cols []string
-	for _, p := range fixkostenPreise {
-		cols = append(cols, p.Name)
+	for _, p := range store.Preise {
+		cols = append(cols, p.Spalte)
 	}
 	for _, s := range store.Switches {
 		cols = append(cols, s.CSVColumn)
@@ -186,8 +141,8 @@ func formatPreisCSV(v *float64) string {
 // formatFixkostenPreisCSVZellen returns the six cells of formatFixkostenCSVRow.
 func formatFixkostenPreisCSVZellen(f *store.FixkostenEingabeDetails) []string {
 	var cells []string
-	for _, p := range fixkostenPreise {
-		cells = append(cells, formatPreisCSV(p.detail(f)))
+	for _, p := range store.Preise {
+		cells = append(cells, formatPreisCSV(*p.FixkostenDetail(f)))
 	}
 	for _, s := range store.Switches {
 		cells = append(cells, formatSwitchCSV(*s.FixkostenDetail(f)))
@@ -198,13 +153,13 @@ func formatFixkostenPreisCSVZellen(f *store.FixkostenEingabeDetails) []string {
 // parseFixkostenPreisCSV reads the prices and switches of one CSV row into in.
 // cell gives "" for a column the file lacks.
 func parseFixkostenPreisCSV(record []string, colIdx map[string]int, cell func(string) string, line int, in *store.FixkostenInput) error {
-	for _, p := range fixkostenPreise {
-		v, ok, err := parseErfasst(cell(p.Name))
+	for _, p := range store.Preise {
+		v, ok, err := parseErfasst(cell(p.Spalte))
 		if err != nil {
-			return fmt.Errorf("Zeile %d: ungültiger Preis für %s: %q", line, p.Fehler, cell(p.Name))
+			return fmt.Errorf("Zeile %d: ungültiger Preis für %s: %q", line, p.Kurz, cell(p.Spalte))
 		}
 		if ok {
-			*p.eingabe(in) = &v
+			*p.FixkostenInput(in) = &v
 		}
 	}
 	for _, s := range store.Switches {
