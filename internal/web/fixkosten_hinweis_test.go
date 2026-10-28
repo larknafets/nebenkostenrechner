@@ -12,8 +12,8 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// fixkosten_hinweis_test.go: Hinweise beim Löschen und Ändern einer
-// Fixkosten-Eingabe (#367, Spec #359 Schritt 3).
+// fixkosten_hinweis_test.go: the notes when deleting or changing a
+// Fixkosten-Eingabe (#367, Spec #359 step 3).
 
 // hinweisFixkosten is a complete Eingabe (all four prices): only then are the
 // Ablesungen of its month berechenbar.
@@ -26,8 +26,8 @@ func hinweisFixkosten(monat string) store.FixkostenInput {
 	return in
 }
 
-// hinweisSeed: Ausgangsstand im Juni, zwei Ablesungen im Juli (betroffen) und
-// eine Fixkosten-Eingabe für Juli. Returns the Eingabe id.
+// hinweisSeed: Ausgangsstand in June, two Ablesungen in July (affected) and a
+// Fixkosten-Eingabe for July. Returns the Eingabe id.
 func hinweisSeed(t *testing.T, db *sql.DB) int64 {
 	t.Helper()
 	for _, datum := range []string{"2026-06-30", "2026-07-10", "2026-07-20"} {

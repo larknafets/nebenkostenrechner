@@ -96,8 +96,8 @@ func TestFixkostenEingabe_UpdateUeberschreibtPreiseUndHaekchenImmer(t *testing.T
 	db := openTestDB(t)
 	id := seedFixkostenInput(t, db, "2026-06-01")
 
-	// Ein leerer Preis überschreibt (anders als bei der Ablesung), falsch ist
-	// eine echte Antwort für ein Häkchen.
+	// An empty price overwrites (unlike with the Ablesung), and false is a real
+	// answer for a switch.
 	in := fixkostenInputMitPreisen("2026-06-01")
 	in.Strompreis = nil
 	in.AbwasserPreis = Float64(5.5)

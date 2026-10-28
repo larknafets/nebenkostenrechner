@@ -10,13 +10,13 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// ablesung_fixkosten_ansicht_test.go: Ablesungsliste, -Detail und Abrechnung
-// folgen der Fixkosten-Eingabe als einziger Quelle (#365, Spec #359).
+// ablesung_fixkosten_ansicht_test.go: Ablesungsliste, Detail and Abrechnung
+// follow the Fixkosten-Eingabe as the only source (#365, Spec #359).
 
-// ablesungenMitOffenemMonat legt drei Ablesungen an: Oktober mit Eingabe,
-// November ohne Eingabe (Fixkosten fehlen), Dezember mit Eingabe (Häkchen
-// "Wallboxen vollständig Wohnung 1" gesetzt, Strompreis 0,31). Zurück kommen
-// die ids in dieser Reihenfolge.
+// ablesungenMitOffenemMonat creates three Ablesungen: October with an Eingabe,
+// November without one (Fixkosten fehlen), December with an Eingabe (switch
+// "Wallboxen vollständig Wohnung 1" set, Strompreis 0.31). It returns the ids
+// in this order.
 func ablesungenMitOffenemMonat(t *testing.T, db *sql.DB) (okt, nov, dez int64) {
 	t.Helper()
 	ids := make([]int64, 0, 3)
