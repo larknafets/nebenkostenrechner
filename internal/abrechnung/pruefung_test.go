@@ -430,8 +430,9 @@ func TestPruefeAbrechnung_AbrechenbarHeisstKeineOffeneAblesung(t *testing.T) {
 		von := fixkostenBeginn(ersterMonat, got.Zeitraum.ErsterMonat).Format("2006-01-02")
 		bis := got.Zeitraum.LetzterMonat.Format("2006-01-02")
 		kosten := calc.New(calc.Daten{Periods: tc.d.Periods, Eingaben: tc.d.Eingaben, Apartments: tc.d.Apartments, Haus: tc.d.Haus})
-		for _, a := range kosten.FixkostenOffen() {
-			if a.Period.Monat >= von && a.Period.Monat <= bis {
+		for _, p := range tc.d.Periods {
+			a, ok := kosten.Ablesung(p.ID)
+			if ok && a.Grund == calc.GrundFixkostenFehlen && a.Period.Monat >= von && a.Period.Monat <= bis {
 				t.Errorf("%s: abrechenbar, but Ablesung %d (%s) has GrundFixkostenFehlen", name, a.Period.ID, a.Period.Monat)
 			}
 		}

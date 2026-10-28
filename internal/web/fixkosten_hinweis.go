@@ -106,7 +106,7 @@ var fixkostenFolgen = map[fixkostenKontext]func(ablesungen []calc.Ablesung) stri
 // The link leads to the edit page of the one Monat with an Eingabe, to the new
 // form if any Monat has none, else to the list; its text follows: "ergänzen"
 // when every Monat has an Eingabe, else "erfassen". The wizard keeps its own
-// short state (wallboxHinweisFehlt, Story 44).
+// short state (wallboxHinweisFehlt).
 func fixkostenFehlenHinweis(kontext fixkostenKontext, monate []calc.OffenerMonat, ablesungen []calc.Ablesung) *fixkostenHinweis {
 	if len(monate) == 0 {
 		return nil
