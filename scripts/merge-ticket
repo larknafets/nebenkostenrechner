@@ -1,17 +1,25 @@
 #!/usr/bin/env bash
 # Merges a finished ticket branch into the current integration branch and runs
 # the checks: `scripts/merge-ticket ticket/291`. It stops at a conflict (resolve
-# it, `git commit`, then `scripts/check`) and at a red check. It never touches
-# `main`: run it on the integration branch (docs/agents/agents.md).
+# it, `git commit`, then `scripts/check`) and at a red check. It only runs on an
+# `epic/*` branch, never on `main`: run it on the integration branch (docs/agents/agents.md).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 branch=${1:?usage: scripts/merge-ticket <branch>}
 current=$(git branch --show-current)
-if [ "$current" = main ]; then
-  echo "merge-ticket: on main, switch to the integration branch first" >&2
-  exit 1
-fi
+# Only an integration branch (docs/agents/git-workflow.md): another session may
+# have switched this checkout to someone's own branch, and the merge would land
+# there. MERGE_TICKET_ANY_BRANCH=1 overrides it on purpose.
+case "$current" in
+  epic/*) ;;
+  *)
+    if [ "${MERGE_TICKET_ANY_BRANCH:-}" != 1 ]; then
+      echo "merge-ticket: on '$current', not an epic/* branch, switch to the integration branch first" >&2
+      exit 1
+    fi
+    ;;
+esac
 if [ -n "$(git status --porcelain)" ]; then
   echo "merge-ticket: the working tree is not clean" >&2
   exit 1

@@ -5,6 +5,15 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# A worktree removed from inside itself takes the working directory with it and
+# the script aborts halfway: run it from the main checkout.
+case "$OLDPWD$PWD" in
+  *"/.claude/worktrees/"*)
+    echo "worktree-cleanup: run it from the main checkout, not from an agent worktree" >&2
+    exit 1
+    ;;
+esac
+
 kept=()
 while read -r path _ ref; do
   case "$path" in
