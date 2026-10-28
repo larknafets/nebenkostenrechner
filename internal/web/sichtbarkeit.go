@@ -1,6 +1,9 @@
 package web
 
-import "github.com/larknafets/nebenkostenrechner/internal/store"
+import (
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
+	"github.com/larknafets/nebenkostenrechner/internal/store"
+)
 
 // sichtbareWohnung is one visible apartment: its Jahreskarte and Verlauf.
 type sichtbareWohnung struct {
@@ -92,7 +95,7 @@ func (dd dashboardData) wallboxInAbrechnung() bool {
 // sichtbareAnsicht decides the visibility for z and calls the builders (kept
 // apart, ADR 0002) for what stays visible. miete is read only when z may see
 // the Miete (#278); it is ignored otherwise, so the caller may pass nil.
-func sichtbareAnsicht(z Zugriff, dd dashboardData, miete []mieteMonat, offen []offenerMonat) ansicht {
+func sichtbareAnsicht(z Zugriff, dd dashboardData, miete []mieteMonat, offen []calc.OffenerMonat) ansicht {
 	var v ansicht
 	for _, a := range dd.Apartments {
 		if dd.sichtbar(z, wohnungEntitaet(a.ID)) {
@@ -113,7 +116,7 @@ func sichtbareAnsicht(z Zugriff, dd dashboardData, miete []mieteMonat, offen []o
 }
 
 // addWohnung builds card and Verlauf of one visible apartment.
-func (v *ansicht) addWohnung(z Zugriff, dd dashboardData, a store.Apartment, miete []mieteMonat, offen []offenerMonat) {
+func (v *ansicht) addWohnung(z Zugriff, dd dashboardData, a store.Apartment, miete []mieteMonat, offen []calc.OffenerMonat) {
 	card, verlauf := buildEntityView(dd, offen, a.ID)
 	// Miete (#278, #311): only for a rented apartment and a role that has the
 	// right, so the rent stays out of the view otherwise.
