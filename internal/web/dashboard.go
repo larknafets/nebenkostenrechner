@@ -60,7 +60,7 @@ type mieteMonat struct {
 // neither readings nor fixed-costs entries exist yet. The second return value
 // is the Miete projection taken from the same Datenstand (no second query),
 // the third the months whose Ablesungen wait for their Fixkosten (#364).
-func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, []offenerMonat, error) {
+func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, []calc.OffenerMonat, error) {
 	ds, err := store.LadeDatenstand(db)
 	if err != nil {
 		return dashboardData{}, nil, nil, err
@@ -113,7 +113,7 @@ func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, []offenerMonat,
 		FixkostenListe:         fixkostenListe,
 		Jahr:                   anzeigeJahr(allPeriods, fixkostenEingaben),
 		WallboxWeiterberechnen: ds.Haus.WallboxWeiterberechnen,
-	}, miete, offeneMonate(ds, verbrauchskosten), nil
+	}, miete, verbrauchskosten.OffeneMonate(), nil
 }
 
 // handleDashboard serves the redesigned Dashboard (Issue #60): yearly-

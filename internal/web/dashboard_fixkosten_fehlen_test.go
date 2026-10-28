@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -17,7 +18,7 @@ const (
 	linkFixkostenErfassen = `href="/fixkosten/neu">Fixkosten erfassen</a>`
 )
 
-// offeneMonateSetup stores five Ablesungen: September (no Vorperiode),
+// offeneMonateSetup stores four Ablesungen: September (first one, no Eingabe),
 // October (no Fixkosten-Eingabe), November (Eingabe without prices), December
 // (complete) and, as the one in the following year, none. Returns the id of
 // the incomplete Eingabe of November.
@@ -62,7 +63,7 @@ func TestDashboard_BannerBeiOffenenMonaten(t *testing.T) {
 				t.Fatalf("Banner %d mal, want 1", n)
 			}
 			for _, s := range []string{
-				"Für Oktober 2026 und November 2026 fehlen die Fixkosten (oder sind unvollständig).",
+				"Für September 2026, Oktober 2026 und November 2026 fehlen die Fixkosten (oder sind unvollständig).",
 				"Die Ablesungen dieser Monate sind noch nicht berechnet, Jahressummen und Saldo enthalten sie nicht.",
 			} {
 				if !strings.Contains(body, s) {
@@ -94,11 +95,11 @@ func TestDashboard_VerlaufZeileOffenerMonat(t *testing.T) {
 
 	// October has no Eingabe: own row with badge and link to the form, once
 	// per apartment panel (two apartments).
-	if n := strings.Count(body, `<span class="badge badge-warning">Fixkosten fehlen</span>`); n != 2 {
-		t.Errorf("Badge Fixkosten fehlen %d mal, want 2 (eine Zeile je Wohnung)", n)
+	if n := strings.Count(body, `<span class="badge badge-warning">Fixkosten fehlen</span>`); n != 4 {
+		t.Errorf("Badge Fixkosten fehlen %d mal, want 4 (September und Oktober, je Wohnung)", n)
 	}
-	if n := strings.Count(body, `class="verlauf-row verlauf-row-offen`); n != 2 {
-		t.Errorf("Zeilen für offene Monate %d mal, want 2", n)
+	if n := strings.Count(body, `class="verlauf-row verlauf-row-offen`); n != 4 {
+		t.Errorf("Zeilen für offene Monate %d mal, want 4", n)
 	}
 	if !strings.Contains(body, linkFixkostenErfassen) {
 		t.Error("Link Fixkosten erfassen in der Zeile fehlt")
@@ -108,8 +109,8 @@ func TestDashboard_VerlaufZeileOffenerMonat(t *testing.T) {
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
-	want := []offenerMonat{{Monat: "2026-10-01"}, {Monat: "2026-11-01", EingabeID: novemberEingabe}}
-	if len(offen) != len(want) || offen[0] != want[0] || offen[1] != want[1] {
+	want := []calc.OffenerMonat{{Monat: "2026-09-01"}, {Monat: "2026-10-01"}, {Monat: "2026-11-01", EingabeID: novemberEingabe}}
+	if len(offen) != len(want) || offen[0] != want[0] || offen[1] != want[1] || offen[2] != want[2] {
 		t.Fatalf("offene Monate = %+v, want %+v", offen, want)
 	}
 
@@ -146,7 +147,7 @@ func TestDashboard_JahreskarteVorlaeufigBeiOffenemMonat(t *testing.T) {
 	}
 
 	card, _ := buildEntityView(dd, offen, 2)
-	if want := "vorläufig, ohne Oktober 2026 und November 2026"; card.Vorlaeufig != want {
+	if want := "vorläufig, ohne September 2026, Oktober 2026 und November 2026"; card.Vorlaeufig != want {
 		t.Errorf("Vorlaeufig = %q, want %q", card.Vorlaeufig, want)
 	}
 	if card, _ := buildEntityView(dd, nil, 2); card.Vorlaeufig != "" {
@@ -155,14 +156,36 @@ func TestDashboard_JahreskarteVorlaeufigBeiOffenemMonat(t *testing.T) {
 
 	body := dashboardHTML(t, db)
 	// Gesamt and Saldo of both apartments carry the addition.
-	if n := strings.Count(body, "vorläufig, ohne Oktober 2026 und November 2026"); n < 2 {
+	if n := strings.Count(body, "vorläufig, ohne September 2026, Oktober 2026 und November 2026"); n < 2 {
 		t.Errorf("Zusatz vorläufig %d mal, want mindestens je Wohnung für Gesamt", n)
+	}
+}
+
+// A Teilstand and the first Ablesung without complete Eingabe are open months
+// too (#380).
+func TestDashboard_OffenerMonatAuchBeiTeilstand(t *testing.T) {
+	db := openTestDB(t)
+	if _, err := store.CreatePeriod(db, seedPeriodInputAt("2026-09-01")); err != nil {
+		t.Fatal(err)
+	}
+	teil := seedPeriodInputAt("2026-10-01")
+	delete(teil.Readings, "strom_gesamt")
+	if _, err := store.CreatePeriod(db, teil); err != nil {
+		t.Fatal(err)
+	}
+	_, _, offen, err := loadDashboardData(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []calc.OffenerMonat{{Monat: "2026-09-01"}, {Monat: "2026-10-01"}}
+	if len(offen) != 2 || offen[0] != want[0] || offen[1] != want[1] {
+		t.Errorf("offene Monate = %+v, want %+v", offen, want)
 	}
 }
 
 func TestDashboard_JahreskarteNurOffeneMonateDesAnzeigejahres(t *testing.T) {
 	dd := dashboardData{Jahr: 2026}
-	offen := []offenerMonat{{Monat: "2025-12-01"}, {Monat: "2026-01-01"}}
+	offen := []calc.OffenerMonat{{Monat: "2025-12-01"}, {Monat: "2026-01-01"}}
 	if got, want := vorlaeufigText(offen, dd.Jahr), "vorläufig, ohne Januar 2026"; got != want {
 		t.Errorf("vorlaeufigText = %q, want %q", got, want)
 	}

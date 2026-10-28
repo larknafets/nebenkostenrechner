@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -64,14 +65,14 @@ func TestAblesungDetail_FixkostenErfassenLinkJeFall(t *testing.T) {
 
 func TestOffenerHinweis_PfadJeFall(t *testing.T) {
 	for name, tc := range map[string]struct {
-		offen []offenerMonat
+		offen []calc.OffenerMonat
 		want  string
 	}{
-		"keine Eingabe":            {[]offenerMonat{{Monat: "2026-10-01"}}, "/fixkosten/neu"},
-		"eine unvollständige":      {[]offenerMonat{{Monat: "2026-11-01", EingabeID: 7}}, "/fixkosten/7/bearbeiten"},
-		"mehrere unvollständige":   {[]offenerMonat{{Monat: "2026-10-01", EingabeID: 6}, {Monat: "2026-11-01", EingabeID: 7}}, "/fixkosten"},
-		"eine ohne, eine mit":      {[]offenerMonat{{Monat: "2026-10-01"}, {Monat: "2026-11-01", EingabeID: 7}}, "/fixkosten/neu"},
-		"unvollständige und keine": {[]offenerMonat{{Monat: "2026-10-01", EingabeID: 6}, {Monat: "2026-11-01"}}, "/fixkosten/neu"},
+		"keine Eingabe":            {[]calc.OffenerMonat{{Monat: "2026-10-01"}}, "/fixkosten/neu"},
+		"eine unvollständige":      {[]calc.OffenerMonat{{Monat: "2026-11-01", EingabeID: 7}}, "/fixkosten/7/bearbeiten"},
+		"mehrere unvollständige":   {[]calc.OffenerMonat{{Monat: "2026-10-01", EingabeID: 6}, {Monat: "2026-11-01", EingabeID: 7}}, "/fixkosten"},
+		"eine ohne, eine mit":      {[]calc.OffenerMonat{{Monat: "2026-10-01"}, {Monat: "2026-11-01", EingabeID: 7}}, "/fixkosten/neu"},
+		"unvollständige und keine": {[]calc.OffenerMonat{{Monat: "2026-10-01", EingabeID: 6}, {Monat: "2026-11-01"}}, "/fixkosten/neu"},
 	} {
 		if got := offenerHinweis(tc.offen).Pfad; got != tc.want {
 			t.Errorf("%s: Pfad = %q, want %q", name, got, tc.want)
@@ -82,8 +83,11 @@ func TestOffenerHinweis_PfadJeFall(t *testing.T) {
 func TestDashboard_BannerLinkZurUnvollstaendigenEingabe(t *testing.T) {
 	db := openTestDB(t)
 	id := offeneMonateSetup(t, db)
-	// October gets a complete Eingabe, so November (incomplete) is the only
-	// open month.
+	// September and October get a complete Eingabe, so November (incomplete) is
+	// the only open month.
+	if _, err := store.CreateFixkostenEingabe(db, hinweisFixkosten("2026-09-01")); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := store.CreateFixkostenEingabe(db, hinweisFixkosten("2026-10-01")); err != nil {
 		t.Fatal(err)
 	}
