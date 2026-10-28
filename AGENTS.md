@@ -31,4 +31,5 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 | Starting an implementer or reviewer subagent, Haiku, git inside a worktree | `docs/agents/agents.md` |
 | Writing any text: which language | `docs/agents/language-convention.md` |
 | Working with issues or Wayfinder | `docs/agents/issue-tracker.md` |
+| A pipeline order (`/wayfinder`, `to-spec`, `to-tickets`, `implement-spec`), writing a spec or tickets | `docs/agents/pipeline.md` |
 | Naming a domain concept, touching an ADR | `docs/agents/domain.md` |
