@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -34,6 +35,10 @@ type periodOverviewRow struct {
 	ReadingDate  string
 	Zeitraum     string
 	IstTeilstand bool
+	// FixkostenFehlen: the Fixkosten-Eingabe of the Abrechnungsmonat is
+	// missing (calc.GrundFixkostenFehlen), a reason of its own besides the
+	// Teilstand.
+	FixkostenFehlen bool
 }
 
 // periodMonatGroup is every reading of one billing month (Monat, Issue
@@ -76,6 +81,16 @@ func periodOverviewGroups(periods []store.PeriodSummary, teilstandID int64) []pe
 	return out
 }
 
+// markiereFixkostenFehlen sets FixkostenFehlen on the rows of the Ablesungen
+// in ids: those without a (complete) Fixkosten-Eingabe (#359).
+func markiereFixkostenFehlen(groups []periodMonatGroup, ids map[int64]bool) {
+	for _, g := range groups {
+		for i := range g.Rows {
+			g.Rows[i].FixkostenFehlen = ids[g.Rows[i].ID]
+		}
+	}
+}
+
 // handleAblesungenListe lists every recorded period (Ticket #43), newest
 // first, linking each to its detail view. ImportedCount/Warnings surface the
 // CSV import's result (Ticket #54) - passed via query params since the app
@@ -97,7 +112,22 @@ func handleAblesungenListe(z *Zugang) http.HandlerFunc {
 			teilstandID = 0
 		}
 
+		kosten, err := calc.Load(db)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		fixkostenFehlen := make(map[int64]bool)
+		for _, p := range periods {
+			if a, ok := kosten.Ablesung(p.ID); ok && a.Grund == calc.GrundFixkostenFehlen {
+				fixkostenFehlen[p.ID] = true
+			}
+		}
+
 		importedCount, _ := strconv.Atoi(r.URL.Query().Get("imported"))
+
+		gruppen := periodOverviewGroups(periods, teilstandID)
+		markiereFixkostenFehlen(gruppen, fixkostenFehlen)
 
 		data := struct {
 			navData
@@ -108,7 +138,7 @@ func handleAblesungenListe(z *Zugang) http.HandlerFunc {
 		}{
 			navData:       z.NavData(r),
 			Aktuell:       "ablesungen",
-			MonatGruppen:  periodOverviewGroups(periods, teilstandID),
+			MonatGruppen:  gruppen,
 			ImportedCount: importedCount,
 			Warnings:      r.URL.Query()["warning"],
 		}
