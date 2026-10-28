@@ -2,6 +2,7 @@ package web
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -97,11 +98,11 @@ func TestFixkostenDetail_OhneBetroffeneAblesungenKeineZusatzBestaetigung(t *test
 	}
 }
 
-func TestFixkostenLoeschen_UnvollstaendigeEingabeKeineBestaetigungKeinBanner(t *testing.T) {
+func TestFixkostenLoeschen_UnvollstaendigeEingabeKeineBestaetigungAberBanner(t *testing.T) {
 	db := openTestDB(t)
 	hinweisSeed(t, db)
 	// Replace the complete Eingabe by an incomplete one: the Ablesungen were
-	// not berechenbar, so deleting it changes nothing for them.
+	// not berechenbar, so there is no extra question before deleting it.
 	alle, _ := store.AllFixkostenEingaben(db)
 	if err := store.DeleteFixkostenEingabe(db, alle[0].ID); err != nil {
 		t.Fatal(err)
@@ -115,9 +116,25 @@ func TestFixkostenLoeschen_UnvollstaendigeEingabeKeineBestaetigungKeinBanner(t *
 	if body := fixkostenDetailHTML(t, db, newZugang("", nil), id); strings.Contains(body, "unvollständig, bis") {
 		t.Error("Zusatz-Bestätigung beim Löschen einer unvollständigen Eingabe")
 	}
+	// The target page derives the note from the data: with the incomplete
+	// Eingabe still there it links to its edit page.
+	body := fixkostenListeHTML(t, db, newZugang("", nil), "?geloescht=2026-07-01")
+	for _, want := range []string{"Für Juli 2026 fehlt die Fixkosten-Eingabe.", "10.07.2026", fmt.Sprintf(`href="/fixkosten/%d/bearbeiten"`, id)} {
+		if !strings.Contains(body, want) {
+			t.Errorf("Hinweis bei unvollständiger Eingabe ohne %q", want)
+		}
+	}
 	w := fixkostenPost(t, db, handleDeleteFixkosten(), "/fixkosten/x/loeschen", id, nil)
-	if loc := w.Header().Get("Location"); strings.Contains(loc, "ablesungen=") {
-		t.Errorf("Location = %q, want ohne betroffene Ablesungen", loc)
+	if loc := w.Header().Get("Location"); loc != "/fixkosten?geloescht=2026-07-01" {
+		t.Errorf("Location = %q, want nur den Monat", loc)
+	}
+}
+
+func TestFixkostenListe_VollstaendigerMonatKeinHinweis(t *testing.T) {
+	db := openTestDB(t)
+	hinweisSeed(t, db)
+	if body := fixkostenListeHTML(t, db, newZugang("", nil), "?geloescht=2026-07-01"); strings.Contains(body, "fehlt die Fixkosten-Eingabe") {
+		t.Error("Hinweis trotz vollständiger Eingabe")
 	}
 }
 
@@ -130,8 +147,8 @@ func TestFixkostenLoeschen_BannerMitLinkNurFuerVermieter(t *testing.T) {
 		t.Fatalf("status = %d, want 302", w.Code)
 	}
 	loc := w.Header().Get("Location")
-	if !strings.HasPrefix(loc, "/fixkosten?") {
-		t.Fatalf("Location = %q, want /fixkosten?...", loc)
+	if loc != "/fixkosten?geloescht=2026-07-01" {
+		t.Fatalf("Location = %q, want nur den Monat", loc)
 	}
 	query := strings.TrimPrefix(loc, "/fixkosten")
 
@@ -158,6 +175,9 @@ func TestFixkostenLoeschen_OhneBetroffeneKeinBanner(t *testing.T) {
 	db := openTestDB(t)
 	id, _ := store.CreateFixkostenEingabe(db, hinweisFixkosten("2026-07-01"))
 	w := fixkostenPost(t, db, handleDeleteFixkosten(), "/fixkosten/x/loeschen", id, nil)
+	if loc := w.Header().Get("Location"); loc != "/fixkosten?geloescht=2026-07-01" {
+		t.Errorf("Location = %q, want den Monat auch ohne Ablesungen", loc)
+	}
 	query := strings.TrimPrefix(w.Header().Get("Location"), "/fixkosten")
 	if body := fixkostenListeHTML(t, db, newZugang("", nil), query); strings.Contains(body, "fehlt die Fixkosten-Eingabe") {
 		t.Error("Banner ohne betroffene Ablesungen")
@@ -193,6 +213,9 @@ func TestFixkostenAendern_MonatswechselHinweisAltInfoNeu(t *testing.T) {
 		t.Fatalf("status = %d (%s)", w.Code, w.Body.String())
 	}
 	loc := w.Header().Get("Location")
+	if want := fmt.Sprintf("/fixkosten/%d?alt=2026-07-01", id); loc != want {
+		t.Fatalf("Location = %q, want %q", loc, want)
+	}
 	body := fixkostenDetailHTMLQuery(t, db, newZugang("", nil), id, loc)
 
 	for _, want := range []string{
