@@ -146,7 +146,8 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			meters = append(meters, entry)
 		}
 
-		ablesung, _ := calc.KostenAus(ds).Ablesung(period.ID)
+		v := calc.KostenAus(ds)
+		ablesung, _ := v.Ablesung(period.ID)
 		k := ablesung.Kosten
 
 		fix := fixkostenAnsicht(ds, period)
@@ -183,6 +184,9 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			// FixkostenPfad is the target of the "Fixkosten erfassen" links:
 			// the edit page of an incomplete Eingabe, else the new form.
 			FixkostenPfad string
+			// FixkostenLinkText is "Fixkosten ergänzen" for an incomplete
+			// Eingabe, "Fixkosten erfassen" without one.
+			FixkostenLinkText string
 
 			// Fix reads the Fixkosten-Eingabe of the month, FixkostenHinweis
 			// is set when it is missing (#359), instead of the Euro blocks.
@@ -205,10 +209,12 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			MonatLabel:       store.MonatLabel(period.Monat),
 			Fix:              fix,
 			FixkostenHinweis: hinweis,
-			FixkostenPfad:    fixkostenErfassenPfad(eingabeIDFuerMonat(ds.Eingaben, period.Monat)),
 		}
-		if r.URL.Query().Get(fixkostenFehlenParam) != "" {
-			data.FixkostenBanner = fixkostenFehlenBanner(ds.Eingaben, period.Monat)
+		data.FixkostenPfad, data.FixkostenLinkText = fixkostenErfassenZiel(v.Eingabe(period.Monat))
+		// One note per page: the banner only where the Kostenbereich shows none
+		// (Teilstand, first Ablesung).
+		if r.URL.Query().Get(fixkostenFehlenParam) != "" && hinweis == nil {
+			data.FixkostenBanner = fixkostenFehlenBanner(v, period.Monat)
 		}
 
 		if err := ablesungTemplate.ExecuteTemplate(w, "layout", data); err != nil {
@@ -254,6 +260,15 @@ func fixkostenAnsicht(ds *store.Datenstand, period *store.LatestPeriod) ablesung
 type ablesungKostenHinweis struct {
 	Text       string
 	WallboxKWh float64
+}
+
+// fixkostenErfassenZiel is the path and link text for the Eingabe of a month
+// (nil = none): complete the incomplete one, or create a new one.
+func fixkostenErfassenZiel(e *store.FixkostenEingabeDetails) (pfad, text string) {
+	if e == nil {
+		return fixkostenErfassenPfad(0), "Fixkosten erfassen"
+	}
+	return fixkostenErfassenPfad(e.ID), "Fixkosten ergänzen"
 }
 
 // ablesungKostenFehlenText is the one wording for "this month lacks its Fixkosten".

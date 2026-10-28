@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/larknafets/nebenkostenrechner/internal/store"
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
 )
 
 // fixkostenFehlenParam is the query parameter that asks the Ablesung page for
@@ -14,26 +14,30 @@ import (
 const fixkostenFehlenParam = "fixkosten_fehlen"
 
 // ablesungGespeichertURL is where to go after saving the Ablesung periodID: its
-// detail page, with fixkostenFehlenParam when the Fixkosten of its
-// Abrechnungsmonat are missing.
+// detail page, with fixkostenFehlenParam when its Abrechnungsmonat has no
+// complete Fixkosten-Eingabe (also for a Teilstand or the first Ablesung).
 func ablesungGespeichertURL(r *http.Request, db *sql.DB, periodID int64) (string, error) {
 	url := fmt.Sprintf("%s/ablesungen/%d", requestBase(r), periodID)
-	ds, err := store.LadeDatenstand(db)
+	v, err := calc.Load(db)
 	if err != nil {
 		return "", err
 	}
-	for _, p := range ds.Periods {
-		if p.ID == periodID && len(fixkostenFehlenMonate(ds.Eingaben, []string{p.Monat})) > 0 {
-			return url + "?" + fixkostenFehlenParam + "=1", nil
-		}
+	if a, ok := v.Ablesung(periodID); ok && monatOffen(v, a.Period.Monat) {
+		return url + "?" + fixkostenFehlenParam + "=1", nil
 	}
 	return url, nil
 }
 
+// monatOffen reports whether monat is an Abrechnungsmonat without a complete
+// Fixkosten-Eingabe. A Teilstand without Abrechnungsmonat ("") has none to miss.
+func monatOffen(v *calc.Verbrauchskosten, monat string) bool {
+	return monat != "" && !v.MonatVollstaendig(monat)
+}
+
 // fixkostenFehlenBanner is the banner text of an Ablesung whose Abrechnungsmonat
 // lacks its Fixkosten, empty when it has them (or no Abrechnungsmonat yet).
-func fixkostenFehlenBanner(eingaben []*store.FixkostenEingabeDetails, monat string) string {
-	if len(fixkostenFehlenMonate(eingaben, []string{monat})) == 0 {
+func fixkostenFehlenBanner(v *calc.Verbrauchskosten, monat string) string {
+	if !monatOffen(v, monat) {
 		return ""
 	}
 	return fixkostenFehlenSatz([]string{monat}) + " Die Ablesung ist noch nicht berechnet, bis sie erfasst sind."

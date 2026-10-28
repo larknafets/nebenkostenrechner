@@ -3,7 +3,7 @@
 {{template "nav" .}}
 
 {{if .FixkostenBanner}}
-<div class="panel" style="border-color:#e6a700">{{.FixkostenBanner}}{{if .Vermieter}} <a href="{{.Base}}{{.FixkostenPfad}}">Fixkosten erfassen</a>{{end}}</div>
+<div class="panel" style="border-color:#e6a700">{{.FixkostenBanner}}{{if .Vermieter}} <a href="{{.Base}}{{.FixkostenPfad}}">{{.FixkostenLinkText}}</a>{{end}}</div>
 {{end}}
 
 <div class="field" style="max-width:220px">
@@ -47,7 +47,7 @@
 
   {{if .FixkostenHinweis}}
   <h3 style="margin-top:1.25rem">Kosten</h3>
-  <p class="text-warning">{{.FixkostenHinweis.Text}}{{if .Vermieter}} <a href="{{.Base}}{{.FixkostenPfad}}">Fixkosten erfassen</a>{{end}}</p>
+  <p class="text-warning">{{.FixkostenHinweis.Text}}{{if .Vermieter}} <a href="{{.Base}}{{.FixkostenPfad}}">{{.FixkostenLinkText}}</a>{{end}}</p>
 
   <h3 style="margin-top:1.25rem">Wallbox</h3>
   <table class="letzte">

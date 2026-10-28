@@ -2,6 +2,8 @@ package web
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -42,10 +44,11 @@ func TestAblesungDetail_FixkostenErfassenLinkJeFall(t *testing.T) {
 	_, nov, _ := ablesungenMitOffenemMonat(t, db)
 	z := newZugang("", nil)
 
-	// November has no Eingabe: banner and hint lead to the new form.
+	// November has no Eingabe: the hint leads to the new form, the banner
+	// stays away (one note per page).
 	body := detailBodyMit(t, z, db, nov, "?fixkosten_fehlen=1")
-	if n := strings.Count(body, `href="/fixkosten/neu">Fixkosten erfassen</a>`); n != 2 {
-		t.Errorf("Link zum Neuformular %d mal, want 2 (Banner und Hinweis)", n)
+	if n := strings.Count(body, `href="/fixkosten/neu">Fixkosten erfassen</a>`); n != 1 {
+		t.Errorf("Link zum Neuformular %d mal, want 1 (nur der Hinweis)", n)
 	}
 
 	// An incomplete Eingabe of November: both lead to its edit page.
@@ -54,9 +57,9 @@ func TestAblesungDetail_FixkostenErfassenLinkJeFall(t *testing.T) {
 		t.Fatal(err)
 	}
 	body = detailBodyMit(t, z, db, nov, "?fixkosten_fehlen=1")
-	want := fmt.Sprintf(`href="/fixkosten/%d/bearbeiten">Fixkosten erfassen</a>`, id)
-	if n := strings.Count(body, want); n != 2 {
-		t.Errorf("Link zur Bearbeiten-Seite %d mal, want 2 (Banner und Hinweis)", n)
+	want := fmt.Sprintf(`href="/fixkosten/%d/bearbeiten">Fixkosten ergänzen</a>`, id)
+	if n := strings.Count(body, want); n != 1 {
+		t.Errorf("Link zur Bearbeiten-Seite %d mal, want 1 (nur der Hinweis)", n)
 	}
 	if strings.Contains(body, `href="/fixkosten/neu"`) {
 		t.Error("Link zum Neuformular trotz vorhandener Eingabe")
@@ -95,5 +98,77 @@ func TestDashboard_BannerLinkZurUnvollstaendigenEingabe(t *testing.T) {
 	want := fmt.Sprintf(`href="/fixkosten/%d/bearbeiten">Fixkosten erfassen</a>`, id)
 	if !strings.Contains(body, want) {
 		t.Errorf("Banner ohne %q", want)
+	}
+}
+
+// Teilstand and first Ablesung: the Kostenbereich shows no note, so the banner
+// after saving does (once), with the link text following the state of the
+// Eingabe.
+func TestAblesungDetail_BannerBeiTeilstandUndErsterAblesung(t *testing.T) {
+	db := openTestDB(t)
+	erste, err := store.CreatePeriod(db, seedPeriodInputAt("2026-10-01"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	teil := seedPeriodInputAt("2026-11-01")
+	delete(teil.Readings, "strom_gesamt")
+	teilID, err := store.CreatePeriod(db, teil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	z := newZugang("", nil)
+	for name, id := range map[string]int64{"erste Ablesung": erste, "Teilstand": teilID} {
+		body := detailBodyMit(t, z, db, id, "?fixkosten_fehlen=1")
+		if n := strings.Count(body, "fehlen die Fixkosten"); n != 1 {
+			t.Errorf("%s: %d Hinweise ohne Eingabe, want 1", name, n)
+		}
+		if !strings.Contains(body, `href="/fixkosten/neu">Fixkosten erfassen</a>`) {
+			t.Errorf("%s: Link zum Neuformular fehlt", name)
+		}
+		if strings.Contains(detailBodyMit(t, z, db, id, ""), "fehlen die Fixkosten") {
+			t.Errorf("%s: Hinweis ohne frisches Speichern", name)
+		}
+	}
+	// Incomplete Eingabe of November: banner leads to its edit page.
+	eid, err := store.CreateFixkostenEingabe(db, seedFixkostenInput("2026-11-01"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := detailBodyMit(t, z, db, teilID, "?fixkosten_fehlen=1")
+	want := fmt.Sprintf(`href="/fixkosten/%d/bearbeiten">Fixkosten ergänzen</a>`, eid)
+	if n := strings.Count(body, "fehlen die Fixkosten"); n != 1 || !strings.Contains(body, want) {
+		t.Errorf("Teilstand mit unvollständiger Eingabe: %d Hinweise, Link %q fehlt", n, want)
+	}
+	// A complete Eingabe: no note.
+	if _, err := store.CreateFixkostenEingabe(db, fixkostenMitPreisen("2026-10-01")); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(detailBodyMit(t, z, db, erste, "?fixkosten_fehlen=1"), "fehlen die Fixkosten") {
+		t.Error("erste Ablesung: Hinweis trotz vollständiger Eingabe")
+	}
+}
+
+// Saving a Teilstand (or the first Ablesung) redirects with the flag whenever
+// the month has no complete Eingabe.
+func TestAblesungSpeichern_FlaggeJeEingabeZustand(t *testing.T) {
+	db := openTestDB(t)
+	flag := func() bool {
+		w := httptest.NewRecorder()
+		form := vollesFormular()
+		form.Del("strom_gesamt") // Teilstand
+		handleCreateAblesung()(w, requestWithDB(formRequest(t, form), db))
+		if w.Code != http.StatusFound {
+			t.Fatalf("status = %d (body: %s)", w.Code, w.Body.String())
+		}
+		return strings.Contains(w.Header().Get("Location"), "?fixkosten_fehlen=1")
+	}
+	if !flag() {
+		t.Error("Teilstand ohne Eingabe: Flagge fehlt")
+	}
+	if _, err := store.CreateFixkostenEingabe(db, fixkostenMitPreisen("2026-11-01")); err != nil {
+		t.Fatal(err)
+	}
+	if flag() {
+		t.Error("Teilstand mit vollständiger Eingabe: Flagge gesetzt")
 	}
 }

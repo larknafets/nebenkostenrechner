@@ -36,16 +36,6 @@ func fixkostenErfassenPfad(eingabeID int64) string {
 	return "/fixkosten/" + strconv.FormatInt(eingabeID, 10) + "/bearbeiten"
 }
 
-// eingabeIDFuerMonat is the id of the Eingabe of monat, 0 = there is none.
-func eingabeIDFuerMonat(eingaben []*store.FixkostenEingabeDetails, monat string) int64 {
-	for _, e := range eingaben {
-		if e.Monat == monat {
-			return e.ID
-		}
-	}
-	return 0
-}
-
 // Query parameters of the redirect targets.
 const (
 	paramGeloescht  = "geloescht" // Monat of a deleted Eingabe
