@@ -396,6 +396,8 @@ Das Overlay "Anmelden" hat ein Auswahlfeld "Anmelden als" mit **Mieter:in**, **V
 Die Vermieter:innen sehen und dürfen alles. Wer nicht angemeldet ist und die Mieter:innen sehen die eingeschränkten Ansichten. Öffnet eine angemeldete Mieter:in eine Seite nur für Vermieter:innen, erscheint der Hinweis "Nur für Vermieter:innen" mit dem Weg zur Anmeldung als Vermieter:in, eine nicht angemeldete Person landet im Anmelde-Overlay.
 Jede Rolle hat ein eigenes Sitzungs-Cookie, signiert mit ihrem Kennwort: Ein geändertes Kennwort meldet nur diese Rolle ab.
 
+> **Bekannte Grenze:** Weil das Cookie mit dem Kennwort signiert ist, lässt sich aus einem mitgelesenen Cookie das Kennwort offline erraten. Die App gehört deshalb nicht direkt ins Internet, sondern hinter Home Assistant Ingress oder ins Heimnetz.
+
 #### Berechtigungen
 
 Auf der Seite Stammdaten stellen die Vermieter:innen in der Tabelle **Berechtigungen** je Recht ein Häkchen für **Nicht angemeldet** und **Mieter:in** ein (die Spalte Mieter:in gibt es nur mit Login für Mieter:innen). Die Vermieter:innen dürfen immer alles.
