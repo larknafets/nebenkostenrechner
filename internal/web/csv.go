@@ -14,35 +14,30 @@ import (
 )
 
 // csvHeader is the canonical CSV column order for both export (Ticket #53)
-// and import (Ticket #54) - reading_date, every meter key (meter readings,
-// not consumption), the period-level prices/weighting, then occupant count
-// per apartment (fixed ids 1/2, see store's seed()). No qm_1/qm_2 columns
-// (Issue #61 moved apartment size off the reading onto /stammdaten - hard
-// cut, no backward compatibility with the old format).
+// and import (Ticket #54) - reading_date, monat, every meter key (meter
+// readings, not consumption), then the optional Wallbox-Einzelzähler (#224).
+// A cell left empty means "nicht erfasst". An import also accepts older files
+// without the Einzelzähler: csvImportHeader lists only the required columns.
 //
-// The optional Wallbox-Einzelzähler (#224) are the last columns. A cell left
-// empty means "nicht erfasst". An import also accepts older files without
-// them: csvImportHeader lists only the required columns.
-//
-// After them come the per-Ablesung switches (store.Switches: "Wallboxen
-// vollständig Wohnung 1" #225, "PV-Gutschrift Wohnung 1" #226), 1 or 0 each.
-// They are optional on import too (empty or missing = the switch's default).
-var csvHeader = append(append(append(append([]string{"reading_date", "monat"}, store.MeterKeys...),
-	"strompreis", "frischwasser_preis", "abwasser_preis", "einspeisung_preis",
-	"personen_1", "personen_2",
-), store.OptionalMeterKeys...), csvSwitchColumns()...)
-
-func csvSwitchColumns() []string {
-	cols := make([]string, len(store.Switches))
-	for i, s := range store.Switches {
-		cols[i] = s.CSVColumn
-	}
-	return cols
-}
+// Prices, Personenzahl and the switches belong to the Fixkosten-Eingabe (#359).
+// The export no longer writes them; an import accepts the columns of an older
+// file (csvVerworfeneSpalten) and drops their values.
+var csvHeader = append(append([]string{"reading_date", "monat"}, store.MeterKeys...), store.OptionalMeterKeys...)
 
 // csvImportHeader is csvHeader without the optional columns, the columns an
-// import insists on.
-var csvImportHeader = csvHeader[:len(csvHeader)-len(store.OptionalMeterKeys)-len(store.Switches)]
+// import insists on: Ablesedatum, Abrechnungsmonat and the Zähler.
+var csvImportHeader = csvHeader[:len(csvHeader)-len(store.OptionalMeterKeys)]
+
+// csvVerworfeneSpalten are the columns of the old Ablesungs-CSV that moved to
+// the Fixkosten-Eingabe: the four prices, the Personenzahl per apartment and the
+// switches. An import accepts them and drops their values.
+var csvVerworfeneSpalten = func() []string {
+	cols := []string{"strompreis", "frischwasser_preis", "abwasser_preis", "einspeisung_preis", "personen_1", "personen_2"}
+	for _, s := range store.Switches {
+		cols = append(cols, s.CSVColumn)
+	}
+	return cols
+}()
 
 // handleExportCSV streams every reading as CSV (Ticket #53).
 func handleExportCSV() http.HandlerFunc {
@@ -62,27 +57,12 @@ func formatPeriodCSVRow(p *store.LatestPeriod) []string {
 	for _, key := range store.MeterKeys {
 		row = append(row, formatDecimalDE(p.Readings[key]))
 	}
-	row = append(row,
-		// store.OrZero: a partial reading (Ticket #128) exports its missing
-		// price here as "0" - CSV import/export of/for partial readings is
-		// explicitly not part of this spec (#127), so this can't actually
-		// occur in practice yet.
-		formatDecimalDE(store.OrZero(p.Strompreis)),
-		formatDecimalDE(store.OrZero(p.FrischwasserPreis)),
-		formatDecimalDE(store.OrZero(p.AbwasserPreis)),
-		formatDecimalDE(store.OrZero(p.EinspeisungPreis)),
-		formatDecimalDE(p.PersonenByApartment[1]),
-		formatDecimalDE(p.PersonenByApartment[2]),
-	)
 	for _, key := range store.OptionalMeterKeys {
 		if v, ok := p.Readings[key]; ok {
 			row = append(row, formatDecimalDE(v))
 		} else {
 			row = append(row, "")
 		}
-	}
-	for _, s := range store.Switches {
-		row = append(row, formatSwitchCSV(*s.Detail(p)))
 	}
 	return row
 }
@@ -112,12 +92,26 @@ func parseSwitchCSV(record []string, colIdx map[string]int, s store.Switch, line
 	return false, fmt.Errorf("Zeile %d: ungültiger Wert für %s: %q (erlaubt: 0 oder 1)", line, s.CSVColumn, record[idx])
 }
 
+// hatVerworfeneWerte reports whether the row has a value in a column of the
+// old format that moved to the Fixkosten-Eingabe.
+func hatVerworfeneWerte(record []string, colIdx map[string]int) bool {
+	for _, col := range csvVerworfeneSpalten {
+		if idx, ok := colIdx[col]; ok && idx < len(record) && strings.TrimSpace(record[idx]) != "" {
+			return true
+		}
+	}
+	return false
+}
+
 // importRow pairs a parsed PeriodInput with its original CSV line number,
 // so warnings can still point at the uploaded file after the rows are
 // re-sorted into chronological order.
 type importRow struct {
 	input store.PeriodInput
 	line  int
+	// verworfen is true if the row had a value in a column that moved to the
+	// Fixkosten-Eingabe (prices, Personenzahl, switches), dropped on import.
+	verworfen bool
 }
 
 // handleImportCSV bootstraps a completely empty database from a CSV in the
@@ -151,7 +145,7 @@ func handleImportCSV() http.HandlerFunc {
 					var ef *store.EingabeFehler
 					if errors.As(row.Err, &ef) && row.Index < len(rows) {
 						// parseImportRow validates already, so this is a safety net.
-						return nil, &importEingabeFehler{msg: ablesungCsvFehler(ef, rows[row.Index].line, nil).Error()}
+						return nil, &importEingabeFehler{msg: ablesungCsvFehler(ef, rows[row.Index].line).Error()}
 					}
 					if msg, _, ok := reiheFehler(row.Err); ok {
 						return nil, &importEingabeFehler{msg: fmt.Sprintf("Ablesung vom %s: %s", row.ReadingDate, msg)}
@@ -169,7 +163,12 @@ func handleImportCSV() http.HandlerFunc {
 			return
 		}
 
-		warnings := importWarnings(rows, ids)
+		hinweise, err := importHinweise(db, rows)
+		if err != nil {
+			http.Error(w, "fixkosten: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		warnings := append(hinweise, importWarnings(rows, ids)...)
 		redirectURL := fmt.Sprintf("%s/ablesungen?imported=%d", requestBase(r), len(ids))
 		for _, msg := range warnings {
 			redirectURL += "&warning=" + url.QueryEscape(msg)
@@ -199,7 +198,7 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 	monat := strings.TrimSpace(cell("monat"))
 	// The store accepts an empty Monat (Teilstand), the CSV does not.
 	if monat == "" {
-		return importRow{}, ablesungCsvFehler(&store.EingabeFehler{Feld: store.FeldMonat}, line, nil)
+		return importRow{}, ablesungCsvFehler(&store.EingabeFehler{Feld: store.FeldMonat}, line)
 	}
 
 	readings := make(map[string]float64, len(store.MeterKeys))
@@ -224,58 +223,20 @@ func parseImportRow(record []string, colIdx map[string]int, line int) (importRow
 		readings[key] = v
 	}
 
-	switches := make([]bool, len(store.Switches))
-	for i, s := range store.Switches {
-		on, err := parseSwitchCSV(record, colIdx, s, line)
-		if err != nil {
-			return importRow{}, err
-		}
-		switches[i] = on
-	}
-
-	strompreis, err1 := parseDecimalDE(cell("strompreis"))
-	frischwasserPreis, err2 := parseDecimalDE(cell("frischwasser_preis"))
-	abwasserPreis, err3 := parseDecimalDE(cell("abwasser_preis"))
-	einspeisungPreis, err4 := parseDecimalDE(cell("einspeisung_preis"))
-	if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
-		return importRow{}, fmt.Errorf("Zeile %d: ungültiger Preiswert", line)
-	}
-
-	personen := make(map[int64]float64, 2)
-	for _, id := range [2]int64{1, 2} {
-		personenCol := fmt.Sprintf("personen_%d", id)
-		p, err := parseDecimalDE(cell(personenCol))
-		if err != nil {
-			return importRow{}, fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q", line, id, cell(personenCol))
-		}
-		personen[id] = p
-	}
-
 	input := store.PeriodInput{
-		ReadingDate:       readingDate,
-		Monat:             monat,
-		Strompreis:        store.Float64(strompreis),
-		FrischwasserPreis: store.Float64(frischwasserPreis),
-		AbwasserPreis:     store.Float64(abwasserPreis),
-		EinspeisungPreis:  store.Float64(einspeisungPreis),
-		Readings:          readings,
-		Personen:          personen,
-	}
-	for i, s := range store.Switches {
-		*s.Input(&input) = switches[i]
+		ReadingDate: readingDate,
+		Monat:       monat,
+		Readings:    readings,
 	}
 	if err := input.Validate(); err != nil {
-		return importRow{}, ablesungCsvFehler(err, line, func(id int64) string {
-			return cell(fmt.Sprintf("personen_%d", id))
-		})
+		return importRow{}, ablesungCsvFehler(err, line)
 	}
-	return importRow{input: input, line: line}, nil
+	return importRow{input: input, line: line, verworfen: hatVerworfeneWerte(record, colIdx)}, nil
 }
 
 // ablesungCsvFehler turns the *store.EingabeFehler of PeriodInput.Validate into
-// the German CSV message with the line number. rawPersonen returns the
-// uploaded cell of a Wohnung, so the message quotes it as written.
-func ablesungCsvFehler(err error, line int, rawPersonen func(id int64) string) error {
+// the German CSV message with the line number.
+func ablesungCsvFehler(err error, line int) error {
 	var ef *store.EingabeFehler
 	if !errors.As(err, &ef) {
 		return err
@@ -285,12 +246,6 @@ func ablesungCsvFehler(err error, line int, rawPersonen func(id int64) string) e
 		return fmt.Errorf("Zeile %d: ungültiges Ablesedatum %q (Format JJJJ-MM-TT)", line, ef.Wert)
 	case store.FeldMonat:
 		return fmt.Errorf("Zeile %d: ungültiger Abrechnungsmonat %q (Format JJJJ-MM-01)", line, ef.Wert)
-	case store.FeldPersonen:
-		raw := ef.Wert
-		if rawPersonen != nil {
-			raw = rawPersonen(ef.ID)
-		}
-		return fmt.Errorf("Zeile %d: ungültige Personenzahl für Wohnung %d: %q (%w)", line, ef.ID, raw, ef.Err)
 	}
 	return err
 }
@@ -347,4 +302,33 @@ func importWarnings(rows []importRow, ids []int64) []string {
 		}
 	}
 	return warnings
+}
+
+// importHinweise are the two notes after an import (#359), one message each:
+// the Abrechnungsmonate of the imported Ablesungen that have no complete
+// Fixkosten-Eingabe, and that the file held prices, Personenzahlen or switches,
+// which are no longer taken over.
+func importHinweise(db *sql.DB, rows []importRow) ([]string, error) {
+	eingaben, err := store.AllFixkostenEingabenDetails(db)
+	if err != nil {
+		return nil, err
+	}
+	monate := make([]string, len(rows))
+	verworfen := false
+	for i, row := range rows {
+		monate[i] = row.input.Monat
+		verworfen = verworfen || row.verworfen
+	}
+	var hinweise []string
+	if fehlen := fixkostenFehlenMonate(eingaben, monate); len(fehlen) > 0 {
+		labels := make([]string, len(fehlen))
+		for i, m := range fehlen {
+			labels[i] = store.MonatLabel(m)
+		}
+		hinweise = append(hinweise, "Für "+strings.Join(labels, ", ")+" fehlen die Fixkosten (oder sind unvollständig). Die Ablesungen dieser Monate sind noch nicht berechnet, bis die Fixkosten erfasst sind.")
+	}
+	if verworfen {
+		hinweise = append(hinweise, "Die Datei enthält Preise, Personenzahlen oder Häkchen. Sie gehören zur Fixkosten-Eingabe und werden nicht übernommen.")
+	}
+	return hinweise, nil
 }

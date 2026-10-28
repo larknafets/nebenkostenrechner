@@ -106,18 +106,6 @@ func TestAbrechnungSeite_Anlage4_PersonenDezimal(t *testing.T) {
 }
 
 func TestPersonenDezimal_VorbelegungAusVorperiode(t *testing.T) {
-	t.Run("Wizard", func(t *testing.T) {
-		db := openTestDB(t)
-		in := seedPeriodInputAt("2026-10-01")
-		in.Personen = map[int64]float64{1: 1.25, 2: 2}
-		if _, err := store.CreatePeriod(db, in); err != nil {
-			t.Fatalf("CreatePeriod: %v", err)
-		}
-		body := wizardBody(t, db)
-		mustContain(t, inputTag(t, body, "personen_1"), `value="1.25"`)
-		mustContain(t, inputTag(t, body, "personen_2"), `value="2"`)
-	})
-
 	t.Run("Fixkosten", func(t *testing.T) {
 		db := openTestDB(t)
 		form := fixkostenForm("2026-09")
@@ -137,24 +125,6 @@ func TestPersonenDezimal_VorbelegungAusVorperiode(t *testing.T) {
 
 func TestPersonenDezimal_GanzzahlUndNullInBeidenFormularen(t *testing.T) {
 	for _, raw := range []string{"2", "0"} {
-		t.Run("Ablesung "+raw, func(t *testing.T) {
-			db := openTestDB(t)
-			form := vollesFormular()
-			form.Set("personen_1", raw)
-			w := httptest.NewRecorder()
-			handleCreateAblesung()(w, requestWithDB(formRequest(t, form), db))
-			if w.Code != http.StatusFound {
-				t.Fatalf("status = %d, want 302 (body: %s)", w.Code, w.Body.String())
-			}
-			latest, err := store.GetLatestPeriod(db)
-			if err != nil || latest == nil {
-				t.Fatalf("GetLatestPeriod = %v, %v", latest, err)
-			}
-			want, _ := strconv.ParseFloat(raw, 64)
-			if got := latest.PersonenByApartment[1]; got != want {
-				t.Errorf("Personen[1] = %v, want %v", got, want)
-			}
-		})
 		t.Run("Fixkosten "+raw, func(t *testing.T) {
 			db := openTestDB(t)
 			form := fixkostenForm("2026-09")

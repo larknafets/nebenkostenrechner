@@ -226,12 +226,8 @@ func TestUpdatePeriod_Roundtrip(t *testing.T) {
 	p2 := mustCreatePeriod(t, db, "2026-10-01", baseReadings(map[string]float64{"strom_gesamt": 200}))
 
 	err := UpdatePeriod(db, p2, PeriodInput{
-		ReadingDate:       "2026-10-02",
-		Strompreis:        Float64(0.25),
-		FrischwasserPreis: Float64(1.50),
-		AbwasserPreis:     Float64(5.00),
-		Readings:          baseReadings(map[string]float64{"strom_gesamt": 210}),
-		Personen:          map[int64]float64{1: 3, 2: 1},
+		ReadingDate: "2026-10-02",
+		Readings:    baseReadings(map[string]float64{"strom_gesamt": 210}),
 	})
 	if err != nil {
 		t.Fatalf("UpdatePeriod: %v", err)
@@ -247,14 +243,8 @@ func TestUpdatePeriod_Roundtrip(t *testing.T) {
 	if latest.ReadingDate != "2026-10-02" {
 		t.Errorf("ReadingDate = %q, want 2026-10-02", latest.ReadingDate)
 	}
-	if OrZero(latest.Strompreis) != 0.25 || OrZero(latest.FrischwasserPreis) != 1.50 || OrZero(latest.AbwasserPreis) != 5.00 {
-		t.Errorf("prices = %v/%v/%v, want 0.25/1.50/5.00", OrZero(latest.Strompreis), OrZero(latest.FrischwasserPreis), OrZero(latest.AbwasserPreis))
-	}
 	if latest.Readings["strom_gesamt"] != 210 {
 		t.Errorf("Readings[strom_gesamt] = %v, want 210", latest.Readings["strom_gesamt"])
-	}
-	if latest.PersonenByApartment[1] != 3 {
-		t.Errorf("PersonenByApartment[1] = %v, want 3", latest.PersonenByApartment[1])
 	}
 }
 
@@ -423,34 +413,6 @@ func TestUpdatePeriod_AddsMissingMeterReading(t *testing.T) {
 	}
 	if details.Readings["strom_einspeisung"] != 1234 {
 		t.Errorf("Readings[strom_einspeisung] = %v, want 1234", details.Readings["strom_einspeisung"])
-	}
-}
-
-// TestUpdatePeriod_AddsMissingOccupancy is TestUpdatePeriod_AddsMissingMeterReading's
-// counterpart for period_occupancy - e.g. an apartment added after the
-// period was first created.
-func TestUpdatePeriod_AddsMissingOccupancy(t *testing.T) {
-	db := openTestDB(t)
-	p1 := mustCreatePeriod(t, db, "2026-06-01", baseReadings(nil))
-
-	if _, err := db.Exec(`DELETE FROM period_occupancy WHERE period_id = ? AND apartment_id = 2`, p1); err != nil {
-		t.Fatalf("simulate missing occupancy: %v", err)
-	}
-
-	if err := UpdatePeriod(db, p1, PeriodInput{
-		ReadingDate: "2026-06-01",
-		Readings:    baseReadings(nil),
-		Personen:    map[int64]float64{1: 2, 2: 3},
-	}); err != nil {
-		t.Fatalf("UpdatePeriod: %v", err)
-	}
-
-	details, err := GetPeriodDetails(db, p1)
-	if err != nil {
-		t.Fatalf("GetPeriodDetails: %v", err)
-	}
-	if details.PersonenByApartment[2] != 3 {
-		t.Errorf("PersonenByApartment[2] = %v, want 3", details.PersonenByApartment[2])
 	}
 }
 
@@ -1027,18 +989,11 @@ func TestSeed_AddsNewMeterToExistingDB(t *testing.T) {
 
 func TestEinspeisungPreis_Roundtrip(t *testing.T) {
 	db := openTestDB(t)
-	p1 := mustCreatePeriod(t, db, "2026-09-01", baseReadings(nil))
-
-	if err := UpdatePeriod(db, p1, PeriodInput{
-		ReadingDate:       "2026-09-01",
-		Strompreis:        Float64(0.22),
-		FrischwasserPreis: Float64(1.46),
-		AbwasserPreis:     Float64(4.87),
-		EinspeisungPreis:  Float64(0.082),
-		Readings:          baseReadings(nil),
-		Personen:          map[int64]float64{1: 2, 2: 1},
-	}); err != nil {
-		t.Fatalf("UpdatePeriod: %v", err)
+	in := completePeriodInput("2026-09-01", baseReadings(nil))
+	in.EinspeisungPreis = Float64(0.082)
+	p1, err := CreatePeriod(db, in)
+	if err != nil {
+		t.Fatalf("CreatePeriod: %v", err)
 	}
 
 	got, err := GetPeriodDetails(db, p1)
@@ -1536,18 +1491,16 @@ func TestUpdatePeriod_Teilstand_PreservesUnspecifiedFields(t *testing.T) {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 
-	// Vervollstaendigen/Korrigieren round: only Strompreis is given this
-	// time, everything else stays empty/absent in this call - must not
-	// delete the values already stored.
+	// Vervollstaendigen/Korrigieren round: everything but the date stays
+	// empty/absent in this call - must not delete the values already stored.
+	// Prices, switches and Personenzahl are never written by UpdatePeriod
+	// (they belong to the Fixkosten-Eingabe, #359), whatever the input holds.
 	if err := UpdatePeriod(db, id, PeriodInput{
-		ReadingDate:       "2026-05-01",
-		Monat:             "",
-		Strompreis:        Float64(0.25),
-		FrischwasserPreis: nil,
-		AbwasserPreis:     nil,
-		EinspeisungPreis:  nil,
-		Readings:          map[string]float64{},
-		Personen:          map[int64]float64{},
+		ReadingDate: "2026-05-01",
+		Monat:       "",
+		Strompreis:  Float64(0.25),
+		Readings:    map[string]float64{},
+		Personen:    map[int64]float64{1: 9},
 	}); err != nil {
 		t.Fatalf("UpdatePeriod: %v", err)
 	}
@@ -1559,17 +1512,8 @@ func TestUpdatePeriod_Teilstand_PreservesUnspecifiedFields(t *testing.T) {
 	if got.Monat != "2026-05-01" {
 		t.Errorf("Monat = %q, want 2026-05-01 (unverändert, da diese Runde leer war)", got.Monat)
 	}
-	if OrZero(got.Strompreis) != 0.25 {
-		t.Errorf("Strompreis = %v, want 0.25 (diese Runde geändert)", OrZero(got.Strompreis))
-	}
-	if OrZero(got.FrischwasserPreis) != 1.46 {
-		t.Errorf("FrischwasserPreis = %v, want 1.46 (unverändert)", OrZero(got.FrischwasserPreis))
-	}
-	if OrZero(got.AbwasserPreis) != 4.87 {
-		t.Errorf("AbwasserPreis = %v, want 4.87 (unverändert)", OrZero(got.AbwasserPreis))
-	}
-	if OrZero(got.EinspeisungPreis) != 0.08 {
-		t.Errorf("EinspeisungPreis = %v, want 0.08 (unverändert)", OrZero(got.EinspeisungPreis))
+	if OrZero(got.Strompreis) != 0.22 || OrZero(got.FrischwasserPreis) != 1.46 || OrZero(got.AbwasserPreis) != 4.87 || OrZero(got.EinspeisungPreis) != 0.08 {
+		t.Errorf("Preise = %v/%v/%v/%v, want unverändert 0.22/1.46/4.87/0.08", OrZero(got.Strompreis), OrZero(got.FrischwasserPreis), OrZero(got.AbwasserPreis), OrZero(got.EinspeisungPreis))
 	}
 	if got.Readings["strom_gesamt"] != 100 {
 		t.Errorf("Readings[strom_gesamt] = %v, want 100 (unverändert, da diese Runde keinen neuen Wert mitgab)", got.Readings["strom_gesamt"])

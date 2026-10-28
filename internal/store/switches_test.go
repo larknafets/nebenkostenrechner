@@ -37,30 +37,15 @@ func TestSwitches_Roundtrip(t *testing.T) {
 			if err != nil || len(all) != 2 || !*s.Detail(all[0]) || *s.Detail(all[1]) != s.Default {
 				t.Errorf("AllPeriodDetails = %+v, %v, want only the first with the switch", all, err)
 			}
-
-			*s.Input(&in) = false
-			if err := UpdatePeriod(db, id, in); err != nil {
-				t.Fatalf("UpdatePeriod: %v", err)
-			}
-			if got, _ := GetPeriodDetails(db, id); *s.Detail(got) {
-				t.Error("switch on after switching off, want off")
-			}
-
-			*s.Input(&in) = true
-			if err := UpdatePeriod(db, id, in); err != nil {
-				t.Fatalf("UpdatePeriod: %v", err)
-			}
-			if got, _ := GetPeriodDetails(db, id); !*s.Detail(got) {
-				t.Error("switch off after switching on, want on")
-			}
 		})
 	}
 }
 
-// TestSwitches_UpdateUeberschreibtImmer pins the rule documented on Switch:
-// an update without a Monat keeps the stored Monat (COALESCE), but a switch
-// left off still switches it off.
-func TestSwitches_UpdateUeberschreibtImmer(t *testing.T) {
+// TestSwitches_UpdateLaesstSchalterUnberuehrt pins that UpdatePeriod does not
+// write the switches any more (#359): they belong to the Fixkosten-Eingabe, an
+// Ablesung form without them must not switch them off, and a Monat left out
+// keeps the stored Monat (COALESCE).
+func TestSwitches_UpdateLaesstSchalterUnberuehrt(t *testing.T) {
 	for _, s := range Switches {
 		t.Run(s.Name, func(t *testing.T) {
 			db := openTestDB(t)
@@ -76,8 +61,8 @@ func TestSwitches_UpdateUeberschreibtImmer(t *testing.T) {
 				t.Fatalf("UpdatePeriod: %v", err)
 			}
 			got, _ := GetPeriodDetails(db, id)
-			if *s.Detail(got) || got.Monat == "" {
-				t.Errorf("after update: switch = %v, Monat = %q, want switch off and Monat kept", *s.Detail(got), got.Monat)
+			if !*s.Detail(got) || got.Monat == "" {
+				t.Errorf("after update: switch = %v, Monat = %q, want switch kept on and Monat kept", *s.Detail(got), got.Monat)
 			}
 		})
 	}

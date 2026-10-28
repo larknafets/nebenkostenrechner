@@ -20,10 +20,6 @@ func TestWizard_EingabeFehlerTexte(t *testing.T) {
 		wantBody string
 		wantFeld string
 	}{
-		{"Personenzahl Nachkommastellen", "personen_1", "1.255",
-			"ungültige Personenzahl für Wohnung 1: Personenzahl darf höchstens 2 Nachkommastellen haben", ""},
-		{"Personenzahl negativ", "personen_2", "-1",
-			"ungültige Personenzahl für Wohnung 2: Personenzahl darf nicht negativ sein", ""},
 		{"Ablesedatum direkter POST", "reading_date", "gestern",
 			`ungültiges Ablesedatum "gestern" (Format JJJJ-MM-TT)`, "reading_date"},
 		{"Abrechnungsmonat direkter POST", "monat", "Juli",
@@ -74,10 +70,6 @@ func TestCSV_EingabeFehlerTexteMitZeilennummer(t *testing.T) {
 			`Zeile 3: ungültiger Abrechnungsmonat "Juli" (Format JJJJ-MM-01)`},
 		{"Abrechnungsmonat leer", "monat", "",
 			`Zeile 3: ungültiger Abrechnungsmonat "" (Format JJJJ-MM-01)`},
-		{"Personenzahl keine Zahl", "personen_2", "abc",
-			`Zeile 3: ungültige Personenzahl für Wohnung 2: "abc"`},
-		{"Personenzahl", "personen_2", "1,255",
-			`Zeile 3: ungültige Personenzahl für Wohnung 2: "1,255" (Personenzahl darf höchstens 2 Nachkommastellen haben)`},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

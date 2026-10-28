@@ -34,7 +34,6 @@
     <div class="c-step-dot active" data-step="1">1 · Strom</div>
     <div class="c-step-dot" data-step="2">2 · Wärme</div>
     <div class="c-step-dot" data-step="3">3 · Wasser</div>
-    <div class="c-step-dot" data-step="4">4 · Personen &amp; Preise</div>
   </div>
 
   <div class="c-pane active" data-step="1">
@@ -51,8 +50,8 @@
       <div class="field"><label>{{.Label}} (kWh)</label><input type="number" step="any" name="{{$key}}" data-optional {{if hasReading $.EditReadings $key}}value="{{inputNumber (index $.EditReadings $key)}}"{{end}} {{if hasReading $.PreviousReadings $key}}data-prev="{{index $.PreviousReadings $key}}"{{end}} {{if hasReading $.OutlierAvg $key}}data-outlier-avg="{{index $.OutlierAvg $key}}"{{end}}><div class="warning" id="warn-{{$key}}"></div></div>
       {{end}}
     </div>
-    {{/* Switch #225: all Wallbox costs to Wohnung 1, overrides the Einzelzähler. */}}
-    <div class="field" style="margin-left:1.5rem"><label><input type="checkbox" name="wallbox_komplett_w1" value="1" {{if .WallboxKomplettW1}}checked{{end}}> Wallboxen vollständig Wohnung 1</label><div class="muted">Alle Wallbox-Kosten (kWh und EUR) gehen an Wohnung 1, die Einzelzähler werden dann nicht verwendet.</div></div>
+    {{/* The switch "Wallboxen vollständig Wohnung 1" is part of the Fixkosten-Eingabe of the month (#359), the wizard only shows its state. */}}
+    <div class="field" style="margin-left:1.5rem"><div class="muted" id="wallbox-hinweis" data-hinweise="{{.WallboxHinweisJSON}}">{{.WallboxHinweis}}</div></div>
   </div>
 
   <div class="c-pane" data-step="2">
@@ -70,21 +69,6 @@
       <div class="field"><label>Wohnung 2 (m³)</label><input type="number" step="any" name="wasser_wohnung2" {{if hasReading $.EditReadings "wasser_wohnung2"}}value="{{inputNumber (index $.EditReadings "wasser_wohnung2")}}"{{end}} {{if $.HasPrevious}}data-prev="{{index $.PreviousReadings "wasser_wohnung2"}}"{{end}} {{if $.HasOutlierBaseline}}data-outlier-avg="{{index $.OutlierAvg "wasser_wohnung2"}}"{{end}}><div class="warning" id="warn-wasser_wohnung2"></div></div>
       <div class="field"><label>Warmwasseraufbereitung (m³)</label><input type="number" step="any" name="wasser_warmwasseraufbereitung" {{if hasReading $.EditReadings "wasser_warmwasseraufbereitung"}}value="{{inputNumber (index $.EditReadings "wasser_warmwasseraufbereitung")}}"{{end}} {{if $.HasPrevious}}data-prev="{{index $.PreviousReadings "wasser_warmwasseraufbereitung"}}"{{end}} {{if $.HasOutlierBaseline}}data-outlier-avg="{{index $.OutlierAvg "wasser_warmwasseraufbereitung"}}"{{end}}><div class="warning" id="warn-wasser_warmwasseraufbereitung"></div></div>
     </div>
-  </div>
-
-  <div class="c-pane" data-step="4">
-    <div class="grid grid-2">
-      {{range .Apartments}}
-      <div class="field"><label>Personen {{.Name}}</label><input type="number" step="0.01" min="0" name="personen_{{.ID}}" {{if hasPersonen $.PreviousPersonen .ID}}value="{{index $.PreviousPersonen .ID}}"{{end}}></div>
-      {{end}}
-    </div>
-    <div class="grid grid-4">
-      <div class="field"><label>Strompreis (EUR/kWh)</label><input type="number" step="any" name="strompreis" {{if .PreviousStrompreisErfasst}}value="{{inputNumber .PreviousStrompreis}}"{{end}}></div>
-      <div class="field"><label>Frischwasser (EUR/m³)</label><input type="number" step="any" name="frischwasser_preis" {{if .PreviousFrischwasserPreisErfasst}}value="{{inputNumber .PreviousFrischwasserPreis}}"{{end}}></div>
-      <div class="field"><label>Abwasser (EUR/m³)</label><input type="number" step="any" name="abwasser_preis" {{if .PreviousAbwasserPreisErfasst}}value="{{inputNumber .PreviousAbwasserPreis}}"{{end}}></div>
-      <div class="field"><label>Einspeisung (EUR/kWh)</label><input type="number" step="any" name="einspeisung_preis" {{if .PreviousEinspeisungPreisErfasst}}value="{{inputNumber .PreviousEinspeisungPreis}}"{{end}}></div>
-    </div>
-    <div class="field"><label><input type="checkbox" name="pv_gutschrift_w1" value="1" {{if .PVGutschriftW1}}checked{{end}}> PV-Gutschrift Wohnung 1</label><div class="muted">Die Einspeisevergütung dieser Ablesung wird Wohnung 1 gutgeschrieben und erhöht deren Guthaben.</div></div>
   </div>
 
   <div class="wizard-actions">
@@ -166,11 +150,33 @@
   // auch wenn das Datum sich noch ändert.
   const monatInput = document.getElementById('monat');
   let monatTouched = false;
+
+  // Wallbox note: the state of the switch in the Fixkosten-Eingabe of the chosen
+  // month (#359), updated whenever the month changes.
+  const wallboxHinweis = document.getElementById('wallbox-hinweis');
+  function zeigeWallboxHinweis() {
+    if (!wallboxHinweis || !monatInput) return;
+    const monat = monatInput.value;
+    let text = '';
+    if (/^\d{4}-\d{2}$/.test(monat)) {
+      const d = JSON.parse(wallboxHinweis.dataset.hinweise);
+      if (!(monat in d.haekchen)) {
+        text = d.fehlt.replace('{monat}', d.monate[parseInt(monat.slice(5), 10) - 1] + ' ' + monat.slice(0, 4));
+      } else {
+        text = d.haekchen[monat] ? d.gesetzt : d.nichtGesetzt;
+      }
+    }
+    wallboxHinweis.textContent = text;
+  }
+  if (monatInput) {
+    monatInput.addEventListener('input', zeigeWallboxHinweis);
+    monatInput.addEventListener('change', zeigeWallboxHinweis);
+  }
   if (monatInput) {
     monatInput.addEventListener('input', () => { monatTouched = true; });
     if (dateInput) {
       dateInput.addEventListener('input', () => {
-        if (!monatTouched && dateInput.value) monatInput.value = dateInput.value.slice(0, 7);
+        if (!monatTouched && dateInput.value) { monatInput.value = dateInput.value.slice(0, 7); zeigeWallboxHinweis(); }
       });
     }
   }

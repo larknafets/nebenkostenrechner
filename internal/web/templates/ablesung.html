@@ -2,6 +2,10 @@
 <h1>Ablesung {{deDatum .Period.ReadingDate}}{{if .IstTeilstand}} <span class="badge badge-warning">unvollständig</span>{{end}}</h1>
 {{template "nav" .}}
 
+{{if .FixkostenBanner}}
+<div class="panel" style="border-color:#e6a700">{{.FixkostenBanner}}{{if .Vermieter}} <a href="{{.Base}}/fixkosten/neu">Fixkosten erfassen</a>{{end}}</div>
+{{end}}
+
 <div class="field" style="max-width:220px">
   <label>Andere Ablesung anzeigen</label>
   <select onchange="if(this.value) location.href=this.value">

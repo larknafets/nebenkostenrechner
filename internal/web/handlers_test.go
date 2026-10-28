@@ -849,17 +849,7 @@ func TestParseHeizungGewichtung(t *testing.T) {
 // no longer needs qm_1/qm_2 form fields - parsePeriodInput must succeed
 // without them, since Wohnungsgröße is edited on /stammdaten now.
 func TestParsePeriodInput_NoQMFields(t *testing.T) {
-	apartments := []store.Apartment{{ID: 1, Name: "Wohnung 1"}, {ID: 2, Name: "Wohnung 2"}}
-
-	form := url.Values{
-		"reading_date":       {"2026-11-01"},
-		"strompreis":         {"0.22"},
-		"frischwasser_preis": {"1.46"},
-		"abwasser_preis":     {"4.87"},
-		"einspeisung_preis":  {"0.08"},
-		"personen_1":         {"2"},
-		"personen_2":         {"1"},
-	}
+	form := url.Values{"reading_date": {"2026-11-01"}}
 	for _, key := range store.MeterKeys {
 		form.Set(key, "0")
 	}
@@ -870,12 +860,12 @@ func TestParsePeriodInput_NoQMFields(t *testing.T) {
 	}
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	in, err := parsePeriodInput(r, apartments)
+	in, err := parsePeriodInput(r)
 	if err != nil {
 		t.Fatalf("parsePeriodInput without qm_1/qm_2: %v", err)
 	}
-	if in.Personen[1] != 2 || in.Personen[2] != 1 {
-		t.Errorf("Personen = %v, want {1:2, 2:1}", in.Personen)
+	if in.ReadingDate != "2026-11-01" {
+		t.Errorf("ReadingDate = %q, want 2026-11-01", in.ReadingDate)
 	}
 }
 
@@ -883,17 +873,9 @@ func TestParsePeriodInput_NoQMFields(t *testing.T) {
 // type="month"> submits "YYYY-MM" (no day) - parsePeriodInput normalizes it
 // to the store's "YYYY-MM-01" format.
 func TestParsePeriodInput_Monat(t *testing.T) {
-	apartments := []store.Apartment{{ID: 1, Name: "Wohnung 1"}, {ID: 2, Name: "Wohnung 2"}}
-
 	form := url.Values{
-		"reading_date":       {"2026-08-31"},
-		"monat":              {"2026-09"},
-		"strompreis":         {"0.22"},
-		"frischwasser_preis": {"1.46"},
-		"abwasser_preis":     {"4.87"},
-		"einspeisung_preis":  {"0.08"},
-		"personen_1":         {"2"},
-		"personen_2":         {"1"},
+		"reading_date": {"2026-08-31"},
+		"monat":        {"2026-09"},
 	}
 	for _, key := range store.MeterKeys {
 		form.Set(key, "0")
@@ -905,7 +887,7 @@ func TestParsePeriodInput_Monat(t *testing.T) {
 	}
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	in, err := parsePeriodInput(r, apartments)
+	in, err := parsePeriodInput(r)
 	if err != nil {
 		t.Fatalf("parsePeriodInput: %v", err)
 	}
@@ -922,11 +904,11 @@ func TestCSVHeader_NoQMColumns(t *testing.T) {
 			t.Errorf("csvHeader contains %q, want no qm_1/qm_2 columns (Issue #61 moved Wohnungsgröße to /stammdaten)", col)
 		}
 	}
-	// The optional Wallbox-Einzelzähler (#224) and the switches (#225, #226) are
-	// appended after personen_2.
-	last := csvHeader[len(csvHeader)-len(store.OptionalMeterKeys)-3]
-	if last != "personen_2" {
-		t.Errorf("csvHeader last required column = %q, want personen_2", last)
+	// The optional Wallbox-Einzelzähler (#224) are appended after the Zähler,
+	// prices, Personenzahl and switches are no columns any more (#359).
+	last := csvHeader[len(csvHeader)-len(store.OptionalMeterKeys)-1]
+	if want := store.MeterKeys[len(store.MeterKeys)-1]; last != want {
+		t.Errorf("csvHeader last required column = %q, want %q", last, want)
 	}
 }
 
@@ -971,6 +953,19 @@ func TestParseDecimalDE(t *testing.T) {
 // is derived from readingDate (YYYY-MM-01), matching the wizard's own
 // auto-prefill (Issue #86).
 func csvRow(readingDate string, stromGesamt string) string {
+	return strings.Join([]string{
+		readingDate, readingDate[:7] + "-01", stromGesamt, "0", "0", "0", "0", "0", "0", "0", "0", "0",
+		"", "", // optional Wallbox-Einzelzähler (#224), not recorded
+	}, ";")
+}
+
+// csvKopfAlt is the header of the Ablesungs-CSV before the prices, Personenzahl
+// and switches moved to the Fixkosten-Eingabe (#359), csvRowAlt a row of it.
+var csvKopfAlt = strings.Join(append(append(append(append([]string{"reading_date", "monat"}, store.MeterKeys...),
+	"strompreis", "frischwasser_preis", "abwasser_preis", "einspeisung_preis", "personen_1", "personen_2"),
+	store.OptionalMeterKeys...), "wallbox_komplett_wohnung1", "pv_gutschrift_wohnung1"), ";")
+
+func csvRowAlt(readingDate string, stromGesamt string) string {
 	return strings.Join([]string{
 		readingDate, readingDate[:7] + "-01", stromGesamt, "0", "0", "0", "0", "0", "0", "0", "0", "0",
 		"0,22", "1,46", "4,87", "0,08",
@@ -1026,12 +1021,6 @@ func TestParseImportCSV_RoundTrip(t *testing.T) {
 	}
 	if rows[1].input.Readings["strom_gesamt"] != 210 {
 		t.Errorf("Readings[strom_gesamt] = %v, want 210", rows[1].input.Readings["strom_gesamt"])
-	}
-	if store.OrZero(rows[1].input.Strompreis) != 0.22 {
-		t.Errorf("Strompreis = %v, want 0.22", store.OrZero(rows[1].input.Strompreis))
-	}
-	if rows[1].input.Personen[1] != 2 || rows[1].input.Personen[2] != 1 {
-		t.Errorf("Personen = %v, want {1:2, 2:1}", rows[1].input.Personen)
 	}
 	if rows[1].input.Monat != "2026-07-01" {
 		t.Errorf("Monat = %q, want 2026-07-01 (aus der monat-Spalte, roundtrip-fest)", rows[1].input.Monat)
@@ -1527,14 +1516,10 @@ func teilstandFormValues(readingDate string) url.Values {
 // left empty aren't an error - Readings/Personen simply don't get an
 // entry, prices/Monat stay nil/"".
 func TestParsePeriodInput_TeilstandLeereFelderErlaubt(t *testing.T) {
-	apartments := []store.Apartment{{ID: 1, Name: "Wohnung 1"}, {ID: 2, Name: "Wohnung 2"}}
-
 	form := url.Values{
 		"reading_date": {"2026-11-01"},
 		"strom_gesamt": {"12345"}, // 1 of 10 meters filled in
-		"personen_1":   {"2"},     // 1 of 2 apartments filled in
-		// monat, strompreis/frischwasser_preis/abwasser_preis/
-		// einspeisung_preis, all other meters, personen_2: deliberately empty
+		// monat and all other meters: deliberately empty
 	}
 
 	r, err := http.NewRequest(http.MethodPost, "/ablesungen", strings.NewReader(form.Encode()))
@@ -1543,21 +1528,15 @@ func TestParsePeriodInput_TeilstandLeereFelderErlaubt(t *testing.T) {
 	}
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	in, err := parsePeriodInput(r, apartments)
+	in, err := parsePeriodInput(r)
 	if err != nil {
 		t.Fatalf("parsePeriodInput mit Teilstand-Formular: %v", err)
 	}
 	if in.Monat != "" {
 		t.Errorf("Monat = %q, want \"\" (leer gelassen)", in.Monat)
 	}
-	if in.Strompreis != nil || in.FrischwasserPreis != nil || in.AbwasserPreis != nil || in.EinspeisungPreis != nil {
-		t.Errorf("Preise = %v/%v/%v/%v, want alle nil", in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.EinspeisungPreis)
-	}
 	if len(in.Readings) != 1 || in.Readings["strom_gesamt"] != 12345 {
 		t.Errorf("Readings = %v, want nur {strom_gesamt: 12345}", in.Readings)
-	}
-	if len(in.Personen) != 1 || in.Personen[1] != 2 {
-		t.Errorf("Personen = %v, want nur {1: 2}", in.Personen)
 	}
 }
 
@@ -1566,15 +1545,11 @@ func TestParsePeriodInput_TeilstandLeereFelderErlaubt(t *testing.T) {
 // left empty) must still be a hard error, even while every other field is
 // legitimately empty.
 func TestParsePeriodInput_UngueltigerWertBleibtFehler(t *testing.T) {
-	apartments := []store.Apartment{{ID: 1, Name: "Wohnung 1"}, {ID: 2, Name: "Wohnung 2"}}
-
 	cases := []struct {
 		name string
 		form url.Values
 	}{
 		{"ungueltiger Zaehlerstand", url.Values{"reading_date": {"2026-11-01"}, "strom_gesamt": {"abc"}}},
-		{"ungueltiger Preis", url.Values{"reading_date": {"2026-11-01"}, "strompreis": {"abc"}}},
-		{"ungueltige Personenzahl", url.Values{"reading_date": {"2026-11-01"}, "personen_1": {"abc"}}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -1584,7 +1559,7 @@ func TestParsePeriodInput_UngueltigerWertBleibtFehler(t *testing.T) {
 			}
 			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-			if _, err := parsePeriodInput(r, apartments); err == nil {
+			if _, err := parsePeriodInput(r); err == nil {
 				t.Error("parsePeriodInput: want Fehler für tatsächlich ungültigen Wert, got nil")
 			}
 		})
@@ -2006,19 +1981,16 @@ func TestHandleAblesungDetail_TeilstandButtonOhneLogin(t *testing.T) {
 }
 
 // TestHandleEditWizardForm_TeilstandBlankNotZero verifies the wizard's
-// value=-Prefill (Ticket #131): a meter/price/Personen that was never
-// entered on a Teilstand must render as a blank field, not a misleading
-// "0" - the sparse-map Zero-Value trap hasReading/hasPersonen/the
-// PreviousXErfasst flags guard against.
+// value=-Prefill (Ticket #131): a meter that was never entered on a
+// Teilstand must render as a blank field, not a misleading "0" - the
+// sparse-map Zero-Value trap hasReading guards against.
 func TestHandleEditWizardForm_TeilstandBlankNotZero(t *testing.T) {
 	db := openTestDB(t)
 	a := newZugang("", nil)
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate: "2026-11-01",
-		Strompreis:  store.Float64(0.22),
 		Readings:    map[string]float64{"strom_gesamt": 100},
-		Personen:    map[int64]float64{1: 2},
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod (Teilstand): %v", err)
@@ -2036,17 +2008,8 @@ func TestHandleEditWizardForm_TeilstandBlankNotZero(t *testing.T) {
 	if strings.Contains(body, `name="strom_wohnung2" value="0"`) {
 		t.Error(`ein nie erfasster Zähler zeigt value="0" statt leer`)
 	}
-	if strings.Contains(body, `name="frischwasser_preis" value="0"`) {
-		t.Error(`ein nie erfasster Preis zeigt value="0" statt leer`)
-	}
-	if strings.Contains(body, `name="personen_2" value="0"`) {
-		t.Error(`eine nie erfasste Personenzahl zeigt value="0" statt leer`)
-	}
 	if !strings.Contains(body, `name="strom_gesamt" value="100"`) {
 		t.Error("ein bereits erfasster Zähler wird nicht korrekt vorbelegt")
-	}
-	if !strings.Contains(body, `name="strompreis" value="0.22"`) {
-		t.Error("ein bereits erfasster Preis wird nicht korrekt vorbelegt")
 	}
 }
 
@@ -2059,9 +2022,7 @@ func TestHandleEditWizardForm_ZaehlerOhneGleitkommareste(t *testing.T) {
 
 	id, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate: "2026-11-01",
-		Strompreis:  store.Float64(0.22),
 		Readings:    map[string]float64{"strom_gesamt": 100, "strom_einspeisung": 26520.69999999999},
-		Personen:    map[int64]float64{1: 2},
 	})
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
@@ -2078,37 +2039,6 @@ func TestHandleEditWizardForm_ZaehlerOhneGleitkommareste(t *testing.T) {
 	}
 	if strings.Contains(body, "69999999999") {
 		t.Error("Gleitkommarest in der Vorbelegung")
-	}
-}
-
-// TestHandleEditWizardForm_PreisOhneGleitkommareste is the same for the
-// prefilled prices, which can carry up to 4 decimals.
-func TestHandleEditWizardForm_PreisOhneGleitkommareste(t *testing.T) {
-	db := openTestDB(t)
-	a := newZugang("", nil)
-
-	id, err := store.CreatePeriod(db, store.PeriodInput{
-		ReadingDate:       "2026-11-01",
-		Strompreis:        store.Float64(0.2234),
-		FrischwasserPreis: store.Float64(1.4600000000000002),
-		Readings:          map[string]float64{"strom_gesamt": 100},
-		Personen:          map[int64]float64{1: 2},
-	})
-	if err != nil {
-		t.Fatalf("CreatePeriod: %v", err)
-	}
-
-	req := httptest.NewRequest(http.MethodGet, "/ablesungen/"+strconv.FormatInt(id, 10)+"/bearbeiten", nil)
-	req.SetPathValue("id", strconv.FormatInt(id, 10))
-	w := httptest.NewRecorder()
-	handleEditWizardForm(a)(w, requestWithDB(req, db))
-
-	body := w.Body.String()
-	if !strings.Contains(body, `name="strompreis" value="0.2234"`) {
-		t.Error(`ein Preis mit 4 Nachkommastellen wird nicht unverändert vorbelegt`)
-	}
-	if !strings.Contains(body, `name="frischwasser_preis" value="1.46"`) {
-		t.Error(`frischwasser_preis = 1.4600000000000002 wird nicht als value="1.46" vorbelegt`)
 	}
 }
 

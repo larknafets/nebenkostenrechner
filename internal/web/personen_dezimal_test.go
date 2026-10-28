@@ -10,50 +10,6 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-func TestAblesung_PersonenDezimal_Formular(t *testing.T) {
-	apartments := []store.Apartment{{ID: 1}, {ID: 2}}
-	cases := []struct {
-		raw     string
-		want    float64
-		wantErr bool
-	}{
-		{"1.25", 1.25, false},
-		{"2", 2, false},
-		{"0", 0, false},
-		{"1.255", 0, true},
-	}
-	for _, c := range cases {
-		t.Run(c.raw, func(t *testing.T) {
-			form := vollesFormular()
-			form.Set("personen_1", c.raw)
-			in, err := parsePeriodInput(formRequest(t, form), apartments)
-			if c.wantErr {
-				if err == nil {
-					t.Fatalf("personen_1=%q: want Fehler, got nil", c.raw)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("personen_1=%q: %v", c.raw, err)
-			}
-			if in.Personen[1] != c.want {
-				t.Errorf("Personen[1] = %v, want %v", in.Personen[1], c.want)
-			}
-		})
-	}
-}
-
-func TestHandleCreateAblesung_PersonenZuvielNachkommastellen_400(t *testing.T) {
-	db := openTestDB(t)
-	form := vollesFormular()
-	form.Set("personen_1", "1.255")
-	w := httptest.NewRecorder()
-	handleCreateAblesung()(w, requestWithDB(formRequest(t, form), db))
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("status = %d, want 400 (body: %s)", w.Code, w.Body.String())
-	}
-}
-
 // TestAblesung_PersonenDezimal_Warmwasseranteil: 1,25 zu 2 Personen teilt
 // 10 m³ Warmwasser auf 3,85 m³ zu 6,15 m³ auf.
 func TestAblesung_PersonenDezimal_Warmwasseranteil(t *testing.T) {
@@ -75,8 +31,6 @@ func TestAblesung_PersonenDezimal_Warmwasseranteil(t *testing.T) {
 		t.Fatalf("CreateFixkostenEingabe: %v", err)
 	}
 	second := vollesFormular()
-	second.Set("personen_1", "1.25")
-	second.Set("personen_2", "2")
 	for _, key := range store.MeterKeys {
 		second.Set(key, "11")
 	}
@@ -142,7 +96,7 @@ func TestFixkosten_PersonenDezimal(t *testing.T) {
 }
 
 func TestPersonenzahlFeldSchritt(t *testing.T) {
-	for _, f := range []string{"templates/wizard.html", "templates/fixkosten_form.html"} {
+	for _, f := range []string{"templates/fixkosten_form.html"} {
 		b, err := templateFS.ReadFile(f)
 		if err != nil {
 			t.Fatalf("%s: %v", f, err)

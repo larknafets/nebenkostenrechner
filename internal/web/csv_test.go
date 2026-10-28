@@ -5,6 +5,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -136,59 +137,119 @@ func TestHandleImportCSV_BadRowRejectedWithoutPersisting(t *testing.T) {
 	}
 }
 
-func csvRowMitPersonen(readingDate, p1, p2 string) string {
-	return strings.Replace(csvRow(readingDate, "100"), ";0,08;2;1;", ";0,08;"+p1+";"+p2+";", 1)
-}
-
-func TestHandleImportCSV_PersonenzahlDezimal(t *testing.T) {
+// TestHandleImportCSV_AlteDateiVerwirftWerte: a file in the old format (prices,
+// Personenzahl and switches as columns) imports, the values are dropped and a
+// note says so (#359).
+func TestHandleImportCSV_AlteDateiVerwirftWerte(t *testing.T) {
 	db := openTestDB(t)
-	csvText := strings.Join(csvHeader, ";") + "\n" + csvRowMitPersonen("2026-06-01", "1,25", "0,5") + "\n"
+	csvText := csvKopfAlt + "\n" + csvRowAlt("2026-06-01", "100") + "\n"
 
 	w := httptest.NewRecorder()
 	handleImportCSV()(w, requestWithDB(csvUploadRequest(t, csvText), db))
 	if w.Code != http.StatusFound {
 		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())
 	}
+	loc, err := url.Parse(w.Header().Get("Location"))
+	if err != nil {
+		t.Fatalf("Location: %v", err)
+	}
+	hinweise := strings.Join(loc.Query()["warning"], "\n")
+	if !strings.Contains(hinweise, "Preise, Personenzahlen oder Häkchen") || !strings.Contains(hinweise, "nicht übernommen") {
+		t.Errorf("Hinweise = %q, want the note about dropped values", hinweise)
+	}
 
-	// Export and re-import into a fresh database: values stay unchanged.
+	periods, err := store.AllPeriods(db)
+	if err != nil || len(periods) != 1 {
+		t.Fatalf("AllPeriods = %v, %v, want 1 period", periods, err)
+	}
+	got, err := store.GetPeriodDetails(db, periods[0].ID)
+	if err != nil || got == nil {
+		t.Fatalf("GetPeriodDetails = %v, %v", got, err)
+	}
+	if got.Strompreis != nil || len(got.PersonenByApartment) != 0 {
+		t.Errorf("Ablesung trägt Preise oder Personen: %+v", got)
+	}
+}
+
+// TestHandleImportCSV_NeueDateiOhneVerworfeneWerte: a file in the new format
+// (no price, Personenzahl and switch columns) imports without the note about
+// dropped values, and the export gives the new format back.
+func TestHandleImportCSV_NeueDateiOhneVerworfeneWerte(t *testing.T) {
+	db := openTestDB(t)
+	csvText := strings.Join(csvHeader, ";") + "\n" + csvRow("2026-06-01", "100") + "\n"
+	w := httptest.NewRecorder()
+	handleImportCSV()(w, requestWithDB(csvUploadRequest(t, csvText), db))
+	if w.Code != http.StatusFound {
+		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())
+	}
+	if loc := w.Header().Get("Location"); strings.Contains(loc, "Personenzahlen") {
+		t.Errorf("Location = %q, want no note about dropped values", loc)
+	}
+
 	ex := httptest.NewRecorder()
 	handleExportCSV()(ex, requestWithDB(httptest.NewRequest(http.MethodGet, "/ablesungen/export.csv", nil), db))
+	body := strings.TrimPrefix(ex.Body.String(), "\xef\xbb\xbf")
+	if head := strings.TrimSpace(strings.Split(body, "\n")[0]); head != strings.Join(csvHeader, ";") {
+		t.Errorf("Export-Kopfzeile = %q, want %q", head, strings.Join(csvHeader, ";"))
+	}
+	for _, spalte := range csvVerworfeneSpalten {
+		if strings.Contains(body, spalte) {
+			t.Errorf("Export enthält die Spalte %s", spalte)
+		}
+	}
+	// Export and re-import into a fresh database works.
 	db2 := openTestDB(t)
 	w2 := httptest.NewRecorder()
 	handleImportCSV()(w2, requestWithDB(csvUploadRequest(t, ex.Body.String()), db2))
 	if w2.Code != http.StatusFound {
 		t.Fatalf("re-import status = %d, want %d (body: %s)", w2.Code, http.StatusFound, w2.Body.String())
 	}
-	periods, err := store.AllPeriods(db2)
-	if err != nil || len(periods) != 1 {
-		t.Fatalf("AllPeriods = %v, %v, want 1 period", periods, err)
+}
+
+// TestHandleImportCSV_SammelmeldungNenntMonateOhneFixkosten: the note after an
+// import names the Abrechnungsmonate without a complete Fixkosten-Eingabe, once
+// each, and leaves out a month that has one.
+func TestHandleImportCSV_SammelmeldungNenntMonateOhneFixkosten(t *testing.T) {
+	db := openTestDB(t)
+	if _, err := store.CreateFixkostenEingabe(db, fixkostenMitPreisen("2026-07-01")); err != nil {
+		t.Fatalf("CreateFixkostenEingabe: %v", err)
 	}
-	got, err := store.PersonenByApartment(db2, periods[0].ID)
+	csvText := strings.Join(csvHeader, ";") + "\n" +
+		csvRow("2026-06-01", "100") + "\n" + csvRow("2026-06-15", "110") + "\n" +
+		csvRow("2026-07-01", "120") + "\n" + csvRow("2026-08-01", "130") + "\n"
+	w := httptest.NewRecorder()
+	handleImportCSV()(w, requestWithDB(csvUploadRequest(t, csvText), db))
+	if w.Code != http.StatusFound {
+		t.Fatalf("status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())
+	}
+	loc, err := url.Parse(w.Header().Get("Location"))
 	if err != nil {
-		t.Fatalf("PersonenByApartment: %v", err)
+		t.Fatalf("Location: %v", err)
 	}
-	if got[1] != 1.25 || got[2] != 0.5 {
-		t.Errorf("Personen = %v, want 1: 1.25, 2: 0.5", got)
+	var sammel string
+	for _, h := range loc.Query()["warning"] {
+		if strings.Contains(h, "fehlen die Fixkosten") {
+			sammel = h
+		}
+	}
+	if !strings.HasPrefix(sammel, "Für Juni 2026, August 2026 fehlen die Fixkosten") || strings.Contains(sammel, "Juli") {
+		t.Errorf("Sammelmeldung = %q, want Juni 2026 and August 2026 once, not Juli", sammel)
 	}
 }
 
-func TestHandleImportCSV_PersonenzahlUngueltigBrichtAb(t *testing.T) {
-	for _, bad := range []string{"1,255"} {
-		db := openTestDB(t)
-		csvText := strings.Join(csvHeader, ";") + "\n" + csvRow("2026-05-01", "50") + "\n" +
-			csvRowMitPersonen("2026-06-01", bad, "1") + "\n"
-
-		w := httptest.NewRecorder()
-		handleImportCSV()(w, requestWithDB(csvUploadRequest(t, csvText), db))
-		if w.Code != http.StatusBadRequest {
-			t.Errorf("%q: status = %d, want %d", bad, w.Code, http.StatusBadRequest)
-		}
-		if !strings.Contains(w.Body.String(), "Zeile 3") {
-			t.Errorf("%q: body = %q, want line number", bad, w.Body.String())
-		}
-		periods, _ := store.AllPeriods(db)
-		if len(periods) != 0 {
-			t.Errorf("%q: %d periods imported, want 0", bad, len(periods))
-		}
+// TestHandleImportCSV_UnvollstaendigeEingabeZaehltAlsFehlend: an Eingabe
+// without a price does not count as complete.
+func TestHandleImportCSV_UnvollstaendigeEingabeZaehltAlsFehlend(t *testing.T) {
+	db := openTestDB(t)
+	fk := fixkostenMitPreisen("2026-06-01")
+	fk.Strompreis = nil
+	if _, err := store.CreateFixkostenEingabe(db, fk); err != nil {
+		t.Fatalf("CreateFixkostenEingabe: %v", err)
+	}
+	csvText := strings.Join(csvHeader, ";") + "\n" + csvRow("2026-06-01", "100") + "\n"
+	w := httptest.NewRecorder()
+	handleImportCSV()(w, requestWithDB(csvUploadRequest(t, csvText), db))
+	if loc := w.Header().Get("Location"); !strings.Contains(loc, "Juni+2026+fehlen+die+Fixkosten") {
+		t.Errorf("Location = %q, want the note for Juni 2026", loc)
 	}
 }

@@ -15,12 +15,8 @@ import (
 // PeriodInput and LatestPeriod (read by calc), the two accessors below, the
 // column in schema.sql and the checkbox in the wizard template.
 //
-// Overwrite rule (do not unify with the price handling): UpdatePeriod always
-// overwrites every switch with the submitted value, because a switch can
-// never be "nicht erfasst", false is a real answer (Default). Monat and the
-// four prices are the opposite: they use COALESCE and keep the stored value
-// when the round brings none, because they can be missing in a Teilstand
-// (#128).
+// UpdatePeriod does not write the switches any more (#359): they belong to the
+// Fixkosten-Eingabe, the Ablesung side stays until the ticket that removes it.
 type Switch struct {
 	// Name is the Go field name on PeriodInput/LatestPeriod, for messages.
 	Name string
@@ -125,21 +121,11 @@ func insertPeriodSQL() string {
 	return `INSERT INTO periods (` + strings.Join(cols, ", ") + `) VALUES (` + placeholders(len(cols)) + `)`
 }
 
-// updatePeriodSQL is the UPDATE of one period by id. Monat and the prices use
-// COALESCE (Teilstand), the switches overwrite unconditionally, see Switch.
+// updatePeriodSQL is the UPDATE of one period by id. Monat uses COALESCE
+// (Teilstand). Prices and switches are not written any more: they belong to
+// the Fixkosten-Eingabe (#359).
 func updatePeriodSQL() string {
-	sets := []string{
-		"reading_date = ?",
-		"monat = COALESCE(NULLIF(?, ''), monat)",
-		"strompreis = COALESCE(?, strompreis)",
-		"frischwasser_preis = COALESCE(?, frischwasser_preis)",
-		"abwasser_preis = COALESCE(?, abwasser_preis)",
-		"einspeisung_preis = COALESCE(?, einspeisung_preis)",
-	}
-	for _, c := range switchColumns() {
-		sets = append(sets, c+" = ?")
-	}
-	return `UPDATE periods SET ` + strings.Join(sets, ", ") + ` WHERE id = ?`
+	return `UPDATE periods SET reading_date = ?, monat = COALESCE(NULLIF(?, ''), monat) WHERE id = ?`
 }
 
 // selectPeriodSQL selects the periods columns scanPeriodRow reads, followed

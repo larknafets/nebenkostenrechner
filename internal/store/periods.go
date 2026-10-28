@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 )
 
@@ -67,10 +66,8 @@ type PeriodInput struct {
 
 // Validate checks the field rules of one reading, pure and without the
 // database: the reading date (format YYYY-MM-DD), the Abrechnungsmonat (same
-// format, empty is allowed: Teilstand, #128) and the Personenzahl of every
-// apartment, by ascending apartment id. It returns the first violation as
-// *EingabeFehler, in exactly this order. Meter values and prices are not
-// part of it (negative or outlying meter values are warnings), and neither
+// format, empty is allowed: Teilstand, #128). It returns the first violation as
+// *EingabeFehler. Meter values are not part of it (negative or outlying meter values are warnings), and neither
 // are the Ablesungsreihe rules (reihe.go), which need the database.
 func (in PeriodInput) Validate() error {
 	if _, err := time.Parse("2006-01-02", in.ReadingDate); err != nil {
@@ -79,11 +76,6 @@ func (in PeriodInput) Validate() error {
 	if in.Monat != "" {
 		if _, err := time.Parse("2006-01-02", in.Monat); err != nil {
 			return &EingabeFehler{Feld: FeldMonat, Wert: in.Monat}
-		}
-	}
-	for _, id := range idsAufsteigend(in.Personen) {
-		if err := ValidierePersonenzahl(in.Personen[id]); err != nil {
-			return &EingabeFehler{Feld: FeldPersonen, ID: id, Wert: strconv.FormatFloat(in.Personen[id], 'f', -1, 64), Err: err}
 		}
 	}
 	return nil
@@ -224,16 +216,14 @@ func UpdatePeriod(db *sql.DB, periodID int64, in PeriodInput) error {
 	defer tx.Rollback()
 
 	res, err := tx.Exec(
-		// Teilstand (Ticket #128): only overwrite monat/the 3 prices when
-		// this round actually brings a value (Monat != '', Preis != NULL) -
-		// a deliberately empty field must not silently delete a
-		// previously-entered value. The same "only touch what was given"
-		// rule now applies to Readings below (previously an error on a
-		// missing meter) and already applied to Personen before (never a
-		// mandatory coverage check). The switches are the exception: they
-		// always overwrite, see Switch.
+		// Teilstand (Ticket #128): only overwrite monat when this round
+		// brings a value (Monat != ''), a deliberately empty field must not
+		// silently delete a previously-entered value. The same "only touch
+		// what was given" rule applies to Readings below. Prices, switches
+		// and Personenzahl belong to the Fixkosten-Eingabe (#359) and are
+		// never written here.
 		updatePeriodSQL(),
-		append(append([]any{in.ReadingDate, in.Monat, in.Strompreis, in.FrischwasserPreis, in.AbwasserPreis, in.EinspeisungPreis}, switchArgs(in)...), periodID)...,
+		in.ReadingDate, in.Monat, periodID,
 	)
 	if err != nil {
 		return fmt.Errorf("update period: %w", err)
@@ -258,16 +248,6 @@ func UpdatePeriod(db *sql.DB, periodID int64, in PeriodInput) error {
 			periodID, value, key,
 		); err != nil {
 			return fmt.Errorf("update reading for %q: %w", key, err)
-		}
-	}
-
-	for apartmentID, personen := range in.Personen {
-		if _, err := tx.Exec(
-			`INSERT INTO period_occupancy (period_id, apartment_id, personen) VALUES (?, ?, ?)
-			 ON CONFLICT(period_id, apartment_id) DO UPDATE SET personen = excluded.personen`,
-			periodID, apartmentID, personen,
-		); err != nil {
-			return fmt.Errorf("update occupancy for apartment %d: %w", apartmentID, err)
 		}
 	}
 

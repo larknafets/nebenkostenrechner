@@ -12,9 +12,8 @@ import (
 )
 
 // wizardData is the reading form's template data - shared by "erfassen"
-// (recording, a fresh reading, prefilled from the previous period as a
-// convenience) and "korrigieren" (correcting, Ticket #34: editing the
-// latest reading in place, prefilled with its own current values).
+// (recording a fresh reading) and "korrigieren" (correcting, Ticket #34:
+// editing a reading in place, prefilled with its own current values).
 // HasPrevious/PreviousReadings/PreviousReadingDate/OutlierAvg always
 // describe the genuine previous period - the negative-consumption/
 // outlier-warning baseline the new values are checked against - never
@@ -43,38 +42,17 @@ type wizardData struct {
 	// the warning comparison.
 	EditReadings map[string]float64
 
-	// Prefill for the "Preise & Personen" (prices & occupants) step
-	// (Ticket #28): the previous period's values in create mode, or
-	// (Ticket #34) the reading's own current values in edit mode -
-	// either way just an editable starting value, not a data-prev
-	// warning target like the meter readings above.
-	PreviousStrompreis        float64
-	PreviousFrischwasserPreis float64
-	PreviousAbwasserPreis     float64
-	PreviousEinspeisungPreis  float64
-	PreviousPersonen          map[int64]float64
-	// PreviousXErfasst (Ticket #131): whether the respective price was
-	// even already set in a completed Teilstand (partial reading) -
-	// Previous* above is always a plain float64 (store.OrZero-coalesced),
-	// which can no longer distinguish "missing" from "0"; the wizard
-	// needs that distinction for the value= prefill (empty instead of
-	// "0") and the live progress indicator.
-	PreviousStrompreisErfasst        bool
-	PreviousFrischwasserPreisErfasst bool
-	PreviousAbwasserPreisErfasst     bool
-	PreviousEinspeisungPreisErfasst  bool
-
 	// EinzelzaehlerFelder are the optional Wallbox-Einzelzähler inputs
 	// (#224), shown below the Wallboxen field.
 	EinzelzaehlerFelder []store.Meter
 
-	// WallboxKomplettW1 is the switch "Wallboxen vollständig Wohnung 1"
-	// (#225): prefilled from the newest Ablesung on a new one, from the
-	// edited Ablesung itself when correcting.
-	WallboxKomplettW1 bool
-	// PVGutschriftW1 is the switch "PV-Gutschrift Wohnung 1" (#226), prefilled
-	// and edited like WallboxKomplettW1.
-	PVGutschriftW1 bool
+	// WallboxHinweis is the note below the Wallbox-Einzelzähler: the state of
+	// "Wallboxen vollständig Wohnung 1" in the Fixkosten-Eingabe of the
+	// Abrechnungsmonat (#359), or that the Fixkosten are missing. The switch
+	// is no field of the Ablesung. WallboxHinweisJSON lets the script update
+	// the note when the month changes.
+	WallboxHinweis     string
+	WallboxHinweisJSON string
 
 	// NoPeriods gates the CSV import button (Ticket #54) - only offered
 	// as a bootstrap path into a genuinely empty database, never set in
@@ -162,13 +140,9 @@ func handleWizardForm(z *Zugang) http.HandlerFunc {
 			data.PreviousReadings = recent[0].Readings
 			data.PreviousReadingDate = recent[0].ReadingDate
 		}
-		if previousPeriod != nil {
-			// The Erfasst flags are always true here: a new reading can't
-			// be created while the previous one is still a Teilstand
-			// (redirectIfOpenTeilstand, Ticket #129). prefill computes them
-			// from the same source anyway, so they stay correct if that
-			// invariant ever changes.
-			data.prefill(previousPeriod, apartments)
+		if err := data.setzeWallboxHinweis(db, data.Monat); err != nil {
+			http.Error(w, "fixkosten: "+err.Error(), http.StatusInternalServerError)
+			return
 		}
 		data.OutlierAvg, data.HasOutlierBaseline = outlierAvg(recent)
 
@@ -178,25 +152,17 @@ func handleWizardForm(z *Zugang) http.HandlerFunc {
 	}
 }
 
-// prefill sets the editable starting values of the form (prices, occupants,
-// Erfasst flags, switches) from src: the previous period when recording,
-// the edited reading itself when correcting. The only thing the two
-// handlers differ in is which period they pass here. src can be a
-// Teilstand (Ticket #131), so prices go through store.OrZero and the
-// Erfasst flags carry the "missing" vs "0" distinction.
-func (d *wizardData) prefill(src *store.LatestPeriod, apartments []store.Apartment) {
-	status := erfasseFelder(src, apartments)
-	d.PreviousStrompreis = store.OrZero(src.Strompreis)
-	d.PreviousFrischwasserPreis = store.OrZero(src.FrischwasserPreis)
-	d.PreviousAbwasserPreis = store.OrZero(src.AbwasserPreis)
-	d.PreviousEinspeisungPreis = store.OrZero(src.EinspeisungPreis)
-	d.PreviousStrompreisErfasst = status.StrompreisErfasst
-	d.PreviousFrischwasserPreisErfasst = status.FrischwasserErfasst
-	d.PreviousAbwasserPreisErfasst = status.AbwasserErfasst
-	d.PreviousEinspeisungPreisErfasst = status.EinspeisungPreisErfasst
-	d.PreviousPersonen = src.PersonenByApartment
-	d.WallboxKomplettW1 = src.WallboxKomplettW1
-	d.PVGutschriftW1 = src.PVGutschriftW1
+// setzeWallboxHinweis fills the Wallbox note for monat ("YYYY-MM") from the
+// Fixkosten-Eingaben.
+func (d *wizardData) setzeWallboxHinweis(db *sql.DB, monat string) error {
+	eingaben, err := store.AllFixkostenEingabenDetails(db)
+	if err != nil {
+		return err
+	}
+	hinweise := neueWallboxHinweisDaten(eingaben)
+	d.WallboxHinweis = hinweise.text(monat)
+	d.WallboxHinweisJSON = hinweise.json()
+	return nil
 }
 
 // teilstandAnspruch resolves AnlegenOderVermieter for the request (called by
@@ -279,9 +245,10 @@ func handleEditWizardForm(z *Zugang) http.HandlerFunc {
 			EditReadings:        target.Readings,
 			EinzelzaehlerFelder: einzelzaehlerFelder,
 		}
-		// Ticket #131: target can be a Teilstand (partial reading), prefill
-		// derives the Erfasst flags that distinguish "missing" from "0".
-		data.prefill(target, apartments)
+		if err := data.setzeWallboxHinweis(db, data.Monat); err != nil {
+			http.Error(w, "fixkosten: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 		if len(recent) > 0 {
 			data.HasPrevious = true
 			data.PreviousReadings = recent[0].Readings
@@ -328,22 +295,7 @@ func (m monatInput) toStored() string {
 	return string(m)
 }
 
-// parseOptionalFloat parses a Teilstand-capable (partial-reading-capable)
-// form field (Ticket #129): deliberately left blank (raw == "") is not an
-// error, just nil - a value actually typed in but invalid (e.g. text
-// instead of a number) stays an error.
-func parseOptionalFloat(raw string) (*float64, error) {
-	if raw == "" {
-		return nil, nil
-	}
-	v, err := strconv.ParseFloat(raw, 64)
-	if err != nil {
-		return nil, err
-	}
-	return &v, nil
-}
-
-func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.PeriodInput, error) {
+func parsePeriodInput(r *http.Request) (store.PeriodInput, error) {
 	readings := make(map[string]float64, len(warnedMeterKeys))
 	for _, key := range warnedMeterKeys {
 		raw := r.FormValue(key)
@@ -359,44 +311,13 @@ func parsePeriodInput(r *http.Request, apartments []store.Apartment) (store.Peri
 		readings[key] = v
 	}
 
-	strompreis, err1 := parseOptionalFloat(r.FormValue("strompreis"))
-	frischwasserPreis, err2 := parseOptionalFloat(r.FormValue("frischwasser_preis"))
-	abwasserPreis, err3 := parseOptionalFloat(r.FormValue("abwasser_preis"))
-	einspeisungPreis, err4 := parseOptionalFloat(r.FormValue("einspeisung_preis"))
-	if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
-		return store.PeriodInput{}, fmt.Errorf("ungültiger Preiswert")
-	}
-
-	personen := make(map[int64]float64, len(apartments))
-	for _, a := range apartments {
-		idStr := strconv.FormatInt(a.ID, 10)
-		raw := r.FormValue("personen_" + idStr)
-		if raw == "" {
-			continue // Teilstand (Ticket #129): deliberately left blank
-		}
-		p, err := strconv.ParseFloat(raw, 64)
-		if err != nil {
-			return store.PeriodInput{}, personenKeineZahl(a.Name)
-		}
-		personen[a.ID] = p
-	}
-
 	in := store.PeriodInput{
-		ReadingDate:       r.FormValue("reading_date"),
-		Monat:             monatInput(r.FormValue("monat")).toStored(),
-		Strompreis:        strompreis,
-		FrischwasserPreis: frischwasserPreis,
-		AbwasserPreis:     abwasserPreis,
-		EinspeisungPreis:  einspeisungPreis,
-		Readings:          readings,
-		Personen:          personen,
-	}
-	// An unchecked checkbox sends no field: absent means off.
-	for _, s := range store.Switches {
-		*s.Input(&in) = r.FormValue(s.FormName) != ""
+		ReadingDate: r.FormValue("reading_date"),
+		Monat:       monatInput(r.FormValue("monat")).toStored(),
+		Readings:    readings,
 	}
 	if err := in.Validate(); err != nil {
-		return store.PeriodInput{}, ablesungFormularFehler(err, apartments)
+		return store.PeriodInput{}, ablesungFormularFehler(err)
 	}
 	return in, nil
 }
@@ -408,8 +329,8 @@ type ablesungFormFehler struct{ msg, feld string }
 func (e *ablesungFormFehler) Error() string { return e.msg }
 
 // ablesungFormularFehler turns the *store.EingabeFehler of PeriodInput.Validate
-// into the German form message. Personenzahl keeps its message without a field.
-func ablesungFormularFehler(err error, apartments []store.Apartment) error {
+// into the German form message.
+func ablesungFormularFehler(err error) error {
 	var ef *store.EingabeFehler
 	if !errors.As(err, &ef) {
 		return err
@@ -419,14 +340,6 @@ func ablesungFormularFehler(err error, apartments []store.Apartment) error {
 		return &ablesungFormFehler{fmt.Sprintf("ungültiges Ablesedatum %q (Format JJJJ-MM-TT)", ef.Wert), "reading_date"}
 	case store.FeldMonat:
 		return &ablesungFormFehler{fmt.Sprintf("ungültiger Abrechnungsmonat %q (Format JJJJ-MM)", ef.Wert), "monat"}
-	case store.FeldPersonen:
-		name := strconv.FormatInt(ef.ID, 10)
-		for _, a := range apartments {
-			if a.ID == ef.ID {
-				name = a.Name
-			}
-		}
-		return fmt.Errorf("ungültige Personenzahl für %s: %w", name, ef.Err)
 	}
 	return err
 }
@@ -434,12 +347,12 @@ func ablesungFormularFehler(err error, apartments []store.Apartment) error {
 // ablesungStoreFehler words a *store.EingabeFehler that CreatePeriod or
 // UpdatePeriod returned (a caller that skipped parsePeriodInput). It returns
 // nil for every other error.
-func ablesungStoreFehler(err error, apartments []store.Apartment) error {
+func ablesungStoreFehler(err error) error {
 	var ef *store.EingabeFehler
 	if !errors.As(err, &ef) {
 		return nil
 	}
-	return ablesungFormularFehler(ef, apartments)
+	return ablesungFormularFehler(ef)
 }
 
 // badRequestParse answers a parsePeriodInput error with 400, with the field
@@ -461,13 +374,7 @@ func handleCreateAblesung() http.HandlerFunc {
 			return
 		}
 
-		apartments, err := store.Apartments(db)
-		if err != nil {
-			http.Error(w, "apartments: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		in, err := parsePeriodInput(r, apartments)
+		in, err := parsePeriodInput(r)
 		if err != nil {
 			badRequestParse(w, err)
 			return
@@ -488,7 +395,7 @@ func handleCreateAblesung() http.HandlerFunc {
 				badRequestFeld(w, msg, feld)
 				return
 			}
-			if mapped := ablesungStoreFehler(err, apartments); mapped != nil {
+			if mapped := ablesungStoreFehler(err); mapped != nil {
 				badRequestParse(w, mapped)
 				return
 			}
@@ -496,7 +403,12 @@ func handleCreateAblesung() http.HandlerFunc {
 			return
 		}
 
-		http.Redirect(w, r, fmt.Sprintf("%s/ablesungen/%d", requestBase(r), periodID), http.StatusFound)
+		ziel, err := ablesungGespeichertURL(r, db, periodID)
+		if err != nil {
+			http.Error(w, "fixkosten: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, ziel, http.StatusFound)
 	}
 }
 
@@ -529,13 +441,7 @@ func handleUpdateAblesung() http.HandlerFunc {
 			return
 		}
 
-		apartments, err := store.Apartments(db)
-		if err != nil {
-			http.Error(w, "apartments: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		in, err := parsePeriodInput(r, apartments)
+		in, err := parsePeriodInput(r)
 		if err != nil {
 			badRequestParse(w, err)
 			return
@@ -544,7 +450,7 @@ func handleUpdateAblesung() http.HandlerFunc {
 		if err := store.UpdatePeriod(db, periodID, in); err != nil {
 			if msg, feld, ok := reiheFehler(err); ok {
 				badRequestFeld(w, msg, feld)
-			} else if mapped := ablesungStoreFehler(err, apartments); mapped != nil {
+			} else if mapped := ablesungStoreFehler(err); mapped != nil {
 				badRequestParse(w, mapped)
 			} else {
 				http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
@@ -552,7 +458,12 @@ func handleUpdateAblesung() http.HandlerFunc {
 			return
 		}
 
-		http.Redirect(w, r, fmt.Sprintf("%s/ablesungen/%d", requestBase(r), periodID), http.StatusFound)
+		ziel, err := ablesungGespeichertURL(r, db, periodID)
+		if err != nil {
+			http.Error(w, "fixkosten: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, ziel, http.StatusFound)
 	}
 }
 

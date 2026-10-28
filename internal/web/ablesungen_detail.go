@@ -166,6 +166,9 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			Einspeisung   *calc.EinspeisungErgebnis
 			KostenNote    string
 			MonatLabel    string
+			// FixkostenBanner is set right after saving an Ablesung whose
+			// Abrechnungsmonat lacks its Fixkosten (#366).
+			FixkostenBanner string
 		}{
 			navData:         z.NavData(r),
 			TeilstandStatus: status,
@@ -183,6 +186,9 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			Einspeisung:     k.Einspeisung,
 			KostenNote:      kostenHinweis(ablesung.Grund),
 			MonatLabel:      store.MonatLabel(period.Monat),
+		}
+		if r.URL.Query().Get(fixkostenFehlenParam) != "" {
+			data.FixkostenBanner = fixkostenFehlenBanner(ds.Eingaben, period.Monat)
 		}
 
 		if err := ablesungTemplate.ExecuteTemplate(w, "layout", data); err != nil {

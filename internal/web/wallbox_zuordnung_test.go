@@ -4,16 +4,19 @@ import (
 	"database/sql"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
 // wallbox_zuordnung_test.go covers the assignment of the Wallbox costs to
 // Wohnung 1/2 (#225) through the HTTP seam: the switch "Wallboxen
-// vollständig Wohnung 1" in form, Ablesungsseite and CSV.
+// vollständig Wohnung 1" in the form (the note), Ablesungsseite and CSV
+// (switches_test.go).
 
 const wbSchalter = "wallbox_komplett_w1"
 
@@ -47,92 +50,165 @@ func wallboxAblesungen(t *testing.T, db *sql.DB, einzelW1, einzelW2 *float64, ko
 	return id
 }
 
-func TestWizard_SchalterUnterDenWallboxFeldern(t *testing.T) {
-	body := wizardBody(t, openTestDB(t))
-
-	iW2 := strings.Index(body, `name="`+wbW2+`"`)
-	iSchalter := strings.Index(body, `name="`+wbSchalter+`"`)
-	if iSchalter < 0 {
-		t.Fatalf("kein Schalter %q im Formular", wbSchalter)
-	}
-	iPane2 := strings.Index(body, `class="c-pane" data-step="2"`)
-	if iSchalter < iW2 || iSchalter > iPane2 {
-		t.Errorf("Schalter steht nicht in Schritt 1 unter den Wallbox-Feldern (W2 %d, Schalter %d, Schritt 2 %d)", iW2, iSchalter, iPane2)
-	}
-	if !strings.Contains(body, "Wallboxen vollständig Wohnung 1") {
-		t.Error("Schalter ohne Beschriftung 'Wallboxen vollständig Wohnung 1'")
-	}
-	if tag := inputTag(t, body, wbSchalter); !strings.Contains(tag, `type="checkbox"`) || strings.Contains(tag, "checked") {
-		t.Errorf("Schalter einer neuen Ablesung ohne Vorgänger soll ein ungesetztes Kontrollkästchen sein: %s", tag)
-	}
-}
-
-func TestWizard_SchalterAusLetzterAblesungVorbelegt(t *testing.T) {
-	db := openTestDB(t)
-	wallboxAblesungen(t, db, nil, nil, true)
-	// A later Ablesung with the switch off is the chronologically last one.
-	if tag := inputTag(t, wizardBody(t, db), wbSchalter); !strings.Contains(tag, "checked") {
-		t.Errorf("Schalter der letzten Ablesung (an) nicht vorbelegt: %s", tag)
-	}
-
-	off := seedPeriodInputAt("2026-12-01")
-	if _, err := createPeriod(db, off); err != nil {
-		t.Fatalf("CreatePeriod: %v", err)
-	}
-	if tag := inputTag(t, wizardBody(t, db), wbSchalter); strings.Contains(tag, "checked") {
-		t.Errorf("Schalter der letzten Ablesung (aus) trotzdem vorbelegt: %s", tag)
-	}
-}
-
-func TestEditWizard_SchalterGiltAusDerAblesung(t *testing.T) {
-	db := openTestDB(t)
-	id := wallboxAblesungen(t, db, nil, nil, true)
-	// The newest Ablesung has the switch off, the edited (older) one on.
-	newest := seedPeriodInputAt("2026-12-01")
-	if _, err := createPeriod(db, newest); err != nil {
-		t.Fatalf("CreatePeriod: %v", err)
-	}
-
+// editWizardBody renders the "korrigieren" form of the Ablesung id.
+func editWizardBody(t *testing.T, db *sql.DB, id int64) string {
+	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/ablesungen/"+strconv.FormatInt(id, 10)+"/bearbeiten", nil)
 	req.SetPathValue("id", strconv.FormatInt(id, 10))
 	w := httptest.NewRecorder()
 	handleEditWizardForm(newZugang("", nil))(w, requestWithDB(req, db))
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
+		t.Fatalf("status = %d, want 200 (body: %s)", w.Code, w.Body.String())
 	}
-	if tag := inputTag(t, w.Body.String(), wbSchalter); !strings.Contains(tag, "checked") {
-		t.Errorf("Bearbeiten soll den Schalter der Ablesung zeigen (an): %s", tag)
+	return w.Body.String()
+}
+
+// hinweisText returns the text of the Wallbox note of a form.
+func hinweisText(t *testing.T, body string) string {
+	t.Helper()
+	i := strings.Index(body, `id="wallbox-hinweis"`)
+	if i < 0 {
+		t.Fatal("kein Wallbox-Hinweis im Formular")
+	}
+	rest := body[i:]
+	start := strings.Index(rest, ">") + 1
+	return rest[start : start+strings.Index(rest[start:], "</div>")]
+}
+
+// TestWizard_WallboxHinweisMitStand: the switch is no field of the form any
+// more (#359), the note below the Wallbox-Einzelzähler shows its state in the
+// Fixkosten-Eingabe of the Abrechnungsmonat, or that the Fixkosten are missing.
+func TestWizard_WallboxHinweisMitStand(t *testing.T) {
+	t.Run("Haekchen gesetzt", func(t *testing.T) {
+		db := openTestDB(t)
+		id := wallboxAblesungen(t, db, nil, nil, true)
+		body := editWizardBody(t, db, id)
+		if got, want := hinweisText(t, body), "Häkchen gesetzt: die Einzelzähler bestimmen die Kosten nicht"; got != want {
+			t.Errorf("Hinweis = %q, want %q", got, want)
+		}
+	})
+	t.Run("Haekchen nicht gesetzt", func(t *testing.T) {
+		db := openTestDB(t)
+		id := wallboxAblesungen(t, db, nil, nil, false)
+		body := editWizardBody(t, db, id)
+		if got, want := hinweisText(t, body), "nicht gesetzt: Wohnung 2 bestimmt ihren Anteil"; got != want {
+			t.Errorf("Hinweis = %q, want %q", got, want)
+		}
+	})
+	t.Run("Fixkosten fehlen", func(t *testing.T) {
+		db := openTestDB(t)
+		id, err := store.CreatePeriod(db, seedPeriodInputAt("2026-11-01"))
+		if err != nil {
+			t.Fatalf("CreatePeriod: %v", err)
+		}
+		body := editWizardBody(t, db, id)
+		if got, want := hinweisText(t, body), "Fixkosten für November 2026 fehlen"; got != want {
+			t.Errorf("Hinweis = %q, want %q", got, want)
+		}
+	})
+	t.Run("neue Ablesung: der Monat von heute", func(t *testing.T) {
+		db := openTestDB(t)
+		heute := time.Now().Format("2006-01") + "-01"
+		fk := fixkostenMitPreisen(heute)
+		fk.WallboxKomplettW1 = true
+		if _, err := store.CreateFixkostenEingabe(db, fk); err != nil {
+			t.Fatalf("CreateFixkostenEingabe: %v", err)
+		}
+		if got, want := hinweisText(t, wizardBody(t, db)), "Häkchen gesetzt: die Einzelzähler bestimmen die Kosten nicht"; got != want {
+			t.Errorf("Hinweis = %q, want %q", got, want)
+		}
+	})
+	t.Run("das Skript kennt jeden Monat mit Eingabe", func(t *testing.T) {
+		db := openTestDB(t)
+		wallboxAblesungen(t, db, nil, nil, true)
+		body := wizardBody(t, db)
+		if !strings.Contains(body, `&#34;2026-11&#34;:true`) {
+			t.Errorf("Formular ohne den Stand von 2026-11 für das Skript")
+		}
+	})
+}
+
+// TestWizard_OhneHaekchenPreiseUndPersonen: three steps, no field for
+// Personenzahl, prices and the two switches (#359).
+func TestWizard_OhneHaekchenPreiseUndPersonen(t *testing.T) {
+	db := openTestDB(t)
+	id := wallboxAblesungen(t, db, nil, nil, true)
+	for name, body := range map[string]string{"erfassen": wizardBody(t, db), "korrigieren": editWizardBody(t, db, id)} {
+		for _, feld := range []string{"wallbox_komplett_w1", "pv_gutschrift_w1", "strompreis", "frischwasser_preis", "abwasser_preis", "einspeisung_preis", "personen_1", "personen_2"} {
+			if strings.Contains(body, `name="`+feld+`"`) {
+				t.Errorf("%s: Feld %q im Formular", name, feld)
+			}
+		}
+		for _, schritt := range []string{"1", "2", "3"} {
+			if !strings.Contains(body, `class="c-step-dot`+"") || !strings.Contains(body, `data-step="`+schritt+`"`) {
+				t.Errorf("%s: Schritt %s fehlt", name, schritt)
+			}
+		}
+		if strings.Contains(body, `data-step="4"`) {
+			t.Errorf("%s: es gibt einen vierten Schritt", name)
+		}
 	}
 }
 
-func TestParsePeriodInput_Schalter(t *testing.T) {
-	apartments := []store.Apartment{{ID: 1}, {ID: 2}}
-
-	in, err := parsePeriodInput(formRequest(t, vollesFormular()), apartments)
-	if err != nil || in.WallboxKomplettW1 {
-		t.Errorf("ohne Feld: %v, %v, want aus", in.WallboxKomplettW1, err)
-	}
-
-	form := vollesFormular()
-	form.Set(wbSchalter, "1")
-	in, err = parsePeriodInput(formRequest(t, form), apartments)
-	if err != nil || !in.WallboxKomplettW1 {
-		t.Errorf("mit Feld: %v, %v, want an", in.WallboxKomplettW1, err)
-	}
-}
-
-func TestCreateAblesung_SpeichertSchalter(t *testing.T) {
+// TestAblesung_OhnePreiseAnlegenAendernVervollstaendigen: an Ablesung needs
+// none of the dropped fields, to create, change or complete it (#359). Posted
+// prices, Personenzahl and switches are ignored.
+func TestAblesung_OhnePreiseAnlegenAendernVervollstaendigen(t *testing.T) {
 	db := openTestDB(t)
 	form := vollesFormular()
 	form.Set(wbSchalter, "1")
+	form.Set("strompreis", "9")
+	form.Set("personen_1", "7")
 	w := httptest.NewRecorder()
 	handleCreateAblesung()(w, requestWithDB(formRequest(t, form), db))
 	if w.Code != http.StatusFound {
-		t.Fatalf("status = %d, want 302 (body: %s)", w.Code, w.Body.String())
+		t.Fatalf("anlegen: status = %d, want 302 (body: %s)", w.Code, w.Body.String())
 	}
 	latest, err := store.GetLatestPeriod(db)
-	if err != nil || latest == nil || !latest.WallboxKomplettW1 {
-		t.Errorf("gespeicherte Ablesung = %+v, %v, want Schalter an", latest, err)
+	if err != nil || latest == nil {
+		t.Fatalf("GetLatestPeriod = %v, %v", latest, err)
+	}
+	if latest.WallboxKomplettW1 || latest.Strompreis != nil || len(latest.PersonenByApartment) != 0 {
+		t.Errorf("gespeicherte Ablesung trägt Preise, Personen oder Häkchen: %+v", latest)
+	}
+
+	// Change: new date and a meter reading, nothing else posted.
+	change := vollesFormular()
+	change.Set("strom_gesamt", "5")
+	req := httptest.NewRequest(http.MethodPost, "/ablesungen/"+strconv.FormatInt(latest.ID, 10), strings.NewReader(change.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetPathValue("id", strconv.FormatInt(latest.ID, 10))
+	w = httptest.NewRecorder()
+	handleUpdateAblesung()(w, requestWithDB(req, db))
+	if w.Code != http.StatusFound {
+		t.Fatalf("ändern: status = %d, want 302 (body: %s)", w.Code, w.Body.String())
+	}
+
+	// Complete a Teilstand: a form with only date and month, then the rest.
+	teil := url.Values{"reading_date": {"2026-12-01"}, "monat": {"2026-12"}}
+	w = httptest.NewRecorder()
+	handleCreateAblesung()(w, requestWithDB(formRequest(t, teil), db))
+	if w.Code != http.StatusFound {
+		t.Fatalf("Teilstand anlegen: status = %d (body: %s)", w.Code, w.Body.String())
+	}
+	open, err := store.GetLatestPeriod(db)
+	if err != nil || open == nil || !open.Teilstand(nil).IstTeilstand {
+		t.Fatalf("Teilstand = %+v, %v", open, err)
+	}
+	full := vollesFormular()
+	full.Set("reading_date", "2026-12-01")
+	full.Set("monat", "2026-12")
+	req = httptest.NewRequest(http.MethodPost, "/ablesungen/"+strconv.FormatInt(open.ID, 10), strings.NewReader(full.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetPathValue("id", strconv.FormatInt(open.ID, 10))
+	w = httptest.NewRecorder()
+	handleUpdateAblesung()(w, requestWithDB(req, db))
+	if w.Code != http.StatusFound {
+		t.Fatalf("vervollständigen: status = %d (body: %s)", w.Code, w.Body.String())
+	}
+	done, err := store.GetPeriodDetails(db, open.ID)
+	if err != nil || done == nil || done.Teilstand(nil).IstTeilstand {
+		t.Errorf("Ablesung nach dem Vervollständigen = %+v, %v, want vollständig", done, err)
 	}
 }
 
@@ -259,66 +335,6 @@ func TestAblesungDetail_PlausibilitaetsHinweis(t *testing.T) {
 		body := detailBody(t, db, wallboxAblesungen(t, db, nil, &w2, false))
 		if strings.Contains(body, "Plausibilität Wallbox-Einzelzähler") {
 			t.Error("Hinweis trotz nur einem Einzelzaehler")
-		}
-	})
-}
-
-func TestCSV_SchalterAlsLetzteSpalte(t *testing.T) {
-	if got := csvHeader[len(csvHeader)-2]; got != "wallbox_komplett_wohnung1" {
-		t.Fatalf("vorletzte CSV-Spalte = %q, want wallbox_komplett_wohnung1", got)
-	}
-
-	db := openTestDB(t)
-	in := seedPeriodInputAt("2026-06-01")
-	in.WallboxKomplettW1 = true
-	if _, err := createPeriod(db, in); err != nil {
-		t.Fatalf("CreatePeriod: %v", err)
-	}
-	if _, err := createPeriod(db, seedPeriodInputAt("2026-07-01")); err != nil {
-		t.Fatalf("CreatePeriod: %v", err)
-	}
-	req := httptest.NewRequest(http.MethodGet, "/ablesungen/export.csv", nil)
-	w := httptest.NewRecorder()
-	handleExportCSV()(w, requestWithDB(req, db))
-	lines := strings.Split(strings.TrimSpace(strings.TrimPrefix(w.Body.String(), "\xef\xbb\xbf")), "\n")
-	if len(lines) != 3 {
-		t.Fatalf("CSV hat %d Zeilen, want 3", len(lines))
-	}
-	if !strings.HasSuffix(strings.TrimSpace(lines[1]), ";;;1;0") || !strings.HasSuffix(strings.TrimSpace(lines[2]), ";;;0;0") {
-		t.Errorf("Schalter-Spalte soll 1 und 0 enden: %q / %q", lines[1], lines[2])
-	}
-}
-
-func TestCSV_ImportSchalter(t *testing.T) {
-	row := func(schalter string) string {
-		return strings.TrimSuffix(csvRow("2026-06-01", "100"), ";0;0") + ";" + schalter + ";0"
-	}
-	header := strings.Join(csvHeader, ";")
-
-	for schalter, want := range map[string]bool{"1": true, "0": false, "": false} {
-		rows, err := parseImportCSV(strings.NewReader(header + "\n" + row(schalter) + "\n"))
-		if err != nil {
-			t.Fatalf("Schalter %q: parseImportCSV: %v", schalter, err)
-		}
-		if got := rows[0].input.WallboxKomplettW1; got != want {
-			t.Errorf("Schalter %q = %v, want %v", schalter, got, want)
-		}
-	}
-
-	t.Run("ungültiger Wert", func(t *testing.T) {
-		if _, err := parseImportCSV(strings.NewReader(header + "\n" + row("vielleicht") + "\n")); err == nil {
-			t.Error("ungültiger Schalter ohne Fehler")
-		}
-	})
-
-	t.Run("alte Datei ohne die Spalte", func(t *testing.T) {
-		oldHeader := strings.TrimSuffix(header, ";wallbox_komplett_wohnung1;pv_gutschrift_wohnung1")
-		rows, err := parseImportCSV(strings.NewReader(oldHeader + "\n" + strings.TrimSuffix(csvRow("2026-06-01", "100"), ";0;0") + "\n"))
-		if err != nil {
-			t.Fatalf("parseImportCSV (alte Datei): %v", err)
-		}
-		if rows[0].input.WallboxKomplettW1 {
-			t.Error("alte Datei: Schalter an, want aus")
 		}
 	})
 }
