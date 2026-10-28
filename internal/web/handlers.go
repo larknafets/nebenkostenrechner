@@ -31,9 +31,9 @@ var (
 	stammdatenTemplate        = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/stammdaten.html"))
 	abrechnungTemplate        = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/abrechnung.html"))
 
-	fixkostenListeTemplate  = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten.html"))
+	fixkostenListeTemplate  = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_hinweise.html", "templates/fixkosten.html"))
 	fixkostenFormTemplate   = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_form.html"))
-	fixkostenDetailTemplate = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_detail.html"))
+	fixkostenDetailTemplate = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_hinweise.html", "templates/fixkosten_detail.html"))
 )
 
 // kategorieIconPaths maps a yearly-totals card category row's exact Label
@@ -72,6 +72,7 @@ var templateFuncs = template.FuncMap{
 	"de2":           formatDecimalDE2,
 	"de3":           formatDecimalDE3,
 	"deEUR":         formatEuroDE,
+	"dePreis":       formatPreisDE,
 	"deDatum":       formatDatumDE,
 	"monat":         store.MonatLabel,
 	"monatKurz":     germanPeriodLabelShort,
@@ -81,21 +82,14 @@ var templateFuncs = template.FuncMap{
 	"anlagen":       anlagenListe,
 	"deDatumZeit":   formatDatumZeitDE,
 	"kategorieIcon": kategorieIcon,
-	// orZero unwraps a Teilstand-capable (partial-reading-capable)
-	// *float64 field (Ticket #129) for display - html/template would
-	// otherwise dereference a nil pointer with a hard error instead of
-	// just showing 0.
-	"orZero": store.OrZero,
-	// hasReading/hasPersonen (Ticket #131): whether the wizard may
-	// prefill a meter/occupant value from the completing
-	// EditReadings/PreviousPersonen - "index" alone silently returns the
+	// hasReading (Ticket #131): whether the wizard may prefill a meter value
+	// from the completing EditReadings - "index" alone silently returns the
 	// zero value for a missing key, which couldn't distinguish "not
 	// recorded" from an actual 0.
 	"inputNumber":      inputNumber,
 	"inc":              func(i int) int { return i + 1 },
 	"lueckenWarnungJS": lueckenWarnungScript,
 	"hasReading":       func(m map[string]float64, k string) bool { _, ok := m[k]; return ok },
-	"hasPersonen":      func(m map[int64]float64, id int64) bool { _, ok := m[id]; return ok },
 	// logikOptions is a zero-arg func rather than a per-page data field -
 	// it's a fixed, package-global list (see fixkosten.go), so the
 	// shared "monatsverlauf-wohnung-body" partial (monatsverlauf.html)

@@ -13,9 +13,8 @@ import (
 // that skipped parsePeriodInput gets the form text, and badRequestParse
 // answers it with 400 and the field.
 func TestAblesungStoreFehler(t *testing.T) {
-	apartments := []store.Apartment{{ID: 1, Name: "EG"}}
 	_, err := store.CreatePeriod(openTestDB(t), store.PeriodInput{ReadingDate: "kaputt"})
-	mapped := ablesungStoreFehler(err, apartments)
+	mapped := ablesungStoreFehler(err)
 	if mapped == nil {
 		t.Fatalf("ablesungStoreFehler(%v) = nil, want Formtext", err)
 	}
@@ -27,7 +26,7 @@ func TestAblesungStoreFehler(t *testing.T) {
 	if want := `ungültiges Ablesedatum "kaputt" (Format JJJJ-MM-TT)`; mapped.Error() != want {
 		t.Errorf("msg = %q, want %q", mapped.Error(), want)
 	}
-	if got := ablesungStoreFehler(errors.New("db kaputt"), apartments); got != nil {
+	if got := ablesungStoreFehler(errors.New("db kaputt")); got != nil {
 		t.Errorf("fremder Fehler: got %v, want nil", got)
 	}
 }

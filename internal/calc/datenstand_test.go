@@ -20,13 +20,16 @@ func TestKostenAus_HandgebauterDatenstand(t *testing.T) {
 	periode := func(id int64, datum string, strom float64) *store.LatestPeriod {
 		return &store.LatestPeriod{
 			ID: id, ReadingDate: datum, Monat: datum,
-			Strompreis: store.Float64(0.3), FrischwasserPreis: store.Float64(1), AbwasserPreis: store.Float64(1), EinspeisungPreis: store.Float64(0.1),
-			Readings:            readings(strom),
-			PersonenByApartment: map[int64]float64{1: 2, 2: 1},
+			Readings: readings(strom),
 		}
+	}
+	eingabe := &store.FixkostenEingabeDetails{
+		Monat: "2026-10-01", Personen: map[int64]float64{1: 2, 2: 1},
+		Strompreis: store.Float64(0.3), FrischwasserPreis: store.Float64(1), AbwasserPreis: store.Float64(1), EinspeisungPreis: store.Float64(0.1),
 	}
 	ds := &store.Datenstand{
 		Periods:    []*store.LatestPeriod{periode(1, "2026-09-01", 100), periode(2, "2026-10-01", 200)},
+		Eingaben:   []*store.FixkostenEingabeDetails{eingabe},
 		Apartments: []store.Apartment{{ID: 1, Name: "Wohnung 1", QM: 80}, {ID: 2, Name: "Wohnung 2", QM: 60}},
 	}
 
@@ -41,7 +44,11 @@ func TestKostenAus_HandgebauterDatenstand(t *testing.T) {
 		t.Errorf("Berechenbare = %d, want 1", len(kosten.Berechenbare()))
 	}
 
-	if reihe := FixkostenreiheAus(ds); len(reihe.Neueste()) != 0 {
+	ohne := &store.Datenstand{Periods: ds.Periods, Apartments: ds.Apartments}
+	if a, _ := KostenAus(ohne).Ablesung(2); a.Grund != GrundFixkostenFehlen {
+		t.Errorf("zweite Ablesung ohne Eingaben: Grund = %v, want GrundFixkostenFehlen", a.Grund)
+	}
+	if reihe := FixkostenreiheAus(ohne); len(reihe.Neueste()) != 0 {
 		t.Errorf("Fixkostenreihe ohne Eingaben = %d, want 0", len(reihe.Neueste()))
 	}
 }

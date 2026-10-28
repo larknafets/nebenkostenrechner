@@ -55,7 +55,11 @@ type dashboardJahresCard struct {
 	// HatPVGutschrift shows the PV-Gutschrift line (apartment 1), also at 0.
 	HatPVGutschrift bool
 	GesamtEUR       float64
-	Segmente        []dashboardSegment
+	// Vorlaeufig is "vorläufig, ohne <Monate>" when the year holds a month
+	// whose Ablesungen wait for their Fixkosten (#364), shown at Gesamt and
+	// Saldo. "" = none.
+	Vorlaeufig string
+	Segmente   []dashboardSegment
 
 	// WallboxVerteilt is true when at least one period of the year assigns
 	// the Wallbox costs to the apartments (StromErgebnis.WallboxVerteilt).

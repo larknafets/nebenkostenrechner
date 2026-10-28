@@ -35,9 +35,9 @@ func wallboxBlock(card dashboardJahresCard) *dashboardSimpleCard {
 // speculative generality). Only intended for the 2 apartments - Wallboxen/
 // PV-Anlage have no balance concept and run via buildSimpleJahresCard/
 // buildSimpleVerlauf.
-func buildEntityView(dd dashboardData, apartmentID int64) (dashboardJahresCard, dashboardVerlaufSpalte) {
+func buildEntityView(dd dashboardData, offen []offenerMonat, apartmentID int64) (dashboardJahresCard, dashboardVerlaufSpalte) {
 	a := findApartment(dd.Apartments, apartmentID)
-	verlauf := buildDashboardVerlauf(a.ID, a.Name, dd.PeriodenKosten, dd.FixkostenListe)
+	verlauf := buildDashboardVerlauf(a.ID, a.Name, dd.PeriodenKosten, dd.FixkostenListe, offen)
 	card := buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, dd.Jahr, dd.PeriodenKosten, dd.FixkostenListe)
 	// The Wallbox block (#304) shows only when the Wohnung carries the
 	// Wallbox in its Abrechnung and the costs are assigned to the apartments.
@@ -47,5 +47,6 @@ func buildEntityView(dd dashboardData, apartmentID int64) (dashboardJahresCard, 
 		card.Wallbox = wallboxBlock(card)
 	}
 	card.Saldo = verlauf.LatestSaldo
+	card.Vorlaeufig = vorlaeufigText(offen, dd.Jahr)
 	return card, verlauf
 }

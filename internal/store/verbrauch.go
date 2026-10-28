@@ -5,36 +5,26 @@ import (
 	"fmt"
 )
 
-// Period is one periods row without its readings/occupancy (see
-// LatestPeriod for the fuller read-view shape).
+// Period is one periods row without its readings (see LatestPeriod for the
+// fuller read-view shape).
 type Period struct {
-	ID                int64
-	ReadingDate       string
-	Strompreis        float64
-	FrischwasserPreis float64
-	AbwasserPreis     float64
-	EinspeisungPreis  float64
+	ID          int64
+	ReadingDate string
 }
 
-// GetPeriodByID fetches a single period by id. A Teilstand's (partial
-// reading) not-yet-entered price (Ticket #128, periods.<preis> IS NULL)
-// reads back as 0 here, not nil - a coalesce, not a real "was it entered"
-// answer (see LatestPeriod and Teilstand for that).
+// GetPeriodByID fetches a single period by id.
 func GetPeriodByID(db *sql.DB, id int64) (*Period, error) {
 	var p Period
-	var strompreis, frischwasserPreis, abwasserPreis, einspeisungPreis sql.NullFloat64
 	err := db.QueryRow(
-		`SELECT id, reading_date, strompreis, frischwasser_preis, abwasser_preis, einspeisung_preis
-		 FROM periods WHERE id = ?`,
+		`SELECT id, reading_date FROM periods WHERE id = ?`,
 		id,
-	).Scan(&p.ID, &p.ReadingDate, &strompreis, &frischwasserPreis, &abwasserPreis, &einspeisungPreis)
+	).Scan(&p.ID, &p.ReadingDate)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("period %d not found", id)
 		}
 		return nil, fmt.Errorf("query period %d: %w", id, err)
 	}
-	p.Strompreis, p.FrischwasserPreis, p.AbwasserPreis, p.EinspeisungPreis = strompreis.Float64, frischwasserPreis.Float64, abwasserPreis.Float64, einspeisungPreis.Float64
 	return &p, nil
 }
 

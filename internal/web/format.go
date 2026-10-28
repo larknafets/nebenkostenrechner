@@ -76,6 +76,18 @@ func inputNumber(x float64) string {
 	return strconv.FormatFloat(math.Round(x*1e6)/1e6, 'f', -1, 64)
 }
 
+// formatPreisDE renders a unit price German-formatted: at least 2 and at most
+// 4 decimal places ("0,31", "0,0786"), a price has up to 4 (see inputNumber).
+func formatPreisDE(x float64) string {
+	s := strconv.FormatFloat(math.Round(x*1e4)/1e4, 'f', -1, 64)
+	if i := strings.IndexByte(s, '.'); i < 0 {
+		s += ".00"
+	} else if len(s)-i-1 < 2 {
+		s += "0"
+	}
+	return groupThousandsDE(strings.ReplaceAll(s, ".", ","))
+}
+
 // formatEuroDE renders a float64 as a German-formatted EUR amount, always
 // padded to exactly 2 decimal places (Ticket #40 - a currency amount reads
 // as "45,00", not "45"). EUR amounts are already Round2'd (commercial

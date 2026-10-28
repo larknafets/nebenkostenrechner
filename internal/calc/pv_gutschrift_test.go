@@ -14,9 +14,11 @@ func pvKosten(t *testing.T, gutschriftW1 bool) calc.Kosten {
 	t.Helper()
 	p1 := vollePeriode(1, "2026-10-01", nil)
 	p2 := vollePeriode(2, "2026-11-01", map[string]float64{"strom_gesamt": 100, "strom_einspeisung": 52.5})
-	p2.PVGutschriftW1 = gutschriftW1
+	e := volleEingabe("2026-11-01")
+	e.PVGutschriftW1 = gutschriftW1
 	v := calc.New(calc.Daten{
 		Periods:    []*store.LatestPeriod{p1, p2},
+		Eingaben:   []*store.FixkostenEingabeDetails{e},
 		Apartments: []store.Apartment{{ID: 1, QM: 116.23}, {ID: 2, QM: 86}},
 		Haus:       store.Haus{HeizungWaermeGewichtung: 0.7},
 	})
@@ -52,25 +54,27 @@ func TestPVGutschrift_SchalterAusBleibtInformativ(t *testing.T) {
 	}
 }
 
-func TestPVGutschrift_JedeAblesungHatIhrenSchalter(t *testing.T) {
-	// Two Ablesungen in the same Abrechnungsmonat, only the second has the
-	// switch on: only its Ertrag is credited.
+func TestPVGutschrift_AblesungenImMonatTeilenDenSchalter(t *testing.T) {
+	// Two Ablesungen in the same Abrechnungsmonat: the switch belongs to the
+	// Fixkosten-Eingabe of the month, so both credit their Ertrag (#359).
 	p1 := vollePeriode(1, "2026-10-01", nil)
 	p2 := vollePeriode(2, "2026-11-01", map[string]float64{"strom_gesamt": 100, "strom_einspeisung": 50})
-	p3 := vollePeriode(3, "2026-11-15", map[string]float64{"strom_gesamt": 200, "strom_einspeisung": 100})
-	p3.PVGutschriftW1 = true
+	p3 := vollePeriode(3, "2026-11-01", map[string]float64{"strom_gesamt": 200, "strom_einspeisung": 100})
+	e := volleEingabe("2026-11-01")
+	e.PVGutschriftW1 = true
 	v := calc.New(calc.Daten{
 		Periods:    []*store.LatestPeriod{p1, p2, p3},
+		Eingaben:   []*store.FixkostenEingabeDetails{e},
 		Apartments: []store.Apartment{{ID: 1, QM: 116.23}, {ID: 2, QM: 86}},
 		Haus:       store.Haus{HeizungWaermeGewichtung: 0.7},
 	})
 	a2, _ := v.Ablesung(2)
 	a3, _ := v.Ablesung(3)
-	if got := a2.Kosten.Anteil(1).PVGutschrift; got != 0 {
-		t.Errorf("Ablesung 2 (Schalter aus) = %v, want 0", got)
+	if got := a2.Kosten.Anteil(1).PVGutschrift; !gleich(got, 4) {
+		t.Errorf("Ablesung 2 = %v, want 4 (50 kWh * 0,08)", got)
 	}
 	if got := a3.Kosten.Anteil(1).PVGutschrift; !gleich(got, 4) {
-		t.Errorf("Ablesung 3 (Schalter an) = %v, want 4 (50 kWh * 0,08)", got)
+		t.Errorf("Ablesung 3 = %v, want 4 (50 kWh * 0,08)", got)
 	}
 }
 

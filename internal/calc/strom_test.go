@@ -43,9 +43,48 @@ func baseReadings(overrides map[string]float64) map[string]float64 {
 	return out
 }
 
+// ablesungMitFixkosten is what a test says about one month: the Ablesung and
+// the Fixkosten-Eingabe that carries its Personenzahl, prices and switches
+// (the Ablesung itself has none of them since #368).
+type ablesungMitFixkosten struct {
+	ReadingDate, Monat                                             string
+	Strompreis, FrischwasserPreis, AbwasserPreis, EinspeisungPreis *float64
+	WallboxKomplettW1, PVGutschriftW1                              bool
+	Readings                                                       map[string]float64
+	Personen                                                       map[int64]float64
+}
+
+// createPeriod creates the Ablesung and, once per Abrechnungsmonat, the
+// Fixkosten-Eingabe that carries its Personenzahl, prices and switches: the
+// calculation reads them from there (#359). A second Ablesung in a month
+// finds the Eingabe and shares it.
+func createPeriod(db *sql.DB, in ablesungMitFixkosten) (int64, error) {
+	id, err := store.CreatePeriod(db, store.PeriodInput{ReadingDate: in.ReadingDate, Monat: in.Monat, Readings: in.Readings})
+	if err != nil || in.Monat == "" {
+		return id, err
+	}
+	eingaben, err := store.AllFixkostenEingabenDetails(db)
+	if err != nil {
+		return 0, err
+	}
+	for _, e := range eingaben {
+		if e.Monat == in.Monat {
+			return id, nil
+		}
+	}
+	fk := store.FixkostenInput{
+		Monat: in.Monat, Personen: in.Personen,
+		Strompreis: in.Strompreis, FrischwasserPreis: in.FrischwasserPreis,
+		AbwasserPreis: in.AbwasserPreis, EinspeisungPreis: in.EinspeisungPreis,
+		WallboxKomplettW1: in.WallboxKomplettW1, PVGutschriftW1: in.PVGutschriftW1,
+	}
+	_, err = store.CreateFixkostenEingabe(db, fk)
+	return id, err
+}
+
 func mustCreatePeriod(t *testing.T, db *sql.DB, date string, strompreis float64, readings map[string]float64) int64 {
 	t.Helper()
-	id, err := store.CreatePeriod(db, store.PeriodInput{
+	id, err := createPeriod(db, ablesungMitFixkosten{
 		ReadingDate:       date,
 		Monat:             monatVon(date),
 		EinspeisungPreis:  store.Float64(0.08),
@@ -240,4 +279,13 @@ func kostenVon(t *testing.T, db *sql.DB, id int64) calc.Kosten {
 		t.Fatalf("Ablesung %d: ok=%v, Grund=%v, want berechenbar", id, ok, a.Grund)
 	}
 	return a.Kosten
+}
+
+func TestWallboxNetzbezugKWh(t *testing.T) {
+	// 100 kWh grid draw: 30 to Wohnung 2, 50 to the heat pump, 20 left for the
+	// Wallboxen (which consumed 40), no price needed.
+	got := calc.WallboxNetzbezugKWh(map[string]float64{"strom_gesamt": 100, "strom_wohnung2": 30, "strom_waermepumpe": 50, "strom_wallbox": 40})
+	if got != 20 {
+		t.Errorf("WallboxNetzbezugKWh = %v, want 20", got)
+	}
 }

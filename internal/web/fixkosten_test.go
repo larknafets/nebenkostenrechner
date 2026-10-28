@@ -309,6 +309,7 @@ func fixkostenForm(monat string) url.Values {
 		"monat":      {monat},
 		"personen_1": {"2"}, "personen_2": {"1"},
 		"abschlag_1": {"0"}, "abschlag_2": {"100"}, "miete_2": {"750"},
+		"strompreis": {"0.3"}, "frischwasser_preis": {"1.5"}, "abwasser_preis": {"2"}, "einspeisung_preis": {"0.08"},
 	}
 	for _, kd := range store.KostenpositionDefaults {
 		id := strconv.FormatInt(kd.ID, 10)

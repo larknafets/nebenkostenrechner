@@ -195,10 +195,11 @@ func TestFixkostenCSV_ExportMitMieteSpalten(t *testing.T) {
 	if len(lines) != 2 {
 		t.Fatalf("Zeilen = %d, want 2", len(lines))
 	}
-	if !strings.HasSuffix(lines[0], ";personen_1;personen_2;abschlag_1;abschlag_2;miete_1;miete_2") {
+	if !strings.Contains(lines[0], ";personen_1;personen_2;abschlag_1;abschlag_2;miete_1;miete_2;") {
 		t.Errorf("Kopfzeile endet nicht mit Abschlag und Miete: %s", lines[0])
 	}
-	if !strings.HasSuffix(strings.TrimSpace(lines[1]), ";2;1;;90;;800") {
+	// The six price/switch cells follow the Miete cells (#362).
+	if !strings.Contains(lines[1], ";2;1;;90;;800;") {
 		t.Errorf("Datenzeile endet nicht mit leeren Zellen für nicht erfasst: %s", lines[1])
 	}
 }
@@ -227,8 +228,8 @@ func TestFixkostenCSV_ImportMieteLeereZelleUndAlteDatei(t *testing.T) {
 
 	// An old file has no miete columns at all.
 	db = openTestDB(t)
-	alt := fixkostenCsvHeader[:len(fixkostenCsvHeader)-2]
-	altRow := strings.TrimSuffix(fixkostenCSVRow("2026-06-01", "100"), ";;800")
+	alt := fixkostenCsvHeader[:len(fixkostenCsvHeader)-2-6]
+	altRow := strings.TrimSuffix(fixkostenCSVRow("2026-06-01", "100"), ";;800;"+fixkostenCSVPreiseTail)
 	w = httptest.NewRecorder()
 	handleImportFixkostenCSV()(w, requestWithDB(fixkostenCSVUploadRequest(t, strings.Join(alt, ";")+"\n"+altRow+"\n"), db))
 	if w.Code != http.StatusFound {

@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -23,13 +22,15 @@ func wallboxDaten(statusW1, statusW2 string, wallboxWeiterberechnen, pvSchalter 
 		p.Readings["strom_wallbox"] = 40 * float64(k)
 		p.Readings["strom_einspeisung"] = 10 * float64(k)
 		p.Readings[store.MeterKeyWallboxWohnung2] = 20 * float64(k)
-		p.PVGutschriftW1 = pvSchalter
+	}
+	for _, m := range d.Fixkosten.Neueste() {
+		m.Eingabe.PVGutschriftW1 = pvSchalter
 	}
 	d.Pruef.Apartments[0].Status, d.Pruef.Apartments[1].Status = statusW1, statusW2
 	// A rented apartment needs its tenant data, or the Prüfung finds a Mangel.
 	d.Pruef.Apartments[0].MieterName, d.Pruef.Apartments[0].MieterAnschrift = "Paul Beispiel", "Beispielweg 1\n12345 Musterstadt"
 	d.Pruef.Haus.WallboxWeiterberechnen = wallboxWeiterberechnen
-	d.Kosten = calc.New(calc.Daten{Periods: d.Pruef.Periods, Apartments: d.Pruef.Apartments, Haus: d.Pruef.Haus})
+	d.Kosten = verbrauchskostenVon(d)
 	return d
 }
 

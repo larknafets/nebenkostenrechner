@@ -141,17 +141,45 @@ type FixkostenPositionWert struct {
 // FixkostenInput is one monthly Fixkosten-Eingabe, ready to be persisted.
 type FixkostenInput struct {
 	Monat    string                          // YYYY-MM-01, same convention as PeriodInput.ReadingDate
-	Personen map[int64]float64               // apartment id -> Personenzahl - own to Fixkosten, not period_occupancy (Issue #60 Story 8)
+	Personen map[int64]float64               // apartment id -> Personenzahl - own to Fixkosten (Issue #60 Story 8)
 	Werte    map[int64]FixkostenPositionWert // kostenposition id -> Logik/Typ/Wert for this Eingabe
 	Abschlag map[int64]float64               // apartment id -> Nebenkostenabschlag value - not a Kostenposition, covers Fixkosten AND consumption costs together, see nebenkosten_abschlaege
 	// Miete: apartment id -> monthly rent, see mieten. A missing entry is "not recorded"
 	// (in Update it leaves the stored value alone). Goes into no calculation.
 	Miete map[int64]float64
+	// Strompreis/FrischwasserPreis/AbwasserPreis/EinspeisungPreis are the
+	// prices of the month (#359). nil means "nicht erfasst" and is allowed in
+	// the store. Unlike Miete, a write always overwrites them, nil included.
+	Strompreis        *float64
+	FrischwasserPreis *float64
+	AbwasserPreis     *float64
+	EinspeisungPreis  *float64
+	// WallboxKomplettW1 ("Wallboxen vollständig Wohnung 1") and PVGutschriftW1
+	// ("PV-Gutschrift Wohnung 1") are the switches of the month, see Switches.
+	// A write always overwrites them, false is a real answer.
+	WallboxKomplettW1 bool
+	PVGutschriftW1    bool
+}
+
+type preisFeld struct {
+	feld Feldart
+	wert *float64
+}
+
+// preise returns the four prices with the field that reports a violation,
+// in the order Validate checks them.
+func (in FixkostenInput) preise() []preisFeld {
+	return []preisFeld{
+		{FeldStrompreis, in.Strompreis}, {FeldFrischwasserPreis, in.FrischwasserPreis},
+		{FeldAbwasserPreis, in.AbwasserPreis}, {FeldEinspeisungPreis, in.EinspeisungPreis},
+	}
 }
 
 // Validate checks the field rules every Fixkosten-Eingabe must meet, without a
 // database: Monat, then Logik and Typ per Kostenposition (ascending id), then
-// the Personenzahl per Wohnung (ascending id). It returns the first violation
+// the Personenzahl per Wohnung (ascending id), then the four prices (Strom,
+// Frischwasser, Abwasser, Einspeisung): finite and not negative, empty (nil)
+// is allowed. It returns the first violation
 // as an *EingabeFehler. Abschlag and Miete are not checked here: a missing
 // entry means "not recorded", whether it is required is up to the adapter.
 func (in FixkostenInput) Validate() error {
@@ -173,6 +201,11 @@ func (in FixkostenInput) Validate() error {
 				Feld: FeldPersonen, ID: id, Err: err,
 				Wert: strconv.FormatFloat(in.Personen[id], 'f', -1, 64),
 			}
+		}
+	}
+	for _, p := range in.preise() {
+		if err := validierePreis(p.wert); err != nil {
+			return &EingabeFehler{Feld: p.feld, Err: err, Wert: strconv.FormatFloat(*p.wert, 'f', -1, 64)}
 		}
 	}
 	return nil
@@ -240,7 +273,7 @@ func insertFixkostenTx(tx *sql.Tx, in FixkostenInput) (eingabeID int64, err erro
 		return 0, fmt.Errorf("%w: %s", ErrFixkostenMonatBelegt, in.Monat)
 	}
 
-	res, err := tx.Exec(`INSERT INTO fixkosten_eingaben (monat) VALUES (?)`, in.Monat)
+	res, err := tx.Exec(insertFixkostenEingabeSQL(), fixkostenEingabeArgs(in)...)
 	if err != nil {
 		if mapped := monatUniqueErr(err, in.Monat); mapped != err {
 			return 0, mapped
@@ -344,7 +377,7 @@ func UpdateFixkostenEingabe(db *sql.DB, eingabeID int64, in FixkostenInput) erro
 		}
 	}
 
-	res, err := tx.Exec(`UPDATE fixkosten_eingaben SET monat = ? WHERE id = ?`, in.Monat, eingabeID)
+	res, err := tx.Exec(updateFixkostenEingabeSQL(), append(fixkostenEingabeArgs(in), eingabeID)...)
 	if err != nil {
 		if mapped := monatUniqueErr(err, in.Monat); mapped != err {
 			return mapped
@@ -471,6 +504,21 @@ type FixkostenEingabeDetails struct {
 	Werte    map[int64]FixkostenPositionWert // kostenposition id -> Logik/Typ/Wert
 	Abschlag map[int64]float64               // apartment id -> Nebenkostenabschlag-Wert
 	Miete    map[int64]float64               // apartment id -> monthly rent, missing = not recorded
+	// Prices and switches of the month, see FixkostenInput. A nil price is
+	// "nicht erfasst".
+	Strompreis        *float64
+	FrischwasserPreis *float64
+	AbwasserPreis     *float64
+	EinspeisungPreis  *float64
+	WallboxKomplettW1 bool
+	PVGutschriftW1    bool
+}
+
+// PreiseVollstaendig reports whether all four prices of the Eingabe are
+// entered. It is the one rule behind "Fixkosten fehlen": an Ablesung whose
+// month has no Eingabe, or one without all prices, cannot be computed.
+func (f *FixkostenEingabeDetails) PreiseVollstaendig() bool {
+	return f.Strompreis != nil && f.FrischwasserPreis != nil && f.AbwasserPreis != nil && f.EinspeisungPreis != nil
 }
 
 // GetFixkostenEingabeDetails returns the given Fixkosten-Eingabe with its
@@ -496,7 +544,7 @@ func GetFixkostenEingabeDetails(db *sql.DB, eingabeID int64) (*FixkostenEingabeD
 // (Issue #132). 4 batched queries total (eingaben, werte, personen,
 // abschlaege), not one per Eingabe, same shape as AllPeriodDetails.
 func AllFixkostenEingabenDetails(db *sql.DB) ([]*FixkostenEingabeDetails, error) {
-	rows, err := db.Query(`SELECT id, monat FROM fixkosten_eingaben ORDER BY monat ASC, id ASC`)
+	rows, err := db.Query(selectFixkostenEingabeSQL())
 	if err != nil {
 		return nil, fmt.Errorf("query fixkosten eingaben: %w", err)
 	}
@@ -511,7 +559,7 @@ func AllFixkostenEingabenDetails(db *sql.DB) ([]*FixkostenEingabeDetails, error)
 			Abschlag: map[int64]float64{},
 			Miete:    map[int64]float64{},
 		}
-		if err := rows.Scan(&f.ID, &f.Monat); err != nil {
+		if err := scanFixkostenEingabeRow(rows, f); err != nil {
 			return nil, fmt.Errorf("scan fixkosten eingabe: %w", err)
 		}
 		byID[f.ID] = f
@@ -627,6 +675,43 @@ func ImportFixkostenEingaben(db *sql.DB, inputs []FixkostenInput) (ids []int64, 
 		return nil, err
 	}
 	return ids, nil
+}
+
+// BetroffeneAblesungen returns the Ablesungen a Fixkosten-Eingabe for monat
+// ("YYYY-MM-01") affects: those with this Abrechnungsmonat that are berechenbar
+// right now, oldest first. For the confirmation before deleting an Eingabe, for
+// the banner and for the information after a move (#359). "Berechenbar" is the
+// rule of the calculation: the Ablesung is complete (LatestPeriod.Teilstand),
+// has a Vorperiode (so it is not the first of the series), and the month has an
+// Eingabe with all prices (PreiseVollstaendig). Without such an Eingabe nothing
+// is berechenbar, so the list is empty. Callers ask while the Eingabe exists:
+// before a delete or a move for the old month, after a move for the new one.
+func BetroffeneAblesungen(db *sql.DB, monat string) ([]PeriodSummary, error) {
+	eingaben, err := AllFixkostenEingabenDetails(db)
+	if err != nil {
+		return nil, err
+	}
+	vollstaendig := false
+	for _, e := range eingaben {
+		if e.Monat == monat && e.PreiseVollstaendig() {
+			vollstaendig = true
+		}
+	}
+	if !vollstaendig {
+		return nil, nil
+	}
+	periods, err := AllPeriodDetails(db)
+	if err != nil {
+		return nil, err
+	}
+	var out []PeriodSummary
+	for i, p := range periods { // oldest first
+		if i == 0 || p.Monat != monat || p.Teilstand().IstTeilstand {
+			continue
+		}
+		out = append(out, PeriodSummary{ID: p.ID, ReadingDate: p.ReadingDate, Monat: p.Monat})
+	}
+	return out, nil
 }
 
 // GetLatestFixkostenEingabe returns the most recently dated Fixkosten-

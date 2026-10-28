@@ -1,41 +1,30 @@
 package store
 
 // TeilstandStatus is the itemized "what's still open" breakdown of a
-// Teilstand (partial reading, Ticket #128-#131) - which price, which meter,
-// which apartment's Personen are still missing, computed once from an
-// already-hydrated *LatestPeriod instead of every view re-deriving its own
-// nil-checks against Strompreis/Readings/PersonenByApartment.
-// PeriodComplete answers the same question for callers that only hold a bare
-// periodID (e.g. teilstandAnspruch) by loading the period and
-// asking Teilstand, so there is only one rule.
+// Teilstand (partial reading, Ticket #128-#131): whether the Abrechnungsmonat
+// and which meter are still missing, computed once from an already-hydrated
+// *LatestPeriod instead of every view re-deriving its own nil-checks. Prices,
+// switches and Personenzahl are no part of it: they belong to the
+// Fixkosten-Eingabe of the month (#359).
 type TeilstandStatus struct {
-	MonatErfasst            bool
-	StrompreisErfasst       bool
-	FrischwasserErfasst     bool
-	AbwasserErfasst         bool
-	EinspeisungPreisErfasst bool
-	MeterErfasst            map[string]bool
-	PersonenErfasst         map[int64]bool
+	MonatErfasst bool
+	MeterErfasst map[string]bool
 	// IstTeilstand is true if any field above is missing - the negation of
 	// PeriodComplete, derived from data already in hand.
 	IstTeilstand bool
 }
 
-// Teilstand computes p's itemized completeness against apartments (needed
-// for PersonenErfasst - a missing apartment in PersonenByApartment can't be
-// told apart from "0 occupants" otherwise, Ticket #131).
-func (p *LatestPeriod) Teilstand(apartments []Apartment) TeilstandStatus {
+// Teilstand computes p's itemized completeness: an Ablesung is complete with
+// its Abrechnungsmonat and every mandatory meter reading. PeriodComplete asks
+// the same question for callers that only hold a bare periodID, by loading the
+// period and calling this, so there is only one rule.
+func (p *LatestPeriod) Teilstand() TeilstandStatus {
 	s := TeilstandStatus{
-		MonatErfasst:            p.Monat != "",
-		StrompreisErfasst:       p.Strompreis != nil,
-		FrischwasserErfasst:     p.FrischwasserPreis != nil,
-		AbwasserErfasst:         p.AbwasserPreis != nil,
-		EinspeisungPreisErfasst: p.EinspeisungPreis != nil,
-		MeterErfasst:            make(map[string]bool, len(MeterKeys)),
-		PersonenErfasst:         make(map[int64]bool, len(apartments)),
+		MonatErfasst: p.Monat != "",
+		MeterErfasst: make(map[string]bool, len(MeterKeys)),
 	}
 
-	complete := s.MonatErfasst && s.StrompreisErfasst && s.FrischwasserErfasst && s.AbwasserErfasst && s.EinspeisungPreisErfasst
+	complete := s.MonatErfasst
 
 	for _, key := range MeterKeys {
 		_, erfasst := p.Readings[key]
@@ -46,11 +35,6 @@ func (p *LatestPeriod) Teilstand(apartments []Apartment) TeilstandStatus {
 	// entered, they never make a Teilstand.
 	for _, key := range OptionalMeterKeys {
 		_, s.MeterErfasst[key] = p.Readings[key]
-	}
-	for _, ap := range apartments {
-		_, erfasst := p.PersonenByApartment[ap.ID]
-		s.PersonenErfasst[ap.ID] = erfasst
-		complete = complete && erfasst
 	}
 
 	s.IstTeilstand = !complete

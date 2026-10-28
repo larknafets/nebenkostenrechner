@@ -107,14 +107,8 @@ func formRequest(t *testing.T, values url.Values) *http.Request {
 
 func vollesFormular() url.Values {
 	form := url.Values{
-		"reading_date":       {"2026-11-01"},
-		"monat":              {"2026-11"},
-		"strompreis":         {"0.22"},
-		"frischwasser_preis": {"1.46"},
-		"abwasser_preis":     {"4.87"},
-		"einspeisung_preis":  {"0.08"},
-		"personen_1":         {"2"},
-		"personen_2":         {"1"},
+		"reading_date": {"2026-11-01"},
+		"monat":        {"2026-11"},
 	}
 	for _, key := range store.MeterKeys {
 		form.Set(key, "1")
@@ -123,10 +117,8 @@ func vollesFormular() url.Values {
 }
 
 func TestParsePeriodInput_Einzelzaehler(t *testing.T) {
-	apartments := []store.Apartment{{ID: 1}, {ID: 2}}
-
 	t.Run("leer bleibt nicht erfasst", func(t *testing.T) {
-		in, err := parsePeriodInput(formRequest(t, vollesFormular()), apartments)
+		in, err := parsePeriodInput(formRequest(t, vollesFormular()))
 		if err != nil {
 			t.Fatalf("parsePeriodInput: %v", err)
 		}
@@ -141,7 +133,7 @@ func TestParsePeriodInput_Einzelzaehler(t *testing.T) {
 	t.Run("nur Wohnung 2", func(t *testing.T) {
 		form := vollesFormular()
 		form.Set(wbW2, "12.5")
-		in, err := parsePeriodInput(formRequest(t, form), apartments)
+		in, err := parsePeriodInput(formRequest(t, form))
 		if err != nil {
 			t.Fatalf("parsePeriodInput: %v", err)
 		}
@@ -156,7 +148,7 @@ func TestParsePeriodInput_Einzelzaehler(t *testing.T) {
 	t.Run("0 ist ein Stand", func(t *testing.T) {
 		form := vollesFormular()
 		form.Set(wbW1, "0")
-		in, _ := parsePeriodInput(formRequest(t, form), apartments)
+		in, _ := parsePeriodInput(formRequest(t, form))
 		if v, ok := in.Readings[wbW1]; !ok || v != 0 {
 			t.Errorf("Wallbox Wohnung 1 = %v, %v, want 0, true", v, ok)
 		}
@@ -165,7 +157,7 @@ func TestParsePeriodInput_Einzelzaehler(t *testing.T) {
 	t.Run("Text ist ein Fehler", func(t *testing.T) {
 		form := vollesFormular()
 		form.Set(wbW1, "abc")
-		if _, err := parsePeriodInput(formRequest(t, form), apartments); err == nil {
+		if _, err := parsePeriodInput(formRequest(t, form)); err == nil {
 			t.Error("ungültiger Wert für Wallbox Wohnung 1 ohne Fehler")
 		}
 	})
@@ -215,13 +207,13 @@ func TestAblesungDetail_Einzelzaehler(t *testing.T) {
 	db := openTestDB(t)
 	vor := seedPeriodInputAt("2026-10-01")
 	vor.Readings[wbW1] = 100
-	if _, err := store.CreatePeriod(db, vor); err != nil {
+	if _, err := createPeriod(db, vor); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 	cur := seedPeriodInputAt("2026-11-01")
 	cur.Readings[wbW1] = 160.5
 	cur.Readings[wbW2] = 30
-	id, err := store.CreatePeriod(db, cur)
+	id, err := createPeriod(db, cur)
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
@@ -278,8 +270,8 @@ func TestAblesungDetail_ZaehlerReihenfolge(t *testing.T) {
 }
 
 func TestCSV_ExportHatEinzelzaehlerAmEnde(t *testing.T) {
-	if n := len(csvHeader); n < 4 || csvHeader[n-4] != wbW1 || csvHeader[n-3] != wbW2 {
-		t.Fatalf("csvHeader endet mit %v, want %s und %s vor den Schaltern", csvHeader[len(csvHeader)-4:], wbW1, wbW2)
+	if n := len(csvHeader); n < 2 || csvHeader[n-2] != wbW1 || csvHeader[n-1] != wbW2 {
+		t.Fatalf("csvHeader endet mit %v, want %s und %s", csvHeader[len(csvHeader)-2:], wbW1, wbW2)
 	}
 
 	db := openTestDB(t)
@@ -296,17 +288,17 @@ func TestCSV_ExportHatEinzelzaehlerAmEnde(t *testing.T) {
 	if len(lines) != 2 {
 		t.Fatalf("CSV hat %d Zeilen, want 2", len(lines))
 	}
-	if !strings.HasSuffix(strings.TrimSpace(lines[0]), ";"+wbW1+";"+wbW2+";wallbox_komplett_wohnung1;pv_gutschrift_wohnung1") {
-		t.Errorf("Kopfzeile endet nicht mit den Einzelzählern und dem Schalter: %s", lines[0])
+	if !strings.HasSuffix(strings.TrimSpace(lines[0]), ";"+wbW1+";"+wbW2) {
+		t.Errorf("Kopfzeile endet nicht mit den Einzelzählern: %s", lines[0])
 	}
-	if !strings.HasSuffix(strings.TrimSpace(lines[1]), ";2;1;;12,5;0;0") {
+	if !strings.HasSuffix(strings.TrimSpace(lines[1]), ";;12,5") {
 		t.Errorf("Datenzeile soll leer (nicht erfasst) für Wohnung 1 und 12,5 für Wohnung 2 enden: %s", lines[1])
 	}
 }
 
 func TestCSV_ImportMitUndOhneEinzelzaehlerSpalten(t *testing.T) {
 	t.Run("neue Datei mit Wert und leerer Zelle", func(t *testing.T) {
-		row := strings.TrimSuffix(csvRow("2026-06-01", "100"), ";;;0;0") + ";7,5;;0;0"
+		row := strings.TrimSuffix(csvRow("2026-06-01", "100"), ";;") + ";7,5;"
 		rows, err := parseImportCSV(strings.NewReader(strings.Join(csvHeader, ";") + "\n" + row + "\n"))
 		if err != nil {
 			t.Fatalf("parseImportCSV: %v", err)
@@ -321,8 +313,8 @@ func TestCSV_ImportMitUndOhneEinzelzaehlerSpalten(t *testing.T) {
 	})
 
 	t.Run("alte Datei ohne die Spalten", func(t *testing.T) {
-		header := strings.TrimSuffix(strings.Join(csvHeader, ";"), ";"+wbW1+";"+wbW2+";wallbox_komplett_wohnung1;pv_gutschrift_wohnung1")
-		row := strings.TrimSuffix(csvRow("2026-06-01", "100"), ";;;0;0")
+		header := strings.TrimSuffix(strings.Join(csvHeader, ";"), ";"+wbW1+";"+wbW2)
+		row := strings.TrimSuffix(csvRow("2026-06-01", "100"), ";;")
 		rows, err := parseImportCSV(strings.NewReader(header + "\n" + row + "\n"))
 		if err != nil {
 			t.Fatalf("parseImportCSV (alte Datei): %v", err)
@@ -340,7 +332,7 @@ func TestCSV_ImportMitUndOhneEinzelzaehlerSpalten(t *testing.T) {
 	})
 
 	t.Run("ungültiger Wert", func(t *testing.T) {
-		row := strings.TrimSuffix(csvRow("2026-06-01", "100"), ";;;0;0") + ";abc;;0;0"
+		row := strings.TrimSuffix(csvRow("2026-06-01", "100"), ";;") + ";abc;"
 		if _, err := parseImportCSV(strings.NewReader(strings.Join(csvHeader, ";") + "\n" + row + "\n")); err == nil {
 			t.Error("ungültiger Wert in Einzelzähler-Spalte ohne Fehler")
 		}

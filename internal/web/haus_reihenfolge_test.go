@@ -21,7 +21,7 @@ func TestSichtbareAnsicht_HausReihenfolge(t *testing.T) {
 	}
 	namen := func(rolle store.Rolle) []string {
 		var out []string
-		for _, h := range sichtbareAnsicht(zugriffMitDefaults(rolle), dd, nil).Haus {
+		for _, h := range sichtbareAnsicht(zugriffMitDefaults(rolle), dd, nil, nil).Haus {
 			out = append(out, h.Card.Name)
 		}
 		return out

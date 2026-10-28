@@ -12,7 +12,7 @@ func TestHeizung_70_30_Verteilung(t *testing.T) {
 	db := openTestDB(t)
 	mustCreatePeriod(t, db, "2026-10-01", 0.22, baseReadings(nil))
 
-	id, err := store.CreatePeriod(db, store.PeriodInput{
+	id, err := createPeriod(db, ablesungMitFixkosten{
 		ReadingDate:       "2026-11-01",
 		Monat:             monatVon("2026-11-01"),
 		EinspeisungPreis:  store.Float64(0.08),
@@ -60,7 +60,7 @@ func TestHeizung_WPVerbrauch_TatsaechlicherWertOhnePVAbzug(t *testing.T) {
 	// allocation) < heat pump submeter 10000 -> the full 10000 kWh is actual
 	// heat pump consumption, but none of it is covered by grid draw (fully
 	// covered by PV).
-	id, err := store.CreatePeriod(db, store.PeriodInput{
+	id, err := createPeriod(db, ablesungMitFixkosten{
 		ReadingDate:       "2026-11-01",
 		Monat:             monatVon("2026-11-01"),
 		EinspeisungPreis:  store.Float64(0.08),
@@ -95,7 +95,7 @@ func TestHeizung_KeinWaermeVerbrauch_FaelltAufHaelftigeVerteilungZurueck(t *test
 	db := openTestDB(t)
 	mustCreatePeriod(t, db, "2026-10-01", 0.22, baseReadings(nil))
 
-	id, err := store.CreatePeriod(db, store.PeriodInput{
+	id, err := createPeriod(db, ablesungMitFixkosten{
 		ReadingDate:       "2026-11-01",
 		Monat:             monatVon("2026-11-01"),
 		EinspeisungPreis:  store.Float64(0.08),
@@ -132,7 +132,7 @@ func TestHeizung_KeinWaermeVerbrauch_FaelltAufHaelftigeVerteilungZurueck(t *test
 func TestHeizung_GewichtungAusDenStammdaten(t *testing.T) {
 	db := openTestDB(t)
 	mustCreatePeriod(t, db, "2026-10-01", 0.22, baseReadings(nil))
-	id, err := store.CreatePeriod(db, store.PeriodInput{
+	id, err := createPeriod(db, ablesungMitFixkosten{
 		ReadingDate:       "2026-11-01",
 		Monat:             monatVon("2026-11-01"),
 		EinspeisungPreis:  store.Float64(0.08),

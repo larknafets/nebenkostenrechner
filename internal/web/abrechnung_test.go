@@ -33,9 +33,7 @@ func legeAblesungAn(t *testing.T, db *sql.DB, k int, datum, monat string) {
 	}
 	if _, err := store.CreatePeriod(db, store.PeriodInput{
 		ReadingDate: datum, Monat: monat,
-		Strompreis: store.Float64(0.22), FrischwasserPreis: store.Float64(1.46),
-		AbwasserPreis: store.Float64(4.87), EinspeisungPreis: store.Float64(0.08),
-		Readings: readings, Personen: map[int64]float64{1: 2, 2: 1},
+		Readings: readings,
 	}); err != nil {
 		t.Fatalf("CreatePeriod %s: %v", datum, err)
 	}
@@ -87,7 +85,12 @@ func teiljahrDB(t *testing.T, stromWeiterberechnen bool) *sql.DB {
 		if i == 2 { // December: the Gebäudeversicherung switches to Je Wohneinheit
 			werte[2] = wert(store.LogikWohneinheit, store.TypJaehrlich, 600)
 		}
-		in := store.FixkostenInput{Monat: monat, Personen: map[int64]float64{1: 2, 2: 1}, Werte: werte, Abschlag: map[int64]float64{1: 200}}
+		in := store.FixkostenInput{
+			Monat: monat, Personen: map[int64]float64{1: 2, 2: 1}, Werte: werte, Abschlag: map[int64]float64{1: 200},
+			// The prices of the month (#359), the Verbrauchskosten read them here.
+			Strompreis: store.Float64(0.22), FrischwasserPreis: store.Float64(1.46),
+			AbwasserPreis: store.Float64(4.87), EinspeisungPreis: store.Float64(0.08),
+		}
 		if i < 2 {
 			in.Abschlag[2] = 100
 		}
@@ -644,15 +647,15 @@ func TestBerechneAbrechnung_Anhang(t *testing.T) {
 		t.Errorf("Heizung table sums to %v, want %v (the line's Betrag)", anteil, ab.Heizung.Betrag)
 	}
 
-	// Personen per month from both sources: no Eingabe in September.
+	// Personen per month from the Fixkosten-Eingabe: none in September.
 	if len(ab.PersonenMonate) != 4 || ab.PersonenMonate[0].Monat != "2026-09-01" {
 		t.Fatalf("PersonenMonate = %+v, want September to December", ab.PersonenMonate)
 	}
-	if ab.PersonenMonate[0].Fixkosten != nil || ab.PersonenMonate[0].Ablesung[2] != 1 {
-		t.Errorf("September = %+v, want no Fixkosten-Personen but the Ablesung's", ab.PersonenMonate[0])
+	if ab.PersonenMonate[0].Fixkosten != nil {
+		t.Errorf("September = %+v, want no Fixkosten-Personen", ab.PersonenMonate[0])
 	}
-	if p := ab.PersonenMonate[1]; p.Fixkosten[1] != 2 || p.Fixkosten[2] != 1 || p.Ablesung[1] != 2 {
-		t.Errorf("Oktober = %+v, want both sources", p)
+	if p := ab.PersonenMonate[1]; p.Fixkosten[1] != 2 || p.Fixkosten[2] != 1 {
+		t.Errorf("Oktober = %+v, want the Personen of the Fixkosten-Eingabe", p)
 	}
 	if ab.Gewichtung != 0.7 || len(ab.Apartments) != 2 {
 		t.Errorf("Gewichtung %v, Apartments %d, want 0.7 and 2", ab.Gewichtung, len(ab.Apartments))
@@ -705,13 +708,13 @@ func TestJahressaldo_GleichtDashboardSaldoAufDenCent(t *testing.T) {
 	saveStammdaten(t, db, func(s *store.StammdatenSave) {
 		s.Flags = store.StammdatenFlags{Umlagefaehig: all, StromWeiterberechnen: true, WallboxWeiterberechnen: true}
 	})
-	dd, _, err := loadDashboardData(db)
+	dd, _, _, err := loadDashboardData(db)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
 	var diffs []string
 	for _, apt := range dd.Apartments {
-		verlauf := buildDashboardVerlauf(apt.ID, apt.Name, dd.PeriodenKosten, dd.FixkostenListe)
+		verlauf := buildDashboardVerlauf(apt.ID, apt.Name, dd.PeriodenKosten, dd.FixkostenListe, nil)
 		endstand := map[int]float64{}
 		for _, e := range verlauf.Eintraege {
 			if e.Jahreszeile != nil && e.Jahreszeile.Endstand != nil {

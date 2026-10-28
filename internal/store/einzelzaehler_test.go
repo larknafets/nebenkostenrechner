@@ -20,14 +20,9 @@ func vollePeriode(date string, extra map[string]float64) PeriodInput {
 		r[k] = v
 	}
 	return PeriodInput{
-		ReadingDate:       date,
-		Monat:             date[:7] + "-01",
-		Strompreis:        Float64(0.22),
-		FrischwasserPreis: Float64(1.46),
-		AbwasserPreis:     Float64(4.87),
-		EinspeisungPreis:  Float64(0.08),
-		Readings:          r,
-		Personen:          map[int64]float64{1: 2, 2: 1},
+		ReadingDate: date,
+		Monat:       date[:7] + "-01",
+		Readings:    r,
 	}
 }
 
@@ -64,11 +59,6 @@ func TestEinzelzaehler_RoundtripAlsOptionaleStaende(t *testing.T) {
 
 func TestEinzelzaehler_FehlenMachtKeinenTeilstand(t *testing.T) {
 	db := openTestDB(t)
-	apartments, err := Apartments(db)
-	if err != nil {
-		t.Fatalf("Apartments: %v", err)
-	}
-
 	id, err := CreatePeriod(db, vollePeriode("2026-06-01", nil))
 	if err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
@@ -81,7 +71,7 @@ func TestEinzelzaehler_FehlenMachtKeinenTeilstand(t *testing.T) {
 		t.Error("PeriodComplete ohne Einzelzähler = false, want true")
 	}
 	details, _ := GetPeriodDetails(db, id)
-	st := details.Teilstand(apartments)
+	st := details.Teilstand()
 	if st.IstTeilstand {
 		t.Error("Teilstand().IstTeilstand ohne Einzelzähler = true, want false")
 	}
@@ -92,8 +82,6 @@ func TestEinzelzaehler_FehlenMachtKeinenTeilstand(t *testing.T) {
 
 func TestEinzelzaehler_ErsetztKeinenFehlendenPflichtzaehler(t *testing.T) {
 	db := openTestDB(t)
-	apartments, _ := Apartments(db)
-
 	in := vollePeriode("2026-06-01", map[string]float64{keyWallboxW1: 10, keyWallboxW2: 20})
 	delete(in.Readings, "strom_gesamt")
 	id, err := CreatePeriod(db, in)
@@ -109,7 +97,7 @@ func TestEinzelzaehler_ErsetztKeinenFehlendenPflichtzaehler(t *testing.T) {
 		t.Error("PeriodComplete mit fehlendem Pflichtzähler und beiden Einzelzählern = true, want false")
 	}
 	details, _ := GetPeriodDetails(db, id)
-	st := details.Teilstand(apartments)
+	st := details.Teilstand()
 	if !st.IstTeilstand {
 		t.Error("Teilstand().IstTeilstand = false, want true")
 	}

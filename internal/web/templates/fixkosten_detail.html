@@ -2,6 +2,8 @@
 <h1>Fixkosten {{.MonatLabel}}</h1>
 {{template "nav" .}}
 
+{{template "fixkostenHinweise" .}}
+
 <div class="field" style="max-width:220px">
   <label>Andere Eingabe anzeigen</label>
   <select onchange="if(this.value) location.href=this.value">
@@ -22,6 +24,18 @@
   </table>
 
   <table class="letzte" style="margin-top:1.25rem">
+    <thead><tr><th style="width:40%">Preise und Einstellungen</th><th></th></tr></thead>
+    <tbody>
+      {{range .Preise}}
+      <tr><td>{{.Label}}</td><td>{{if .Erfasst}}{{dePreis .Wert}}&nbsp;{{.Einheit}}{{else}}<span class="muted">nicht erfasst</span>{{end}}</td></tr>
+      {{end}}
+      {{range .Haekchen}}
+      <tr><td>{{.Label}}</td><td>{{if .An}}Ja{{else}}Nein{{end}}</td></tr>
+      {{end}}
+    </tbody>
+  </table>
+
+  <table class="letzte" style="margin-top:1.25rem">
     <thead><tr><th style="width:40%">Position</th><th class="hide-mobil">Logik</th><th>Wohnung 1</th><th>Wohnung 2</th></tr></thead>
     <tbody>
       {{range .Positionen}}
@@ -36,7 +50,7 @@
 <div class="btn-row">
   <a href="{{.Base}}/fixkosten/neu" class="button success">Neue Fixkosteneingabe</a>
   <a href="{{.Base}}/fixkosten/{{.Eingabe.ID}}/bearbeiten" class="button secondary">Eingabe korrigieren</a>
-  <form method="post" action="{{.Base}}/fixkosten/{{.Eingabe.ID}}/loeschen" onsubmit="return confirm('Fixkosten-Eingabe {{.MonatLabel}} wirklich löschen?');">
+  <form method="post" action="{{.Base}}/fixkosten/{{.Eingabe.ID}}/loeschen" onsubmit="return confirm('Fixkosten-Eingabe {{.MonatLabel}} wirklich löschen?'){{if .LoeschenFrage}} && confirm({{.LoeschenFrage}}){{end}};">
     <button type="submit" class="danger">Eingabe löschen</button>
   </form>
 </div>

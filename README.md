@@ -49,9 +49,9 @@ Dazu kommt die **Heizung/Warmwasser-Gewichtung** (siehe [Heizung](#heizungwarmwa
 
 Die Fixkostenkostenpositionen (Berechnungslogik, Typ jährlich/monatlich, Wert) sowie der Nebenkostenabschlag werden dagegen nicht hier, sondern direkt an der jeweiligen Fixkosteneingabe gepflegt - siehe [Fixkosten/Grundgebühren](#fixkostengrundgebühren) und [Nebenkostenabschlag](#nebenkostenabschlag-guthabennachzahlung) unten.
 
-Personenzahl ist variabel und wird separat pro Ablesung *und* pro Fixkosteneingabe erfasst (zwei unabhängige Werte, nicht gemeinsam versioniert).
+Personenzahl, Preise und die zwei Häkchen ("Wallboxen vollständig Wohnung 1", "PV-Gutschrift Wohnung 1") gelten je Monat und werden nur bei der Fixkosten-Eingabe erfasst, nicht bei der Ablesung (siehe [Preise & Personenzahl](#preise--personenzahl)).
 
-Preise (aktuell, werden pro Monat neu erfasst statt zentral versioniert):
+Preise (aktuell, werden pro Monat bei der Fixkosten-Eingabe neu erfasst statt zentral versioniert):
 
 | Kostenart | Preis |
 |---|---|
@@ -79,10 +79,13 @@ Preise (aktuell, werden pro Monat neu erfasst statt zentral versioniert):
 
 Ableserhythmus: 1x/Monat. Verbrauch = aktueller Zählerstand minus Stand der chronologisch nächstälteren Ablesung (einfache Differenz, funktioniert automatisch auch über Lücken hinweg).
 
-Eine Ablesung darf auch nur teilweise ausgefüllt gespeichert werden (**Teilstand**) - einzelne Zählerstände, Preise, Personenzahl oder der Abrechnungsmonat können fehlen und später nachgetragen werden (nur das Ablesedatum ist immer zwingend).
+Der Ablesungs-Wizard hat drei Schritte (Strom, Wärme, Wasser) und fragt nur Ablesedatum, Abrechnungsmonat und Zählerstände ab.
+Eine Ablesung darf auch nur teilweise ausgefüllt gespeichert werden (**Teilstand**) - einzelne Zählerstände oder der Abrechnungsmonat können fehlen und später nachgetragen werden (nur das Ablesedatum ist immer zwingend).
 Ein Teilstand fließt nicht in die Berechnung ein (Dashboard, Verbrauch) und ist in der Ablesungen-Liste/-Detailansicht als "unvollständig" markiert.
 Nur die jeweils neueste Ablesung darf ein Teilstand sein - solange sie es ist, führt "Neue Ablesung" stattdessen zu ihrer Vervollständigung.
 Anlegen und Vervollständigen sind beide auch ohne Login möglich, siehe `VERMIETER_PASSWORD` unten.
+
+Gibt es für den Abrechnungsmonat keine Fixkosten-Eingabe (oder fehlen in ihr Preise), ist die Ablesung nicht berechenbar und zeigt "Fixkosten für <Monat> fehlen" bzw. "sind unvollständig": als Banner im Dashboard, als eigene Zeile im Monatsverlauf, als Badge "unvollständig · Fixkosten fehlen" in Liste und Detail und als "vorläufig" an Gesamt und Saldo der Jahreskarte. Die Vermieter:innen sehen dazu den Link "Fixkosten erfassen". Zählerstände und Differenzen bleiben sichtbar. Es gibt keinen Rückgriff auf einen anderen Monat.
 
 Unter den Wallboxen lassen sich zwei **optionale Einzelzähler** erfassen: `strom_wallbox_wohnung1` (Wallbox Wohnung 1) und `strom_wallbox_wohnung2` (Wallbox Wohnung 2), jeweils in kWh und nur nachrichtlich vom Wallbox-Display abzulesen.
 Beide Felder dürfen leer bleiben, auch nur eines von beiden: Die Ablesung bleibt vollständig (kein Teilstand) und der Zähler gilt als "nicht erfasst".
@@ -90,13 +93,13 @@ Der Verbrauch eines Einzelzählers entsteht nur, wenn der Stand in der Ablesung 
 Die Warnungen "negativer Verbrauch" und "Ausreißer" gelten auch für die Einzelzähler und entfallen, sobald ein beteiligter Stand fehlt.
 Wofür die Einzelzähler in die Kosten eingehen, steht unter "Strom".
 
-Je Ablesung gibt es außerdem den Schalter **"Wallboxen vollständig Wohnung 1"** (Formular, Schritt 1, direkt unter den Wallbox-Feldern; die Ablesungsseite zeigt ihn als Ja/Nein). Eine neue Ablesung belegt ihn aus der chronologisch letzten Ablesung vor, beim Korrigieren gilt der Wert der Ablesung. Bestehende Ablesungen bekommen beim Update den Wert "Nein", ihre Kosten ändern sich nicht.
+Je Fixkosten-Eingabe gibt es außerdem den Schalter **"Wallboxen vollständig Wohnung 1"** (Gruppe "Preise und Einstellungen des Monats" im Fixkosten-Formular; die Detailseite zeigt ihn als Ja/Nein). Eine neue Eingabe belegt ihn aus der letzten Eingabe vor, beim Korrigieren gilt der Wert der Eingabe. Im Ablesungs-Wizard steht bei den Wallbox-Einzelzählern nur ein Hinweis mit dem Stand des Monats, der Wizard sperrt nie.
 
-Ebenso gibt es je Ablesung den Schalter **"PV-Gutschrift Wohnung 1"** (Formular, Schritt 4, beim Einspeisepreis; die Ablesungsseite zeigt ihn als Ja/Nein), gleich vorbelegt und für bestehende Ablesungen auf "Nein". Was er bewirkt, steht unter "Einspeisevergütung (PV)".
+Ebenso gibt es je Fixkosten-Eingabe den Schalter **"PV-Gutschrift Wohnung 1"** (gleiche Gruppe, beim Einspeisepreis), gleich vorbelegt. Was er bewirkt, steht unter "Einspeisevergütung (PV)".
 
-Im CSV-Export stehen die zwei Einzelzähler und die zwei Schalter als letzte vier Spalten (`strom_wallbox_wohnung1`, `strom_wallbox_wohnung2`, leer = nicht erfasst, sowie `wallbox_komplett_wohnung1` und `pv_gutschrift_wohnung1`, je 1 oder 0). Der Import akzeptiert sie als optional (fehlende oder leere Schalter-Zelle = 0), ältere Dateien ohne diese Spalten lassen sich weiter importieren.
+Im Ablesungs-CSV stehen Ablesedatum, Abrechnungsmonat, die Zähler und die zwei Einzelzähler (`strom_wallbox_wohnung1`, `strom_wallbox_wohnung2`, leer = nicht erfasst). Ältere Ablesungs-Dateien mit Preis-, Personen- und Schalter-Spalten lassen sich weiter importieren, deren Werte werden aber nicht mehr übernommen: Die Meldung nach dem Import sagt das, und sie sind in den Fixkosten zu erfassen. Das Fixkosten-CSV hat dafür sechs Spalten am Ende: `strompreis`, `frischwasser_preis`, `abwasser_preis`, `einspeisung_preis` (leer = nicht erfasst) sowie `wallbox_komplett_wohnung1` und `pv_gutschrift_wohnung1` (je 1 oder 0, leer = 0). Ältere Fixkosten-Dateien ohne diese Spalten bleiben importierbar.
 
-Personenzahlen (`personen_1`, `personen_2`) stehen in beiden CSV-Dateien (Ablesungen und Fixkosten) mit Komma, z. B. `1,25`; ein Punkt wird als Tausenderpunkt gelesen (`1.25` ergibt 125). Erlaubt sind 0 oder mehr mit höchstens 2 Nachkommastellen. Ein negativer Wert oder mehr Nachkommastellen brechen den Import mit der Zeilennummer ab, dabei wird nichts importiert. Alte CSV-Dateien mit ganzen Zahlen bleiben gültig.
+Personenzahlen (`personen_1`, `personen_2`) stehen im Fixkosten-CSV mit Komma, z. B. `1,25`; ein Punkt wird als Tausenderpunkt gelesen (`1.25` ergibt 125). Erlaubt sind 0 oder mehr mit höchstens 2 Nachkommastellen. Ein negativer Wert oder mehr Nachkommastellen brechen den Import mit der Zeilennummer ab, dabei wird nichts importiert. Alte CSV-Dateien mit ganzen Zahlen bleiben gültig.
 
 `strom_wallbox` fließt als dritte Zuteilungsstufe in die Strom-Netzbezug-Zuteilung ein (siehe unten) - sie wird vom nach Wohnung 2/Wärmepumpe verbleibenden Netzbezug abgezogen, bevor der Rest als Strom an Wohnung 1 geht. Kein eigener Wallbox-Tarif. Wie die Wallbox-Kosten auf die Wohnungen verteilt werden, steht unter "Strom" (Verteilung der Wallbox-Kosten).
 
@@ -189,7 +192,7 @@ Kosten_Abwasser_X     = Abwasser_X * Abwasserpreis
 ### Einspeisevergütung (PV)
 
 Haus-weit und informativ, unabhängig von der Kostenverteilung oben, da der Einspeisezähler hausweit misst.
-Nur mit dem Schalter **"PV-Gutschrift Wohnung 1"** der Ablesung wird der Ertrag dieser Ablesung als **PV-Gutschrift** Wohnung 1 gutgeschrieben: Sie erhöht deren Guthaben im fortlaufenden Saldo ohne Deckel, mindert aber nicht die Verbrauchskosten.
+Nur mit dem Schalter **"PV-Gutschrift Wohnung 1"** der Fixkosten-Eingabe des Monats wird der Ertrag der Ablesungen dieses Monats als **PV-Gutschrift** Wohnung 1 gutgeschrieben: Sie erhöht deren Guthaben im fortlaufenden Saldo ohne Deckel, mindert aber nicht die Verbrauchskosten.
 Wohnung 2 bekommt nie eine Gutschrift, die haus-weite Tabelle bleibt unverändert.
 Mehrere Ablesungen im selben Abrechnungsmonat haben je ihren eigenen Schalter.
 
@@ -201,6 +204,8 @@ Einspeisevergütung = Verbrauch(strom_einspeisung) * Einspeisung_Preis
 
 Die festen Kostenpositionen (Grundsteuer, Wohngebäudeversicherung, Deichbeitrag Grund und Boden, Deichbeitrag Bauliche Anlagen, Kreisverband Wesermarsch, Abfallwirtschaft Grundgebühr Haushalt/Personen/Biomüll/Restmüll, Grundgebühr Strom, Grundgebühr Trinkwasser/Abwasser, Grundgebühr Internet, Wärmepumpenwartung, PV-Anlagenwartung, Streaming-Dienste, Sonstige Kosten) werden unabhängig von Strom/Heizung/Wasser auf einer eigenen monatlichen Fixkosteneingabe erfasst und berechnet.
 Jede Position trägt in dieser Eingabe ihre eigene Berechnungslogik, ihren Typ und ihren Wert (vorbelegt von der letzten Eingabe, frei überschreibbar):
+
+Zusätzlich trägt die Eingabe die Gruppe "Preise und Einstellungen des Monats": Strom-, Frischwasser-, Abwasser- und Einspeisepreis (Pflicht, 0 erlaubt) sowie die Häkchen "Wallboxen vollständig Wohnung 1" und "PV-Gutschrift Wohnung 1", aus der letzten Eingabe vorbelegt. Die Detailseite zeigt sie lesend, fehlende Preise als "nicht erfasst".
 
 Je Monat gibt es genau eine Fixkosten-Eingabe.
 Eine zweite für denselben Monat sowie das Verschieben auf einen belegten Monat werden abgelehnt, ebenso ein CSV-Import mit einem doppelten Monat.
@@ -275,7 +280,7 @@ Die Seite `/abrechnung?jahr=2027&wohnung=2` zeigt die Betriebskostenabrechnung e
   Bei Eigennutzung steht oben "Interne Übersicht, keine Betriebskostenabrechnung", ohne Block der Mieter:innen und Rechtshinweise.
 - **Wallbox und PV-Gutschrift:** Der Wohnungsstatus bestimmt, welche Posten in der Abrechnung einer Wohnung stehen:
 
-  | Status der Wohnung | Block "Wallbox" (ihr Anteil) | Block "PV-Gutschrift" (nur Wohnung 1, wenn der Schalter der Ablesung an ist) |
+  | Status der Wohnung | Block "Wallbox" (ihr Anteil) | Block "PV-Gutschrift" (nur Wohnung 1, wenn der Schalter der Fixkosten-Eingabe an ist) |
   |---|---|---|
   | Eigennutzung | immer (der Schalter "Wallbox weiterberechnen" gilt nicht) | immer |
   | Vermietung | nur mit gesetztem "Wallbox weiterberechnen" | nie |
@@ -314,9 +319,11 @@ Jede Kostenposition (Strom, Heizung/Warmwasser, Frischwasser, Abwasser, jede Fix
 
 ### Preise & Personenzahl
 
-Es gibt kein zentrales Preishistoriekonzept: Strompreis, Frischwasser- und Abwasserpreis sowie die Personenzahl je Wohnung werden direkt bei jeder monatlichen Ablesung mit erfasst (nicht separat versioniert). Ein einmal berechneter Monat bleibt dadurch automatisch "eingefroren", auch wenn sich Preise oder Personenzahl später ändern.
+Es gibt kein zentrales Preishistoriekonzept: Strompreis, Frischwasser-, Abwasser- und Einspeisepreis, die Personenzahl je Wohnung und die zwei Häkchen werden einmal pro Monat bei der Fixkosten-Eingabe erfasst (nicht separat versioniert, aus der letzten Eingabe vorbelegt). Die Preise sind im Formular Pflicht (0 erlaubt). Ein einmal berechneter Monat bleibt dadurch automatisch "eingefroren", auch wenn sich Preise oder Personenzahl später ändern.
 
-Die Fixkosteneingabe hat ihre eigene, unabhängige Personenzahl je Wohnung (ebenfalls pro Monat eingefroren) - muss nicht mit der Ablesung übereinstimmen. 
+Die Kosten jeder Ablesung nehmen diese Werte aus der Fixkosten-Eingabe ihres Abrechnungsmonats. Mehrere Ablesungen im selben Monat nutzen dieselben Werte. Eine Ablesung ohne Fixkosten-Eingabe im Monat ist offen ("Fixkosten fehlen"), die Berechnung greift nie auf einen anderen Monat zurück. Die Entscheidung steht in [ADR 0004](docs/adr/0004-fixkosten-eingabe-quelle-fuer-personen-preise-haekchen.md).
+
+**Update einer älteren Datenbank:** Beim ersten Start übernimmt die App Preise und Häkchen aus den Ablesungen desselben Monats in die vorhandenen Fixkosten-Eingaben (jeder Preis vom jüngsten Wert, der nicht leer ist, die Häkchen von der jüngsten Ablesung). Weichen mehrere Ablesungen im Monat ab, steht das im Log, und die Berechnung eines alten Monats kann sich ändern. Monate ohne Fixkosten-Eingabe bleiben offen. Danach entfallen die Preis-, Häkchen- und Personenspalten der Ablesung und die Tabelle der Ablesungs-Personenzahlen. Vor der Migration legt die App neben der Datenbank eine Sicherung `.vor-schema-<alte Version>-<UTC-Zeit>` an.
 
 ### Fehlerbehandlung bei Zähleranomalien
 

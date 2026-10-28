@@ -400,9 +400,11 @@ func TestAbrechnungSeite_Monatsverlauf(t *testing.T) {
 	}
 	// The last cumulative balance is the Jahressaldo of the Saldoberechnung
 	// (no carry-over yet), so the page shows it twice in the table.
-	// 320,10 = 308,65 (without the Wallbox) + 11,45 (Wallbox Wohnung 2, 2025).
-	if got := strings.Count(body, "- 320,10"); got < 2 {
-		t.Errorf("Jahressaldo - 320,10 € erscheint %d Mal, want at least 2 (Saldoberechnung and Monatsverlauf)", got)
+	// 325,29 = 313,84 (without the Wallbox) + 11,45 (Wallbox Wohnung 2, 2025).
+	// The Warmwasser split of the months with one person in Wohnung 2 in the
+	// Ablesung now follows the two persons of their Fixkosten-Eingabe (#359).
+	if got := strings.Count(body, "- 325,29"); got < 2 {
+		t.Errorf("Jahressaldo - 325,29 € erscheint %d Mal, want at least 2 (Saldoberechnung and Monatsverlauf)", got)
 	}
 }
 

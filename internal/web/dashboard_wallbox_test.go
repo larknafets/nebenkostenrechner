@@ -32,7 +32,7 @@ func wallboxPVAblesungen(t *testing.T, db *sql.DB, pvSchalter bool) {
 	w2 := 15.0
 	first := seedPeriodInputAt("2026-10-01")
 	first.Readings[wbW1], first.Readings[wbW2] = 0, 0
-	if _, err := store.CreatePeriod(db, first); err != nil {
+	if _, err := createPeriod(db, first); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 	second := seedPeriodInputAt("2026-11-01")
@@ -42,8 +42,7 @@ func wallboxPVAblesungen(t *testing.T, db *sql.DB, pvSchalter bool) {
 	second.Readings["strom_wallbox"] = 40
 	second.Readings["strom_einspeisung"] = 52.5
 	second.Readings[wbW2] = w2
-	second.PVGutschriftW1 = pvSchalter
-	if _, err := store.CreatePeriod(db, second); err != nil {
+	if _, err := createPeriod(db, second, mitHaekchen(false, pvSchalter)); err != nil {
 		t.Fatalf("CreatePeriod: %v", err)
 	}
 }
@@ -51,7 +50,7 @@ func wallboxPVAblesungen(t *testing.T, db *sql.DB, pvSchalter bool) {
 func TestJahreskarte_WallboxBlockBeiBeidenWohnungen(t *testing.T) {
 	db := openTestDB(t)
 	wallboxPVAblesungen(t, db, false)
-	dd, _, err := loadDashboardData(db)
+	dd, _, _, err := loadDashboardData(db)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
@@ -61,7 +60,7 @@ func TestJahreskarte_WallboxBlockBeiBeidenWohnungen(t *testing.T) {
 		euro float64
 		kWh  float64
 	}{{1, 1.10, 5}, {2, 3.30, 15}} {
-		card, _ := buildEntityView(dd, c.apt)
+		card, _ := buildEntityView(dd, nil, c.apt)
 		// The Wallbox leaves the main bar and the chips (#304).
 		if seg := segmentByLabel(card.Segmente, "Wallbox"); seg != nil {
 			t.Errorf("Wohnung %d: Segment Wallbox im Hauptbalken: %+v", c.apt, seg)
@@ -83,7 +82,7 @@ func TestJahreskarte_WallboxBlockBeiBeidenWohnungen(t *testing.T) {
 	}
 
 	// Strom stays the household electricity of Wohnung 2 (30 kWh * 0,22 EUR).
-	card2, _ := buildEntityView(dd, 2)
+	card2, _ := buildEntityView(dd, nil, 2)
 	if card2.StromEUR != 6.60 {
 		t.Errorf("Wohnung 2: StromEUR = %v, want 6.60 (ohne Wallbox)", card2.StromEUR)
 	}
@@ -95,12 +94,12 @@ func TestJahreskarte_WallboxOhneZuordnungKeinBlock(t *testing.T) {
 	db := openTestDB(t)
 	// Without Einzelzähler and switch the Wallbox costs stay informative.
 	wallboxAblesungen(t, db, nil, nil, false)
-	dd, _, err := loadDashboardData(db)
+	dd, _, _, err := loadDashboardData(db)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
 	for _, apt := range []int64{1, 2} {
-		card, verlauf := buildEntityView(dd, apt)
+		card, verlauf := buildEntityView(dd, nil, apt)
 		if card.Wallbox != nil {
 			t.Errorf("Wohnung %d: Wallbox-Block ohne Zuordnung: %+v", apt, card.Wallbox)
 		}
@@ -114,7 +113,7 @@ func TestJahreskarte_WallboxOhneZuordnungKeinBlock(t *testing.T) {
 func TestMonatsverlauf_WallboxKWhAlsZugeordneterNetzbezug(t *testing.T) {
 	db := openTestDB(t)
 	wallboxPVAblesungen(t, db, false)
-	dd, _, err := loadDashboardData(db)
+	dd, _, _, err := loadDashboardData(db)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
@@ -123,7 +122,7 @@ func TestMonatsverlauf_WallboxKWhAlsZugeordneterNetzbezug(t *testing.T) {
 		apt  int64
 		want float64
 	}{{1, 5}, {2, 15}} {
-		_, verlauf := buildEntityView(dd, c.apt)
+		_, verlauf := buildEntityView(dd, nil, c.apt)
 		m := verlauf.Eintraege[0].Monat
 		seg := segmentByLabel(m.VerbrauchSegmente, "Wallbox")
 		if seg == nil || seg.Verbrauch != c.want || seg.Einheit != "kWh" {
@@ -136,7 +135,7 @@ func TestPVGutschrift_NegativeZeileBeiWohnung1(t *testing.T) {
 	for _, schalter := range []bool{true, false} {
 		db := openTestDB(t)
 		wallboxPVAblesungen(t, db, schalter)
-		dd, _, err := loadDashboardData(db)
+		dd, _, _, err := loadDashboardData(db)
 		if err != nil {
 			t.Fatalf("loadDashboardData: %v", err)
 		}
@@ -145,7 +144,7 @@ func TestPVGutschrift_NegativeZeileBeiWohnung1(t *testing.T) {
 			want = 4.20
 		}
 
-		card, verlauf := buildEntityView(dd, 1)
+		card, verlauf := buildEntityView(dd, nil, 1)
 		if card.PVGutschriftEUR != want {
 			t.Errorf("Schalter %v: PVGutschriftEUR = %v, want %v", schalter, card.PVGutschriftEUR, want)
 		}
@@ -169,7 +168,7 @@ func TestPVGutschrift_NegativeZeileBeiWohnung1(t *testing.T) {
 		}
 
 		// Wohnung 2 never gets a credit.
-		card2, verlauf2 := buildEntityView(dd, 2)
+		card2, verlauf2 := buildEntityView(dd, nil, 2)
 		if card2.PVGutschriftEUR != 0 || verlauf2.Eintraege[0].Monat.PVGutschrift != 0 {
 			t.Errorf("Schalter %v: Wohnung 2 hat eine Gutschrift", schalter)
 		}
@@ -197,7 +196,7 @@ func TestJahreszeile_NettoMitGutschriftSumme(t *testing.T) {
 		Strom: &calc.StromErgebnis{}, Wasser: &calc.WasserErgebnis{},
 		Heizung: &calc.HeizungErgebnis{KostenHeizungW1: 30}, PVGutschriftW1: 4.20,
 	}
-	spalte := buildDashboardVerlauf(1, "Wohnung 1", []periodKosten{{ReadingDate: "2026-11-15", Monat: "2026-11-01", K: k}}, nil)
+	spalte := buildDashboardVerlauf(1, "Wohnung 1", []periodKosten{{ReadingDate: "2026-11-15", Monat: "2026-11-01", K: k}}, nil, nil)
 	var jz *dashboardJahreszeile
 	for _, e := range spalte.Eintraege {
 		if e.Jahreszeile != nil {
@@ -256,11 +255,11 @@ func TestDashboardHTML_OhneSchalterGutschriftNurMitNull(t *testing.T) {
 func TestMonatsverlauf_Waermepumpe(t *testing.T) {
 	db := openTestDB(t)
 	wallboxPVAblesungen(t, db, false)
-	dd, _, err := loadDashboardData(db)
+	dd, _, _, err := loadDashboardData(db)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
-	v := sichtbareAnsicht(zugriffMitDefaults(store.RolleNichtAngemeldet), dd, nil)
+	v := sichtbareAnsicht(zugriffMitDefaults(store.RolleNichtAngemeldet), dd, nil, nil)
 	if v.haus("waermepumpe") == nil {
 		t.Fatal("Wärmepumpe fehlt in der anonymen Ansicht")
 	}

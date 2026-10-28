@@ -3,7 +3,8 @@ package web
 import "github.com/larknafets/nebenkostenrechner/internal/calc"
 
 // kostenHinweis is the text shown on the Ablesung page for an Ablesung
-// without Verbrauchskosten.
+// without Verbrauchskosten. The missing Fixkosten have their own hint
+// (ablesungKostenHinweis), it needs a link and the Wallbox share.
 func kostenHinweis(g calc.Grund) string {
 	switch g {
 	case calc.GrundTeilstand:

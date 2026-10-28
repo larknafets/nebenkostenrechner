@@ -106,15 +106,16 @@ func pvFaktor(m time.Month) float64 {
 	}
 }
 
-// personenWohnung2 varies 1/2 across the 39 months (autumn/winter months
-// 10-14 and 27-29 have only 1 person - e.g. a temporary single occupancy) -
-// Wohnung 1 always stays at 2, as fixed by the user.
-func personenWohnung2(i int) float64 {
-	if (i >= 10 && i <= 14) || (i >= 27 && i <= 29) {
-		return 1
-	}
-	return 2
+// demoPreise are the prices of month i of monthCount: a slight increase over
+// the months (electricity/water/wastewater - realistic), whereas the feed-in
+// tariff (demoEinspeisungPreis) stays constant for the PV system's runtime,
+// fixed by law (EEG).
+func demoPreise(i, monthCount int) (strompreis, frischwasserPreis, abwasserPreis float64) {
+	progress := float64(i) / float64(monthCount-1)
+	return 0.19 + 0.03*progress, 1.35 + 0.11*progress, 4.60 + 0.27*progress
 }
+
+const demoEinspeisungPreis = 0.08
 
 // seedDemoPeriods creates 39 monthly meter readings, oldest first
 // (CreatePeriod enforces the Ablesungsreihe rules, see reihe.go), with cumulative meter readings that
@@ -172,14 +173,6 @@ func seedDemoPeriods(db *sql.DB, now time.Time) error {
 		readings["waerme_wohnung1"] += 1.25 * hf
 		readings["waerme_wohnung2"] += 0.9 * hf
 
-		// Slight price increase over the 39 months (electricity/water/
-		// wastewater - realistic), whereas the feed-in tariff stays constant
-		// for the PV system's runtime, fixed by law (EEG).
-		progress := float64(i) / float64(monthCount-1)
-		strompreis := 0.19 + 0.03*progress
-		frischwasserPreis := 1.35 + 0.11*progress
-		abwasserPreis := 4.60 + 0.27*progress
-
 		readingsCopy := make(map[string]float64, len(readings))
 		for k, v := range readings {
 			readingsCopy[k] = v
@@ -187,14 +180,9 @@ func seedDemoPeriods(db *sql.DB, now time.Time) error {
 
 		monat := date.Format("2006-01") + "-01"
 		in := PeriodInput{
-			ReadingDate:       date.Format("2006-01-02"),
-			Monat:             monat,
-			Strompreis:        Float64(strompreis),
-			FrischwasserPreis: Float64(frischwasserPreis),
-			AbwasserPreis:     Float64(abwasserPreis),
-			EinspeisungPreis:  Float64(0.08),
-			Readings:          readingsCopy,
-			Personen:          map[int64]float64{1: 2, 2: personenWohnung2(i)},
+			ReadingDate: date.Format("2006-01-02"),
+			Monat:       monat,
+			Readings:    readingsCopy,
 		}
 		if _, err := CreatePeriod(db, in); err != nil {
 			return fmt.Errorf("monat %s: %w", monat, err)
@@ -203,7 +191,7 @@ func seedDemoPeriods(db *sql.DB, now time.Time) error {
 	return nil
 }
 
-// ResetDemoData wipes every meter reading/fixed-cost entry/occupancy/
+// ResetDemoData wipes every meter reading/fixed-cost entry/Personenzahl/
 // installment row and calls SeedDemoData again (Issue #121: every new demo
 // login fully resets the demo database back to its fresh 39-month starting
 // state, with the current month as the newest). Master data (apartments,
@@ -222,7 +210,6 @@ func ResetDemoData(db *sql.DB, now time.Time) error {
 	// name), so static SQL-injection checks have nothing to flag.
 	for _, stmt := range []string{
 		`DELETE FROM meter_readings`,
-		`DELETE FROM period_occupancy`,
 		`DELETE FROM fixkosten_werte`,
 		`DELETE FROM fixkosten_personen`,
 		`DELETE FROM nebenkosten_abschlaege`,
@@ -292,12 +279,17 @@ func seedDemoFixkosten(db *sql.DB, now time.Time) error {
 	const monthCount = 39
 	for i := 0; i < monthCount; i++ {
 		date := demoMonth(now, i)
+		strompreis, frischwasserPreis, abwasserPreis := demoPreise(i, monthCount)
 		in := FixkostenInput{
-			Monat:    date.Format("2006-01") + "-01",
-			Personen: map[int64]float64{1: 2, 2: 2},
-			Werte:    werte,
-			Abschlag: demoAbschlag,
-			Miete:    demoMiete,
+			Monat:             date.Format("2006-01") + "-01",
+			Personen:          map[int64]float64{1: 2, 2: 2},
+			Werte:             werte,
+			Abschlag:          demoAbschlag,
+			Miete:             demoMiete,
+			Strompreis:        Float64(strompreis),
+			FrischwasserPreis: Float64(frischwasserPreis),
+			AbwasserPreis:     Float64(abwasserPreis),
+			EinspeisungPreis:  Float64(demoEinspeisungPreis),
 		}
 		if _, err := CreateFixkostenEingabe(db, in); err != nil {
 			return fmt.Errorf("fixkosten monat %s: %w", in.Monat, err)

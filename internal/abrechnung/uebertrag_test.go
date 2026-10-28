@@ -46,18 +46,34 @@ func uebertragDaten(ablesungVon, eingabeVon time.Time, ohneAblesung, ohneEingabe
 		details = append(details, &store.FixkostenEingabeDetails{
 			ID: id, Monat: key,
 			Personen: map[int64]float64{1: 2, 2: 1},
+			// Prices of the month (#359): the Verbrauchskosten read them here.
+			Strompreis: store.Float64(0.22), FrischwasserPreis: store.Float64(1.46),
+			AbwasserPreis: store.Float64(4.87), EinspeisungPreis: store.Float64(0.08),
 			Werte:    map[int64]store.FixkostenPositionWert{1: {Logik: store.LogikWohnung2, Typ: store.TypMonatlich, Wert: uebertragKosten}},
 			Abschlag: map[int64]float64{1: 0, 2: uebertragAbschlag},
 		})
 		summaries = append(summaries, store.FixkostenEingabeSummary{ID: id, Monat: key})
 		id++
 	}
-	return BerechnungsDaten{
+	d := BerechnungsDaten{
 		Pruef:            Daten{Periods: periods, Eingaben: summaries, Apartments: apartments, Haus: haus},
 		Kostenpositionen: kostenpositionen,
 		Fixkosten:        calc.NewFixkostenreihe(calc.FixkostenDaten{Eingaben: details, Kostenpositionen: kostenpositionen, Apartments: apartments}),
-		Kosten:           calc.New(calc.Daten{Periods: periods, Apartments: apartments, Haus: haus}),
 	}
+	d.Kosten = verbrauchskostenVon(d)
+	return d
+}
+
+// verbrauchskostenVon computes the Verbrauchskosten of d from its Ablesungen
+// and the Fixkosten-Eingaben of its Fixkostenreihe, which carry Personenzahl,
+// prices and switches (#359). A test that changes one of them rebuilds Kosten
+// with it.
+func verbrauchskostenVon(d BerechnungsDaten) *calc.Verbrauchskosten {
+	var eingaben []*store.FixkostenEingabeDetails
+	for _, m := range d.Fixkosten.Neueste() {
+		eingaben = append(eingaben, m.Eingabe)
+	}
+	return calc.New(calc.Daten{Periods: d.Pruef.Periods, Eingaben: eingaben, Apartments: d.Pruef.Apartments, Haus: d.Pruef.Haus})
 }
 
 func monat(jahr int, m time.Month) time.Time {

@@ -59,8 +59,12 @@ func fixkostenCSVRow(monat string, wert string) string {
 		cells = append(cells, kd.Logik, kd.Typ, wert)
 	}
 	cells = append(cells, "2", "1", "150", "90", "", "800")
-	return strings.Join(cells, ";")
+	return strings.Join(cells, ";") + ";" + fixkostenCSVPreiseTail
 }
+
+// fixkostenCSVPreiseTail are the six trailing cells (four prices, two
+// switches) of a fixkostenCSVRow.
+const fixkostenCSVPreiseTail = "0,3;1,5;2;0,08;0;1"
 
 func fixkostenCSVUploadRequest(t *testing.T, csvText string) *http.Request {
 	t.Helper()
@@ -143,7 +147,7 @@ func TestHandleImportFixkostenCSV_BadRowRejectedWithoutPersisting(t *testing.T) 
 }
 
 func fixkostenCSVRowMitPersonen(monat, p1, p2 string) string {
-	return strings.TrimSuffix(fixkostenCSVRow(monat, "100"), "2;1;150;90;;800") + p1 + ";" + p2 + ";150;90;;800"
+	return strings.Replace(fixkostenCSVRow(monat, "100"), "2;1;150;90;;800", p1+";"+p2+";150;90;;800", 1)
 }
 
 func TestHandleImportFixkostenCSV_PersonenzahlDezimal(t *testing.T) {

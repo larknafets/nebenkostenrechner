@@ -178,7 +178,7 @@ func PruefeMonate(d Daten, ablesungVon, letzter, fixkostenVon time.Time) []Mange
 		if p.Monat == "" {
 			continue
 		}
-		if p.Teilstand(d.Apartments).IstTeilstand {
+		if p.Teilstand().IstTeilstand {
 			if teilstand[p.Monat] == nil {
 				teilstand[p.Monat] = p
 			}
