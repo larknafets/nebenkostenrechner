@@ -67,6 +67,8 @@ async function shot(name, path, { js, theme = 'light', maxHeight } = {}) {
   console.log(`${name}: ${WIDTH}x${h}`);
 }
 
+// The Monatsübersicht is a dropdown (#wohnung-select), picked by its option text.
+const pick = (text) => `(() => { const s = document.getElementById('wohnung-select'); s.value = [...s.options].find(o => o.textContent.trim() === ${JSON.stringify(text)}).value; s.dispatchEvent(new Event('change')); })()`;
 const click = (sel, text) => `(() => { const el = [...document.querySelectorAll('${sel}')].find(e => !${JSON.stringify(text)} || e.textContent.trim() === ${JSON.stringify(text)}); el.click(); })()`;
 
 // Demo login: the cookie lands on the origin, every later page is the demo database.
@@ -78,14 +80,14 @@ await go('/ablesungen');
 const ablesungId = await firstId('/ablesungen', 'ablesungen');
 const fixkostenId = await firstId('/fixkosten', 'fixkosten');
 
-const dash = (extra = '') => `${click('.wohnung-tab', 'Wohnung 1')};${click('[data-modus-btn]', 'Verbrauch')};${extra}`;
+const dash = (extra = '') => `${pick('Wohnung 1')};${click('[data-modus-btn]', 'Verbrauch')};${extra}`;
 await shot('dashboard', '/dashboard', { js: dash() });
 await shot('dashboard-fixkosten', '/dashboard', { js: dash(click('[data-modus-btn]', 'Fixkosten')) });
 await shot('dashboard-kombiniert', '/dashboard', { js: dash(click('[data-modus-btn]', 'Kombiniert')) });
-await shot('dashboard-wohnung2', '/dashboard', { js: dash(click('.wohnung-tab', 'Wohnung 2')) });
-await shot('dashboard-pv-anlage', '/dashboard', { js: dash(click('.wohnung-tab', 'PV-Anlage')) });
+await shot('dashboard-wohnung2', '/dashboard', { js: dash(pick('Wohnung 2')) });
+await shot('dashboard-pv-anlage', '/dashboard', { js: dash(pick('PV-Anlage')) });
 const hideBanner = `document.querySelector('.demo-banner')?.remove()`;
-await shot('hero', '/dashboard', { theme: 'dark', js: dash(click('.wohnung-tab', 'Wohnung 2') + ';' + hideBanner), maxHeight: 1150 });
+await shot('hero', '/dashboard', { theme: 'dark', js: dash(pick('Wohnung 2') + ';' + hideBanner), maxHeight: 1150 });
 await shot('dashboard-dunkel', '/dashboard', { theme: 'dark', js: dash() });
 await shot('ablesungen', '/ablesungen');
 await shot('ablesung-detail', `/ablesungen/${ablesungId}`);
