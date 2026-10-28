@@ -29,6 +29,8 @@
 - Update: Preise und Häkchen wandern beim ersten Start aus den Ablesungen in die Fixkosten-Eingaben desselben Monats, die Berechnung alter Monate kann sich dadurch ändern (Abweichungen stehen im Log). Monate ohne Fixkosten-Eingabe zeigen "Fixkosten fehlen", Ablesungen ohne Preise gelten als vollständig. Die Spalten für Preise, Häkchen und Personenzahl der Ablesung und die Tabelle der Ablesungs-Personenzahlen entfallen. Die Sicherung `.vor-schema-<alte Version>-<UTC-Zeit>` entsteht vor dem Start (#359)
 - Interne Aufräumarbeiten am Code ohne sichtbare Änderung
 
+Alle Änderungen im Vergleich: [v0.20.0...v0.21.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.20.0...v0.21.0)
+
 ## v0.20.0 - 2026-10-27
 
 ### Neue Funktionen
@@ -53,6 +55,8 @@
 - Die Widget-Routen und der zweite Port (`WIDGET_LISTEN_ADDR`, Host-Port 8081 beim Release, 8082 beim Nightly) entfallen, Lovelace-Karten mit Webpage-Card auf diese Routen funktionieren nicht mehr (#301)
 - Interne Aufräumarbeiten am Code ohne sichtbare Änderung
 
+Alle Änderungen im Vergleich: [v0.19.0...v0.20.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.19.0...v0.20.0)
+
 ## v0.19.0 - 2026-10-26
 
 ### Neue Funktionen
@@ -75,6 +79,8 @@
 - Neue Datenbanktabelle für die Miete (leer angelegt, bestehende Daten bleiben erhalten). Vor dem Start mit dem neuen Schema sichert die App die Datenbank wie gewohnt (#277)
 - Die Salden von Wohnung 1 sinken rückwirkend um die bisher aufgelaufenen Stromkosten, weil der Strom von Wohnung 1 jetzt mitgerechnet wird (#279)
 - Interne Aufräumarbeiten am Code ohne sichtbare Änderung
+
+Alle Änderungen im Vergleich: [v0.18.0...v0.19.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.18.0...v0.19.0)
 
 ## v0.18.0 - 2026-10-22
 
@@ -107,6 +113,8 @@
 - Datenbank: Vor einer Schema-Änderung sichert die App die Datenbank neben der Datei als `<Datenbank>.vor-schema-<Version>-<Zeitstempel>`, die letzten drei Sicherungen bleiben. Beim ersten Start nach diesem Update entsteht einmalig eine Sicherung der bestehenden Datenbank. Zum Zurückspielen die App stoppen und die Sicherung auf den Namen der Datenbank kopieren. Scheitert die Sicherung, startet die App nicht und die Datenbank bleibt unverändert (#266)
 - Interne Aufräumarbeiten am Code ohne sichtbare Änderung
 
+Alle Änderungen im Vergleich: [v0.17.0...v0.18.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.17.0...v0.18.0)
+
 ## v0.17.0 - 2026-10-18
 
 ### Verbesserungen
@@ -116,6 +124,8 @@
 ### Fehlerkorrekturen
 
 - Dashboard: Der Personen-Schnitt der Jahressumme ist jetzt das Mittel der Personenzahlen aller Fixkosten-Eingaben des Jahres (ein Wert je Monat, z. B. 1,25). Vorher kam er aus den Ablesungen und zählte jede Ablesung gleich, auch mehrere im selben Monat
+
+Alle Änderungen im Vergleich: [v0.16.0...v0.17.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.16.0...v0.17.0)
 
 ## v0.16.0 - 2026-10-14
 
@@ -139,11 +149,15 @@
 - Beim ersten Start nach dem Update ergänzt die Datenbank eine Spalte für den Stammdaten-Schalter "Wallbox weiterberechnen"; bestehende Datenbanken bekommen "Ja", an bestehenden Ablesungen und am Dashboard ändert sich nichts (#228)
 - Interne Aufräumarbeiten am Code ohne sichtbare Änderung
 
+Alle Änderungen im Vergleich: [v0.15.1...v0.16.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.15.1...v0.16.0)
+
 ## v0.15.1 - 2026-10-10
 
 ### Wartung
 
 - Go-Version auf 1.27.2 angehoben, behebt Sicherheitslücken in der Go-Standardbibliothek (net/http, net/textproto, crypto/tls)
+
+Alle Änderungen im Vergleich: [v0.15.0...v0.15.1](https://github.com/larknafets/nebenkostenrechner/compare/v0.15.0...v0.15.1)
 
 ## v0.15.0 - 2026-10-07
 
@@ -167,17 +181,23 @@
 - Interne Aufräumarbeiten am Code ohne sichtbare Änderung
 - Aktualisierung der Abhängigkeiten
 
+Alle Änderungen im Vergleich: [v0.14.2...v0.15.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.14.2...v0.15.0)
+
 ## v0.14.2 - 2026-10-02
 
 ### Fehlerkorrekturen
 
 - Ablesungen und Fixkosten-Details passen jetzt aufs Handy: der Zeitraum entfällt, die Logik steht unter der Position, das Badge "unvollständig" bricht um.
 
+Alle Änderungen im Vergleich: [v0.14.1...v0.14.2](https://github.com/larknafets/nebenkostenrechner/compare/v0.14.1...v0.14.2)
+
 ## v0.14.1 - 2026-10-02
 
 ### Verbesserungen
 
 - Die App fragt beim Start einmal nach dem neuesten Release. Der Update-Punkt zeigt ein neues Release dadurch schon beim ersten Aufruf der Seite an
+
+Alle Änderungen im Vergleich: [v0.14.0...v0.14.1](https://github.com/larknafets/nebenkostenrechner/compare/v0.14.0...v0.14.1)
 
 ## v0.14.0 - 2026-10-02
 
@@ -188,6 +208,8 @@
 ### Verbesserungen
 
 - Von- und Bis-Monat stehen in der Abrechnung nebeneinander
+
+Alle Änderungen im Vergleich: [v0.13.1...v0.14.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.13.1...v0.14.0)
 
 ## v0.13.1 - 2026-10-01
 
@@ -200,6 +222,8 @@
 
 - Der Update-Punkt in der Fußzeile war immer zu sehen, auch ohne neues Release. Jetzt erscheint er nur noch, wenn ein Update bekannt ist
 - Das Add-on in Home Assistant zeigte nach einem Release teils die Version "main". Es zeigt wieder die richtige Versionsnummer
+
+Alle Änderungen im Vergleich: [v0.13.0...v0.13.1](https://github.com/larknafets/nebenkostenrechner/compare/v0.13.0...v0.13.1)
 
 ## v0.13.0 - 2026-10-01
 
@@ -226,6 +250,8 @@
 - Beim ersten Start nach dem Update erweitert die App die Datenbank um die neuen Felder für Stammdaten und Abrechnung. Vorher eine Sicherung der Datenbank anlegen
 - Interne Aufräumarbeiten am Code ohne sichtbare Änderung
 
+Alle Änderungen im Vergleich: [v0.12.0...v0.13.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.12.0...v0.13.0)
+
 ## v0.12.0 - 2026-09-18
 
 ### Neue Funktionen
@@ -237,11 +263,15 @@
 - Der Update-Hinweis wird auch bei Bedienung des Dashboards geprüft, nicht nur beim Laden der Seite
 - Der Umschalter für das Farbschema ist ein einzelnes Symbol, das bei jedem Klick durch System, Hell und Dunkel wechselt
 
+Alle Änderungen im Vergleich: [v0.11.2...v0.12.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.11.2...v0.12.0)
+
 ## v0.11.2 - 2026-09-11
 
 ### Fehlerkorrekturen
 
 - Die Abschlag-Balken im Monatsverlauf brechen auf dem Smartphone jetzt um, statt über den Rand zu laufen
+
+Alle Änderungen im Vergleich: [v0.11.1...v0.11.2](https://github.com/larknafets/nebenkostenrechner/compare/v0.11.1...v0.11.2)
 
 ## v0.11.1 - 2026-09-10
 
@@ -249,11 +279,15 @@
 
 - Interne Aufräumarbeiten am Code ohne sichtbare Änderung
 
+Alle Änderungen im Vergleich: [v0.11.0...v0.11.1](https://github.com/larknafets/nebenkostenrechner/compare/v0.11.0...v0.11.1)
+
 ## v0.11.0 - 2026-09-09
 
 ### Neue Funktionen
 
 - CSV-Export und CSV-Import für die Fixkosten-Eingaben (#132, #133)
+
+Alle Änderungen im Vergleich: [v0.10.2...v0.11.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.10.2...v0.11.0)
 
 ## v0.10.2 - 2026-09-09
 
@@ -261,11 +295,15 @@
 
 - Das Login-Kennwort aus den Add-on-Optionen wird jetzt über die Supervisor-Schnittstelle gelesen. Vorher wurde es im Add-on nicht erkannt
 
+Alle Änderungen im Vergleich: [v0.10.1...v0.10.2](https://github.com/larknafets/nebenkostenrechner/compare/v0.10.1...v0.10.2)
+
 ## v0.10.1 - 2026-09-09
 
 ### Verbesserungen
 
 - Zählerstände werden mit drei Nachkommastellen angezeigt
+
+Alle Änderungen im Vergleich: [v0.10.0...v0.10.1](https://github.com/larknafets/nebenkostenrechner/compare/v0.10.0...v0.10.1)
 
 ## v0.10.0 - 2026-09-07
 
@@ -286,6 +324,8 @@
 
 - Die Preise einer Ablesung dürfen in der Datenbank leer sein, damit ein Teilstand gespeichert werden kann
 - Interne Aufräumarbeiten am Code ohne sichtbare Änderung
+
+Alle Änderungen im Vergleich: [v0.9.0...v0.10.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.9.0...v0.10.0)
 
 ## v0.9.0 - 2026-09-06
 
@@ -310,11 +350,15 @@
 - Die Fixkosten-Werte tragen jetzt Logik und Typ in der Datenbank. Bisherige Jahreswerte werden beim Start übernommen. Vorher eine Sicherung anlegen
 - Interne Aufräumarbeiten am Code ohne sichtbare Änderung
 
+Alle Änderungen im Vergleich: [v0.8.1...v0.9.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.8.1...v0.9.0)
+
 ## v0.8.1 - 2026-09-05
 
 ### Wartung
 
 - Das Home-Assistant-Add-on legt die Datenbank jetzt unter `addon_configs` ab. Eine vorhandene Datenbank wird beim Start dorthin übernommen
+
+Alle Änderungen im Vergleich: [v0.8.0...v0.8.1](https://github.com/larknafets/nebenkostenrechner/compare/v0.8.0...v0.8.1)
 
 ## v0.8.0 - 2026-09-05
 
@@ -335,6 +379,8 @@
 - Der Container läuft als nonroot-Benutzer statt als root
 - Interne Aufräumarbeiten am Code ohne sichtbare Änderung
 
+Alle Änderungen im Vergleich: [v0.7.0...v0.8.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.7.0...v0.8.0)
+
 ## v0.7.0 - 2026-09-04
 
 ### Neue Funktionen
@@ -353,6 +399,8 @@
 
 - Die Verbrauchswerte im Dashboard zeigen die tatsächlichen kWh statt des durch PV gedeckelten, abgerechneten Anteils
 
+Alle Änderungen im Vergleich: [v0.6.0...v0.7.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.6.0...v0.7.0)
+
 ## v0.6.0 - 2026-09-03
 
 ### Verbesserungen
@@ -365,11 +413,15 @@
 
 - Interne Aufräumarbeiten am Code ohne sichtbare Änderung
 
+Alle Änderungen im Vergleich: [v0.5.1...v0.6.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.5.1...v0.6.0)
+
 ## v0.5.1 - 2026-09-03
 
 ### Fehlerkorrekturen
 
 - Jährliche Fixkosten-Werte blieben leer, wenn das Zahlenfeld einen ungültigen Wert enthielt. Die Bezeichnungen der Kostenpositionen sind abgeglichen
+
+Alle Änderungen im Vergleich: [v0.5.0...v0.5.1](https://github.com/larknafets/nebenkostenrechner/compare/v0.5.0...v0.5.1)
 
 ## v0.5.0 - 2026-09-03
 
@@ -380,6 +432,8 @@
 ### Wartung
 
 - Interne Aufräumarbeiten am Code ohne sichtbare Änderung
+
+Alle Änderungen im Vergleich: [v0.4.0...v0.5.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.4.0...v0.5.0)
 
 ## v0.4.0 - 2026-09-03
 
@@ -399,11 +453,15 @@
 - Neue Tabellen in der Datenbank für die Fixkosten
 - Interne Aufräumarbeiten am Code ohne sichtbare Änderung
 
+Alle Änderungen im Vergleich: [v0.3.0...v0.4.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.3.0...v0.4.0)
+
 ## v0.3.0 - 2026-09-01
 
 ### Wartung
 
 - Das Projekt heißt jetzt "nebenkostenrechner" (vorher "nebenkosten-energierechner"). Das Home-Assistant-Add-on bekam dabei einen neuen Slug (#51, #52)
+
+Alle Änderungen im Vergleich: [v0.2.2...v0.3.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.2.2...v0.3.0)
 
 ## v0.2.2 - 2026-09-01
 
@@ -416,11 +474,15 @@
 - Der Zeitraum steht neben dem Ablesedatum in der Übersicht und in der Auswahl der Detailseite
 - Die Heizungskosten zeigen den Wärmepumpen-Strom in kWh, die Stromkosten den PV-Anteil (#50)
 
+Alle Änderungen im Vergleich: [v0.2.1...v0.2.2](https://github.com/larknafets/nebenkostenrechner/compare/v0.2.1...v0.2.2)
+
 ## v0.2.1 - 2026-09-01
 
 ### Fehlerkorrekturen
 
 - Beim Korrigieren einer Ablesung gingen bei Lücken stillschweigend Zählerstände und Belegung verloren
+
+Alle Änderungen im Vergleich: [v0.2.0...v0.2.1](https://github.com/larknafets/nebenkostenrechner/compare/v0.2.0...v0.2.1)
 
 ## v0.2.0 - 2026-09-01
 
@@ -432,6 +494,8 @@
 
 - Die Seite "Wie wird gerechnet?" erklärt die PV-Einspeisung
 
+Alle Änderungen im Vergleich: [v0.1.5...v0.2.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.1.5...v0.2.0)
+
 ## v0.1.5 - 2026-09-01
 
 ### Neue Funktionen
@@ -441,6 +505,8 @@
 ### Fehlerkorrekturen
 
 - Beim Korrigieren der ältesten Ablesung fehlten Preise und Personenzahl in der Vorbelegung (#47)
+
+Alle Änderungen im Vergleich: [v0.1.4...v0.1.5](https://github.com/larknafets/nebenkostenrechner/compare/v0.1.4...v0.1.5)
 
 ## v0.1.4 - 2026-09-01
 
@@ -453,11 +519,15 @@
 - "Neue Ablesung erfassen" und "Korrigieren" sind Buttons, "Wie wird gerechnet?" steht nur noch im Dashboard (#46)
 - Die Detailansicht zeigt den Zeitraum, die Navigations-Links sind einheitlich groß
 
+Alle Änderungen im Vergleich: [v0.1.3...v0.1.4](https://github.com/larknafets/nebenkostenrechner/compare/v0.1.3...v0.1.4)
+
 ## v0.1.3 - 2026-09-01
 
 ### Verbesserungen
 
 - Die Formularfelder der Ablesung erlauben beliebig viele Nachkommastellen
+
+Alle Änderungen im Vergleich: [v0.1.2...v0.1.3](https://github.com/larknafets/nebenkostenrechner/compare/v0.1.2...v0.1.3)
 
 ## v0.1.2 - 2026-09-01
 
@@ -476,6 +546,8 @@
 
 - Der Container läuft als root statt als nonroot-Benutzer der Distroless-Basis
 
+Alle Änderungen im Vergleich: [v0.1.1...v0.1.2](https://github.com/larknafets/nebenkostenrechner/compare/v0.1.1...v0.1.2)
+
 ## v0.1.1 - 2026-08-29
 
 ### Neue Funktionen
@@ -485,3 +557,5 @@
 ### Wartung
 
 - Das Add-on-Repository `larknafets/ha-addons` wird bei jedem Release automatisch aktualisiert
+
+Alle Änderungen im Vergleich: [v0.1.0...v0.1.1](https://github.com/larknafets/nebenkostenrechner/compare/v0.1.0...v0.1.1)

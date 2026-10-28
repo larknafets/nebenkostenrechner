@@ -19,7 +19,7 @@ A release is made only when the user asks. The tag is the source of truth, nothi
 4. Once `main` is green again, push the tag with exactly `git push origin vX.Y.Z`, as its own call (the guard allows only that form). If the guard blocks it anyway, the user pushes it with `! git push origin vX.Y.Z`. A plain push sends no tags.
 5. Wait for `release.yml` and `ha-addon.yml` (background `until` loop, no sleep chains). `release.yml` fails at the start if `CHANGELOG.md` has no `## vX.Y.Z` entry.
 6. Verify and report:
-   - release notes on GitHub (the section of this version, the footer `Alle Änderungen im Vergleich: vA...vB`)
+   - release notes on GitHub (the section of this version, the last line `Alle Änderungen im Vergleich: vA...vB`)
    - `larknafets/ha-addons` `nebenkostenrechner/config.yaml` shows `version: "X.Y.Z"` (mirrored by the bot)
    - image `ghcr.io/larknafets/nebenkostenrechner:X.Y.Z` exists, `Validate Add-ons` in `ha-addons` is green
 7. Remind the user: back up the database before updating. Never claim a check ran that did not.

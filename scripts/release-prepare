@@ -102,6 +102,8 @@ awk -v extrafile="$extrafile" '
   awk '{ l[NR] = $0 } END { n = NR; while (n > 0 && l[n] == "") n--; for (i = 1; i <= n; i++) print l[i] }' > "$section"
 [ -s "$section" ] || die "keine Einträge in $UNRELEASED und keine Sammelzeilen: es gibt nichts zu veröffentlichen"
 
+printf '\nAlle Änderungen im Vergleich: [%s...%s](https://github.com/%s/compare/%s...%s)\n' "$last" "$tag" "$REPO" "$last" "$tag" >> "$section"
+
 # --- Report ---
 if [ "$n_breaking" -gt 0 ]; then hint=MAJOR
 elif [ "$n_feat" -gt 0 ] || grep -q '^### Neue Funktionen' "$section"; then hint=MINOR

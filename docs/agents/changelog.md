@@ -9,8 +9,8 @@
 - A change that moves existing numbers (a balance that changes retroactively, a rule that applies to old data) is something an operator must know when updating: it gets its **own line in Wartung** besides the line of the feature, not a "Zu beachten" prefix in another section.
 - No line for `docs`, `test`, `style`, `ci`, scripts, hooks, agent rules or a pipeline repair nobody notices. Refactorings only as the one collective line above.
 - At the release, `CHANGELOG.md` gets the new section with the entries (sections as `###`, empty sections left out), `unreleased.md` is emptied but keeps the comment and all five headings.
-- The history can be revised later at any time: `CHANGELOG.md` is a plain file, the text of an old GitHub release is changed with `gh release edit <tag> --notes-file <file>`. The `ha-addons` changelog is rebuilt from all releases at every release, so it follows.
+- The history can be revised later at any time: `CHANGELOG.md` is a plain file, the text of an old GitHub release is changed with `gh release edit <tag> --notes-file <file>` (keep both in step). The `ha-addons` changelog is a copy of `CHANGELOG.md` at the tag and follows at the next release.
 
 ## Release notes
 
-`release.yml` creates the GitHub release with `gh release create`. The text is the section of this version from `CHANGELOG.md` (`###` becomes `##`) plus the German footer `Alle Änderungen im Vergleich: [vA...vB](compare link)`. The Home Assistant changelog in `ha-addons` is built from those texts by `ha-addon.yml`. There are no binaries and no checksums, the image from the `Dockerfile` is the artifact.
+`release.yml` creates the GitHub release with `gh release create`. The text is the section of this version from `CHANGELOG.md` (`###` becomes `##`) which ends with the German line `Alle Änderungen im Vergleich: [vA...vB](compare link)` (written into `CHANGELOG.md` by `scripts/release-prepare`). `ha-addon.yml` copies `CHANGELOG.md` at the tag to `ha-addons` unchanged. There are no binaries and no checksums, the image from the `Dockerfile` is the artifact.
