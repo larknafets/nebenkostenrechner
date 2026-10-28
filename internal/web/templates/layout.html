@@ -185,6 +185,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
         <select name="rolle" id="login-rolle">{{range .LoginOptionen}}<option value="{{.Wert}}">{{.Label}}</option>{{end}}</select></div>
       <div class="field" id="login-password-field"><label for="login-password">Kennwort</label><input type="password" name="password" id="login-password" autocomplete="current-password"></div>
       <div class="login-error" id="login-error" hidden>Falsches Kennwort.</div>
+      <div class="login-error" id="login-gesperrt" hidden>Zu viele fehlgeschlagene Anmeldungen, bitte eine Minute warten.</div>
       <div class="btn-row" style="margin-top:0;justify-content:flex-end">
         <button type="button" class="secondary" id="login-cancel">Abbrechen</button>
         <button type="submit" class="primary">Anmelden</button>
@@ -215,6 +216,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
     var params = new URLSearchParams(window.location.search);
     params.delete("login");
     params.delete("fehler");
+    params.delete("gesperrt");
     params.delete("next");
     params.delete("rolle");
     var qs = params.toString();
@@ -246,6 +248,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
     if (gewuenscht && rolleField.querySelector('option[value="' + gewuenscht + '"]')) rolleField.value = gewuenscht;
     open(params.get("next"));
     if (params.get("fehler") === "1") errorBox.hidden = false;
+    if (params.get("gesperrt") === "1") document.getElementById("login-gesperrt").hidden = false;
   }
 })();
 </script>

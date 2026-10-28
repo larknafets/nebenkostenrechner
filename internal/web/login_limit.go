@@ -23,6 +23,7 @@ type loginLimit struct {
 	now         func() time.Time
 	fenster     time.Time // start of the current failure window
 	fehler      int
+	demoMu      sync.Mutex // serializes demoReset; guards letzterDemo
 	letzterDemo time.Time
 }
 
@@ -58,18 +59,23 @@ func (l *loginLimit) fehlversuch() {
 	l.fehler++
 }
 
-// demoResetErlaubt reports whether the demo database may be reset now, and
-// counts the reset when it does.
-func (l *loginLimit) demoResetErlaubt() bool {
+// demoReset runs reset unless one succeeded less than demoResetAbstand ago.
+// Check, reset and recording happen under demoMu, so a concurrent demo login
+// waits for the reset instead of getting a session on half-reset data. Only
+// a successful reset starts the cooldown.
+func (l *loginLimit) demoReset(reset func() error) error {
 	if l == nil {
-		return true
+		return reset()
 	}
-	l.mu.Lock()
-	defer l.mu.Unlock()
+	l.demoMu.Lock()
+	defer l.demoMu.Unlock()
 	now := l.now()
 	if !l.letzterDemo.IsZero() && now.Sub(l.letzterDemo) < demoResetAbstand {
-		return false
+		return nil
+	}
+	if err := reset(); err != nil {
+		return err
 	}
 	l.letzterDemo = now
-	return true
+	return nil
 }

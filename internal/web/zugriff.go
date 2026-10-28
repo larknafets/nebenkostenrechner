@@ -313,6 +313,6 @@ func (z *Zugang) Gate(a Anspruch, next http.HandlerFunc) http.HandlerFunc {
 			}
 			return
 		}
-		redirectToLoginOverlay(w, r, wantedPath, "", false)
+		redirectToLoginOverlay(w, r, wantedPath, "", "")
 	}
 }

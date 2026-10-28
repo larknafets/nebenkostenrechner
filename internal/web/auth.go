@@ -302,10 +302,10 @@ func refererPath(r *http.Request) string {
 }
 
 // redirectToLoginOverlay bounces to the Dashboard with the Login-Overlay
-// flagged open (?login=1[&fehler=1]) and next carrying where a successful
+// flagged open (?login=1[&fehler=1|&gesperrt=1]) and next carrying where a successful
 // login should actually land - see requireLogin for why it's always the
 // Dashboard, never the originally attempted URL.
-func redirectToLoginOverlay(w http.ResponseWriter, r *http.Request, next, rolle string, fehler bool) {
+func redirectToLoginOverlay(w http.ResponseWriter, r *http.Request, next, rolle, hinweis string) {
 	if next == "" || !strings.HasPrefix(next, "/") || strings.HasPrefix(next, "//") {
 		next = "/dashboard"
 	}
@@ -313,8 +313,8 @@ func redirectToLoginOverlay(w http.ResponseWriter, r *http.Request, next, rolle 
 	if rolle != "" {
 		target += "&rolle=" + url.QueryEscape(rolle)
 	}
-	if fehler {
-		target += "&fehler=1"
+	if hinweis != "" {
+		target += "&" + hinweis + "=1"
 	}
 	http.Redirect(w, r, target, http.StatusFound)
 }
@@ -343,15 +343,14 @@ func (a auth) HandleLogin() http.HandlerFunc {
 		}
 		rolle := r.FormValue("rolle")
 		if rolle != rolleFormDemo {
-			if gesperrt, rest := a.limit.gesperrt(); gesperrt {
-				w.Header().Set("Retry-After", strconv.Itoa(int(rest.Seconds())+1))
-				http.Error(w, "Zu viele fehlgeschlagene Anmeldungen, bitte kurz warten.", http.StatusTooManyRequests)
+			if gesperrt, _ := a.limit.gesperrt(); gesperrt {
+				redirectToLoginOverlay(w, r, r.FormValue("next"), rolle, "gesperrt")
 				return
 			}
 		}
 		fehler := func() {
 			a.limit.fehlversuch()
-			redirectToLoginOverlay(w, r, r.FormValue("next"), rolle, true)
+			redirectToLoginOverlay(w, r, r.FormValue("next"), rolle, "fehler")
 		}
 		passt := func(want string) bool {
 			return subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte(want)) == 1
@@ -365,11 +364,9 @@ func (a auth) HandleLogin() http.HandlerFunc {
 			// always sees the fresh state, never that of a previous session.
 			// Throttled to one reset per demoResetAbstand: within it the
 			// session is granted without resetting again.
-			if a.limit.demoResetErlaubt() {
-				if err := store.ResetDemoData(a.demoDB, time.Now()); err != nil {
-					http.Error(w, "demo reset: "+err.Error(), http.StatusInternalServerError)
-					return
-				}
+			if err := a.limit.demoReset(func() error { return store.ResetDemoData(a.demoDB, time.Now()) }); err != nil {
+				http.Error(w, "demo reset: "+err.Error(), http.StatusInternalServerError)
+				return
 			}
 			// A still-valid real session cookie must not be left lying
 			// around: a clean login switch cleans up all sides instead of
