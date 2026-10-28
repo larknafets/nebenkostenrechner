@@ -2,6 +2,8 @@
 
 ## v0.21.0 - 2026-10-28
 
+> **Vor dem Update:** Beim ersten Start migriert die App die Datenbank, ein Zurück auf die alte Version ist danach nicht mehr möglich. Zahlen alter Monate können sich ändern, weil Preise und Häkchen jetzt aus den Fixkosten-Eingaben kommen. Vorher legt die App eine Sicherung neben der Datenbank an.
+
 ### Verbesserungen
 
 - Geschlechtergerechte Sprache: Rollen und Felder heißen jetzt Mieter:in/Mieter:innen und Vermieter:in/Vermieter:innen (Anmeldung, Stammdaten, Berechtigungen, Jahresabrechnung). Die Kennwort-Variablen `VERMIETER_PASSWORD` und `MIETER_PASSWORD` bleiben unverändert.
