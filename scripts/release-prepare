@@ -67,7 +67,8 @@ if [ "$n_deps" -gt 0 ] && ! grep -qF -- "$LINE_DEPS" "$UNRELEASED"; then
 }$LINE_DEPS"
 fi
 
-# --- Build the section: non-empty sections only, "## " becomes "### " ---
+# --- Build the section: non-empty sections only, "## " becomes "### ", the optional
+# "## Vor dem Update" becomes a quote block above them ---
 section=$(mktemp)
 extrafile=$(mktemp)
 trap 'rm -f "$section" "$extrafile" "${new_changelog:-}" "${new_unreleased:-}"' EXIT
@@ -75,6 +76,16 @@ trap 'rm -f "$section" "$extrafile" "${new_changelog:-}" "${new_unreleased:-}"' 
 awk -v extrafile="$extrafile" '
   function flush(   line) {
     if (head == "") return
+    if (head == "## Vor dem Update") {
+      # optional notice: no heading, a quote block above the sections
+      if (body ~ /[^[:space:]]/) {
+        gsub(/^\n+|\n+$/, "", body)
+        n = split(body, l, "\n")
+        for (i = 1; i <= n; i++) print (l[i] == "" ? ">" : "> " l[i])
+        print ""
+      }
+      return
+    }
     if (head == "## Wartung" && (getline line < extrafile) > 0) {
       if (body ~ /[^[:space:]]/) sub(/\n+$/, "\n", body); else body = "\n"
       body = body line "\n"
@@ -121,10 +132,10 @@ awk -v head="## $tag - $(date +%F)" -v sectionfile="$section" '
 ' "$CHANGELOG" > "$new_changelog"
 cp "$new_changelog" "$CHANGELOG"
 
-# unreleased.md keeps the comment and the four headings, nothing else
+# unreleased.md keeps the comment and the five headings, nothing else
 new_unreleased=$(mktemp)
 awk '{ print } /-->/ { exit }' "$UNRELEASED" > "$new_unreleased"
-printf '\n## Neue Funktionen\n\n## Verbesserungen\n\n## Fehlerkorrekturen\n\n## Wartung\n' >> "$new_unreleased"
+printf '\n## Vor dem Update\n\n## Neue Funktionen\n\n## Verbesserungen\n\n## Fehlerkorrekturen\n\n## Wartung\n' >> "$new_unreleased"
 cp "$new_unreleased" "$UNRELEASED"
 
 git add "$CHANGELOG" "$UNRELEASED"
