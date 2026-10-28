@@ -37,7 +37,7 @@ func pruefeAbrechnungAlteLadung(db *sql.DB, jahr int, apartmentID int64) (abr.Pr
 	if err != nil {
 		return abr.Pruefung{}, err
 	}
-	eingaben, err := store.AllFixkostenEingaben(db)
+	eingaben, err := store.AllFixkostenEingabenDetails(db)
 	if err != nil {
 		return abr.Pruefung{}, err
 	}
