@@ -13,7 +13,7 @@
 
 A release is made only when the user asks. The tag is the source of truth, nothing hand-edits a version.
 
-1. After any direct push to `main`, check it is green (`gh run list --branch main --limit 3`). `scripts/release-prepare` checks it again.
+1. After any direct push to `main`, check it is green (`gh run list --branch main --limit 3`). `scripts/release-prepare` checks it again. A merge by the auto-merge bot (Dependabot) pushes with `GITHUB_TOKEN` and starts no CI on `main`: `release-prepare` then fails with "kein Lauf gefunden". Push a small `docs` or `chore` commit to `main` so CI runs on the head, then continue.
 2. Look at the commits since the last tag (`git log --oneline <last tag>..main`), propose the version.
 3. Prepare the changelog with `scripts/release-prepare vX.Y.Z --dry-run`, check the shown section and the version hint with the user, then run it without `--dry-run`. It checks that `main` is clean, current and green, runs `scripts/check`, moves `.changelog/unreleased.md` into `CHANGELOG.md` as `## vX.Y.Z - YYYY-MM-DD` (empty sections left out, the collective lines for refactorings and Dependabot added), empties `unreleased.md`, commits as `docs` and sets the tag locally (by hand: `git tag -a vX.Y.Z -m "vX.Y.Z"`). It never pushes. Push the commit with `git push origin HEAD:main`, `main` must be green again before the tag goes out.
 4. Once `main` is green again, push the tag with exactly `git push origin vX.Y.Z`, as its own call (the guard allows only that form). If the guard blocks it anyway, the user pushes it with `! git push origin vX.Y.Z`. A plain push sends no tags.
