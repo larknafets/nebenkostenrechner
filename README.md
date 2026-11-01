@@ -49,7 +49,7 @@ Alle Bilder stammen aus dem [Demo-Modus](#demo-modus), die Daten sind erfunden.
 Alle Kosten werden bei jedem Aufruf live aus den Rohdaten berechnet und nicht gespeichert.
 Die Formeln stehen in der App auf der Seite "Wie wird gerechnet?".
 
-- **Strom:** Der Netzbezug wird nacheinander Wohnung 2, Wärmepumpe und Wallboxen zugeteilt, der Rest ist der Haushaltsstrom von Wohnung 1.
+- **Strom:** Der Netzbezug wird nacheinander Wohnung 2, Wärmepumpe und Wallboxen zugeteilt, der Rest geht an Wohnung 1.
 - **Heizung/Warmwasser:** Die Wärmepumpenkosten werden nach Wärmemenge und Wohnfläche auf beide Wohnungen verteilt.
 - **Wasser:** Frisch- und Abwasser nach Zählern, das Warmwasser nach Personenzahl.
 - **PV:** Die Einspeisevergütung kann Wohnung 1 gutgeschrieben werden.
