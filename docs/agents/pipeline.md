@@ -24,4 +24,4 @@ The standard order for a larger change: `/wayfinder` (map and decision tickets),
 
 ## Last step before the PR
 
-- `/ponytail-review` follows `/implement-spec` and `/code-review`. Its rules (when, once per branch, who fixes) are in `checks.md`.
+- `/ponytail-review` follows `/implement-spec` (after `/code-review` on an epic). Its rules (when, once per branch, who fixes) are in `checks.md`.
