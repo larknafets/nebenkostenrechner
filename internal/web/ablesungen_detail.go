@@ -152,7 +152,7 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 
 		fix := fixkostenAnsicht(ds, period)
 		var hinweis *fixkostenHinweis
-		var wallboxKWh float64
+		stromKWh := k.Strom
 		if ablesung.Grund == calc.GrundFixkostenFehlen {
 			hinweis = ablesungFixkostenHinweis(v, period.Monat)
 			if len(vorperiode) > 0 {
@@ -160,7 +160,7 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 				for _, key := range store.MeterKeys {
 					verbrauch[key], _ = store.Verbrauch(period.Readings, vorperiode[0].Readings, key)
 				}
-				wallboxKWh = calc.WallboxNetzbezugKWh(verbrauch)
+				stromKWh = calc.StromZuteilung(verbrauch)
 			}
 		}
 
@@ -174,6 +174,8 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			ZeitraumStart string
 			Meters        []meterZeile
 			Strom         *calc.StromErgebnis
+			Kaskade       []kaskadeZeile
+			PVSumme       float64
 			Wasser        *calc.WasserErgebnis
 			Heizung       *calc.HeizungErgebnis
 			Einspeisung   *calc.EinspeisungErgebnis
@@ -187,9 +189,6 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			// is set when it is missing (#359), instead of the Euro blocks.
 			Fix              ablesungFixkosten
 			FixkostenHinweis *fixkostenHinweis
-			// WallboxKWh is the grid-draw share of the Wallboxen, a pure meter
-			// value shown next to the hint.
-			WallboxKWh float64
 			// KannKorrigieren shows the correct/complete button (Vermieter, or
 			// a Teilstand the user may complete).
 			KannKorrigieren bool
@@ -203,6 +202,8 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			ZeitraumStart:    zeitraumStart,
 			Meters:           meters,
 			Strom:            k.Strom,
+			Kaskade:          kaskadeZeilen(stromKWh),
+			PVSumme:          pvGedeckt(stromKWh),
 			Wasser:           k.Wasser,
 			Heizung:          k.Heizung,
 			Einspeisung:      k.Einspeisung,
@@ -210,7 +211,6 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			MonatLabel:       store.MonatLabel(period.Monat),
 			Fix:              fix,
 			FixkostenHinweis: hinweis,
-			WallboxKWh:       wallboxKWh,
 		}
 		data.KannKorrigieren = data.Vermieter || (data.IstTeilstand && data.KannAblesungAnlegen)
 		// One note per page: the banner only where the Kostenbereich shows none
@@ -253,4 +253,41 @@ func fixkostenAnsicht(ds *store.Datenstand, period *store.LatestPeriod) ablesung
 		Vorhanden: true, EingabeID: eingabe.ID, Preise: preise,
 		WallboxKomplettW1: eingabe.WallboxKomplettW1, PVGutschriftW1: eingabe.PVGutschriftW1,
 	}
+}
+
+// kaskadeZeile is one stage of the Netzbezug allocation as the Ablesung view
+// shows it: Verbrauch = Anteil + PV, Uebrig = Uebrig of the row above - Anteil.
+// The first row (Netzbezug) only has Uebrig, the last row (Wohnung 1) has no
+// Zähler: HatVerbrauch is false, its Verbrauch and PV are not measurable.
+type kaskadeZeile struct {
+	Label        string
+	Gesamt       bool
+	HatVerbrauch bool
+	Verbrauch    float64
+	Anteil       float64
+	PV           float64
+	Uebrig       float64
+}
+
+// kaskadeZeilen lays out the allocation row by row in calculation order, nil
+// without a result (Teilstand, first Ablesung).
+func kaskadeZeilen(s *calc.StromErgebnis) []kaskadeZeile {
+	if s == nil {
+		return nil
+	}
+	return []kaskadeZeile{
+		{Label: "Netzbezug Gesamt", Gesamt: true, Uebrig: s.NetzbezugGesamtKWh},
+		{Label: "1. Wohnung 2", HatVerbrauch: true, Verbrauch: s.W2VerbrauchKWh, Anteil: s.W2AnteilKWh, PV: s.PVAnteilW2KWh, Uebrig: s.RestNachWohnung2()},
+		{Label: "2. Wärmepumpe", HatVerbrauch: true, Verbrauch: s.WPVerbrauchKWh(), Anteil: s.WPAnteilKWh, PV: s.PVAnteilWPKWh, Uebrig: s.RestNachWaermepumpe()},
+		{Label: "3. Wallboxen", HatVerbrauch: true, Verbrauch: s.WallboxVerbrauchKWh(), Anteil: s.WallboxAnteilKWh, PV: s.PVAnteilWallboxKWh, Uebrig: s.W1RestKWh},
+		{Label: "4. Wohnung 1 (Rest)", Anteil: s.W1RestKWh},
+	}
+}
+
+// pvGedeckt is the PV-covered sum of the three submeters, 0 without a result.
+func pvGedeckt(s *calc.StromErgebnis) float64 {
+	if s == nil {
+		return 0
+	}
+	return s.PVGedecktKWh()
 }

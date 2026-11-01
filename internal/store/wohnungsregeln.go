@@ -36,7 +36,7 @@ func (s Wohnungsregeln) flags() Haus {
 	return s.haus
 }
 
-// AbrechnungStrom reports whether the Haushaltsstrom of the apartment stands
+// AbrechnungStrom reports whether the electricity of the apartment stands
 // in its Jahresabrechnung. Eigennutzung: always. Vermietung: only with the
 // flag "Stromverbrauch weiterberechnen", which applies to Wohnung 1 and 2 alike.
 func (s Wohnungsregeln) AbrechnungStrom() bool {

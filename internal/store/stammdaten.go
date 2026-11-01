@@ -99,7 +99,7 @@ type Haus struct {
 
 	// WallboxWeiterberechnen says whether the Wallbox costs of a rented
 	// apartment are passed on in its Jahresabrechnung (#228). Independent of
-	// StromWeiterberechnen (the Haushaltsstrom). An apartment in
+	// StromWeiterberechnen (the apartment's electricity without Wallbox). An apartment in
 	// Eigennutzung shows its Wallbox costs regardless of the flag.
 	WallboxWeiterberechnen bool
 

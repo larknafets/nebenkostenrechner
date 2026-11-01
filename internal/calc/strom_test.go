@@ -281,11 +281,20 @@ func kostenVon(t *testing.T, db *sql.DB, id int64) calc.Kosten {
 	return a.Kosten
 }
 
-func TestWallboxNetzbezugKWh(t *testing.T) {
+func TestStromZuteilung(t *testing.T) {
 	// 100 kWh grid draw: 30 to Wohnung 2, 50 to the heat pump, 20 left for the
-	// Wallboxen (which consumed 40), no price needed.
-	got := calc.WallboxNetzbezugKWh(map[string]float64{"strom_gesamt": 100, "strom_wohnung2": 30, "strom_waermepumpe": 50, "strom_wallbox": 40})
-	if got != 20 {
-		t.Errorf("WallboxNetzbezugKWh = %v, want 20", got)
+	// Wallboxen (which consumed 40, so PV covered 20), no price needed.
+	e := calc.StromZuteilung(map[string]float64{"strom_gesamt": 100, "strom_wohnung2": 30, "strom_waermepumpe": 50, "strom_wallbox": 40})
+	for name, c := range map[string][2]float64{
+		"WallboxAnteilKWh":    {e.WallboxAnteilKWh, 20},
+		"RestNachWohnung2":    {e.RestNachWohnung2(), 70},
+		"RestNachWaermepumpe": {e.RestNachWaermepumpe(), 20},
+		"WallboxVerbrauchKWh": {e.WallboxVerbrauchKWh(), 40},
+		"PVGedecktKWh":        {e.PVGedecktKWh(), 20},
+		"W1RestKWh":           {e.W1RestKWh, 0},
+	} {
+		if c[0] != c[1] {
+			t.Errorf("%s = %v, want %v", name, c[0], c[1])
+		}
 	}
 }

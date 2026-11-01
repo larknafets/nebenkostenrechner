@@ -66,8 +66,12 @@ Die vom Stromnetz bezogene Energiemenge (Zähler `strom_gesamt`) - bereits netto
 Die kWh-Differenz zwischen dem Verbrauch eines Zwischenzählers (Wohnung 2 oder Wärmepumpe) und dem Anteil, den die Zuteilungslogik ihm tatsächlich vom Netzbezug angerechnet hat. Übersteigt der Zwischenzähler-Verbrauch den verbleibenden Netzbezug, kann die Differenz nur durch PV gedeckt worden sein - eine aus der Zuteilungslogik abgeleitete Näherung, kein gemessener PV-Wert (es gibt keinen PV-Eigenverbrauchszähler).
 _Avoid_: PV-Anteil, PV-Ertrag (das ist die separate Einspeisevergütung, siehe unten)
 
+**Zuteilungskaskade**:
+Die Reihenfolge, in der der Netzbezug auf Stufen verteilt wird: Wohnung 2, Wärmepumpe, Wallboxen, den Rest bekommt Wohnung 1. Jede Stufe nimmt höchstens, was vom Netzbezug noch übrig ist. Für jede Stufe mit Zwischenzähler gilt: Verbrauch laut Zähler = Netzbezug-Anteil + Nicht dem Netzbezug zugeordnet (PV). Wohnung 1 hat keinen Zähler, ihr Verbrauch ist nicht gemessen. Ist der Rest für sie 0, hat die PV ihren Verbrauch gedeckt, die Menge ist nicht messbar.
+_Avoid_: Kaskade (allein), Zuteilungsreihenfolge
+
 **Wohnung 1 / Wohnung 2**:
-Die zwei Hausparteien, auf die Kosten verteilt werden. Wohnung 1 trägt als Strom-Kostenposition den Rest des Netzbezugs nach Wohnung 2, Wärmepumpe und Wallboxen (Haushaltsstrom, mal Strompreis der Ablesung, je Ablesung auf den Cent gerundet, nie negativ). Ihr Wallbox-Anteil bleibt in der Wallbox-Position, einen PV-Anteil gibt es für sie nicht (kein Zwischenzähler).
+Die zwei Hausparteien, auf die Kosten verteilt werden. Wohnung 1 trägt als Strom-Kostenposition den Rest des Netzbezugs nach Wohnung 2, Wärmepumpe und Wallboxen (mal Strompreis der Ablesung, je Ablesung auf den Cent gerundet, nie negativ). Ihr Wallbox-Anteil bleibt in der Wallbox-Position, einen PV-Anteil gibt es für sie nicht (kein Zwischenzähler).
 
 **Rolle**:
 Wer die App benutzt: **Nicht angemeldet**, **Mieter:in** oder **Vermieter:in**. Die Vermieter:innen sehen und dürfen alles, für Nicht angemeldete und Mieter:innen bestimmen Häkchen, was sie sehen und tun dürfen; einiges bleibt fest bei den Vermieter:innen.
@@ -123,7 +127,7 @@ Je Wohnung "Vermietung" oder "Eigennutzung" (Stammdaten, Startwert Wohnung 1 Eig
 Steuert die Jahresabrechnung (Block der Mieter:innen, Rechtshinweise, Pflichtfelder und welche Posten darin stehen) und auf dem Dashboard nur den Wallbox-Block der Jahreskarte (bei Vermietung und ausgeschaltetem Flag "Wallbox weiterberechnen" entfällt er), nie die Summen, den fortlaufenden Saldo, die Kostenberechnung oder die Heizungs-Gewichtung.
 Welche Posten in der Abrechnung einer Wohnung stehen:
 
-| Status der Wohnung | Block "Strom" (ihr Haushaltsstrom) | Block "Wallbox" (ihr Anteil) | Block "PV-Gutschrift" (nur Wohnung 1, wenn der Schalter der Ablesung an ist) |
+| Status der Wohnung | Block "Strom" (ihr Strom) | Block "Wallbox" (ihr Anteil) | Block "PV-Gutschrift" (nur Wohnung 1, wenn der Schalter der Ablesung an ist) |
 |---|---|---|---|
 | Eigennutzung | immer (das Flag "Stromverbrauch weiterberechnen" gilt nicht) | immer (das Flag "Wallbox weiterberechnen" gilt nicht) | immer |
 | Vermietung | nur mit gesetztem Flag "Stromverbrauch weiterberechnen" | nur mit gesetztem Flag "Wallbox weiterberechnen" | nie |
@@ -148,14 +152,14 @@ Keine Abweichung von ADR 0001, der nur einen jahresweisen Stammdaten-Block für 
 _Avoid_: umlegbar, abrechenbar (das ist die Vollständigkeit eines Abrechnungsjahres)
 
 **Stromverbrauch weiterberechnen**:
-Ein haus-weites Ja/Nein-Flag in den Stammdaten, ob der Stromverbrauch einer vermieteten Wohnung (Haushaltsstrom, ohne Wallbox; bei Wohnung 1 der Rest des Netzbezugs, bei Wohnung 2 der Zwischenzähler) in deren Jahresabrechnung weiterberechnet wird.
+Ein haus-weites Ja/Nein-Flag in den Stammdaten, ob der Stromverbrauch einer vermieteten Wohnung (ohne Wallbox; bei Wohnung 1 der Rest des Netzbezugs, bei Wohnung 2 der Zwischenzähler) in deren Jahresabrechnung weiterberechnet wird.
 Das Flag gilt für Wohnung 1 und Wohnung 2 gleich.
 Bei Eigennutzung gilt es nicht, dort steht der Strom immer in der Abrechnung (wie bei der Wallbox).
 Die Tabelle steht unter **Wohnungsstatus**.
-Der Haushaltsstrom ist keine Betriebskostenart, deshalb ein eigenes Flag statt des Umlagefähig-Flags einer Kostenposition.
+Der Stromverbrauch ist keine Betriebskostenart, deshalb ein eigenes Flag statt des Umlagefähig-Flags einer Kostenposition.
 
 **Wallbox weiterberechnen**:
-Ein haus-weites Ja/Nein-Flag in den Stammdaten (Startwert Ja, auch für bestehende Datenbanken), ob der Wallbox-Anteil einer vermieteten Wohnung in deren Jahresabrechnung steht. Unabhängig von "Stromverbrauch weiterberechnen" (Haushaltsstrom). Bei Eigennutzung gilt das Flag nicht, dort steht die Wallbox immer in der Abrechnung. Die Tabelle steht unter **Wohnungsstatus**.
+Ein haus-weites Ja/Nein-Flag in den Stammdaten (Startwert Ja, auch für bestehende Datenbanken), ob der Wallbox-Anteil einer vermieteten Wohnung in deren Jahresabrechnung steht. Unabhängig von "Stromverbrauch weiterberechnen". Bei Eigennutzung gilt das Flag nicht, dort steht die Wallbox immer in der Abrechnung. Die Tabelle steht unter **Wohnungsstatus**.
 
 **Fixkosteneingabe**:
 Eine monatliche Erfassung, analog zur Ablesung, aber **genau eine je Monat** (beim Anlegen, beim Ändern des Monats und beim CSV-Import erzwungen, per UNIQUE-Index abgesichert; anders als bei Ablesungen gibt es keine untermonatigen Zusatzeingaben): Personenzahl je Wohnung (Dezimalzahl mit höchstens 2 Nachkommastellen, z. B. 1,25; 0 erlaubt; die einzige Personenzahl der App), die vier Preise (Strom, Frischwasser, Abwasser, Einspeisung; Pflicht im Formular, 0 erlaubt) und die zwei Häkchen "Wallboxen vollständig Wohnung 1" und "PV-Gutschrift Wohnung 1" (Gruppe "Preise und Einstellungen des Monats"), für Wohnungen mit Status Vermietung Nebenkostenabschlag und **Miete / Mieteinnahmen** und für jede Kostenposition ihre Berechnungslogik, ihr Typ und ihr Wert.

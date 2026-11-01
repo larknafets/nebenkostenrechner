@@ -234,8 +234,8 @@ func TestAblesungDetail_WallboxKostenJeWohnung(t *testing.T) {
 		body := detailBody(t, db, wallboxAblesungen(t, db, &null, &zwoelf, false))
 		// 12 kWh * 0,22 = 2,64 EUR, Rest 4,40 - 2,64 = 1,76 EUR.
 		for _, want := range []string{
-			"Kosten Wallbox Wohnung 1</strong></td><td><strong>1,76&nbsp;EUR",
-			"Kosten Wallbox Wohnung 2</strong></td><td><strong>2,64&nbsp;EUR",
+			"davon Wohnung 1</td><td>8,00&nbsp;kWh</td><td>1,76&nbsp;EUR",
+			"davon Wohnung 2</td><td>12,00&nbsp;kWh</td><td>2,64&nbsp;EUR",
 		} {
 			if !strings.Contains(body, want) {
 				t.Errorf("Ablesungsseite ohne %q", want)
@@ -250,8 +250,8 @@ func TestAblesungDetail_WallboxKostenJeWohnung(t *testing.T) {
 		db := openTestDB(t)
 		body := detailBody(t, db, wallboxAblesungen(t, db, nil, &zwoelf, true))
 		for _, want := range []string{
-			"Kosten Wallbox Wohnung 1</strong></td><td><strong>4,40&nbsp;EUR",
-			"Kosten Wallbox Wohnung 2</strong></td><td><strong>0,00&nbsp;EUR",
+			"davon Wohnung 1</td><td>20,00&nbsp;kWh</td><td>4,40&nbsp;EUR",
+			"davon Wohnung 2</td><td>0,00&nbsp;kWh</td><td>0,00&nbsp;EUR",
 		} {
 			if !strings.Contains(body, want) {
 				t.Errorf("Ablesungsseite ohne %q", want)
@@ -262,10 +262,10 @@ func TestAblesungDetail_WallboxKostenJeWohnung(t *testing.T) {
 	t.Run("ohne Einzelzaehler und Schalter informativ wie heute", func(t *testing.T) {
 		db := openTestDB(t)
 		body := detailBody(t, db, wallboxAblesungen(t, db, nil, nil, false))
-		if !strings.Contains(body, "Kosten Wallbox</strong></td><td><strong>4,40&nbsp;EUR") {
+		if !strings.Contains(body, "Wallboxen</td><td>20,00&nbsp;kWh</td><td><strong>4,40&nbsp;EUR") {
 			t.Error("Kosten Wallbox des Zwischenzaehlers fehlen")
 		}
-		if strings.Contains(body, "Kosten Wallbox Wohnung") || !strings.Contains(body, "keiner Wohnung zugeordnet") {
+		if strings.Contains(body, "davon Wohnung") || !strings.Contains(body, "keiner Wohnung zugeordnet") {
 			t.Error("ohne Zuordnung soll nur der Hinweis 'keiner Wohnung zugeordnet' erscheinen")
 		}
 	})
@@ -288,8 +288,7 @@ func TestAblesungDetail_StromWohnung1(t *testing.T) {
 	body := detailBody(t, db, id)
 	// Rest 100 - 20 - 30 - 10 = 40 kWh, 40 * 0,22 = 8,80 EUR.
 	for _, want := range []string{
-		"Wohnung 1 Anteil</td><td>40,00&nbsp;kWh",
-		"Kosten Wohnung 1</strong></td><td><strong>8,80&nbsp;EUR",
+		"<td>Wohnung 1</td><td>40,00&nbsp;kWh</td><td><strong>8,80&nbsp;EUR",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("Ablesungsseite ohne %q", want)
