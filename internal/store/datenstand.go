@@ -6,14 +6,14 @@ import (
 )
 
 // Datenstand is everything the cost calculations, the Prüfung and the
-// Dashboard read, loaded once: the Ablesungen and Fixkosten-Eingaben with
+// Dashboard read, loaded once: the Ablesungen and Fixkosteneingaben with
 // their details, and the Stammdaten they depend on. Plain data without a
 // database handle, so a test can build one by hand. calc.KostenAus and
 // calc.FixkostenreiheAus compute from it, the Abrechnung takes it as is.
 type Datenstand struct {
 	// Periods are the Ablesungen, oldest first by reading date, then id.
 	Periods []*LatestPeriod
-	// Eingaben are the Fixkosten-Eingaben, oldest first.
+	// Eingaben are the Fixkosteneingaben, oldest first.
 	Eingaben         []*FixkostenEingabeDetails
 	Apartments       []Apartment
 	Haus             Haus

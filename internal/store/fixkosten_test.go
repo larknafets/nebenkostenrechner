@@ -221,7 +221,7 @@ func countEingaben(t *testing.T, db *sql.DB, monat string) int {
 }
 
 // TestFixkostenEingabe_EineJeMonat verifies Issue #161: a month has exactly
-// one Fixkosten-Eingabe - creating a second one is rejected, nothing is
+// one Fixkosteneingabe - creating a second one is rejected, nothing is
 // written.
 func TestFixkostenEingabe_EineJeMonat(t *testing.T) {
 	db := openTestDB(t)

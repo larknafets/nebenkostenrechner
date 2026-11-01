@@ -45,7 +45,7 @@ type fixkostenKosten struct {
 	Monat    string
 	Erg      *calc.FixkostenErgebnis
 	Abschlag map[int64]float64 // apartment id -> utility advance payment value, nil/missing entry = no value recorded
-	Personen map[int64]float64 // apartment id -> occupant count of the Fixkosten-Eingabe (one per Monat)
+	Personen map[int64]float64 // apartment id -> occupant count of the Fixkosteneingabe (one per Monat)
 }
 
 // alleFixkostenKosten returns every computable fixed-costs entry's result,

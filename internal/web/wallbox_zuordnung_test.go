@@ -76,7 +76,7 @@ func hinweisText(t *testing.T, body string) string {
 
 // TestWizard_WallboxHinweisMitStand: the switch is no field of the form any
 // more (#359), the note below the Wallbox-Einzelzähler shows its state in the
-// Fixkosten-Eingabe of the Abrechnungsmonat, or that the Fixkosten are missing.
+// Fixkosteneingabe of the Abrechnungsmonat, or that the Fixkosten are missing.
 func TestWizard_WallboxHinweisMitStand(t *testing.T) {
 	t.Run("Haekchen gesetzt", func(t *testing.T) {
 		db := openTestDB(t)
@@ -167,9 +167,9 @@ func TestAblesung_OhnePreiseAnlegenAendernVervollstaendigen(t *testing.T) {
 	if err != nil || latest == nil {
 		t.Fatalf("GetLatestPeriod = %v, %v", latest, err)
 	}
-	// The posted values reach no Fixkosten-Eingabe.
+	// The posted values reach no Fixkosteneingabe.
 	if eingaben, err := store.AllFixkostenEingabenDetails(db); err != nil || len(eingaben) != 0 {
-		t.Errorf("Fixkosten-Eingaben nach dem Anlegen = %v, %v, want keine", eingaben, err)
+		t.Errorf("Fixkosteneingaben nach dem Anlegen = %v, %v, want keine", eingaben, err)
 	}
 
 	// Change: new date and a meter reading, nothing else posted.

@@ -50,7 +50,7 @@
       <div class="field"><label>{{.Label}} (kWh)</label><input type="number" step="any" name="{{$key}}" data-optional {{if hasReading $.EditReadings $key}}value="{{inputNumber (index $.EditReadings $key)}}"{{end}} {{if hasReading $.PreviousReadings $key}}data-prev="{{index $.PreviousReadings $key}}"{{end}} {{if hasReading $.OutlierAvg $key}}data-outlier-avg="{{index $.OutlierAvg $key}}"{{end}}><div class="warning" id="warn-{{$key}}"></div></div>
       {{end}}
     </div>
-    {{/* The switch "Wallboxen vollständig Wohnung 1" is part of the Fixkosten-Eingabe of the month (#359), the wizard only shows its state. */}}
+    {{/* The switch "Wallboxen vollständig Wohnung 1" is part of the Fixkosteneingabe of the month (#359), the wizard only shows its state. */}}
     <div class="field" style="margin-left:1.5rem"><div class="muted" id="wallbox-hinweis" data-hinweise="{{.WallboxHinweisJSON}}">{{.WallboxHinweis}}</div></div>
   </div>
 
@@ -151,7 +151,7 @@
   const monatInput = document.getElementById('monat');
   let monatTouched = false;
 
-  // Wallbox note: the state of the switch in the Fixkosten-Eingabe of the chosen
+  // Wallbox note: the state of the switch in the Fixkosteneingabe of the chosen
   // month (#359), updated whenever the month changes.
   const wallboxHinweis = document.getElementById('wallbox-hinweis');
   function zeigeWallboxHinweis() {

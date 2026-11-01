@@ -402,9 +402,9 @@ func handleCreateFixkosten() http.HandlerFunc {
 }
 
 // monatBelegtMessage is the user-facing text when a month already has its
-// one Fixkosten-Eingabe (Issue #161).
+// one Fixkosteneingabe (Issue #161).
 func monatBelegtMessage(monat string) string {
-	return "Für " + store.MonatLabel(monat) + " gibt es bereits eine Fixkosten-Eingabe. Je Monat ist nur eine erlaubt, bitte die bestehende Eingabe korrigieren."
+	return "Für " + store.MonatLabel(monat) + " gibt es bereits eine Fixkosteneingabe. Je Monat ist nur eine erlaubt, bitte die bestehende Eingabe korrigieren."
 }
 
 func handleUpdateFixkosten() http.HandlerFunc {
@@ -505,7 +505,7 @@ type fixkostenListItem struct {
 	SummeW2 float64
 }
 
-// handleFixkostenListe lists every recorded Fixkosten-Eingabe. ImportedCount
+// handleFixkostenListe lists every recorded Fixkosteneingabe. ImportedCount
 // surfaces the CSV import's result (Issue #133) - passed via query param
 // since the app has no session/flash mechanism, same convention as
 // handleAblesungenListe.

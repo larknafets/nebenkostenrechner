@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// JahrFromMonat parses a Fixkosten-Eingabe's Monat ("YYYY-MM-01") into its
+// JahrFromMonat parses a Fixkosteneingabe's Monat ("YYYY-MM-01") into its
 // calendar year - shared by calc.Fixkosten and the web layer so both read
 // the same "YYYY-MM-01" convention through one place.
 func JahrFromMonat(monat string) (int, error) {
@@ -42,7 +42,7 @@ const (
 
 // Kostenposition is one of the fixed cost positions (Issue #60) - id/key/
 // label only, app-fixed structure like meters. Logik/Typ/Wert are per-
-// Fixkosten-Eingabe data, see FixkostenPositionWert.
+// Fixkosteneingabe data, see FixkostenPositionWert.
 type Kostenposition struct {
 	ID    int64
 	Key   string
@@ -77,7 +77,7 @@ func Kostenpositionen(db *sql.DB) ([]Kostenposition, error) {
 var ErrKostenpositionNotFound = errors.New("kostenposition not found")
 
 // MoveKostenposition moves one Kostenposition a step up (earlier) or down
-// (later) in the display order, which Fixkosten-Eingabe, Stammdaten and
+// (later) in the display order, which Fixkosteneingabe, Stammdaten and
 // Abrechnung share. At the first or last place it changes nothing. The whole
 // order is renumbered, so it stays gap- and tie-free.
 func MoveKostenposition(db *sql.DB, id int64, up bool) error {
@@ -127,7 +127,7 @@ func MoveKostenposition(db *sql.DB, id int64, up bool) error {
 }
 
 // FixkostenPositionWert is one Kostenposition's Logik/Typ/Wert for a single
-// Fixkosten-Eingabe (Issue #105/#106/#107) - lives per Eingabe now, each
+// Fixkosteneingabe (Issue #105/#106/#107) - lives per Eingabe now, each
 // Eingabe independent, instead of yearly in kostenpositionen_jahre. For
 // Typ "jaehrlich" Wert is an annual total amount (divided by 12 for the
 // monthly value, see calc.Fixkosten), for "monatlich" a direct monthly
@@ -138,7 +138,7 @@ type FixkostenPositionWert struct {
 	Wert  float64
 }
 
-// FixkostenInput is one monthly Fixkosten-Eingabe, ready to be persisted.
+// FixkostenInput is one monthly Fixkosteneingabe, ready to be persisted.
 type FixkostenInput struct {
 	Monat    string                          // YYYY-MM-01, same convention as PeriodInput.ReadingDate
 	Personen map[int64]float64               // apartment id -> Personenzahl - own to Fixkosten (Issue #60 Story 8)
@@ -161,7 +161,7 @@ type FixkostenInput struct {
 	PVGutschriftW1    bool
 }
 
-// Validate checks the field rules every Fixkosten-Eingabe must meet, without a
+// Validate checks the field rules every Fixkosteneingabe must meet, without a
 // database: Monat, then Logik and Typ per Kostenposition (ascending id), then
 // the Personenzahl per Wohnung (ascending id), then the four prices (Strom,
 // Frischwasser, Abwasser, Einspeisung): finite and not negative, empty (nil)
@@ -218,7 +218,7 @@ func (e *FixkostenImportError) Unwrap() error { return e.Err }
 var ErrFixkostenEingabeNotFound = errors.New("fixkosten eingabe not found")
 
 // ErrFixkostenMonatBelegt is returned when a write would give one month a
-// second Fixkosten-Eingabe (Issue #161): there is exactly one per month, the
+// second Fixkosteneingabe (Issue #161): there is exactly one per month, the
 // Jahresabrechnung and the Dashboard both rely on it.
 var ErrFixkostenMonatBelegt = errors.New("fixkosten eingabe fuer diesen monat existiert bereits")
 
@@ -234,7 +234,7 @@ func monatUniqueErr(err error, monat string) error {
 	return err
 }
 
-// monatBelegtTx reports whether another Fixkosten-Eingabe than exceptID
+// monatBelegtTx reports whether another Fixkosteneingabe than exceptID
 // already owns monat. exceptID 0 means "any" (a new Eingabe). The UNIQUE
 // index on monat is the backstop, this check gives the readable error.
 func monatBelegtTx(tx *sql.Tx, monat string, exceptID int64) (bool, error) {
@@ -247,7 +247,7 @@ func monatBelegtTx(tx *sql.Tx, monat string, exceptID int64) (bool, error) {
 	return n > 0, nil
 }
 
-// insertFixkostenTx inserts one Fixkosten-Eingabe with its Werte/Personen.
+// insertFixkostenTx inserts one Fixkosteneingabe with its Werte/Personen.
 // Shared by CreateFixkostenEingabe and (a future bulk-insert, should one
 // ever be needed) so the write shape stays in one place.
 func insertFixkostenTx(tx *sql.Tx, in FixkostenInput) (eingabeID int64, err error) {
@@ -311,7 +311,7 @@ func insertFixkostenTx(tx *sql.Tx, in FixkostenInput) (eingabeID int64, err erro
 	return eingabeID, nil
 }
 
-// CreateFixkostenEingabe inserts a new Fixkosten-Eingabe in its own
+// CreateFixkostenEingabe inserts a new Fixkosteneingabe in its own
 // transaction.
 func CreateFixkostenEingabe(db *sql.DB, in FixkostenInput) (eingabeID int64, err error) {
 	tx, err := db.Begin()
@@ -331,7 +331,7 @@ func CreateFixkostenEingabe(db *sql.DB, in FixkostenInput) (eingabeID int64, err
 	return eingabeID, nil
 }
 
-// UpdateFixkostenEingabe overwrites an existing Fixkosten-Eingabe's Monat/
+// UpdateFixkostenEingabe overwrites an existing Fixkosteneingabe's Monat/
 // Werte/Personen in place - no new row, no history (same "korrigieren"
 // convention as UpdatePeriod). Unlike Ablesungen, Fixkosten-Monatswerte
 // don't depend on a chronological Vorperiode (no Verbrauch/Diff involved),
@@ -420,7 +420,7 @@ func UpdateFixkostenEingabe(db *sql.DB, eingabeID int64, in FixkostenInput) erro
 	return tx.Commit()
 }
 
-// DeleteFixkostenEingabe removes a Fixkosten-Eingabe together with its
+// DeleteFixkostenEingabe removes a Fixkosteneingabe together with its
 // Werte/Personen in one transaction.
 func DeleteFixkostenEingabe(db *sql.DB, eingabeID int64) error {
 	tx, err := db.Begin()
@@ -455,14 +455,14 @@ func DeleteFixkostenEingabe(db *sql.DB, eingabeID int64) error {
 	return tx.Commit()
 }
 
-// FixkostenEingabeSummary identifies one Fixkosten-Eingabe without its
+// FixkostenEingabeSummary identifies one Fixkosteneingabe without its
 // Werte/Personen, for the /fixkosten Übersicht.
 type FixkostenEingabeSummary struct {
 	ID    int64
 	Monat string
 }
 
-// AllFixkostenEingaben returns every Fixkosten-Eingabe (newest first),
+// AllFixkostenEingaben returns every Fixkosteneingabe (newest first),
 // without Werte/Personen.
 func AllFixkostenEingaben(db *sql.DB) ([]FixkostenEingabeSummary, error) {
 	rows, err := db.Query(`SELECT id, monat FROM fixkosten_eingaben ORDER BY monat DESC, id DESC`)
@@ -482,7 +482,7 @@ func AllFixkostenEingaben(db *sql.DB) ([]FixkostenEingabeSummary, error) {
 	return out, rows.Err()
 }
 
-// FixkostenEingabeDetails is one Fixkosten-Eingabe together with its
+// FixkostenEingabeDetails is one Fixkosteneingabe together with its
 // Werte/Personen.
 type FixkostenEingabeDetails struct {
 	ID       int64
@@ -513,7 +513,7 @@ func (f *FixkostenEingabeDetails) PreiseVollstaendig() bool {
 	return true
 }
 
-// GetFixkostenEingabeDetails returns the given Fixkosten-Eingabe with its
+// GetFixkostenEingabeDetails returns the given Fixkosteneingabe with its
 // Werte/Personen, or nil if it doesn't exist. Reuses AllFixkostenEingabenDetails'
 // single hydration path rather than its own queries - same fix as
 // GetPeriodDetails/AllPeriodDetails (periods.go), data volume here is
@@ -531,7 +531,7 @@ func GetFixkostenEingabeDetails(db *sql.DB, eingabeID int64) (*FixkostenEingabeD
 	return nil, nil
 }
 
-// AllFixkostenEingabenDetails returns every Fixkosten-Eingabe with its full
+// AllFixkostenEingabenDetails returns every Fixkosteneingabe with its full
 // Werte/Personen/Abschlag, oldest first - the CSV export's data source
 // (Issue #132). 4 batched queries total (eingaben, werte, personen,
 // abschlaege), not one per Eingabe, same shape as AllPeriodDetails.
@@ -640,7 +640,7 @@ func AllFixkostenEingabenDetails(db *sql.DB) ([]*FixkostenEingabeDetails, error)
 	return out, nil
 }
 
-// ImportFixkostenEingaben bulk-inserts every given Fixkosten-Eingabe in one
+// ImportFixkostenEingaben bulk-inserts every given Fixkosteneingabe in one
 // transaction (Issue #133) - bootstrap-only CSV import, same all-or-nothing
 // shape as ImportPeriods.
 func ImportFixkostenEingaben(db *sql.DB, inputs []FixkostenInput) (ids []int64, err error) {

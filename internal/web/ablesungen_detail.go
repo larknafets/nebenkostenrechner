@@ -183,7 +183,7 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			// Abrechnungsmonat lacks its Fixkosten (#366).
 			FixkostenBanner *fixkostenHinweis
 
-			// Fix reads the Fixkosten-Eingabe of the month, FixkostenHinweis
+			// Fix reads the Fixkosteneingabe of the month, FixkostenHinweis
 			// is set when it is missing (#359), instead of the Euro blocks.
 			Fix              ablesungFixkosten
 			FixkostenHinweis *fixkostenHinweis
@@ -226,7 +226,7 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 }
 
 // ablesungFixkosten is what the Ablesung detail view reads from the
-// Fixkosten-Eingabe of the Abrechnungsmonat: prices and the two switches
+// Fixkosteneingabe of the Abrechnungsmonat: prices and the two switches
 // (#359). Vorhanden is false when the month has no Eingabe.
 type ablesungFixkosten struct {
 	Vorhanden         bool
@@ -236,7 +236,7 @@ type ablesungFixkosten struct {
 	PVGutschriftW1    bool
 }
 
-// fixkostenAnsicht finds the Fixkosten-Eingabe of the period's Abrechnungsmonat
+// fixkostenAnsicht finds the Fixkosteneingabe of the period's Abrechnungsmonat
 // (the last one if there are several, like the calculation does).
 func fixkostenAnsicht(ds *store.Datenstand, period *store.LatestPeriod) ablesungFixkosten {
 	var eingabe *store.FixkostenEingabeDetails

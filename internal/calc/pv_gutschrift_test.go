@@ -56,7 +56,7 @@ func TestPVGutschrift_SchalterAusBleibtInformativ(t *testing.T) {
 
 func TestPVGutschrift_AblesungenImMonatTeilenDenSchalter(t *testing.T) {
 	// Two Ablesungen in the same Abrechnungsmonat: the switch belongs to the
-	// Fixkosten-Eingabe of the month, so both credit their Ertrag (#359).
+	// Fixkosteneingabe of the month, so both credit their Ertrag (#359).
 	p1 := vollePeriode(1, "2026-10-01", nil)
 	p2 := vollePeriode(2, "2026-11-01", map[string]float64{"strom_gesamt": 100, "strom_einspeisung": 50})
 	p3 := vollePeriode(3, "2026-11-01", map[string]float64{"strom_gesamt": 200, "strom_einspeisung": 100})

@@ -52,7 +52,7 @@ func dropPeriodsAblesungsFelder(db *sql.DB) error {
 }
 
 // dropPeriodOccupancyTable removes period_occupancy (#368, destructive): the
-// Personenzahl belongs to the Fixkosten-Eingabe (fixkosten_personen) since
+// Personenzahl belongs to the Fixkosteneingabe (fixkosten_personen) since
 // #359. IF EXISTS makes the step idempotent.
 func dropPeriodOccupancyTable(db *sql.DB) error {
 	_, err := db.Exec(`DROP TABLE IF EXISTS period_occupancy`)
@@ -62,7 +62,7 @@ func dropPeriodOccupancyTable(db *sql.DB) error {
 // dropKostenpositionenJahreTable removes kostenpositionen_jahre (Issue
 // #105/#109): its data has already migrated into fixkosten_werte's
 // logik/typ columns (see ensureFixkostenWerteLogikTypColumns, which always
-// runs first) - Logik/Typ/Wert live per Fixkosten-Eingabe now, not
+// runs first) - Logik/Typ/Wert live per Fixkosteneingabe now, not
 // jahresweise. IF EXISTS makes this idempotent, same as every other
 // migration here.
 func dropKostenpositionenJahreTable(db *sql.DB) error {
@@ -392,7 +392,7 @@ func migrateHeizungGewichtungToHaus(db *sql.DB) error {
 }
 
 // ensureFixkostenEingabenMonatUnique makes sure every month has at most one
-// Fixkosten-Eingabe (Issue #161) by adding a UNIQUE index on
+// Fixkosteneingabe (Issue #161) by adding a UNIQUE index on
 // fixkosten_eingaben.monat. Duplicates from before this rule are never
 // resolved on their own - which of two entries is right is the user's call.
 // The app still starts, so they can be fixed on /fixkosten (delete one or
@@ -423,7 +423,7 @@ func ensureFixkostenEingabenMonatUnique(db *sql.DB) error {
 	rows.Close()
 
 	if len(doppelt) > 0 {
-		log.Printf("WARNUNG: mehrere Fixkosten-Eingaben im selben Monat (%s). Je Monat darf es nur eine geben, bitte die doppelten Eingaben unter /fixkosten loeschen oder in einen freien Monat verschieben. Die Jahresabrechnung ist fuer diese Monate gesperrt.", strings.Join(doppelt, ", "))
+		log.Printf("WARNUNG: mehrere Fixkosteneingaben im selben Monat (%s). Je Monat darf es nur eine geben, bitte die doppelten Eingaben unter /fixkosten loeschen oder in einen freien Monat verschieben. Die Jahresabrechnung ist fuer diese Monate gesperrt.", strings.Join(doppelt, ", "))
 		return nil
 	}
 
@@ -601,8 +601,8 @@ func periodsStrompreisNullable(ctx context.Context, conn *sql.Conn) (bool, error
 // ensureFixkostenWerteLogikTypColumns adds the logik/typ columns to an
 // existing fixkosten_werte table that predates them (Issue #106/#105:
 // Logik/Typ/Wert je Kostenposition wandern von den jahresweisen Stammdaten
-// vollständig in die Fixkosten-Eingabe). Backfills every pre-existing
-// Fixkosten-Eingabe's 14 Kostenpositionen from kostenpositionen_jahre in the
+// vollständig in die Fixkosteneingabe). Backfills every pre-existing
+// Fixkosteneingabe's 14 Kostenpositionen from kostenpositionen_jahre in the
 // same call that adds the columns, same convention as
 // ensurePeriodsMonatColumn's reading_date -> monat backfill. A later re-run
 // finds the columns already present and returns before touching any row.
@@ -689,7 +689,7 @@ func latestJaehrlichWertForMigration(db *sql.DB, kostenpositionID int64, maxJahr
 	return wert, true, nil
 }
 
-// backfillFixkostenWerteLogikTyp fills every existing Fixkosten-Eingabe's 14
+// backfillFixkostenWerteLogikTyp fills every existing Fixkosteneingabe's 14
 // Kostenpositionen with the Logik/Typ/Wert that applied to it at its own
 // Monat, read from kostenpositionen_jahre (dropped right after this
 // migration runs, see dropKostenpositionenJahreTable) - exactly the former

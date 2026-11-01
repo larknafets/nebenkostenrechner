@@ -107,7 +107,7 @@ func mieteinnahmen(apartmentID int64, jahr int, eingaben []mieteMonat) float64 {
 
 // buildJahresCard sums the given apartment's consumption and fixed costs
 // over every period/entry whose date falls in jahr, and (Ticket #75)
-// averages the apartment's occupant count over jahr's Fixkosten-Eingaben
+// averages the apartment's occupant count over jahr's Fixkosteneingaben
 // (exactly one per Monat, so each month weighs the same; shown with up to 2
 // decimal places, 0 if the year has no entry yet).
 func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apartmentFlurstueck float64, jahr int, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten) dashboardJahresCard {

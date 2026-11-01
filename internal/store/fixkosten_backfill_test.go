@@ -9,9 +9,9 @@ import (
 )
 
 // fixkosten_backfill_test.go covers the step that copies prices and switches
-// from the Ablesungen of a month into its Fixkosten-Eingabe (#361, spec #359).
+// from the Ablesungen of a month into its Fixkosteneingabe (#361, spec #359).
 
-// eingabeRoh inserts a bare Fixkosten-Eingabe (all prices empty, switches off).
+// eingabeRoh inserts a bare Fixkosteneingabe (all prices empty, switches off).
 func eingabeRoh(t *testing.T, db *sql.DB, monat string) int64 {
 	t.Helper()
 	res, err := db.Exec(`INSERT INTO fixkosten_eingaben (monat) VALUES (?)`, monat)
@@ -139,7 +139,7 @@ func TestBackfillFixkostenEingaben_WiederholungAendertNichtsUndLaesstGefuelltes(
 	erfasst := eingabeRoh(t, db, "2026-08-01")
 	ablesungRoh(t, db, "2026-07-31", "2026-07-01", Float64(0.22), Float64(1.46), nil, nil, true, false)
 	ablesungRoh(t, db, "2026-08-31", "2026-08-01", Float64(0.30), Float64(2.00), Float64(5.00), Float64(0.10), true, true)
-	// August was already entered on the Fixkosten-Eingabe: strompreis stays.
+	// August was already entered on the Fixkosteneingabe: strompreis stays.
 	if _, err := db.Exec(`UPDATE fixkosten_eingaben SET strompreis = 0.11 WHERE id = ?`, erfasst); err != nil {
 		t.Fatal(err)
 	}

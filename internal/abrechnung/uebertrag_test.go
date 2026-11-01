@@ -17,7 +17,7 @@ const (
 )
 
 // uebertragDaten builds the BerechnungsDaten by hand: complete Ablesungen from
-// ablesungVon to Dezember 2027 and one Fixkosten-Eingabe per month from
+// ablesungVon to Dezember 2027 and one Fixkosteneingabe per month from
 // eingabeVon to Dezember 2027, except the months in ohneAblesung/ohneEingabe.
 func uebertragDaten(ablesungVon, eingabeVon time.Time, ohneAblesung, ohneEingabe map[string]bool) BerechnungsDaten {
 	apartments, haus := stammdatenOK()
@@ -63,7 +63,7 @@ func uebertragDaten(ablesungVon, eingabeVon time.Time, ohneAblesung, ohneEingabe
 }
 
 // verbrauchskostenVon computes the Verbrauchskosten of d from its Ablesungen
-// and the Fixkosten-Eingaben of its Fixkostenreihe, which carry Personenzahl,
+// and the Fixkosteneingaben of its Fixkostenreihe, which carry Personenzahl,
 // prices and switches (#359). A test that changes one of them rebuilds Kosten
 // with it.
 func verbrauchskostenVon(d BerechnungsDaten) *calc.Verbrauchskosten {
@@ -135,9 +135,9 @@ func TestBerechne_Uebertrag(t *testing.T) {
 			want: Uebertrag{},
 		},
 		{
-			name:        "Fixkosten-Eingabe fehlt im Vorjahr",
+			name:        "Fixkosteneingabe fehlt im Vorjahr",
 			ablesungVon: oktober2026, ohneEingabe: map[string]bool{"2026-12-01": true}, status: store.StatusEigennutzung,
-			want: Uebertrag{Hinweis: "Übertrag nicht berechenbar: Fixkosten-Eingabe fehlt: Dezember 2026"},
+			want: Uebertrag{Hinweis: "Übertrag nicht berechenbar: Fixkosteneingabe fehlt: Dezember 2026"},
 		},
 		{
 			name:        "frueheste Mangel gewinnt",
@@ -184,7 +184,7 @@ func TestBerechne_Uebertrag(t *testing.T) {
 	}
 }
 
-// An incomplete Fixkosten-Eingabe before the period stops the Übertrag.
+// An incomplete Fixkosteneingabe before the period stops the Übertrag.
 func TestBerechne_UebertragFixkostenUnvollstaendig(t *testing.T) {
 	d := uebertragDaten(monat(2026, time.October), monat(2026, time.November), nil, nil)
 	ohnePreis(d.Pruef, "2026-12-01")
@@ -193,7 +193,7 @@ func TestBerechne_UebertragFixkostenUnvollstaendig(t *testing.T) {
 	if err != nil || erg.Abrechnung == nil {
 		t.Fatalf("Berechne: err %v, Maengel %v", err, maengelTexte(erg.Pruefung))
 	}
-	if got, want := erg.Abrechnung.Monatsverlauf.Uebertrag.Hinweis, "Übertrag nicht berechenbar: Fixkosten-Eingabe ist unvollständig: Dezember 2026"; got != want {
+	if got, want := erg.Abrechnung.Monatsverlauf.Uebertrag.Hinweis, "Übertrag nicht berechenbar: Fixkosteneingabe ist unvollständig: Dezember 2026"; got != want {
 		t.Errorf("Hinweis = %q, want %q", got, want)
 	}
 }

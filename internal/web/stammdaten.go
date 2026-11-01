@@ -341,7 +341,7 @@ func handleUpdateStammdaten() http.HandlerFunc {
 }
 
 // handleMoveKostenposition moves one Kostenposition up or down in the shared
-// display order (Fixkosten-Eingabe, Stammdaten, Abrechnung) and goes back to
+// display order (Fixkosteneingabe, Stammdaten, Abrechnung) and goes back to
 // the list on /stammdaten.
 func handleMoveKostenposition() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

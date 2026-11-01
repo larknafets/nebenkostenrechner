@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Switch is one on/off switch (Schalter) of a Fixkosten-Eingabe, e.g.
+// Switch is one on/off switch (Schalter) of a Fixkosteneingabe, e.g.
 // "Wallboxen vollständig Wohnung 1" (#225). Switches is the single place a
 // switch is written down: the fixkosten_eingaben column, its migration,
 // INSERT, UPDATE and scan, the CSV column and the form field name all derive
@@ -41,7 +41,7 @@ func (s Switch) FixkostenInput(in *FixkostenInput) *bool { return s.fixkostenInp
 // FixkostenDetail returns a pointer to the switch's field on f.
 func (s Switch) FixkostenDetail(f *FixkostenEingabeDetails) *bool { return s.fixkostenDetail(f) }
 
-// Switches is the ordered list of all switches of the Fixkosten-Eingabe.
+// Switches is the ordered list of all switches of the Fixkosteneingabe.
 var Switches = []Switch{
 	{
 		Name: "WallboxKomplettW1", Column: "wallbox_komplett_w1", CSVColumn: "wallbox_komplett_wohnung1",
@@ -69,7 +69,7 @@ func switchColumns() []string {
 // ensurePeriodSwitchColumns adds the two switch columns a periods table that
 // predates them lacks, with the old default (off), so the costs and balances
 // of such an Ablesung stay as they were until the backfill has copied them to
-// the Fixkosten-Eingabe. It uses its own list of the two columns, not
+// the Fixkosteneingabe. It uses its own list of the two columns, not
 // Switches: the columns belong to the history of periods, which #368 ends.
 // Runs after the periods rebuild of ensurePeriodsNullablePriceColumns, which
 // would drop the columns again, and only while the Ablesung prices exist (see
@@ -142,7 +142,7 @@ func fixkostenEingabeArgs(in FixkostenInput) []any {
 	return args
 }
 
-// insertFixkostenEingabeSQL is the INSERT of one Fixkosten-Eingabe row.
+// insertFixkostenEingabeSQL is the INSERT of one Fixkosteneingabe row.
 func insertFixkostenEingabeSQL() string {
 	cols := fixkostenEingabeSpalten()
 	return `INSERT INTO fixkosten_eingaben (` + strings.Join(cols, ", ") + `) VALUES (` + placeholders(len(cols)) + `)`

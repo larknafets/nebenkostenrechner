@@ -60,7 +60,7 @@ func parseErfasst(cell string) (v float64, ok bool, err error) {
 	return v, err == nil, err
 }
 
-// handleExportFixkostenCSV streams every Fixkosten-Eingabe as CSV (Issue #132).
+// handleExportFixkostenCSV streams every Fixkosteneingabe as CSV (Issue #132).
 func handleExportFixkostenCSV() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		details, err := store.AllFixkostenEingabenDetails(dbFromContext(r.Context()))
@@ -92,7 +92,7 @@ func formatFixkostenCSVRow(f *store.FixkostenEingabeDetails) []string {
 
 // handleImportFixkostenCSV bootstraps a completely empty Fixkosten history
 // from a CSV in the fixkostenCsvHeader format (Issue #133) - rejected if
-// any Fixkosten-Eingabe already exists, even though the form button is
+// any Fixkosteneingabe already exists, even though the form button is
 // already hidden in that case (defense in depth). A hard error in any row
 // aborts the whole import (all or nothing); unlike the Ablesungen import,
 // there are no plausibility warnings to report back (Issue #133).
@@ -106,9 +106,9 @@ func handleImportFixkostenCSV() http.HandlerFunc {
 				existing, err := store.AllFixkostenEingaben(db)
 				return len(existing) > 0, err
 			},
-			ExistingErrMsg: "Import nur möglich, solange noch keine Fixkosten-Eingabe existiert",
+			ExistingErrMsg: "Import nur möglich, solange noch keine Fixkosteneingabe existiert",
 			ParseRow:       parseImportFixkostenRow,
-			EmptyErrMsg:    "CSV enthält keine Fixkosten-Eingaben",
+			EmptyErrMsg:    "CSV enthält keine Fixkosteneingaben",
 			SortKey:        func(row fixkostenImportRow) string { return row.input.Monat },
 			ValidateRows: func(rows []fixkostenImportRow) error {
 				return validateFixkostenMonateEindeutig(fixkostenInputs(rows))
@@ -158,7 +158,7 @@ func insertFixkostenRows(db *sql.DB, rows []fixkostenImportRow) ([]int64, error)
 }
 
 // validateFixkostenMonateEindeutig rejects a CSV that has more than one row
-// for the same month (Issue #161: one Fixkosten-Eingabe per month).
+// for the same month (Issue #161: one Fixkosteneingabe per month).
 func validateFixkostenMonateEindeutig(rows []store.FixkostenInput) error {
 	seen := make(map[string]bool, len(rows))
 	var doppelt []string
@@ -170,7 +170,7 @@ func validateFixkostenMonateEindeutig(rows []store.FixkostenInput) error {
 		seen[in.Monat] = true
 	}
 	if len(doppelt) > 0 {
-		return fmt.Errorf("CSV: je Monat darf es nur eine Fixkosten-Eingabe geben, mehrfach vorhanden: %s", strings.Join(doppelt, ", "))
+		return fmt.Errorf("CSV: je Monat darf es nur eine Fixkosteneingabe geben, mehrfach vorhanden: %s", strings.Join(doppelt, ", "))
 	}
 	return nil
 }

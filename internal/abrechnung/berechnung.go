@@ -115,7 +115,7 @@ type HeizungMonat struct {
 	WPStromKWh, WaermeW1MWh, WaermeW2MWh, Anteil float64
 }
 
-// PersonenMonat is the occupant count of one month from its Fixkosten-Eingabe.
+// PersonenMonat is the occupant count of one month from its Fixkosteneingabe.
 // A nil map means there is no Eingabe that month (e.g. in the month of the
 // first Ablesung).
 type PersonenMonat struct {
@@ -223,7 +223,7 @@ type BerechnungsDaten struct {
 	Pruef            Daten
 	Kostenpositionen []store.Kostenposition
 	Meters           []store.Meter
-	// Fixkosten are the Fixkosten results of every Fixkosten-Eingabe.
+	// Fixkosten are the Fixkosten results of every Fixkosteneingabe.
 	Fixkosten *calc.Fixkostenreihe
 	// Kosten are the Verbrauchskosten of every Ablesung in Pruef.Periods.
 	Kosten *calc.Verbrauchskosten
@@ -379,7 +379,7 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 
 // monatsfaltung is the monthly fold shared by the Jahresabrechnung and the
 // Übertrag Vorjahre: for a range of Abrechnungsmonate and one apartment, the
-// Fixkosten-Eingabe and its result per month and the consumption cost per
+// Fixkosteneingabe and its result per month and the consumption cost per
 // month. Everything else (cost overview, Monatsverlauf, Übertrag) is a sum
 // over it.
 type monatsfaltung struct {
@@ -387,7 +387,7 @@ type monatsfaltung struct {
 	// first; imBereich is the same as a set.
 	monate    []string
 	imBereich map[string]bool
-	// fixkosten is the Fixkosten-Eingabe and its result per month (a month
+	// fixkosten is the Fixkosteneingabe and its result per month (a month
 	// without an Eingabe is missing).
 	fixkosten map[string]calc.FixkostenMonat
 	// ablesungen are the Ablesungen of the range that have Verbrauchskosten,
@@ -435,7 +435,7 @@ func faltMonate(d BerechnungsDaten, von, bis time.Time, apartmentID int64, s sto
 	return f
 }
 
-// fixkostenJeMonat returns the Fixkosten-Eingabe and its calculated result per
+// fixkostenJeMonat returns the Fixkosteneingabe and its calculated result per
 // Abrechnungsmonat for the given months (a month without an Eingabe is
 // missing from the map).
 func fixkostenJeMonat(reihe *calc.Fixkostenreihe, monate []string) map[string]calc.FixkostenMonat {
@@ -455,7 +455,7 @@ func fixkostenJeMonat(reihe *calc.Fixkostenreihe, monate []string) map[string]ca
 // are not part of it. If a month before the period has a Mangel of the
 // Abrechnungsprüfung the carry-over cannot be calculated and the result says
 // why instead of a wrong number. The month range and the first month needing
-// a Fixkosten-Eingabe follow the same rules as the Zeitraum of the Prüfung
+// a Fixkosteneingabe follow the same rules as the Zeitraum of the Prüfung
 // (Zeitraum.Vormonat, fixkostenBeginn).
 func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment, p store.Wohnungsregeln) Uebertrag {
 	periods := d.Pruef.Periods
@@ -503,7 +503,7 @@ func berechneUebertrag(d BerechnungsDaten, z Zeitraum, apartment store.Apartment
 
 // verlauf builds the Monatsverlauf (Anlage 1), its balance starting at
 // uebertrag, from the same monthly values the cost overview sums, so there is
-// no second cost formula. A month with neither a Fixkosten-Eingabe nor a
+// no second cost formula. A month with neither a Fixkosteneingabe nor a
 // computable Ablesung (the month of the first Ablesung, which has no
 // consumption) has no row. The balance accumulates in calc.Verlauf.
 func (f monatsfaltung) verlauf(uebertrag float64) Monatsverlauf {
@@ -749,7 +749,7 @@ func bezugsgroessen(apartments []store.Apartment) []Bezugsgroesse {
 }
 
 // personenMonate lists the occupant count of every month: the one of the
-// Fixkosten-Eingabe, which decides the Schlüssel "Personen" and the warm water
+// Fixkosteneingabe, which decides the Schlüssel "Personen" and the warm water
 // split.
 func personenMonate(monate []string, fixkosten map[string]calc.FixkostenMonat) []PersonenMonat {
 	out := make([]PersonenMonat, 0, len(monate))

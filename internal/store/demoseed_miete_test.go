@@ -6,7 +6,7 @@ import (
 )
 
 // TestSeedDemoData_Miete: the rented demo apartment (Wohnung 2) gets a rent
-// in every Fixkosten-Eingabe, the owner-occupied one none.
+// in every Fixkosteneingabe, the owner-occupied one none.
 func TestSeedDemoData_Miete(t *testing.T) {
 	db := openTestDB(t)
 	if err := SeedDemoData(db, time.Date(2026, time.March, 15, 0, 0, 0, 0, time.UTC)); err != nil {

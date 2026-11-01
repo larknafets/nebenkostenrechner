@@ -7,12 +7,12 @@ import (
 )
 
 // applySaldo writes the Nebenkostenabschlag-Saldo (utility advance payment
-// balance) into every month of monate that has a Fixkosten-Eingabe, plus its
+// balance) into every month of monate that has a Fixkosteneingabe, plus its
 // AbschlagProzent. monate is sorted newest-first and index-aligned with keys,
 // the Abrechnungsmonat of each. The balance itself is calc.Verlauf over werte
 // (oldest first), the same accumulation the Jahresabrechnung uses. The gate is
 // HatFixkosten, not HatVerbrauch: the Abschlag comes exclusively from a
-// Fixkosten-Eingabe, so a month with only a reading but (still) no entry has
+// Fixkosteneingabe, so a month with only a reading but (still) no entry has
 // no recorded advance-payment value and is skipped like a month with no data,
 // instead of being computed with Abschlag 0 (#94: "no data" instead of an
 // implicit jump).

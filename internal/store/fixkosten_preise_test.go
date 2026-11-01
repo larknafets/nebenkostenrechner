@@ -11,13 +11,13 @@ import (
 )
 
 // fixkosten_preise_test.go covers the four prices and two switches of the
-// Fixkosten-Eingabe (#360, spec #359): persisted, overwritten, validated,
+// Fixkosteneingabe (#360, spec #359): persisted, overwritten, validated,
 // present in the schema of a fresh and of a migrated database, and the query
 // for the Ablesungen an Eingabe affects.
 
-// seedFixkostenInput creates a Fixkosten-Eingabe for monat with the standard
+// seedFixkostenInput creates a Fixkosteneingabe for monat with the standard
 // prices and both switches on, and returns its id. It writes only the
-// Fixkosten-Eingabe side: the calculation still reads the Ablesung, so no
+// Fixkosteneingabe side: the calculation still reads the Ablesung, so no
 // existing expectation moves (the next ticket switches the reading over).
 func seedFixkostenInput(t *testing.T, db *sql.DB, monat string) int64 {
 	t.Helper()
@@ -29,7 +29,7 @@ func seedFixkostenInput(t *testing.T, db *sql.DB, monat string) int64 {
 	return id
 }
 
-// fixkostenInputMitPreisen is a valid Fixkosten-Eingabe with the standard
+// fixkostenInputMitPreisen is a valid Fixkosteneingabe with the standard
 // prices of completePeriodInput and both switches on.
 func fixkostenInputMitPreisen(monat string) FixkostenInput {
 	in := FixkostenInput{

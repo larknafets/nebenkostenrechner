@@ -15,7 +15,7 @@ type MonatsKosten struct {
 	Kosten Kosten
 }
 
-// MonatsFixkosten is the Fixkosten-Eingabe of an Abrechnungsmonat: its result
+// MonatsFixkosten is the Fixkosteneingabe of an Abrechnungsmonat: its result
 // and the Nebenkostenabschlag per apartment id (a missing entry is no value
 // recorded, counts as 0).
 type MonatsFixkosten struct {
@@ -47,7 +47,7 @@ type Monatswert struct {
 	// without a computable Ablesung.
 	Verbrauch    float64
 	HatVerbrauch bool
-	// Fixkosten and Abschlag come from the month's Fixkosten-Eingabe,
+	// Fixkosten and Abschlag come from the month's Fixkosteneingabe,
 	// HatFixkosten is false for a month without one.
 	Fixkosten, Abschlag float64
 	HatFixkosten        bool
@@ -55,9 +55,9 @@ type Monatswert struct {
 	Gutschrift float64
 }
 
-// Monatswerte folds the Ablesungen and Fixkosten-Eingaben into one value per
+// Monatswerte folds the Ablesungen and Fixkosteneingaben into one value per
 // Abrechnungsmonat for apartmentID, oldest month first. A month with neither
-// has no value. If a month has several Fixkosten-Eingaben the first one given
+// has no value. If a month has several Fixkosteneingaben the first one given
 // counts.
 func Monatswerte(apartmentID int64, kosten []MonatsKosten, fixkosten []MonatsFixkosten, p Posten) []Monatswert {
 	byMonat := map[string]*Monatswert{}

@@ -4,11 +4,11 @@
 
 {{if not .HasAnyData}}
 {{if .Vermieter}}
-<p class="muted">Noch keine Ablesung oder Fixkosten-Eingabe erfasst. <a href="{{.Base}}/ablesungen/neu">Ablesung erfassen</a> oder <a href="{{.Base}}/fixkosten/neu">Fixkosten-Eingabe erfassen</a>.</p>
+<p class="muted">Noch keine Ablesung oder Fixkosteneingabe erfasst. <a href="{{.Base}}/ablesungen/neu">Ablesung erfassen</a> oder <a href="{{.Base}}/fixkosten/neu">Fixkosteneingabe erfassen</a>.</p>
 {{else if .KannAblesungAnlegen}}
-<p class="muted">Noch keine Ablesung oder Fixkosten-Eingabe erfasst. <a href="{{.Base}}/ablesungen/neu">Ablesung erfassen</a>.</p>
+<p class="muted">Noch keine Ablesung oder Fixkosteneingabe erfasst. <a href="{{.Base}}/ablesungen/neu">Ablesung erfassen</a>.</p>
 {{else}}
-<p class="muted">Noch keine Ablesung oder Fixkosten-Eingabe erfasst.</p>
+<p class="muted">Noch keine Ablesung oder Fixkosteneingabe erfasst.</p>
 {{end}}
 {{else}}
 {{with .FixkostenHinweis}}<div class="dashboard-hinweis">

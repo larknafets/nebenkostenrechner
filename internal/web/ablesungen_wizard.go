@@ -47,7 +47,7 @@ type wizardData struct {
 	EinzelzaehlerFelder []store.Meter
 
 	// WallboxHinweis is the note below the Wallbox-Einzelzähler: the state of
-	// "Wallboxen vollständig Wohnung 1" in the Fixkosten-Eingabe of the
+	// "Wallboxen vollständig Wohnung 1" in the Fixkosteneingabe of the
 	// Abrechnungsmonat (#359), or that the Fixkosten are missing. The switch
 	// is no field of the Ablesung. WallboxHinweisJSON lets the script update
 	// the note when the month changes.
@@ -153,7 +153,7 @@ func handleWizardForm(z *Zugang) http.HandlerFunc {
 }
 
 // setzeWallboxHinweis fills the Wallbox note for monat ("YYYY-MM") from the
-// Fixkosten-Eingaben.
+// Fixkosteneingaben.
 func (d *wizardData) setzeWallboxHinweis(db *sql.DB, monat string) error {
 	eingaben, err := store.AllFixkostenEingabenDetails(db)
 	if err != nil {

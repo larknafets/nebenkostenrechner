@@ -10,7 +10,7 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// Tests for #362: form, detail and CSV of the Fixkosten-Eingabe carry the four
+// Tests for #362: form, detail and CSV of the Fixkosteneingabe carry the four
 // prices and the two switches of the month.
 
 var preisFelder = []string{"strompreis", "frischwasser_preis", "abwasser_preis", "einspeisung_preis"}

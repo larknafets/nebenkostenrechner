@@ -17,7 +17,7 @@ type dashboardMonat struct {
 	Jahr      int
 	IsCurrent bool
 
-	// FixkostenFehlen: the month has an Ablesung but no Fixkosten-Eingabe (#364).
+	// FixkostenFehlen: the month has an Ablesung but no Fixkosteneingabe (#364).
 	// It gets its own row without bars and amounts.
 	FixkostenFehlen bool
 	// VerbrauchOffen: the Eingabe of the month lacks a price, so the Ablesung is

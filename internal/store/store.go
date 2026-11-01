@@ -113,7 +113,7 @@ func apartmentID(id int64) *int64 { return &id }
 
 // KostenpositionDefault is one of the fixed Kostenpositionen (Issue #60)
 // - id/key/label are app-fixed structure, seeded like meters. Logik/Typ are
-// only the starting values for the very first Fixkosten-Eingabe ever
+// only the starting values for the very first Fixkosteneingabe ever
 // created (Issue #105/#108) - every Eingabe afterwards is prefilled from
 // the previous one instead, not reseeded from here.
 type KostenpositionDefault struct {

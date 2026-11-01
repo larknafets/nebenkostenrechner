@@ -25,7 +25,7 @@ func detailBodyMit(t *testing.T, z *Zugang, db *sql.DB, id int64, query string) 
 }
 
 // TestAblesung_BannerNachDemSpeichernOhneFixkosten: saving an Ablesung whose
-// Abrechnungsmonat has no Fixkosten-Eingabe leads to its page with a banner,
+// Abrechnungsmonat has no Fixkosteneingabe leads to its page with a banner,
 // the link "Fixkosten erfassen" only for the Vermieter (#359).
 func TestAblesung_BannerNachDemSpeichernOhneFixkosten(t *testing.T) {
 	db := openTestDB(t)
@@ -62,7 +62,7 @@ func TestAblesung_BannerNachDemSpeichernOhneFixkosten(t *testing.T) {
 		t.Fatalf("CreateFixkostenEingabe: %v", err)
 	}
 	if body := detailBodyMit(t, newZugang("", nil), db, neueste.ID, "?fixkosten_fehlen=1"); strings.Contains(body, text) {
-		t.Error("Banner trotz Fixkosten-Eingabe des Monats")
+		t.Error("Banner trotz Fixkosteneingabe des Monats")
 	}
 	w = httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/ablesungen/"+strconv.FormatInt(neueste.ID, 10), strings.NewReader(form.Encode()))

@@ -14,7 +14,7 @@ func vollePeriode(id int64, date string, readings map[string]float64) *store.Lat
 	}
 }
 
-// volleEingabe is the Fixkosten-Eingabe of monat with the standard prices,
+// volleEingabe is the Fixkosteneingabe of monat with the standard prices,
 // Personenzahl 2 / 1 and both switches off.
 func volleEingabe(monat string) *store.FixkostenEingabeDetails {
 	return &store.FixkostenEingabeDetails{
@@ -30,7 +30,7 @@ func volleEingabe(monat string) *store.FixkostenEingabeDetails {
 var wohnungen = []store.Apartment{{ID: 1, QM: 116.23}, {ID: 2, QM: 86}}
 
 func TestVerbrauchskosten_Gruende(t *testing.T) {
-	// Without a Fixkosten-Eingabe for its month, and without a meter reading:
+	// Without a Fixkosteneingabe for its month, and without a meter reading:
 	// the Teilstand is named before Fixkosten, the oldest Ablesung keeps
 	// "keine Vorperiode" although its month has no Eingabe either.
 	teilstand := vollePeriode(3, "2026-12-01", nil)

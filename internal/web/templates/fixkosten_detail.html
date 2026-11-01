@@ -52,7 +52,7 @@
 {{if .Vermieter}}
 <div class="btn-row">
   <a href="{{.Base}}/fixkosten/neu" class="button success">Neue Fixkosteneingabe</a>
-  <form method="post" action="{{.Base}}/fixkosten/{{.Eingabe.ID}}/loeschen" onsubmit="return confirm('Fixkosten-Eingabe {{.MonatLabel}} wirklich löschen?'){{if .LoeschenFrage}} && confirm({{.LoeschenFrage}}){{end}};">
+  <form method="post" action="{{.Base}}/fixkosten/{{.Eingabe.ID}}/loeschen" onsubmit="return confirm('Fixkosteneingabe {{.MonatLabel}} wirklich löschen?'){{if .LoeschenFrage}} && confirm({{.LoeschenFrage}}){{end}};">
     <button type="submit" class="danger">Fixkosteneingabe löschen</button>
   </form>
 </div>

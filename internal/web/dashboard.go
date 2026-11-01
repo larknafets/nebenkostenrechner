@@ -44,7 +44,7 @@ func verlaufAuswahl(v ansicht) []verlaufOption {
 	return out
 }
 
-// mieteMonat is the Miete projection of one Fixkosten-Eingabe: its
+// mieteMonat is the Miete projection of one Fixkosteneingabe: its
 // Abrechnungsmonat and the monthly Miete per apartment. It is returned next to
 // dashboardData, never inside it, so the Miete cannot reach a view by accident (#278).
 type mieteMonat struct {

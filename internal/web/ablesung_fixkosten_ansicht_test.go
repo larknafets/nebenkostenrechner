@@ -11,7 +11,7 @@ import (
 )
 
 // ablesung_fixkosten_ansicht_test.go: Ablesungsliste, Detail and Abrechnung
-// follow the Fixkosten-Eingabe as the only source (#365, Spec #359).
+// follow the Fixkosteneingabe as the only source (#365, Spec #359).
 
 // ablesungenMitOffenemMonat creates three Ablesungen: October with an Eingabe,
 // November without one (Fixkosten fehlen), December with an Eingabe (switch
@@ -157,7 +157,7 @@ func TestAblesungsDetail_ZeilenAusDerEingabe(t *testing.T) {
 		}
 	}
 	if !strings.Contains(body, `href="/fixkosten/`) {
-		t.Error("kein Link zur Fixkosten-Eingabe")
+		t.Error("kein Link zur Fixkosteneingabe")
 	}
 	if row := absatz(detailBody(t, db, okt), "Wallboxen vollständig Wohnung 1"); !strings.Contains(row, "Nein") {
 		t.Errorf("Wallbox-Zeile Oktober %q ohne Nein", row)
@@ -174,7 +174,7 @@ func TestAbrechnung_PersonenMonateEineSpalte(t *testing.T) {
 	if strings.Contains(body, "Ablesung (Warmwasser)") {
 		t.Error("Anlage Personenzahl hat noch die Spalte der Ablesung")
 	}
-	if !strings.Contains(body, "Fixkosten-Eingabe (Schlüssel Personen)") {
-		t.Error("Anlage Personenzahl ohne Spalte der Fixkosten-Eingabe")
+	if !strings.Contains(body, "Fixkosteneingabe (Schlüssel Personen)") {
+		t.Error("Anlage Personenzahl ohne Spalte der Fixkosteneingabe")
 	}
 }

@@ -45,7 +45,7 @@ type PeriodInput struct {
 	// Readings: a missing key means "nicht erfasst" (Teilstand, Ticket #128)
 	// - CreatePeriod/UpdatePeriod simply don't write a row for it, rather
 	// than requiring every MeterKeys entry to be present. Prices, switches
-	// and Personenzahl belong to the Fixkosten-Eingabe (#359, #368).
+	// and Personenzahl belong to the Fixkosteneingabe (#359, #368).
 	Readings map[string]float64 // meter key -> Zählerstand
 }
 

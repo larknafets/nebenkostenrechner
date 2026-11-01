@@ -363,7 +363,7 @@
     <h3>{{anlage "personen"}}</h3>
     <table>
       <thead>
-        <tr><th rowspan="2">Monat</th><th colspan="2" class="r">Fixkosten-Eingabe (Schlüssel Personen)</th></tr>
+        <tr><th rowspan="2">Monat</th><th colspan="2" class="r">Fixkosteneingabe (Schlüssel Personen)</th></tr>
         <tr>
           <th class="r{{if eq $.ApartmentID 1}} sel{{end}}">Wohnung 1</th><th class="r{{if eq $.ApartmentID 2}} sel{{end}}">Wohnung 2</th>
         </tr>
@@ -378,11 +378,11 @@
         {{end}}
       </tbody>
     </table>
-    <p class="muted klein">Die Personenzahl der Fixkosten-Eingabe bestimmt den Schlüssel "Personen" und verteilt den Verbrauch der Warmwasseraufbereitung auf beide Wohnungen.</p>
+    <p class="muted klein">Die Personenzahl der Fixkosteneingabe bestimmt den Schlüssel "Personen" und verteilt den Verbrauch der Warmwasseraufbereitung auf beide Wohnungen.</p>
     </section>
     <section class="anlage" id="anlage-schluessel">
     <h3>{{anlage "schluessel"}}</h3>
-    <p class="muted klein"><strong>Je Wohneinheit:</strong> beide Wohnungen zu gleichen Teilen. <strong>Wohnfläche:</strong> Anteil an der Gesamtwohnfläche laut Tabelle. <strong>Flurstück:</strong> Anteil am Grundstück laut Tabelle. <strong>Personen:</strong> Personenzahl je Monat laut Fixkosten-Eingabe, über den Zeitraum gewichtet. <strong>Heizung und Warmwasser:</strong> Die Kosten des Wärmepumpenstroms werden nach gemessenem Wärmeverbrauch und nach Wohnfläche im Verhältnis {{.GewichtungWaerme}} % zu {{.GewichtungFlaeche}} % verteilt.</p>
+    <p class="muted klein"><strong>Je Wohneinheit:</strong> beide Wohnungen zu gleichen Teilen. <strong>Wohnfläche:</strong> Anteil an der Gesamtwohnfläche laut Tabelle. <strong>Flurstück:</strong> Anteil am Grundstück laut Tabelle. <strong>Personen:</strong> Personenzahl je Monat laut Fixkosteneingabe, über den Zeitraum gewichtet. <strong>Heizung und Warmwasser:</strong> Die Kosten des Wärmepumpenstroms werden nach gemessenem Wärmeverbrauch und nach Wohnfläche im Verhältnis {{.GewichtungWaerme}} % zu {{.GewichtungFlaeche}} % verteilt.</p>
   
     </section>
     <section class="anlage" id="anlage-verbrauch">

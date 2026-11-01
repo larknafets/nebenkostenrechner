@@ -28,7 +28,7 @@ const (
 	FeldLogik    // ID = Kostenposition
 	FeldTyp      // ID = Kostenposition
 	FeldPersonen // ID = Wohnung
-	// The four prices of a Fixkosten-Eingabe, Err gives the reason.
+	// The four prices of a Fixkosteneingabe, Err gives the reason.
 	FeldStrompreis
 	FeldFrischwasserPreis
 	FeldAbwasserPreis
@@ -60,7 +60,7 @@ func idsAufsteigend[V any](m map[int64]V) []int64 {
 	return ids
 }
 
-// validierePreis is the single check for a price of a Fixkosten-Eingabe: finite
+// validierePreis is the single check for a price of a Fixkosteneingabe: finite
 // and not negative (0 stays allowed). nil is "nicht erfasst" and valid.
 func validierePreis(p *float64) error {
 	if p == nil {

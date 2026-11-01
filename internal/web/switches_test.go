@@ -9,7 +9,7 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// switches_test.go: the per-Ablesung switches belong to the Fixkosten-Eingabe
+// switches_test.go: the per-Ablesung switches belong to the Fixkosteneingabe
 // (#359). Neither the form nor the CSV export carries them, the form ignores a
 // posted value and the CSV import accepts the column and drops the value.
 

@@ -10,7 +10,7 @@ import (
 )
 
 // fixkosten_fehlen_test.go: Ablesungen whose Abrechnungsmonat has no
-// Fixkosten-Eingabe (or one without prices) are not calculable (#359). The
+// Fixkosteneingabe (or one without prices) are not calculable (#359). The
 // views that read the Verbrauchskosten must render them without a crash.
 
 func TestAnsichten_AblesungenOhneFixkostenEingabe(t *testing.T) {
