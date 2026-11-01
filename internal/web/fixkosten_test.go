@@ -346,7 +346,7 @@ func TestFixkosten_EineEingabeJeMonat(t *testing.T) {
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("second create for the same month: status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
-	for _, want := range []string{"September 2026", "bereits eine Fixkosten-Eingabe"} {
+	for _, want := range []string{"September 2026", "bereits eine Fixkosteneingabe"} {
 		if !strings.Contains(w.Body.String(), want) {
 			t.Errorf("message %q does not contain %q", w.Body.String(), want)
 		}
@@ -459,7 +459,7 @@ func TestStammdaten_MieterSeit(t *testing.T) {
 }
 
 // TestStammdaten_KostenpositionVerschieben verifies the shared order: moving a
-// position on /stammdaten changes Stammdaten and the Fixkosten-Eingabe form.
+// position on /stammdaten changes Stammdaten and the Fixkosteneingabe form.
 func TestStammdaten_KostenpositionVerschieben(t *testing.T) {
 	db := openTestDB(t)
 	a := newZugang("", nil)
@@ -492,7 +492,7 @@ func TestStammdaten_KostenpositionVerschieben(t *testing.T) {
 	if w := move("17", "hoch"); w.Code != http.StatusFound {
 		t.Fatalf("POST status = %d, want %d (body: %s)", w.Code, http.StatusFound, w.Body.String())
 	}
-	reihenfolgeOK("Fixkosten-Eingabe", handleFixkostenForm(a), "/fixkosten/neu", "")
+	reihenfolgeOK("Fixkosteneingabe", handleFixkostenForm(a), "/fixkosten/neu", "")
 	w := httptest.NewRecorder()
 	handleStammdatenForm(a)(w, requestWithDB(httptest.NewRequest(http.MethodGet, "/stammdaten", nil), db))
 	if got := strings.Count(w.Body.String(), `name="richtung" value="hoch"`); got != 17 {

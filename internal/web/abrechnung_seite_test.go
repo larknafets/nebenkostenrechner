@@ -124,7 +124,7 @@ func TestAbrechnungSeite_Maengelliste(t *testing.T) {
 	mustContain(t, body,
 		"Abrechnung 2026 nicht möglich",
 		"Ablesung fehlt: November 2026",
-		"Fixkosten-Eingabe fehlt: November 2026",
+		"Fixkosteneingabe fehlt: November 2026",
 		// Links to fix a finding carry the ingress base.
 		`href="/api/hassio_ingress/abc/ablesungen/neu"`,
 		`href="/api/hassio_ingress/abc/fixkosten/neu"`)
@@ -146,7 +146,7 @@ func TestAbrechnungSeite_FixkostenUnvollstaendig(t *testing.T) {
 	_, body := getAbrechnung(t, NewMux(db, openTestDB(t), "", ""), "?jahr=2025&wohnung=2", map[string]string{"X-Ingress-Path": "/api/hassio_ingress/abc"})
 	mustContain(t, body,
 		"Abrechnung 2025 nicht möglich",
-		"Fixkosten-Eingabe ist unvollständig: Juni 2025",
+		"Fixkosteneingabe ist unvollständig: Juni 2025",
 		"Fixkosten ergänzen",
 		fmt.Sprintf(`href="/api/hassio_ingress/abc/fixkosten/%d/bearbeiten"`, id))
 }
@@ -422,7 +422,7 @@ func TestAbrechnungSeite_Monatsverlauf(t *testing.T) {
 	// (no carry-over yet), so the page shows it twice in the table.
 	// 325,29 = 313,84 (without the Wallbox) + 11,45 (Wallbox Wohnung 2, 2025).
 	// The Warmwasser split of the months with one person in Wohnung 2 in the
-	// Ablesung now follows the two persons of their Fixkosten-Eingabe (#359).
+	// Ablesung now follows the two persons of their Fixkosteneingabe (#359).
 	if got := strings.Count(body, "- 325,29"); got < 2 {
 		t.Errorf("Jahressaldo - 325,29 € erscheint %d Mal, want at least 2 (Saldoberechnung and Monatsverlauf)", got)
 	}
@@ -488,7 +488,7 @@ func TestAbrechnungSeite_Uebertrag(t *testing.T) {
 		}
 		mux := NewMux(db, openTestDB(t), "", "")
 		_, body := getAbrechnung(t, mux, "?jahr=2025&wohnung=2", nil)
-		mustContain(t, body, "Übertrag nicht berechenbar: Fixkosten-Eingabe fehlt: Juni 2024")
+		mustContain(t, body, "Übertrag nicht berechenbar: Fixkosteneingabe fehlt: Juni 2024")
 		mustNotContain(t, body, "<em>Übertrag Vorjahre</em>")
 	})
 }

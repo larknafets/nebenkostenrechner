@@ -35,7 +35,7 @@ type periodOverviewRow struct {
 	ReadingDate  string
 	Zeitraum     string
 	IstTeilstand bool
-	// FixkostenFehlen: the Fixkosten-Eingabe of the Abrechnungsmonat is
+	// FixkostenFehlen: the Fixkosteneingabe of the Abrechnungsmonat is
 	// missing (calc.GrundFixkostenFehlen), a reason of its own besides the
 	// Teilstand.
 	FixkostenFehlen bool
@@ -82,7 +82,7 @@ func periodOverviewGroups(periods []store.PeriodSummary, teilstandID int64) []pe
 }
 
 // markiereFixkostenFehlen sets FixkostenFehlen on the rows of the Ablesungen
-// in ids: those without a (complete) Fixkosten-Eingabe (#359).
+// in ids: those without a (complete) Fixkosteneingabe (#359).
 func markiereFixkostenFehlen(groups []periodMonatGroup, ids map[int64]bool) {
 	for _, g := range groups {
 		for i := range g.Rows {

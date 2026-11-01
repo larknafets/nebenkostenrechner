@@ -8,7 +8,7 @@ import (
 )
 
 // ablesung_hinweise.go holds the notes the Ablesung input shows about the
-// Fixkosten-Eingabe (#359): the Wallbox note of the wizard and the check which
+// Fixkosteneingabe (#359): the Wallbox note of the wizard and the check which
 // Abrechnungsmonate still lack their Fixkosten. The Ablesung itself carries
 // neither prices, Personenzahl nor switches any more.
 
@@ -20,7 +20,7 @@ const (
 
 // wallboxHinweisDaten is what the wizard's script needs to update the Wallbox
 // note when the month changes: the switch of every month that has a
-// Fixkosten-Eingabe (key "YYYY-MM", the format of the month input), and the
+// Fixkosteneingabe (key "YYYY-MM", the format of the month input), and the
 // texts, so the wording lives in one place.
 type wallboxHinweisDaten struct {
 	Gesetzt      string          `json:"gesetzt"`
@@ -46,7 +46,7 @@ func neueWallboxHinweisDaten(eingaben []*store.FixkostenEingabeDetails) wallboxH
 }
 
 // text is the note for a month ("YYYY-MM" or "YYYY-MM-01"): the state of the
-// switch in that month's Fixkosten-Eingabe, or that the Fixkosten are missing.
+// switch in that month's Fixkosteneingabe, or that the Fixkosten are missing.
 // An empty month has no note.
 func (d wallboxHinweisDaten) text(monat string) string {
 	m := monatInputFromStored(monat)

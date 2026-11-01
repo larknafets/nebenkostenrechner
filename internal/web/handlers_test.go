@@ -500,9 +500,9 @@ func TestBuildDashboardVerlauf_AbschlagSaldo_UeberspringtMonatOhneFixkosten(t *t
 		Wasser:  &calc.WasserErgebnis{},
 		Heizung: &calc.HeizungErgebnis{},
 	}
-	periods := []periodKosten{{ReadingDate: "2026-02-01", Monat: "2026-02-01", K: verbrauch}} // Feb: nur Ablesung, keine Fixkosten-Eingabe
+	periods := []periodKosten{{ReadingDate: "2026-02-01", Monat: "2026-02-01", K: verbrauch}} // Feb: nur Ablesung, keine Fixkosteneingabe
 	fixkostenListe := []fixkostenKosten{
-		{Monat: "2026-01-01", Erg: fix, Abschlag: map[int64]float64{2: 100}}, // Jan: Fixkosten-Eingabe mit Abschlag
+		{Monat: "2026-01-01", Erg: fix, Abschlag: map[int64]float64{2: 100}}, // Jan: Fixkosteneingabe mit Abschlag
 	}
 
 	spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, fixkostenListe, nil)
@@ -518,7 +518,7 @@ func TestBuildDashboardVerlauf_AbschlagSaldo_UeberspringtMonatOhneFixkosten(t *t
 		t.Fatalf("Feb: HasVerbrauch/HasFixkosten = %v/%v, want true/false", feb.HasVerbrauch, feb.HasFixkosten)
 	}
 	if feb.Saldo != nil {
-		t.Errorf("Feb.Saldo = %+v, want nil (keine Fixkosten-Eingabe, kein erfasster Abschlagwert)", feb.Saldo)
+		t.Errorf("Feb.Saldo = %+v, want nil (keine Fixkosteneingabe, kein erfasster Abschlagwert)", feb.Saldo)
 	}
 
 	jan := spalte.Eintraege[1].Monat
@@ -542,7 +542,7 @@ func TestBuildDashboardVerlauf_AbschlagSaldo_UeberspringtMonatOhneFixkosten(t *t
 // own to test, instead of only being reachable through the much larger
 // function). The accumulation itself is calc.Verlauf.
 func TestApplySaldo(t *testing.T) {
-	// monate is newest-first (Mär, Feb, Jan); Feb has no Fixkosten-Eingabe
+	// monate is newest-first (Mär, Feb, Jan); Feb has no Fixkosteneingabe
 	// and must be skipped, not treated as Abschlag=0 (#94).
 	monate := []dashboardMonat{{Label: "Mär"}, {Label: "Feb"}, {Label: "Jan"}}
 	keys := []string{"2026-03-01", "2026-02-01", "2026-01-01"}
@@ -558,7 +558,7 @@ func TestApplySaldo(t *testing.T) {
 		t.Fatalf("Jan.Saldo = %+v, want Betrag 80/Guthaben (Abschlag 100 - Kombiniert 20)", monate[2].Saldo)
 	}
 	if monate[1].Saldo != nil {
-		t.Errorf("Feb.Saldo = %+v, want nil (keine Fixkosten-Eingabe, wird uebersprungen)", monate[1].Saldo)
+		t.Errorf("Feb.Saldo = %+v, want nil (keine Fixkosteneingabe, wird uebersprungen)", monate[1].Saldo)
 	}
 	// Mär carries forward Jan's balance: 80 + (100 - 30) = 150.
 	if monate[0].Saldo == nil || monate[0].Saldo.Betrag() != 150 || !monate[0].Saldo.Guthaben() {
@@ -598,12 +598,12 @@ func TestBuildDashboardVerlauf_LatestSaldo(t *testing.T) {
 		}
 	})
 
-	t.Run("kein Monat mit Fixkosten-Eingabe -> nil", func(t *testing.T) {
+	t.Run("kein Monat mit Fixkosteneingabe -> nil", func(t *testing.T) {
 		verbrauch := calc.Kosten{Strom: &calc.StromErgebnis{KostenW2: 20}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
 		periods := []periodKosten{{ReadingDate: "2026-02-01", Monat: "2026-02-01", K: verbrauch}}
 		spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, nil, nil)
 		if got := spalte.LatestSaldo; got != nil {
-			t.Fatalf("LatestSaldo = %+v, want nil (keine Fixkosten-Eingabe)", got)
+			t.Fatalf("LatestSaldo = %+v, want nil (keine Fixkosteneingabe)", got)
 		}
 	})
 
@@ -728,7 +728,7 @@ func TestBuildJahresCard(t *testing.T) {
 	if card.ApartmentFlurstueck != 120.5 {
 		t.Errorf("ApartmentFlurstueck = %v, want 120.5", card.ApartmentFlurstueck)
 	}
-	// Monatsmittel der Fixkosten-Eingaben: (2 + 1,25 + 1) / 3, 2025er ausgeschlossen
+	// Monatsmittel der Fixkosteneingaben: (2 + 1,25 + 1) / 3, 2025er ausgeschlossen
 	if math.Abs(card.PersonenSchnitt-1.4167) > 0.0001 {
 		t.Errorf("PersonenSchnitt = %v, want 1.4167 (Monatsmittel aus 2, 1,25 und 1, 2025er Eingabe ausgeschlossen)", card.PersonenSchnitt)
 	}
@@ -762,7 +762,7 @@ func TestBuildJahresCard_PVAnteilKWh(t *testing.T) {
 func TestBuildJahresCard_PersonenSchnittOhneAblesung(t *testing.T) {
 	card := buildJahresCard(1, "Wohnung 1", 116.23, 200, 2026, nil, nil)
 	if card.PersonenSchnitt != 0 {
-		t.Errorf("PersonenSchnitt = %v, want 0 (keine Fixkosten-Eingabe im Jahr)", card.PersonenSchnitt)
+		t.Errorf("PersonenSchnitt = %v, want 0 (keine Fixkosteneingabe im Jahr)", card.PersonenSchnitt)
 	}
 }
 
@@ -960,7 +960,7 @@ func csvRow(readingDate string, stromGesamt string) string {
 }
 
 // csvKopfAlt is the header of the Ablesungs-CSV before the prices, Personenzahl
-// and switches moved to the Fixkosten-Eingabe (#359), csvRowAlt a row of it.
+// and switches moved to the Fixkosteneingabe (#359), csvRowAlt a row of it.
 var csvKopfAlt = strings.Join(append(append(append(append([]string{"reading_date", "monat"}, store.MeterKeys...),
 	"strompreis", "frischwasser_preis", "abwasser_preis", "einspeisung_preis", "personen_1", "personen_2"),
 	store.OptionalMeterKeys...), "wallbox_komplett_wohnung1", "pv_gutschrift_wohnung1"), ";")
@@ -1331,7 +1331,7 @@ func TestFormatDatumDE(t *testing.T) {
 // date, ReadingDate and Monat both set to it - everything else a fixed
 // valid default (exact values don't matter for the ordering tests using
 // this). Prices, Personenzahl and switches are not part of an Ablesung
-// (#368): createPeriod gives the month a Fixkosten-Eingabe with the
+// (#368): createPeriod gives the month a Fixkosteneingabe with the
 // standard ones.
 func seedPeriodInputAt(date string) store.PeriodInput {
 	readings := make(map[string]float64, len(store.MeterKeys))
@@ -1345,7 +1345,7 @@ func seedPeriodInputAt(date string) store.PeriodInput {
 	}
 }
 
-// mitHaekchen sets the two switches of the Fixkosten-Eingabe that
+// mitHaekchen sets the two switches of the Fixkosteneingabe that
 // createPeriod makes for the month.
 func mitHaekchen(wallboxKomplettW1, pvGutschriftW1 bool) func(*store.FixkostenInput) {
 	return func(f *store.FixkostenInput) {
@@ -1354,7 +1354,7 @@ func mitHaekchen(wallboxKomplettW1, pvGutschriftW1 bool) func(*store.FixkostenIn
 }
 
 // createPeriod creates the Ablesung and, once per Abrechnungsmonat, the
-// Fixkosten-Eingabe that carries its Personenzahl, prices and switches: the
+// Fixkosteneingabe that carries its Personenzahl, prices and switches: the
 // calculation reads them from there (#359). The Eingabe has the standard
 // values of fixkostenMitPreisen, einstellen changes them (mitHaekchen). A
 // second Ablesung in a month finds the Eingabe and shares it.
@@ -1380,7 +1380,7 @@ func createPeriod(db *sql.DB, in store.PeriodInput, einstellen ...func(*store.Fi
 	return id, err
 }
 
-// fixkostenMitPreisen is a Fixkosten-Eingabe for monat with the standard
+// fixkostenMitPreisen is a Fixkosteneingabe for monat with the standard
 // prices of seedPeriodInputAt and vollesFormular and Personenzahl 2 / 1, so
 // that the Ablesungen of that month are calculable (#359).
 func fixkostenMitPreisen(monat string) store.FixkostenInput {
@@ -1394,7 +1394,7 @@ func fixkostenMitPreisen(monat string) store.FixkostenInput {
 	}
 }
 
-// createFixkostenEingabe creates the Fixkosten-Eingabe for in.Monat. If
+// createFixkostenEingabe creates the Fixkosteneingabe for in.Monat. If
 // createPeriod already made one for an Ablesung of that month, in replaces
 // it but keeps that Eingabe's prices and switches, which in does not carry.
 func createFixkostenEingabe(db *sql.DB, in store.FixkostenInput) (int64, error) {

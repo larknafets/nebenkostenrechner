@@ -59,7 +59,7 @@ func TestFixkosten_PersonenDezimal_Kostenanteil(t *testing.T) {
 func TestDashboard_PersonenSchnittDezimal(t *testing.T) {
 	db := openTestDB(t)
 	jahr := strconv.Itoa(time.Now().Year())
-	// The Personen-Schnitt is the mean over the year's Fixkosten-Eingaben.
+	// The Personen-Schnitt is the mean over the year's Fixkosteneingaben.
 	form := fixkostenForm(jahr + "-01")
 	form.Set("personen_1", "1.25")
 	form.Set("personen_2", "2")

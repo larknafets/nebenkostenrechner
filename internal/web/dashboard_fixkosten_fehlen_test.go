@@ -19,7 +19,7 @@ const (
 )
 
 // offeneMonateSetup stores four Ablesungen: September (first one, no Eingabe),
-// October (no Fixkosten-Eingabe), November (Eingabe without prices), December
+// October (no Fixkosteneingabe), November (Eingabe without prices), December
 // (complete) and, as the one in the following year, none. Returns the id of
 // the incomplete Eingabe of November.
 func offeneMonateSetup(t *testing.T, db *sql.DB) (novemberEingabe int64) {

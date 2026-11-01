@@ -107,7 +107,7 @@ const (
 )
 
 // WallboxNetzbezugKWh is the grid-draw share of the Wallboxen in kWh. It is a
-// pure meter value and needs no Fixkosten-Eingabe (no price, no switch): the
+// pure meter value and needs no Fixkosteneingabe (no price, no switch): the
 // views show it for an Ablesung whose costs are still open (#359). verbrauch
 // holds the consumption per meter key, as store.Verbrauch gives it.
 func WallboxNetzbezugKWh(verbrauch map[string]float64) float64 {

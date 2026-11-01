@@ -6275,13 +6275,13 @@ Abrechnung 2026 Wohnung 1:
       [2]:
         Art: "fixkosten_fehlt"
         Monat: "2026-11-01"
-        Text: "Fixkosten-Eingabe fehlt: November 2026"
+        Text: "Fixkosteneingabe fehlt: November 2026"
         Aktion: "Fixkosten erfassen"
         Pfad: "/fixkosten/neu"
       [3]:
         Art: "fixkosten_fehlt"
         Monat: "2026-12-01"
-        Text: "Fixkosten-Eingabe fehlt: Dezember 2026"
+        Text: "Fixkosteneingabe fehlt: Dezember 2026"
         Aktion: "Fixkosten erfassen"
         Pfad: "/fixkosten/neu"
   Abrechnung: nil
@@ -6312,13 +6312,13 @@ Abrechnung 2026 Wohnung 2:
       [2]:
         Art: "fixkosten_fehlt"
         Monat: "2026-11-01"
-        Text: "Fixkosten-Eingabe fehlt: November 2026"
+        Text: "Fixkosteneingabe fehlt: November 2026"
         Aktion: "Fixkosten erfassen"
         Pfad: "/fixkosten/neu"
       [3]:
         Art: "fixkosten_fehlt"
         Monat: "2026-12-01"
-        Text: "Fixkosten-Eingabe fehlt: Dezember 2026"
+        Text: "Fixkosteneingabe fehlt: Dezember 2026"
         Aktion: "Fixkosten erfassen"
         Pfad: "/fixkosten/neu"
   Abrechnung: nil

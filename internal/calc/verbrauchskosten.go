@@ -101,7 +101,7 @@ const (
 	// GrundKeineVorperiode: the oldest Ablesung has no earlier one to
 	// diff its Zählerstände against, so it has no Verbrauch.
 	GrundKeineVorperiode
-	// GrundFixkostenFehlen: the Fixkosten-Eingabe of the Abrechnungsmonat
+	// GrundFixkostenFehlen: the Fixkosteneingabe of the Abrechnungsmonat
 	// is missing or lacks a price (not MonatVollstaendig). Personenzahl, the four prices and both
 	// switches come from it (#359), there is no fallback to another month.
 	GrundFixkostenFehlen
@@ -123,7 +123,7 @@ func (a Ablesung) Berechenbar() bool { return a.Grund == GrundKeiner }
 // returns them): the Vorperiode of an Ablesung is the one before it.
 type Daten struct {
 	Periods []*store.LatestPeriod
-	// Eingaben are the Fixkosten-Eingaben: each Ablesung takes Personenzahl,
+	// Eingaben are the Fixkosteneingaben: each Ablesung takes Personenzahl,
 	// prices and switches from the one of its Abrechnungsmonat.
 	Eingaben   []*store.FixkostenEingabeDetails
 	Apartments []store.Apartment
@@ -135,7 +135,7 @@ type Daten struct {
 type Verbrauchskosten struct {
 	alle []Ablesung
 	byID map[int64]int
-	// eingabeByMonat holds the Fixkosten-Eingabe per Monat, the last one wins
+	// eingabeByMonat holds the Fixkosteneingabe per Monat, the last one wins
 	// if a month has several.
 	eingabeByMonat map[string]*store.FixkostenEingabeDetails
 }
@@ -213,12 +213,12 @@ func (v *Verbrauchskosten) Ablesung(periodID int64) (Ablesung, bool) {
 	return v.alle[i], true
 }
 
-// Eingabe returns the Fixkosten-Eingabe of monat, nil if there is none.
+// Eingabe returns the Fixkosteneingabe of monat, nil if there is none.
 func (v *Verbrauchskosten) Eingabe(monat string) *store.FixkostenEingabeDetails {
 	return v.eingabeByMonat[monat]
 }
 
-// MonatVollstaendig reports whether monat has a Fixkosten-Eingabe with all
+// MonatVollstaendig reports whether monat has a Fixkosteneingabe with all
 // prices. The one rule behind GrundFixkostenFehlen.
 func (v *Verbrauchskosten) MonatVollstaendig(monat string) bool {
 	e := v.eingabeByMonat[monat]
@@ -226,7 +226,7 @@ func (v *Verbrauchskosten) MonatVollstaendig(monat string) bool {
 }
 
 // OffenerMonat is a month with an Ablesung but without a complete
-// Fixkosten-Eingabe.
+// Fixkosteneingabe.
 type OffenerMonat struct {
 	Monat string
 	// EingabeID is the incomplete Eingabe of the month, 0 = there is none.
@@ -234,7 +234,7 @@ type OffenerMonat struct {
 }
 
 // OffenerMonatVon returns the OffenerMonat of monat, ok=false if monat has no
-// Abrechnungsmonat ("") or a complete Fixkosten-Eingabe.
+// Abrechnungsmonat ("") or a complete Fixkosteneingabe.
 func (v *Verbrauchskosten) OffenerMonatVon(monat string) (OffenerMonat, bool) {
 	if monat == "" || v.MonatVollstaendig(monat) {
 		return OffenerMonat{}, false
@@ -247,7 +247,7 @@ func (v *Verbrauchskosten) OffenerMonatVon(monat string) (OffenerMonat, bool) {
 }
 
 // OffeneMonate lists the months with an Ablesung and no complete
-// Fixkosten-Eingabe, oldest first, each once. It does not matter whether the
+// Fixkosteneingabe, oldest first, each once. It does not matter whether the
 // Ablesung is a Teilstand or the first one. A Teilstand without
 // Abrechnungsmonat has no month to miss and is skipped.
 func (v *Verbrauchskosten) OffeneMonate() []OffenerMonat {

@@ -1,6 +1,6 @@
 package store
 
-// Preis is one of the four prices of a Fixkosten-Eingabe (#359). Preise is
+// Preis is one of the four prices of a Fixkosteneingabe (#359). Preise is
 // the single place a price is written down: the fixkosten_eingaben column, its
 // INSERT, UPDATE and scan, the form field, the CSV column, the validation,
 // PreiseVollstaendig and the messages all derive from it.

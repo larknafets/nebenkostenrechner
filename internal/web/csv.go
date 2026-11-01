@@ -20,7 +20,7 @@ import (
 // A cell left empty means "nicht erfasst". An import also accepts older files
 // without the Einzelzähler: csvImportHeader lists only the required columns.
 //
-// Prices, Personenzahl and the switches belong to the Fixkosten-Eingabe (#359).
+// Prices, Personenzahl and the switches belong to the Fixkosteneingabe (#359).
 // The export no longer writes them; an import accepts the columns of an older
 // file (csvVerworfeneSpalten) and drops their values.
 var csvHeader = append(append([]string{"reading_date", "monat"}, store.MeterKeys...), store.OptionalMeterKeys...)
@@ -30,7 +30,7 @@ var csvHeader = append(append([]string{"reading_date", "monat"}, store.MeterKeys
 var csvImportHeader = csvHeader[:len(csvHeader)-len(store.OptionalMeterKeys)]
 
 // csvVerworfeneSpalten are the columns of the old Ablesungs-CSV that moved to
-// the Fixkosten-Eingabe: the four prices, the Personenzahl per apartment and the
+// the Fixkosteneingabe: the four prices, the Personenzahl per apartment and the
 // switches. An import accepts them and drops their values.
 var csvVerworfeneSpalten = func() []string {
 	var cols []string
@@ -98,7 +98,7 @@ func parseSwitchCSV(record []string, colIdx map[string]int, s store.Switch, line
 }
 
 // hatVerworfeneWerte reports whether the row has a value in a column of the
-// old format that moved to the Fixkosten-Eingabe.
+// old format that moved to the Fixkosteneingabe.
 func hatVerworfeneWerte(record []string, colIdx map[string]int) bool {
 	for _, col := range csvVerworfeneSpalten {
 		if idx, ok := colIdx[col]; ok && idx < len(record) && strings.TrimSpace(record[idx]) != "" {
@@ -115,7 +115,7 @@ type importRow struct {
 	input store.PeriodInput
 	line  int
 	// verworfen is true if the row had a value in a column that moved to the
-	// Fixkosten-Eingabe (prices, Personenzahl, switches), dropped on import.
+	// Fixkosteneingabe (prices, Personenzahl, switches), dropped on import.
 	verworfen bool
 }
 
@@ -311,7 +311,7 @@ func importWarnings(rows []importRow, ids []int64) []string {
 
 // importHinweise are the two notes after an import (#359), one message each:
 // the Abrechnungsmonate of the imported Ablesungen that have no complete
-// Fixkosten-Eingabe, and that the file held prices, Personenzahlen or switches,
+// Fixkosteneingabe, and that the file held prices, Personenzahlen or switches,
 // which are no longer taken over.
 func importHinweise(db *sql.DB, rows []importRow) ([]string, error) {
 	v, err := calc.Load(db)
@@ -335,7 +335,7 @@ func importHinweise(db *sql.DB, rows []importRow) ([]string, error) {
 		hinweise = append(hinweise, h.Text)
 	}
 	if verworfen {
-		hinweise = append(hinweise, "Die Datei enthält Preise, Personenzahlen oder Häkchen. Sie gehören zur Fixkosten-Eingabe und werden nicht übernommen.")
+		hinweise = append(hinweise, "Die Datei enthält Preise, Personenzahlen oder Häkchen. Sie gehören zur Fixkosteneingabe und werden nicht übernommen.")
 	}
 	return hinweise, nil
 }

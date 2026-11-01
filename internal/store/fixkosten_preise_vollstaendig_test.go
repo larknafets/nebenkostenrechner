@@ -2,7 +2,7 @@ package store
 
 import "testing"
 
-// PreiseVollstaendig is the one place that says whether a Fixkosten-Eingabe
+// PreiseVollstaendig is the one place that says whether a Fixkosteneingabe
 // has all four prices: calc (Ablesung nicht berechenbar) and the web hints ask
 // it instead of each repeating the nil checks.
 func TestFixkostenEingabeDetails_PreiseVollstaendig(t *testing.T) {

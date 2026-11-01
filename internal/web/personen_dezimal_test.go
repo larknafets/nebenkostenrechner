@@ -24,7 +24,7 @@ func TestAblesung_PersonenDezimal_Warmwasseranteil(t *testing.T) {
 		t.Fatalf("first create status = %d (body: %s)", w.Code, w.Body.String())
 	}
 
-	// The Personenzahl of the month comes from its Fixkosten-Eingabe (#359).
+	// The Personenzahl of the month comes from its Fixkosteneingabe (#359).
 	fk := fixkostenMitPreisen("2026-11-01")
 	fk.Personen = map[int64]float64{1: 1.25, 2: 2}
 	if _, err := store.CreateFixkostenEingabe(db, fk); err != nil {

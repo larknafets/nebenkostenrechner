@@ -5,7 +5,7 @@ package store
 // and which meter are still missing, computed once from an already-hydrated
 // *LatestPeriod instead of every view re-deriving its own nil-checks. Prices,
 // switches and Personenzahl are no part of it: they belong to the
-// Fixkosten-Eingabe of the month (#359).
+// Fixkosteneingabe of the month (#359).
 type TeilstandStatus struct {
 	MonatErfasst bool
 	MeterErfasst map[string]bool

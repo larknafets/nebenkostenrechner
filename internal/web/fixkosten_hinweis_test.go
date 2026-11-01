@@ -14,7 +14,7 @@ import (
 )
 
 // fixkosten_hinweis_test.go: the notes when deleting or changing a
-// Fixkosten-Eingabe (#367, Spec #359 step 3).
+// Fixkosteneingabe (#367, Spec #359 step 3).
 
 // hinweisFixkosten is a complete Eingabe (all four prices): only then are the
 // Ablesungen of its month berechenbar.
@@ -28,7 +28,7 @@ func hinweisFixkosten(monat string) store.FixkostenInput {
 }
 
 // hinweisSeed: Ausgangsstand in June, two Ablesungen in July (affected) and a
-// Fixkosten-Eingabe for July. Returns the Eingabe id.
+// Fixkosteneingabe for July. Returns the Eingabe id.
 func hinweisSeed(t *testing.T, db *sql.DB) int64 {
 	t.Helper()
 	for _, datum := range []string{"2026-06-30", "2026-07-10", "2026-07-20"} {
@@ -220,7 +220,7 @@ func TestFixkostenAendern_MonatswechselHinweisAltInfoNeu(t *testing.T) {
 
 	for _, want := range []string{
 		"Für Juli 2026 fehlen die Fixkosten (oder sind unvollständig).", "10.07.2026", "20.07.2026",
-		"Für August 2026 ist die Fixkosten-Eingabe erfasst.", "05.08.2026", "berechenbar",
+		"Für August 2026 ist die Fixkosteneingabe erfasst.", "05.08.2026", "berechenbar",
 		"Fixkosten erfassen",
 	} {
 		if !strings.Contains(body, want) {

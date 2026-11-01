@@ -44,7 +44,7 @@ func baseReadings(overrides map[string]float64) map[string]float64 {
 }
 
 // ablesungMitFixkosten is what a test says about one month: the Ablesung and
-// the Fixkosten-Eingabe that carries its Personenzahl, prices and switches
+// the Fixkosteneingabe that carries its Personenzahl, prices and switches
 // (the Ablesung itself has none of them since #368).
 type ablesungMitFixkosten struct {
 	ReadingDate, Monat                                             string
@@ -55,7 +55,7 @@ type ablesungMitFixkosten struct {
 }
 
 // createPeriod creates the Ablesung and, once per Abrechnungsmonat, the
-// Fixkosten-Eingabe that carries its Personenzahl, prices and switches: the
+// Fixkosteneingabe that carries its Personenzahl, prices and switches: the
 // calculation reads them from there (#359). A second Ablesung in a month
 // finds the Eingabe and shares it.
 func createPeriod(db *sql.DB, in ablesungMitFixkosten) (int64, error) {

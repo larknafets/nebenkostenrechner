@@ -1125,7 +1125,7 @@ func TestSaveStammdaten_GroessenRoundtrip(t *testing.T) {
 
 // TestEnsureFixkostenWerteLogikTypColumns covers Issue #106: an existing
 // installation whose fixkosten_werte doesn't yet have logik/typ columns
-// gets them added, and every existing Fixkosten-Eingabe gets backfilled
+// gets them added, and every existing Fixkosteneingabe gets backfilled
 // retroactively from kostenpositionen_jahre - annual value for Typ
 // "jaehrlich", explicit value or last-known annual-value/12 fallback for
 // "monatlich" (identical to calc.Fixkosten.monatswertFuer, but here just
@@ -1480,7 +1480,7 @@ func TestUpdatePeriod_Teilstand_PreservesUnspecifiedFields(t *testing.T) {
 	// Vervollstaendigen/Korrigieren round: everything but the date stays
 	// empty/absent in this call - must not delete the values already stored.
 	// Prices, switches and Personenzahl are never written by UpdatePeriod
-	// (they belong to the Fixkosten-Eingabe, #359), whatever the input holds.
+	// (they belong to the Fixkosteneingabe, #359), whatever the input holds.
 	if err := UpdatePeriod(db, id, PeriodInput{
 		ReadingDate: "2026-05-01",
 		Monat:       "",

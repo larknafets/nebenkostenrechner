@@ -43,7 +43,7 @@ func monatlichePerioden(startID int64, vonJahr int, vonMonat time.Month, bisJahr
 	return out
 }
 
-// volleEingabe is a Fixkosten-Eingabe with all four prices.
+// volleEingabe is a Fixkosteneingabe with all four prices.
 func volleEingabe(id int64, monat string) *store.FixkostenEingabeDetails {
 	return &store.FixkostenEingabeDetails{
 		ID: id, Monat: monat,
@@ -136,7 +136,7 @@ func TestPruefeAbrechnung_AblesungUndFixkosten(t *testing.T) {
 		periods = append(periods, p)
 	}
 	d.Periods = periods
-	// November: no Fixkosten-Eingabe. Februar: two.
+	// November: no Fixkosteneingabe. Februar: two.
 	var eingaben []*store.FixkostenEingabeDetails
 	for _, e := range d.Eingaben {
 		if e.Monat == "2027-11-01" {
@@ -154,8 +154,8 @@ func TestPruefeAbrechnung_AblesungUndFixkosten(t *testing.T) {
 	want := []string{
 		"Ablesung fehlt: Juni 2027",
 		"Ablesung ist ein Teilstand: Dezember 2027",
-		"Mehr als eine Fixkosten-Eingabe: Februar 2027",
-		"Fixkosten-Eingabe fehlt: November 2027",
+		"Mehr als eine Fixkosteneingabe: Februar 2027",
+		"Fixkosteneingabe fehlt: November 2027",
 	}
 	if fmt.Sprint(maengelTexte(got)) != fmt.Sprint(want) {
 		t.Fatalf("Maengel = %v, want %v", maengelTexte(got), want)
@@ -199,7 +199,7 @@ func TestPruefeAbrechnung_ErstesErfassungsjahr(t *testing.T) {
 		t.Fatalf("Pruefe: %v", err)
 	}
 	if !got.Abrechenbar() {
-		t.Fatalf("Maengel = %v, want none: no Fixkosten-Eingabe is needed in September, the month of the first Ablesung", maengelTexte(got))
+		t.Fatalf("Maengel = %v, want none: no Fixkosteneingabe is needed in September, the month of the first Ablesung", maengelTexte(got))
 	}
 	z := got.Zeitraum
 	if !z.TeilJahr || z.Von.Format("2006-01-02") != "2026-09-15" || z.Bis.Format("2006-01-02") != "2026-12-31" {
@@ -209,7 +209,7 @@ func TestPruefeAbrechnung_ErstesErfassungsjahr(t *testing.T) {
 		t.Errorf("Zusatz = %q, want it to say Fixkosten und Vorauszahlungen ab Oktober 2026", z.Zusatz)
 	}
 
-	t.Run("Fixkosten-Eingabe im ersten Monat ist erlaubt", func(t *testing.T) {
+	t.Run("Fixkosteneingabe im ersten Monat ist erlaubt", func(t *testing.T) {
 		d := ersteJahrDaten()
 		d.Eingaben = append(d.Eingaben, volleEingabe(1, "2026-09-01"))
 		if got, _ := Pruefe(d, 2026, GanzesJahr, 2); !got.Abrechenbar() {
@@ -220,7 +220,7 @@ func TestPruefeAbrechnung_ErstesErfassungsjahr(t *testing.T) {
 		d := ersteJahrDaten()
 		d.Eingaben = append(d.Eingaben, volleEingabe(1, "2026-09-01"), volleEingabe(2, "2026-09-01"))
 		got, _ := Pruefe(d, 2026, GanzesJahr, 2)
-		if fmt.Sprint(maengelTexte(got)) != "[Mehr als eine Fixkosten-Eingabe: September 2026]" {
+		if fmt.Sprint(maengelTexte(got)) != "[Mehr als eine Fixkosteneingabe: September 2026]" {
 			t.Errorf("Maengel = %v, want the duplicate September entry", maengelTexte(got))
 		}
 	})
@@ -228,8 +228,8 @@ func TestPruefeAbrechnung_ErstesErfassungsjahr(t *testing.T) {
 		d := ersteJahrDaten()
 		d.Eingaben = d.Eingaben[1:] // drop October
 		got, _ := Pruefe(d, 2026, GanzesJahr, 2)
-		if fmt.Sprint(maengelTexte(got)) != "[Fixkosten-Eingabe fehlt: Oktober 2026]" {
-			t.Errorf("Maengel = %v, want Fixkosten-Eingabe fehlt: Oktober 2026", maengelTexte(got))
+		if fmt.Sprint(maengelTexte(got)) != "[Fixkosteneingabe fehlt: Oktober 2026]" {
+			t.Errorf("Maengel = %v, want Fixkosteneingabe fehlt: Oktober 2026", maengelTexte(got))
 		}
 	})
 	t.Run("die erste Ablesung muss vollstaendig sein", func(t *testing.T) {
@@ -283,8 +283,8 @@ func TestPruefeAbrechnung_KeinZeitraum(t *testing.T) {
 			t.Fatalf("got Zeitraum %+v, Maengel %v, want no Zeitraum and the invalid-date message", got.Zeitraum, maengelTexte(got))
 		}
 		m := got.Maengel[0]
-		if !m.HatZiel() || m.Pfad != "/ablesungen/1/bearbeiten" || m.Aktion != "Ablesung korrigieren" {
-			t.Errorf("finding: Pfad %q Aktion %q, want a link to /ablesungen/1/bearbeiten labelled Ablesung korrigieren", m.Pfad, m.Aktion)
+		if !m.HatZiel() || m.Pfad != "/ablesungen/1/bearbeiten" || m.Aktion != "Eingabe korrigieren" {
+			t.Errorf("finding: Pfad %q Aktion %q, want a link to /ablesungen/1/bearbeiten labelled Eingabe korrigieren", m.Pfad, m.Aktion)
 		}
 	})
 	t.Run("laufendes Jahr nennt die fehlenden Monate", func(t *testing.T) {
@@ -376,7 +376,7 @@ func TestPruefeAbrechnung_FixkostenUnvollstaendig(t *testing.T) {
 		d := vollesJahrDaten()
 		ohnePreis(d, "2027-03-01")
 		got, _ := Pruefe(d, 2027, GanzesJahr, 2)
-		if fmt.Sprint(maengelTexte(got)) != "[Fixkosten-Eingabe ist unvollständig: März 2027]" {
+		if fmt.Sprint(maengelTexte(got)) != "[Fixkosteneingabe ist unvollständig: März 2027]" {
 			t.Fatalf("Maengel = %v", maengelTexte(got))
 		}
 		m := got.Maengel[0]

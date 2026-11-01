@@ -10,7 +10,7 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// fixkosten_hinweis.go: the notes after a Fixkosten-Eingabe was deleted or its
+// fixkosten_hinweis.go: the notes after a Fixkosteneingabe was deleted or its
 // Monat changed (#359, Entscheidung #355). The app has no flash mechanism, so
 // the redirect carries only the Monat as a query parameter and the target page
 // derives the affected Ablesungen and the note from the stored data (#382).
@@ -134,14 +134,14 @@ func fixkostenLoeschenFrage(monat string, ps []calc.Ablesung) string {
 		return ""
 	}
 	s, v := ablesungenVom(ps)
-	return "Dann " + v + " die " + s + " unvollständig, bis die Fixkosten-Eingabe für " + store.MonatLabel(monat) + " neu erfasst ist."
+	return "Dann " + v + " die " + s + " unvollständig, bis die Fixkosteneingabe für " + store.MonatLabel(monat) + " neu erfasst ist."
 }
 
 // fixkostenBerechenbarText is the information for the new Monat of a moved
 // Eingabe: its Ablesungen can be calculated now.
 func fixkostenBerechenbarText(monat string, ps []calc.Ablesung) string {
 	s, v := ablesungenVom(ps)
-	return "Für " + store.MonatLabel(monat) + " ist die Fixkosten-Eingabe erfasst. Die " + s + " " + v + " damit berechenbar."
+	return "Für " + store.MonatLabel(monat) + " ist die Fixkosteneingabe erfasst. Die " + s + " " + v + " damit berechenbar."
 }
 
 // gueltigerMonat reports whether s is a stored Monat ("YYYY-MM-01").

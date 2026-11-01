@@ -157,9 +157,9 @@ func TestHandleImportCSV_AlteDateiVerwirftWerte(t *testing.T) {
 	if err != nil || len(periods) != 1 {
 		t.Fatalf("AllPeriods = %v, %v, want 1 period", periods, err)
 	}
-	// The dropped values reach no Fixkosten-Eingabe either.
+	// The dropped values reach no Fixkosteneingabe either.
 	if eingaben, err := store.AllFixkostenEingabenDetails(db); err != nil || len(eingaben) != 0 {
-		t.Errorf("Fixkosten-Eingaben nach dem Import = %v, %v, want keine", eingaben, err)
+		t.Errorf("Fixkosteneingaben nach dem Import = %v, %v, want keine", eingaben, err)
 	}
 }
 
@@ -199,7 +199,7 @@ func TestHandleImportCSV_NeueDateiOhneVerworfeneWerte(t *testing.T) {
 }
 
 // TestHandleImportCSV_SammelmeldungNenntMonateOhneFixkosten: the note after an
-// import names the Abrechnungsmonate without a complete Fixkosten-Eingabe, once
+// import names the Abrechnungsmonate without a complete Fixkosteneingabe, once
 // each, and leaves out a month that has one.
 func TestHandleImportCSV_SammelmeldungNenntMonateOhneFixkosten(t *testing.T) {
 	db := openTestDB(t)

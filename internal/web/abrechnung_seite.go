@@ -24,7 +24,7 @@ func personenZelle(m map[int64]float64, apartmentID int64) string {
 }
 
 // abrechnungJahre lists the years there is data for - from the Ablesungen
-// (by Abrechnungsmonat, else reading date) and the Fixkosten-Eingaben - newest
+// (by Abrechnungsmonat, else reading date) and the Fixkosteneingaben - newest
 // first.
 func abrechnungJahre(d abr.Daten) []int {
 	seen := map[int]bool{}
@@ -85,7 +85,7 @@ type abrechnungSeite struct {
 	navData
 	Aktuell string
 
-	// KeineDaten is true if there is no Ablesung or Fixkosten-Eingabe at
+	// KeineDaten is true if there is no Ablesung or Fixkosteneingabe at
 	// all - the page then shows only a note, no selection.
 	KeineDaten bool
 	Jahre      []int

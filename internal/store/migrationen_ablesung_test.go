@@ -54,7 +54,7 @@ func datenbankMitAblesungsFeldern(t *testing.T) *sql.DB {
 
 // datenbankImSchema4 writes a database as the last build before #368 left it:
 // user_version 4, the six columns and period_occupancy with data, plus a
-// Fixkosten-Eingabe that already carries the prices.
+// Fixkosteneingabe that already carries the prices.
 func datenbankImSchema4(t *testing.T) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "nk.db")
@@ -99,14 +99,14 @@ func TestOpen_Schema4LoeschtSpaltenUndTabelleNachSicherung(t *testing.T) {
 	if err := db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE name = 'period_occupancy'`).Scan(&n); err != nil || n != 0 {
 		t.Errorf("Tabelle period_occupancy: %d, %v, want gelöscht", n, err)
 	}
-	// What is not dropped stays: the Ablesung and the prices of the Fixkosten-Eingabe.
+	// What is not dropped stays: the Ablesung and the prices of the Fixkosteneingabe.
 	var perioden int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM periods`).Scan(&perioden); err != nil || perioden != 1 {
 		t.Errorf("Ablesungen = %d, %v, want 1", perioden, err)
 	}
 	var strompreis float64
 	if err := db.QueryRow(`SELECT strompreis FROM fixkosten_eingaben`).Scan(&strompreis); err != nil || strompreis != 0.3 {
-		t.Errorf("Strompreis der Fixkosten-Eingabe = %v, %v, want 0.3", strompreis, err)
+		t.Errorf("Strompreis der Fixkosteneingabe = %v, %v, want 0.3", strompreis, err)
 	}
 
 	// The save from before the destructive steps holds the old fields.

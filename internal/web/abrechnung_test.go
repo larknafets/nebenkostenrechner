@@ -62,7 +62,7 @@ func wert(logik, typ string, w float64) store.FixkostenPositionWert {
 }
 
 // teiljahrDB is the first Erfassungsjahr: Ausgangsstand on 15 Sep 2026,
-// Ablesungen and Fixkosten-Eingaben for Oct, Nov, Dec (none for Sep). The
+// Ablesungen and Fixkosteneingaben for Oct, Nov, Dec (none for Sep). The
 // Nebenkostenabschlag of Wohnung 2 is 100 in Oct and Nov, missing in Dec.
 func teiljahrDB(t *testing.T, stromWeiterberechnen bool) *sql.DB {
 	t.Helper()
@@ -512,7 +512,7 @@ func TestBerechneAbrechnung_Uebertrag(t *testing.T) {
 		}
 		ab := rechne(t, db, 2) // December alone is fine
 		u := ab.Monatsverlauf.Uebertrag
-		if u.Vorhanden || u.Betrag != 0 || u.Hinweis != "Übertrag nicht berechenbar: Fixkosten-Eingabe fehlt: Oktober 2026" {
+		if u.Vorhanden || u.Betrag != 0 || u.Hinweis != "Übertrag nicht berechenbar: Fixkosteneingabe fehlt: Oktober 2026" {
 			t.Errorf("Übertrag = %+v, want a note on the first affected month (October)", u)
 		}
 		// The running balance starts at 0.
@@ -647,7 +647,7 @@ func TestBerechneAbrechnung_Anhang(t *testing.T) {
 		t.Errorf("Heizung table sums to %v, want %v (the line's Betrag)", anteil, ab.Heizung.Betrag)
 	}
 
-	// Personen per month from the Fixkosten-Eingabe: none in September.
+	// Personen per month from the Fixkosteneingabe: none in September.
 	if len(ab.PersonenMonate) != 4 || ab.PersonenMonate[0].Monat != "2026-09-01" {
 		t.Fatalf("PersonenMonate = %+v, want September to December", ab.PersonenMonate)
 	}
@@ -655,7 +655,7 @@ func TestBerechneAbrechnung_Anhang(t *testing.T) {
 		t.Errorf("September = %+v, want no Fixkosten-Personen", ab.PersonenMonate[0])
 	}
 	if p := ab.PersonenMonate[1]; p.Fixkosten[1] != 2 || p.Fixkosten[2] != 1 {
-		t.Errorf("Oktober = %+v, want the Personen of the Fixkosten-Eingabe", p)
+		t.Errorf("Oktober = %+v, want the Personen of the Fixkosteneingabe", p)
 	}
 	if ab.Gewichtung != 0.7 || len(ab.Apartments) != 2 {
 		t.Errorf("Gewichtung %v, Apartments %d, want 0.7 and 2", ab.Gewichtung, len(ab.Apartments))
@@ -664,7 +664,7 @@ func TestBerechneAbrechnung_Anhang(t *testing.T) {
 
 func TestBerechneAbrechnung_NichtAbrechenbar(t *testing.T) {
 	db := teiljahrDB(t, true)
-	// Remove the Fixkosten-Eingabe of November.
+	// Remove the Fixkosteneingabe of November.
 	eingaben, _ := store.AllFixkostenEingaben(db)
 	for _, e := range eingaben {
 		if e.Monat == "2026-11-01" {
@@ -678,9 +678,9 @@ func TestBerechneAbrechnung_NichtAbrechenbar(t *testing.T) {
 		t.Fatalf("berechneAbrechnung: %v", err)
 	}
 	if erg.Abrechnung != nil {
-		t.Error("Abrechnung computed although a Fixkosten-Eingabe is missing")
+		t.Error("Abrechnung computed although a Fixkosteneingabe is missing")
 	}
-	if fmt.Sprint(maengelTexte(erg.Pruefung)) != "[Fixkosten-Eingabe fehlt: November 2026]" {
+	if fmt.Sprint(maengelTexte(erg.Pruefung)) != "[Fixkosteneingabe fehlt: November 2026]" {
 		t.Errorf("Maengel = %v, want the missing November Eingabe", maengelTexte(erg.Pruefung))
 	}
 }

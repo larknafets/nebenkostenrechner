@@ -15,7 +15,7 @@ const fixkostenFehlenParam = "fixkosten_fehlen"
 
 // ablesungGespeichertURL is where to go after saving the Ablesung periodID: its
 // detail page, with fixkostenFehlenParam when its Abrechnungsmonat has no
-// complete Fixkosten-Eingabe (also for a Teilstand or the first Ablesung).
+// complete Fixkosteneingabe (also for a Teilstand or the first Ablesung).
 func ablesungGespeichertURL(r *http.Request, db *sql.DB, periodID int64) (string, error) {
 	url := fmt.Sprintf("%s/ablesungen/%d", requestBase(r), periodID)
 	v, err := calc.Load(db)

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// backfillFixkostenEingabenAusAblesungen gives every Fixkosten-Eingabe the
+// backfillFixkostenEingabenAusAblesungen gives every Fixkosteneingabe the
 // prices and switches of the Ablesungen of its Abrechnungsmonat (#361, spec
 // #359, step 1, non-destructive; dropPeriodsAblesungsFelder removes the Ablesung columns afterwards, #368).
 //
@@ -20,7 +20,7 @@ import (
 //
 // Only empty target fields are written (a price that is NULL, a switch that
 // is off), so the step can run on every start and never overwrites what was
-// entered on the Fixkosten-Eingabe. If several Ablesungen of one month differ
+// entered on the Fixkosteneingabe. If several Ablesungen of one month differ
 // in a price or a switch, one log line names the month. The step skips
 // silently if a source column on periods is gone.
 func backfillFixkostenEingabenAusAblesungen(db *sql.DB) error {
@@ -77,7 +77,7 @@ func backfillFixkostenEingabenAusAblesungen(db *sql.DB) error {
 }
 
 // backfillEineEingabe is backfillFixkostenEingabenAusAblesungen for one
-// Fixkosten-Eingabe.
+// Fixkosteneingabe.
 func backfillEineEingabe(tx *sql.Tx, id int64, monat string, preise []string) error {
 	cols := slices.Clone(preise)
 	for _, s := range Switches {

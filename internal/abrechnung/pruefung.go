@@ -36,7 +36,7 @@ type Mangel struct {
 	// Monat is the Abrechnungsmonat ("YYYY-MM-01") the finding is about, empty
 	// for one that belongs to no month (Stammdaten).
 	Monat string
-	// Text names the problem for the user, e.g. "Fixkosten-Eingabe fehlt:
+	// Text names the problem for the user, e.g. "Fixkosteneingabe fehlt:
 	// November 2027".
 	Text string
 	// Aktion labels the link that fixes it, e.g. "Fixkosten erfassen".
@@ -113,7 +113,7 @@ func (p Pruefung) Abrechenbar() bool { return len(p.Maengel) == 0 }
 type Daten struct {
 	// Periods are all Ablesungen, oldest first (store.AllPeriodDetails).
 	Periods []*store.LatestPeriod
-	// Eingaben are the Fixkosten-Eingaben with their prices: the Prüfung asks
+	// Eingaben are the Fixkosteneingaben with their prices: the Prüfung asks
 	// calc whether a month is complete instead of counting itself.
 	Eingaben   []*store.FixkostenEingabeDetails
 	Apartments []store.Apartment
@@ -134,7 +134,7 @@ type Daten struct {
 // Rules for the months of the period:
 //  1. Every month from the one of the first Ablesung needs at least one
 //     complete Ablesung (no Teilstand) with that Abrechnungsmonat.
-//  2. Every month needs exactly one complete Fixkosten-Eingabe (all prices,
+//  2. Every month needs exactly one complete Fixkosteneingabe (all prices,
 //     calc.Verbrauchskosten.MonatVollstaendig) - except the month of the
 //     first Ablesung in the first year, where none is needed (one that
 //     exists counts, two are still ambiguous).
@@ -230,7 +230,7 @@ func PruefeMonate(d Daten, ablesungVon, letzter, fixkostenVon time.Time) []Mange
 			maengel = append(maengel, Mangel{
 				Art:    MangelFixkostenMehrfach,
 				Monat:  key,
-				Text:   "Mehr als eine Fixkosten-Eingabe: " + store.MonatLabel(key),
+				Text:   "Mehr als eine Fixkosteneingabe: " + store.MonatLabel(key),
 				Aktion: "Fixkosten korrigieren",
 				Pfad:   "/fixkosten",
 			})
@@ -238,7 +238,7 @@ func PruefeMonate(d Daten, ablesungVon, letzter, fixkostenVon time.Time) []Mange
 			maengel = append(maengel, Mangel{
 				Art:    MangelFixkostenUnvollstaendig,
 				Monat:  key,
-				Text:   "Fixkosten-Eingabe ist unvollständig: " + store.MonatLabel(key),
+				Text:   "Fixkosteneingabe ist unvollständig: " + store.MonatLabel(key),
 				Aktion: "Fixkosten ergänzen",
 				Pfad:   "/fixkosten/" + strconv.FormatInt(kosten.Eingabe(key).ID, 10) + "/bearbeiten",
 			})
@@ -246,7 +246,7 @@ func PruefeMonate(d Daten, ablesungVon, letzter, fixkostenVon time.Time) []Mange
 			maengel = append(maengel, Mangel{
 				Art:    MangelFixkostenFehlt,
 				Monat:  key,
-				Text:   "Fixkosten-Eingabe fehlt: " + store.MonatLabel(key),
+				Text:   "Fixkosteneingabe fehlt: " + store.MonatLabel(key),
 				Aktion: "Fixkosten erfassen",
 				Pfad:   "/fixkosten/neu",
 			})
@@ -257,7 +257,7 @@ func PruefeMonate(d Daten, ablesungVon, letzter, fixkostenVon time.Time) []Mange
 
 // bestimmeZeitraum derives the billing period of jahr from the Ablesungen.
 // It also returns the first month needing an Ablesung and the first month
-// needing a Fixkosten-Eingabe. ok is false if the year has no period; the
+// needing a Fixkosteneingabe. ok is false if the year has no period; the
 // reason is then already appended to res.
 func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich Monatsbereich, res *Pruefung) (z Zeitraum, ablesungVon, fixkostenVon time.Time, ok bool) {
 	if len(periods) == 0 {
@@ -276,7 +276,7 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich Monatsber
 		res.Maengel = append(res.Maengel, Mangel{
 			Art:    MangelKeinZeitraum,
 			Text:   "Das Datum der ersten Ablesung ist ungültig: " + first.ReadingDate,
-			Aktion: "Ablesung korrigieren",
+			Aktion: "Eingabe korrigieren",
 			Pfad:   "/ablesungen/" + strconv.FormatInt(first.ID, 10) + "/bearbeiten",
 		})
 		return z, ablesungVon, fixkostenVon, false
@@ -323,7 +323,7 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich Monatsber
 	return z, ablesungVon, fixkostenVon, true
 }
 
-// fixkostenBeginn is the first month needing a Fixkosten-Eingabe in a range of
+// fixkostenBeginn is the first month needing a Fixkosteneingabe in a range of
 // months starting at ablesungVon: the month after ablesungVon if that is the
 // month of the first Ablesung ever (erfassungsmonat, the Ausgangsstand month
 // needs none), else ablesungVon itself. The Zeitraum and the Übertrag

@@ -50,7 +50,7 @@ func (e FixkostenErgebnis) KostenFor(apartmentID int64) float64 {
 	return e.KostenW1
 }
 
-// FixkostenMonat is one Abrechnungsmonat's Fixkosten-Eingabe together with
+// FixkostenMonat is one Abrechnungsmonat's Fixkosteneingabe together with
 // its calculated result.
 type FixkostenMonat struct {
 	Eingabe  *store.FixkostenEingabeDetails
@@ -116,7 +116,7 @@ func NewFixkostenreihe(d FixkostenDaten) *Fixkostenreihe {
 	return r
 }
 
-// Eingabe returns the Fixkosten-Eingabe with the given id.
+// Eingabe returns the Fixkosteneingabe with the given id.
 func (r *Fixkostenreihe) Eingabe(id int64) (FixkostenMonat, bool) {
 	i, ok := r.byID[id]
 	if !ok {
@@ -125,7 +125,7 @@ func (r *Fixkostenreihe) Eingabe(id int64) (FixkostenMonat, bool) {
 	return r.alle[i], true
 }
 
-// Monat returns the Fixkosten-Eingabe of the given Abrechnungsmonat.
+// Monat returns the Fixkosteneingabe of the given Abrechnungsmonat.
 func (r *Fixkostenreihe) Monat(monat string) (FixkostenMonat, bool) {
 	i, ok := r.byMonat[monat]
 	if !ok {
