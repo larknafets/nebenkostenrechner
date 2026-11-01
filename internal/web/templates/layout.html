@@ -267,6 +267,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
     --logik-wohneinheit: #8b5cf6; --logik-flurstueck: #22c55e; --logik-qm: #ec4899; --logik-personen: #06b6d4;
     --logik-wohnung1: #f59e0b; --logik-wohnung2: #6366f1;
     --tooltip-bg: #1c1e21; --tooltip-text: #ffffff;
+    --feld-abstand: .9rem;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -313,9 +314,9 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   .fehler-modal h3 { margin: 0 0 .6rem; color: var(--danger); }
   .fehler-modal ul { margin: 0 0 0 1.1rem; padding: 0; }
   .fehler-feld { border-color: var(--danger) !important; outline: 2px solid var(--danger); }
-  .field { margin-bottom: .9rem; }
+  .field { margin-bottom: var(--feld-abstand); }
   .select-row { display: flex; justify-content: space-between; align-items: flex-end; gap: .75rem; flex-wrap: wrap; }
-  .select-row .button { margin-bottom: .9rem; }
+  .select-row .button { margin-bottom: var(--feld-abstand); }
   .radio-options { display: flex; gap: 1.25rem; flex-wrap: wrap; }
   .radio-option { display: flex; align-items: center; gap: .35rem; width: auto; font-size: .9rem; color: var(--text); margin-bottom: 0; }
   .radio-option input[type=radio] { width: auto; }
