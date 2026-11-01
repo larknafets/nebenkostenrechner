@@ -8,7 +8,7 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 - Look at it in the browser: `scripts/dev-server` (log in as Vermieter with password `dev`, a private window shows the not-logged-in view)
 - `cmd/nebenkostenrechner`: main, wiring through environment variables
 - `internal/calc`: pure cost calculation (Strom, Wasser, Heizung, Einspeisung, Fixkosten), no HTTP
-- `internal/store`: SQLite (modernc), `schema.sql`, Ablesungen, Fixkosten-Eingaben, Stammdaten
+- `internal/store`: SQLite (modernc), `schema.sql`, Ablesungen, Fixkosteneingaben, Stammdaten
 - `internal/web`: handlers, Dashboard, Abrechnung, CSV; templates in `templates/` (embedded)
 - Domain terms: `GLOSSARY.md` (use its vocabulary), decisions: `docs/adr/`. User docs: `README.md`.
 

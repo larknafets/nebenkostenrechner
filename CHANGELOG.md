@@ -2,7 +2,7 @@
 
 ## v0.21.0 - 2026-10-28
 
-> **Vor dem Update:** Beim ersten Start migriert die App die Datenbank, ein Zurück auf die alte Version ist danach nicht mehr möglich. Zahlen alter Monate können sich ändern, weil Preise und Häkchen jetzt aus den Fixkosten-Eingaben kommen. Vorher legt die App eine Sicherung neben der Datenbank an.
+> **Vor dem Update:** Beim ersten Start migriert die App die Datenbank, ein Zurück auf die alte Version ist danach nicht mehr möglich. Zahlen alter Monate können sich ändern, weil Preise und Häkchen jetzt aus den Fixkosteneingaben kommen. Vorher legt die App eine Sicherung neben der Datenbank an.
 
 ### Verbesserungen
 
@@ -10,23 +10,23 @@
 
 - Dashboard: Die Badges für Fläche, Flurstück und Personen bei den Jahressummen sind kleiner und passen häufiger in eine Zeile.
 
-- Personenzahl, Preise und die Häkchen "Wallboxen vollständig Wohnung 1" und "PV-Gutschrift Wohnung 1" werden nur noch bei der Fixkosten-Eingabe des Monats erfasst, der Ablesungs-Wizard hat nur noch drei Schritte (Strom, Wärme, Wasser). Gibt es für den Monat keine Fixkosten-Eingabe, zeigen Dashboard, Monatsverlauf, Ablesungen und Jahreskarte "Fixkosten fehlen" statt falscher Zahlen. Das Fixkosten-CSV hat sechs neue Spalten für Preise und Häkchen, das Ablesungs-CSV nimmt ältere Dateien weiter an (#359)
+- Personenzahl, Preise und die Häkchen "Wallboxen vollständig Wohnung 1" und "PV-Gutschrift Wohnung 1" werden nur noch bei der Fixkosteneingabe des Monats erfasst, der Ablesungs-Wizard hat nur noch drei Schritte (Strom, Wärme, Wasser). Gibt es für den Monat keine Fixkosteneingabe, zeigen Dashboard, Monatsverlauf, Ablesungen und Jahreskarte "Fixkosten fehlen" statt falscher Zahlen. Das Fixkosten-CSV hat sechs neue Spalten für Preise und Häkchen, das Ablesungs-CSV nimmt ältere Dateien weiter an (#359)
 
 ### Fehlerkorrekturen
 
 - Wenn zwei Personen gleichzeitig speichern, kommt nicht mehr sporadisch der Fehler "database is locked", die Datenbank wartet jetzt bis zu 5 Sekunden. Außerdem wurden Fremdschlüssel bisher nur auf einer der Datenbankverbindungen geprüft, jetzt auf allen.
 
-- Die Abrechnungsprüfung meldet eine Fixkosten-Eingabe ohne vollständige Preise jetzt als eigenen Mangel "Fixkosten-Eingabe ist unvollständig" mit dem Link "Fixkosten ergänzen". Bisher bestand eine solche Eingabe die Prüfung, der Verbrauch dieses Monats fiel aber still aus der Jahresabrechnung (#381)
+- Die Abrechnungsprüfung meldet eine Fixkosteneingabe ohne vollständige Preise jetzt als eigenen Mangel "Fixkosteneingabe ist unvollständig" mit dem Link "Fixkosten ergänzen". Bisher bestand eine solche Eingabe die Prüfung, der Verbrauch dieses Monats fiel aber still aus der Jahresabrechnung (#381)
 
 - Dashboard und Monatsverlauf zeigen den Hinweis "Fixkosten fehlen" jetzt auch für Monate mit Teilstand und für die erste Ablesung, bisher erschien er erst, sobald die Ablesung berechenbar war (#380)
 
-- Ablesungsseite, Speichern und CSV-Import zeigen "Fixkosten fehlen" jetzt auch bei Teilstand, erster Ablesung und unvollständiger Fixkosten-Eingabe, der Link heißt dann "Fixkosten ergänzen" und führt zur Eingabe des Monats (#383)
+- Ablesungsseite, Speichern und CSV-Import zeigen "Fixkosten fehlen" jetzt auch bei Teilstand, erster Ablesung und unvollständiger Fixkosteneingabe, der Link heißt dann "Fixkosten ergänzen" und führt zur Eingabe des Monats (#383)
 
 - Die Anmeldung bremst Kennwort-Raten: Nach 10 falschen Kennwörtern innerhalb einer Minute lehnt die App weitere Kennwort-Anmeldungen bis zum Ende der Minute ab (auch das richtige Kennwort) und zeigt dazu im Anmelde-Fenster einen Hinweis. Die Demo-Anmeldung setzt die Demo-Daten höchstens alle 10 Sekunden zurück.
 
 ### Wartung
 
-- Update: Preise und Häkchen wandern beim ersten Start aus den Ablesungen in die Fixkosten-Eingaben desselben Monats, die Berechnung alter Monate kann sich dadurch ändern (Abweichungen stehen im Log). Monate ohne Fixkosten-Eingabe zeigen "Fixkosten fehlen", Ablesungen ohne Preise gelten als vollständig. Die Spalten für Preise, Häkchen und Personenzahl der Ablesung und die Tabelle der Ablesungs-Personenzahlen entfallen. Die Sicherung `.vor-schema-<alte Version>-<UTC-Zeit>` entsteht vor dem Start (#359)
+- Update: Preise und Häkchen wandern beim ersten Start aus den Ablesungen in die Fixkosteneingaben desselben Monats, die Berechnung alter Monate kann sich dadurch ändern (Abweichungen stehen im Log). Monate ohne Fixkosteneingabe zeigen "Fixkosten fehlen", Ablesungen ohne Preise gelten als vollständig. Die Spalten für Preise, Häkchen und Personenzahl der Ablesung und die Tabelle der Ablesungs-Personenzahlen entfallen. Die Sicherung `.vor-schema-<alte Version>-<UTC-Zeit>` entsteht vor dem Start (#359)
 - Interne Aufräumarbeiten am Code ohne sichtbare Änderung
 
 Alle Änderungen im Vergleich: [v0.20.0...v0.21.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.20.0...v0.21.0)
@@ -61,14 +61,14 @@ Alle Änderungen im Vergleich: [v0.19.0...v0.20.0](https://github.com/larknafets
 
 ### Neue Funktionen
 
-- Miete: Je vermieteter Wohnung erfasst du die monatliche Miete in der Fixkosten-Eingabe (Pflichtfeld, 0 erlaubt). Sie erscheint als Mieteinnahmen auf der Jahreskarte (nur für angemeldete Nutzer) und auf der Detailseite der Eingabe. Sie geht in keine Berechnung, keinen Saldo und keine Abrechnung ein (#277, #278, #281)
-- Die Fixkosten-Eingabe erfasst den Nebenkostenabschlag nur noch für vermietete Wohnungen (Pflichtfeld, 0 erlaubt), bei Eigennutzung gibt es kein Feld mehr. Bereits gespeicherte Abschläge zählen weiter (#277)
+- Miete: Je vermieteter Wohnung erfasst du die monatliche Miete in der Fixkosteneingabe (Pflichtfeld, 0 erlaubt). Sie erscheint als Mieteinnahmen auf der Jahreskarte (nur für angemeldete Nutzer) und auf der Detailseite der Eingabe. Sie geht in keine Berechnung, keinen Saldo und keine Abrechnung ein (#277, #278, #281)
+- Die Fixkosteneingabe erfasst den Nebenkostenabschlag nur noch für vermietete Wohnungen (Pflichtfeld, 0 erlaubt), bei Eigennutzung gibt es kein Feld mehr. Bereits gespeicherte Abschläge zählen weiter (#277)
 - Der CSV-Export der Fixkosten enthält jetzt `miete_1` und `miete_2`, ältere Dateien bleiben importierbar (#277)
 
 ### Verbesserungen
 
 - Die Jahreskarte einer vermieteten Wohnung zeigt unter Guthaben / Nachzahlung die Mieteinnahmen des Jahres. Sie erscheinen nur für angemeldete Nutzer, die Widgets zeigen sie nicht (#278)
-- Die Detailseite einer Fixkosten-Eingabe zeigt die Miete vermieteter Wohnungen neben dem Nebenkostenabschlag, auch ohne Login (#281)
+- Die Detailseite einer Fixkosteneingabe zeigt die Miete vermieteter Wohnungen neben dem Nebenkostenabschlag, auch ohne Login (#281)
 - Jahreskarten: PV-Gutschrift (Wohnung 1) und PV-Anteil (Wohnung 2) stehen jetzt auch mit 0. Die Wallbox-Zeile einer vermieteten Wohnung entfällt, wenn "Wallbox weiterberechnen" aus ist und der Betrag 0 ist (#276)
 - Strom von Wohnung 1: Der Rest des Netzbezugs nach Wohnung 2, Wärmepumpe und Wallboxen steht jetzt als Kategorie "Strom" in Jahreskarte, Monatsverlauf, Verbrauchswerten, Gesamt, Saldo und Widgets (#279)
 - Jahresabrechnung: Der Strom einer Wohnung steht bei Eigennutzung immer in der Abrechnung, bei Vermietung nur mit "Stromverbrauch weiterberechnen" (jetzt für Wohnung 1 und 2). Der Jahressaldo zählt ihn mit und gleicht damit wieder der Änderung im Dashboard (#280)
@@ -86,13 +86,13 @@ Alle Änderungen im Vergleich: [v0.18.0...v0.19.0](https://github.com/larknafets
 
 ### Neue Funktionen
 
-- Fixkosten: Neue Position "Wartungskosten PV-Anlage" direkt unter "Wartungskosten Wärmepumpe", auf der Fixkosten-Eingabe und in den Stammdaten. Vorbelegt mit Berechnungslogik "Wohnung 1", Typ "jährlich" und nicht umlagefähig. Bestehende Eingaben erhalten die Position automatisch mit dem Wert 0. Ein älterer Fixkosten-CSV-Export lässt sich nicht mehr importieren, weil die Spalten der neuen Position fehlen
+- Fixkosten: Neue Position "Wartungskosten PV-Anlage" direkt unter "Wartungskosten Wärmepumpe", auf der Fixkosteneingabe und in den Stammdaten. Vorbelegt mit Berechnungslogik "Wohnung 1", Typ "jährlich" und nicht umlagefähig. Bestehende Eingaben erhalten die Position automatisch mit dem Wert 0. Ein älterer Fixkosten-CSV-Export lässt sich nicht mehr importieren, weil die Spalten der neuen Position fehlen
 
 ### Verbesserungen
 
 - Stammdaten: Die Reihenfolge der Kostenpositionen hat eine übersichtlichere Darstellung: nummerierte Liste mit Trennlinien und Pfeil-Symbolen statt einfacher Textpfeile, mit sichtbarem Fokus für die Tastaturbedienung (#255)
 
-- Stammdaten: Die Reihenfolge der Kostenpositionen lässt sich mit Hoch/Runter-Buttons ändern. Sie gilt für Fixkosten-Eingabe, Fixkosten-Anzeige und Abrechnung. Neue Positionen erscheinen künftig am Ende der Liste
+- Stammdaten: Die Reihenfolge der Kostenpositionen lässt sich mit Hoch/Runter-Buttons ändern. Sie gilt für Fixkosteneingabe, Fixkosten-Anzeige und Abrechnung. Neue Positionen erscheinen künftig am Ende der Liste
 
 ### Fehlerkorrekturen
 
@@ -104,7 +104,7 @@ Alle Änderungen im Vergleich: [v0.18.0...v0.19.0](https://github.com/larknafets
 
 - Dashboard: Der Update-Hinweis (Punkt neben der Version unten rechts) erschien im Nightly-Kanal nie, weil nur Release-Versionen verglichen wurden. Jetzt zeigt ein Nightly-Stand den Punkt, sobald ein neueres Nightly vorliegt, der Link führt zum zugehörigen Commit. Nightlys vom selben Tag lassen sich nicht unterscheiden und lösen keinen Hinweis aus
 
-- Eingaben: Eine Fehlermeldung (z. B. "Für September 2026 gibt es bereits eine Fixkosten-Eingabe") führte auf eine leere Fehlerseite, man musste zurückgehen und die Eingaben waren weg. Jetzt erscheint sie als Dialog über der Seite, die Eingaben bleiben stehen, das betroffene Feld ist rot markiert und nach dem Schließen aktiv. Gilt für Fixkosten, Ablesung, Stammdaten und die beiden CSV-Importe
+- Eingaben: Eine Fehlermeldung (z. B. "Für September 2026 gibt es bereits eine Fixkosteneingabe") führte auf eine leere Fehlerseite, man musste zurückgehen und die Eingaben waren weg. Jetzt erscheint sie als Dialog über der Seite, die Eingaben bleiben stehen, das betroffene Feld ist rot markiert und nach dem Schließen aktiv. Gilt für Fixkosten, Ablesung, Stammdaten und die beiden CSV-Importe
 
 ### Wartung
 
@@ -123,7 +123,7 @@ Alle Änderungen im Vergleich: [v0.17.0...v0.18.0](https://github.com/larknafets
 
 ### Fehlerkorrekturen
 
-- Dashboard: Der Personen-Schnitt der Jahressumme ist jetzt das Mittel der Personenzahlen aller Fixkosten-Eingaben des Jahres (ein Wert je Monat, z. B. 1,25). Vorher kam er aus den Ablesungen und zählte jede Ablesung gleich, auch mehrere im selben Monat
+- Dashboard: Der Personen-Schnitt der Jahressumme ist jetzt das Mittel der Personenzahlen aller Fixkosteneingaben des Jahres (ein Wert je Monat, z. B. 1,25). Vorher kam er aus den Ablesungen und zählte jede Ablesung gleich, auch mehrere im selben Monat
 
 Alle Änderungen im Vergleich: [v0.16.0...v0.17.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.16.0...v0.17.0)
 
@@ -139,7 +139,7 @@ Alle Änderungen im Vergleich: [v0.16.0...v0.17.0](https://github.com/larknafets
 
 ### Verbesserungen
 
-- Ablesung und Fixkosten-Eingabe: Die Personenzahl lässt sich mit bis zu 2 Nachkommastellen eintragen (z. B. 1,25), sie fließt in die Warmwasser-Aufteilung und den Schlüssel "Personen" ein; negative Werte und mehr als 2 Nachkommastellen lehnt das Formular ab. Angezeigt wird sie überall ohne Auffüllen ("2", "1,25"), auch im Personen-Schnitt des Dashboards. Der CSV-Import beider Dateien nimmt Personenzahlen mit Komma an (ältere ganzzahlige CSVs bleiben gültig) und bricht bei negativen Werten oder mehr als 2 Nachkommastellen mit der Zeilennummer ab, ohne etwas zu importieren (#242, #243)
+- Ablesung und Fixkosteneingabe: Die Personenzahl lässt sich mit bis zu 2 Nachkommastellen eintragen (z. B. 1,25), sie fließt in die Warmwasser-Aufteilung und den Schlüssel "Personen" ein; negative Werte und mehr als 2 Nachkommastellen lehnt das Formular ab. Angezeigt wird sie überall ohne Auffüllen ("2", "1,25"), auch im Personen-Schnitt des Dashboards. Der CSV-Import beider Dateien nimmt Personenzahlen mit Komma an (ältere ganzzahlige CSVs bleiben gültig) und bricht bei negativen Werten oder mehr als 2 Nachkommastellen mit der Zeilennummer ab, ohne etwas zu importieren (#242, #243)
 
 ### Wartung
 
@@ -216,7 +216,7 @@ Alle Änderungen im Vergleich: [v0.13.1...v0.14.0](https://github.com/larknafets
 ### Verbesserungen
 
 - In der Navigation steht "Stammdaten" jetzt vor "Abrechnung"
-- Der Hinweis "– keine Ablesung –" bzw. "– keine Fixkosten-Eingabe –" im Monatsverlauf steht mittig und endet mit einem Strich
+- Der Hinweis "– keine Ablesung –" bzw. "– keine Fixkosteneingabe –" im Monatsverlauf steht mittig und endet mit einem Strich
 
 ### Fehlerkorrekturen
 
@@ -239,7 +239,7 @@ Alle Änderungen im Vergleich: [v0.13.0...v0.13.1](https://github.com/larknafets
 
 - Der Ablesungs-Assistent hat eine neue Reihenfolge: Strom, Wärme, Wasser, bei Strom Netzbezug (1.8.0), Einspeisung (2.8.0), Wohnung 2, Wallboxen, Wärmepumpe. Alle Einheiten stehen in Klammern (#178)
 - Die Boxen der Stammdaten haben gleiche Abstände, das IBAN-Feld ist größer
-- Es gibt je Monat genau eine Fixkosten-Eingabe, ein doppelter Monat wird beim Speichern abgelehnt (#173)
+- Es gibt je Monat genau eine Fixkosteneingabe, ein doppelter Monat wird beim Speichern abgelehnt (#173)
 
 ### Fehlerkorrekturen
 
@@ -285,7 +285,7 @@ Alle Änderungen im Vergleich: [v0.11.0...v0.11.1](https://github.com/larknafets
 
 ### Neue Funktionen
 
-- CSV-Export und CSV-Import für die Fixkosten-Eingaben (#132, #133)
+- CSV-Export und CSV-Import für die Fixkosteneingaben (#132, #133)
 
 Alle Änderungen im Vergleich: [v0.10.2...v0.11.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.10.2...v0.11.0)
 
@@ -342,8 +342,8 @@ Alle Änderungen im Vergleich: [v0.9.0...v0.10.0](https://github.com/larknafets/
 ### Fehlerkorrekturen
 
 - Zwischen Wert und Einheit (kWh, m², m³, MWh) sowie vor dem Euro-Zeichen entsteht kein Zeilenumbruch mehr
-- Der Nebenkostenabschlag erscheint auf der Detailseite einer Fixkosten-Eingabe
-- Das Guthaben ignoriert Monate ohne Fixkosten-Eingabe und rechnet bei Lücken korrekt
+- Der Nebenkostenabschlag erscheint auf der Detailseite einer Fixkosteneingabe
+- Das Guthaben ignoriert Monate ohne Fixkosteneingabe und rechnet bei Lücken korrekt
 
 ### Wartung
 
