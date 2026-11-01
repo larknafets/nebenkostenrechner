@@ -41,8 +41,6 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
-- Auf dem Dashboard lassen sich die Jahressummen über eine Zeitleiste mit den Monaten des Jahres nur bis zu einem bestimmten Abrechnungsmonat anzeigen, ohne Auswahl gilt wie bisher der letzte Monat. Mit den Pfeilen ‹ › neben der Überschrift lässt sich auch ein abgeschlossenes Jahr ansehen.
-
 ## Verbesserungen
 
 ## Fehlerkorrekturen

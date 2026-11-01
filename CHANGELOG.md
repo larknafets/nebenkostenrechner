@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.23.0 - 2026-11-01
+
+### Neue Funktionen
+
+- Auf dem Dashboard lassen sich die Jahressummen über eine Zeitleiste mit den Monaten des Jahres nur bis zu einem bestimmten Abrechnungsmonat anzeigen, ohne Auswahl gilt wie bisher der letzte Monat. Mit den Pfeilen ‹ › neben der Überschrift lässt sich auch ein abgeschlossenes Jahr ansehen.
+
+Alle Änderungen im Vergleich: [v0.22.0...v0.23.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.22.0...v0.23.0)
+
 ## v0.22.0 - 2026-11-01
 
 ### Verbesserungen
