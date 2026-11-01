@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.22.0 - 2026-11-01
+
+### Verbesserungen
+
+- Die Ablesungsansicht zeigt den Stromverbrauch als Tabelle in Rechenreihenfolge (Wohnung 2, Wärmepumpe, Wallboxen, Rest für Wohnung 1) mit Verbrauch, Netzbezug-Anteil, PV-Deckung und dem jeweils übrigen Netzbezug, die Stromkosten stehen gesammelt darunter.
+- „Eingabe korrigieren“ steht in der Fixkosten- und Ablesungsanzeige oben rechts, der Button zum Löschen einer Fixkosteneingabe heißt „Fixkosteneingabe löschen“.
+
+### Wartung
+
+- Aktualisierung der Abhängigkeiten
+
+Alle Änderungen im Vergleich: [v0.21.0...v0.22.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.21.0...v0.22.0)
+
 ## v0.21.0 - 2026-10-28
 
 > **Vor dem Update:** Beim ersten Start migriert die App die Datenbank, ein Zurück auf die alte Version ist danach nicht mehr möglich. Zahlen alter Monate können sich ändern, weil Preise und Häkchen jetzt aus den Fixkosteneingaben kommen. Vorher legt die App eine Sicherung neben der Datenbank an.

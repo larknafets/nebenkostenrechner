@@ -43,9 +43,6 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Verbesserungen
 
-- Die Ablesungsansicht zeigt den Stromverbrauch als Tabelle in Rechenreihenfolge (Wohnung 2, Wärmepumpe, Wallboxen, Rest für Wohnung 1) mit Verbrauch, Netzbezug-Anteil, PV-Deckung und dem jeweils übrigen Netzbezug, die Stromkosten stehen gesammelt darunter.
-- „Eingabe korrigieren“ steht in der Fixkosten- und Ablesungsanzeige oben rechts, der Button zum Löschen einer Fixkosteneingabe heißt „Fixkosteneingabe löschen“.
-
 ## Fehlerkorrekturen
 
 ## Wartung
