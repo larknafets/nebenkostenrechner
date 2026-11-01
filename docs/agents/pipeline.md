@@ -5,7 +5,7 @@ The standard order for a larger change: `/wayfinder` (map and decision tickets),
 ## Who starts what
 
 - `/wayfinder` and `/implement-spec` have `disable-model-invocation`: the agent cannot start them. Give the user the full command with arguments to paste.
-- `grilling`, `domain-modeling`, `/to-spec`, `/to-tickets`, `code-review` and `/ponytail-review` the agent starts itself.
+- `grilling`, `domain-modeling`, `/to-spec`, `/to-tickets`, `/code-review` and `/ponytail-review` the agent starts itself.
 - With a pipeline order from the user, continue straight to the next frontier ticket after a resolved Wayfinder ticket and put its question round. The rule "one ticket per session" limits the work, not the turn, and the user's answers gate the next step anyway.
 
 ## Context between the phases
