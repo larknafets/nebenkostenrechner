@@ -4,7 +4,7 @@
 
 <div class="panel">
   <h2>Strom (PV-Netzbezug-Zuteilung)</h2>
-  <p>Netzbezug wird sequenziell zugeteilt: zuerst Wohnung 2 (gedeckelt auf ihren eigenen Verbrauch), dann die Wärmepumpe auf den verbleibenden Netzbezug, dann die Wallboxen auf den danach noch verbleibenden Netzbezug. Der Rest ist der Haushaltsstrom von Wohnung 1 und ihre Strom-Kostenposition (ihr Wallbox-Anteil bleibt in der Wallbox-Position). Die Wallbox-Stufe hat keine eigene Wohnungs-Zuteilung und keinen eigenen Wallbox-Tarif, läuft aber über dieselbe Deckelung wie Wohnung 2/Wärmepumpe, damit ihr Wert konsistent zum übrigen Netzbezug bleibt.</p>
+  <p>Netzbezug wird sequenziell zugeteilt: zuerst Wohnung 2 (gedeckelt auf ihren eigenen Verbrauch), dann die Wärmepumpe auf den verbleibenden Netzbezug, dann die Wallboxen auf den danach noch verbleibenden Netzbezug. Der Rest geht an Wohnung 1 und ist ihre Strom-Kostenposition (ihr Wallbox-Anteil bleibt in der Wallbox-Position). Die Wallbox-Stufe hat keine eigene Wohnungs-Zuteilung und keinen eigenen Wallbox-Tarif, läuft aber über dieselbe Deckelung wie Wohnung 2/Wärmepumpe, damit ihr Wert konsistent zum übrigen Netzbezug bleibt.</p>
   <pre class="formula">Netzbezug_Gesamt = Verbrauch(strom_gesamt)
 
 W2_Anteil_kWh      = min(Netzbezug_Gesamt, Verbrauch(strom_wohnung2))

@@ -102,7 +102,7 @@ func TestStammdaten_WallboxWeiterberechnenSpeichernUndAnzeigen(t *testing.T) {
 
 	// New database: the flag is on by default and the label says what it means.
 	body := get()
-	mustContain(t, body, "Wallbox weiterberechnen", "(Haushaltsstrom)")
+	mustContain(t, body, "Wallbox weiterberechnen", "(ohne Wallbox)")
 	if !strings.Contains(body, `name="wallbox_weiterberechnen" value="1" checked`) {
 		t.Error("the flag is not checked on a new database")
 	}

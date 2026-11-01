@@ -114,7 +114,7 @@ func TestAblesungsDetail_FixkostenFehlen(t *testing.T) {
 		}
 	}
 	// Wallbox: Netzbezug-Anteil in kWh, the hint instead of the split.
-	if !strings.Contains(body, "Wallbox Anteil") {
+	if !strings.Contains(body, "3. Wallboxen") {
 		t.Error("Wallbox-Block ohne Netzbezug-Anteil")
 	}
 	if strings.Contains(body, "keiner Wohnung zugeordnet") {

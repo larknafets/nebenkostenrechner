@@ -106,12 +106,36 @@ const (
 	wallboxAbweichungMinKWh  = 2.0
 )
 
-// WallboxNetzbezugKWh is the grid-draw share of the Wallboxen in kWh. It is a
-// pure meter value and needs no Fixkosteneingabe (no price, no switch): the
-// views show it for an Ablesung whose costs are still open (#359). verbrauch
-// holds the consumption per meter key, as store.Verbrauch gives it.
-func WallboxNetzbezugKWh(verbrauch map[string]float64) float64 {
-	return berechneStrom(stromEingabe{Verbrauch: verbrauch}).WallboxAnteilKWh
+// StromZuteilung is the kWh allocation alone, without price and switches: a
+// pure meter value, so the Ablesung view can show the cascade while the
+// Fixkosten are still missing. verbrauch holds the consumption per meter key,
+// as store.Verbrauch gives it.
+func StromZuteilung(verbrauch map[string]float64) *StromErgebnis {
+	return berechneStrom(stromEingabe{Verbrauch: verbrauch})
+}
+
+// RestNachWohnung2 is the grid draw left after apartment 2.
+func (e *StromErgebnis) RestNachWohnung2() float64 {
+	return e.NetzbezugGesamtKWh - e.W2AnteilKWh
+}
+
+// RestNachWaermepumpe is the grid draw left after apartment 2 and the heat
+// pump. What the Wallboxen take from it is W1RestKWh's remainder.
+func (e *StromErgebnis) RestNachWaermepumpe() float64 {
+	return e.RestNachWohnung2() - e.WPAnteilKWh
+}
+
+// WPVerbrauchKWh and WallboxVerbrauchKWh are the raw submeter consumptions,
+// like W2VerbrauchKWh: the grid share plus the share PV covered.
+func (e *StromErgebnis) WPVerbrauchKWh() float64 { return e.WPAnteilKWh + e.PVAnteilWPKWh }
+
+func (e *StromErgebnis) WallboxVerbrauchKWh() float64 {
+	return e.WallboxAnteilKWh + e.PVAnteilWallboxKWh
+}
+
+// PVGedecktKWh is the consumption of the three submeters that PV covered.
+func (e *StromErgebnis) PVGedecktKWh() float64 {
+	return e.PVAnteilW2KWh + e.PVAnteilWPKWh + e.PVAnteilWallboxKWh
 }
 
 // berechneStrom is the allocation itself, a pure function of its input.

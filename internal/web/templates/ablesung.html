@@ -48,41 +48,41 @@
     </tbody>
   </table>
 
+  {{if .Kaskade}}
+  <h3 style="margin-top:1.25rem">Stromverbrauch und PV-Zuteilung</h3>
+  <p class="muted">Der Netzbezug wird von oben nach unten verteilt. Jede Stufe nimmt höchstens so viel, wie noch übrig ist. Was ein Zähler mehr verbraucht hat, als ihm vom Netzbezug zugeteilt wurde, deckte die PV.</p>
+  <table class="letzte">
+    <thead><tr><th>Stufe</th><th>Verbrauch laut Zähler</th><th>davon aus Netzbezug</th><th title="Nicht dem Netzbezug zugeordnet (PV)">davon aus PV</th><th>Netzbezug übrig</th></tr></thead>
+    <tbody>
+      {{range .Kaskade}}
+      <tr><td>{{.Label}}</td><td>{{if .HatVerbrauch}}{{de2 .Verbrauch}}&nbsp;kWh{{else if not .Gesamt}}<span class="muted">nicht gemessen</span>{{end}}</td><td>{{if not .Gesamt}}{{if lt .Anteil 0.0}}{{de2 .Anteil}}{{else}}-&nbsp;{{de2 .Anteil}}{{end}}&nbsp;kWh{{end}}</td><td>{{if .HatVerbrauch}}{{de2 .PV}}&nbsp;kWh{{else if not .Gesamt}}<span class="muted">{{if .Anteil}}nicht messbar{{else}}von PV gedeckt, Menge nicht messbar{{end}}</span>{{end}}</td><td><strong>{{de2 .Uebrig}}&nbsp;kWh</strong></td></tr>
+      {{end}}
+      <tr><td><strong>PV gedeckt, Summe</strong></td><td></td><td></td><td><strong>{{de2 .PVSumme}}&nbsp;kWh</strong></td><td></td></tr>
+    </tbody>
+  </table>
+  <p class="muted">Verbrauch = davon aus Netzbezug + davon aus PV. Die PV deckt, was die Zähler von Wohnung 2, Wärmepumpe und Wallboxen mehr verbrauchten, als der Netzbezug hergab. Wohnung 1 hat keinen Zähler: Ihr Verbrauch ist nicht gemessen, sie bekommt nur den Rest des Netzbezugs. Ist dieser Rest 0, hat die PV ihren ganzen Verbrauch gedeckt, wie viel das war, ist nicht messbar.</p>
+  {{end}}
+
   {{if .FixkostenHinweis}}
   <h3 style="margin-top:1.25rem">Kosten</h3>
   <p class="text-warning">{{.FixkostenHinweis.Text}}{{if .Vermieter}} <a href="{{.Base}}{{.FixkostenHinweis.Pfad}}">{{.FixkostenHinweis.LinkText}}</a>{{end}}</p>
 
-  <h3 style="margin-top:1.25rem">Wallbox</h3>
-  <table class="letzte">
-    <tbody>
-      <tr><td>Wallbox Anteil (Netzbezug)</td><td>{{de2 .WallboxKWh}}&nbsp;kWh</td></tr>
-    </tbody>
-  </table>
   <p class="muted">Die Aufteilung der Wallbox auf die Wohnungen hängt am Häkchen "Wallboxen vollständig Wohnung 1" der Fixkosten. Sie ist offen, bis die Fixkosten erfasst sind.</p>
   {{else}}
-  <h3 style="margin-top:1.25rem">Stromkosten (PV-Netzbezug-Zuteilung)</h3>
+  <h3 style="margin-top:1.25rem">Stromkosten</h3>
   {{if .KostenNote}}
   <p class="muted">{{.KostenNote}}</p>
   {{else if .Strom}}
   <table class="letzte">
+    <thead><tr><th>Position</th><th>Menge</th><th>Kosten</th></tr></thead>
     <tbody>
-      <tr><td>Netzbezug Gesamt</td><td>{{de2 .Strom.NetzbezugGesamtKWh}}&nbsp;kWh</td></tr>
-      <tr><td>Wohnung 1 Anteil</td><td>{{de2 .Strom.W1RestKWh}}&nbsp;kWh</td></tr>
-      <tr><td><strong>Kosten Wohnung 1</strong></td><td><strong>{{deEUR .Strom.KostenW1}}&nbsp;EUR</strong></td></tr>
-      <tr><td>Wohnung 2 Anteil</td><td>{{de2 .Strom.W2AnteilKWh}}&nbsp;kWh</td></tr>
-      <tr><td>Nicht dem Netzbezug zugeordnet (PV)</td><td>{{de2 .Strom.PVAnteilW2KWh}}&nbsp;kWh</td></tr>
-      <tr><td><strong>Kosten Wohnung 2</strong></td><td><strong>{{deEUR .Strom.KostenW2}}&nbsp;EUR</strong></td></tr>
-      <tr><td>Wärmepumpe Anteil</td><td>{{de2 .Strom.WPAnteilKWh}}&nbsp;kWh</td></tr>
-      <tr><td>Nicht dem Netzbezug zugeordnet (PV)</td><td>{{de2 .Strom.PVAnteilWPKWh}}&nbsp;kWh</td></tr>
-      <tr><td><strong>Kosten Wärmepumpe gesamt (Basis Heizungskosten)</strong></td><td><strong>{{deEUR .Strom.KostenWPGesamtUnrounded}}&nbsp;EUR</strong></td></tr>
-      <tr><td>Wallbox Anteil</td><td>{{de2 .Strom.WallboxAnteilKWh}}&nbsp;kWh</td></tr>
-      <tr><td>Nicht dem Netzbezug zugeordnet (PV)</td><td>{{de2 .Strom.PVAnteilWallboxKWh}}&nbsp;kWh</td></tr>
-      <tr><td><strong>Kosten Wallbox</strong></td><td><strong>{{deEUR .Strom.KostenWallbox}}&nbsp;EUR</strong></td></tr>
+      <tr><td>Wohnung 1</td><td>{{de2 .Strom.W1RestKWh}}&nbsp;kWh</td><td><strong>{{deEUR .Strom.KostenW1}}&nbsp;EUR</strong></td></tr>
+      <tr><td>Wohnung 2</td><td>{{de2 .Strom.W2AnteilKWh}}&nbsp;kWh</td><td><strong>{{deEUR .Strom.KostenW2}}&nbsp;EUR</strong></td></tr>
+      <tr><td>Wärmepumpe (Basis Heizungskosten)</td><td>{{de2 .Strom.WPAnteilKWh}}&nbsp;kWh</td><td><strong>{{deEUR .Strom.KostenWPGesamtUnrounded}}&nbsp;EUR</strong></td></tr>
+      <tr><td>Wallboxen</td><td>{{de2 .Strom.WallboxAnteilKWh}}&nbsp;kWh</td><td><strong>{{deEUR .Strom.KostenWallbox}}&nbsp;EUR</strong></td></tr>
       {{if .Strom.WallboxVerteilt}}
-      <tr><td>Wallbox Anteil Wohnung 1</td><td>{{de2 .Strom.WallboxW1KWh}}&nbsp;kWh</td></tr>
-      <tr><td><strong>Kosten Wallbox Wohnung 1</strong></td><td><strong>{{deEUR .Strom.KostenWallboxW1}}&nbsp;EUR</strong></td></tr>
-      <tr><td>Wallbox Anteil Wohnung 2</td><td>{{de2 .Strom.WallboxW2KWh}}&nbsp;kWh</td></tr>
-      <tr><td><strong>Kosten Wallbox Wohnung 2</strong></td><td><strong>{{deEUR .Strom.KostenWallboxW2}}&nbsp;EUR</strong></td></tr>
+      <tr><td style="padding-left:1.5rem">davon Wohnung 1</td><td>{{de2 .Strom.WallboxW1KWh}}&nbsp;kWh</td><td>{{deEUR .Strom.KostenWallboxW1}}&nbsp;EUR</td></tr>
+      <tr><td style="padding-left:1.5rem">davon Wohnung 2</td><td>{{de2 .Strom.WallboxW2KWh}}&nbsp;kWh</td><td>{{deEUR .Strom.KostenWallboxW2}}&nbsp;EUR</td></tr>
       {{end}}
     </tbody>
   </table>

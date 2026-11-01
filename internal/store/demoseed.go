@@ -138,6 +138,9 @@ func seedDemoPeriods(db *sql.DB, now time.Time) error {
 	// einzelzaehlerMonate is how many of the youngest months carry the
 	// Wallbox-Einzelzähler.
 	const einzelzaehlerMonate = 12
+	// pvEigenverbrauchKWh is the PV self-consumption in midsummer: the part of
+	// the submeters' consumption that never passes the grid meter.
+	const pvEigenverbrauchKWh = 520
 	for i := 0; i < monthCount; i++ {
 		date := demoMonth(now, i)
 		hf := heizfaktor(date.Month())
@@ -163,7 +166,7 @@ func seedDemoPeriods(db *sql.DB, now time.Time) error {
 			readings[MeterKeyWallboxWohnung2] += 0.4 * wallboxDelta
 			readings[MeterKeyWallboxWohnung1] += 0.6 * wallboxDelta
 		}
-		readings["strom_gesamt"] += wohnung2Delta + wpDelta + wallboxDelta + wohnung1EigenerAnteil
+		readings["strom_gesamt"] += wohnung2Delta + wpDelta + wallboxDelta + wohnung1EigenerAnteil - pvEigenverbrauchKWh*pf
 		readings["strom_einspeisung"] += 80 + 670*pf
 
 		readings["wasser_gesamt"] += 14 + 3*pf // a bit more in summer (garden)

@@ -190,13 +190,13 @@ Abrechnung 2023 Wohnung 1:
       Geteilt: false
     Betriebskosten: 1068.50
     Strom:
-      VerbrauchKWh: 1606.00
-      Kosten: 308.38
+      VerbrauchKWh: 1132.80
+      Kosten: 217.88
     Wallbox: nil
     PVGutschrift: nil
     Vorauszahlungen: 1300.00
     Saldo:
-      wert: -76.88
+      wert: 13.62
     Monatsverlauf:
       Zeilen: [5]
         [0]:
@@ -209,31 +209,31 @@ Abrechnung 2023 Wohnung 1:
         [1]:
           Monat: "2023-09-01"
           Fixkosten: 105.17
-          Verbrauch: 175.66
+          Verbrauch: 121.09
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 134.00
+          Saldo: 188.57
         [2]:
           Monat: "2023-10-01"
           Fixkosten: 105.17
-          Verbrauch: 193.15
+          Verbrauch: 168.24
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 95.68
+          Saldo: 175.16
         [3]:
           Monat: "2023-11-01"
           Fixkosten: 105.17
-          Verbrauch: 218.71
+          Verbrauch: 210.71
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: 31.80
+          Saldo: 119.28
         [4]:
           Monat: "2023-12-01"
           Fixkosten: 105.17
-          Verbrauch: 263.51
+          Verbrauch: 260.49
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -76.88
+          Saldo: 13.62
       Uebertrag:
         Vorhanden: false
         Betrag: 0.00
@@ -241,10 +241,10 @@ Abrechnung 2023 Wohnung 1:
         Bis: ""
         Hinweis: ""
       Fixkosten: 525.85
-      Verbrauch: 851.03
+      Verbrauch: 760.53
       Abschlag: 1300.00
       Gutschrift: 0.00
-      Endsaldo: -76.88
+      Endsaldo: 13.62
     Zaehlerstaende:
       Spalten: [10]
         [0]:
@@ -294,7 +294,7 @@ Abrechnung 2023 Wohnung 1:
           Ausgangsstand: true
           Staende: [10]
             [0]:
-              Wert: 39300.00
+              Wert: 38858.00
               Eigen: false
               Fehlt: false
             [1]:
@@ -339,7 +339,7 @@ Abrechnung 2023 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 40350.75
+              Wert: 39622.75
               Eigen: false
               Fehlt: false
             [1]:
@@ -384,7 +384,7 @@ Abrechnung 2023 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 41602.50
+              Wert: 40744.50
               Eigen: false
               Fehlt: false
             [1]:
@@ -429,7 +429,7 @@ Abrechnung 2023 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 43105.50
+              Wert: 42205.90
               Eigen: false
               Fehlt: false
             [1]:
@@ -474,7 +474,7 @@ Abrechnung 2023 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 45010.50
+              Wert: 44095.30
               Eigen: false
               Fehlt: false
             [1]:
@@ -517,9 +517,9 @@ Abrechnung 2023 Wohnung 1:
       [0]:
         Zaehler: "Stromzähler Gesamt"
         Einheit: "kWh"
-        Beginn: 39300.00
-        Ende: 45010.50
-        Verbrauch: 5710.50
+        Beginn: 38858.00
+        Ende: 44095.30
+        Verbrauch: 5237.30
         BeginnFehlt: false
         EndeFehlt: false
         Eigen: false
@@ -960,7 +960,7 @@ Abrechnung 2023 Wohnung 2:
           Ausgangsstand: true
           Staende: [10]
             [0]:
-              Wert: 39300.00
+              Wert: 38858.00
               Eigen: false
               Fehlt: false
             [1]:
@@ -1005,7 +1005,7 @@ Abrechnung 2023 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 40350.75
+              Wert: 39622.75
               Eigen: false
               Fehlt: false
             [1]:
@@ -1050,7 +1050,7 @@ Abrechnung 2023 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 41602.50
+              Wert: 40744.50
               Eigen: false
               Fehlt: false
             [1]:
@@ -1095,7 +1095,7 @@ Abrechnung 2023 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 43105.50
+              Wert: 42205.90
               Eigen: false
               Fehlt: false
             [1]:
@@ -1140,7 +1140,7 @@ Abrechnung 2023 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 45010.50
+              Wert: 44095.30
               Eigen: false
               Fehlt: false
             [1]:
@@ -1183,9 +1183,9 @@ Abrechnung 2023 Wohnung 2:
       [0]:
         Zaehler: "Stromzähler Gesamt"
         Einheit: "kWh"
-        Beginn: 39300.00
-        Ende: 45010.50
-        Verbrauch: 5710.50
+        Beginn: 38858.00
+        Ende: 44095.30
+        Verbrauch: 5237.30
         BeginnFehlt: false
         EndeFehlt: false
         Eigen: false
@@ -1507,9 +1507,9 @@ Abrechnung 2024 Wohnung 1:
       Von: "2024-01-01"
       Bis: "2024-12-01"
       Schluessel: "70 % Wärmeverbrauch, 30 % Wohnfläche"
-      Gesamt: 1520.47
-      Betrag: 872.47
-      Prozent: 57.38
+      Gesamt: 1506.59
+      Betrag: 865.22
+      Prozent: 57.43
       Geteilt: false
     Wasser:
       Position: "Wasser und Abwasser (Verbrauch)"
@@ -1520,112 +1520,112 @@ Abrechnung 2024 Wohnung 1:
       Betrag: 721.51
       Prozent: 64.56
       Geteilt: false
-    Betriebskosten: 2856.02
+    Betriebskosten: 2848.77
     Strom:
-      VerbrauchKWh: 4752.00
-      Kosten: 942.11
+      VerbrauchKWh: 2316.60
+      Kosten: 459.20
     Wallbox: nil
     PVGutschrift: nil
     Vorauszahlungen: 3120.00
     Saldo:
-      wert: -678.13
+      wert: -187.97
     Monatsverlauf:
       Zeilen: [12]
         [0]:
           Monat: "2024-01-01"
           Fixkosten: 105.17
-          Verbrauch: 264.47
+          Verbrauch: 261.44
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -186.52
+          Saldo: -92.99
         [1]:
           Monat: "2024-02-01"
           Fixkosten: 105.17
-          Verbrauch: 266.32
+          Verbrauch: 258.22
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -298.01
+          Saldo: -196.38
         [2]:
           Monat: "2024-03-01"
           Fixkosten: 105.17
-          Verbrauch: 224.86
+          Verbrauch: 199.45
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -368.04
+          Saldo: -241.00
         [3]:
           Monat: "2024-04-01"
           Fixkosten: 105.17
-          Verbrauch: 202.54
+          Verbrauch: 146.39
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -415.75
+          Saldo: -232.56
         [4]:
           Monat: "2024-05-01"
           Fixkosten: 105.17
-          Verbrauch: 185.71
+          Verbrauch: 111.01
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -446.63
+          Saldo: -188.74
         [5]:
           Monat: "2024-06-01"
           Fixkosten: 105.17
-          Verbrauch: 168.95
+          Verbrauch: 92.11
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -460.75
+          Saldo: -126.02
         [6]:
           Monat: "2024-07-01"
           Fixkosten: 105.17
-          Verbrauch: 169.45
+          Verbrauch: 92.31
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -475.37
+          Saldo: -63.50
         [7]:
           Monat: "2024-08-01"
           Fixkosten: 105.17
-          Verbrauch: 167.24
+          Verbrauch: 93.43
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -487.78
+          Saldo: -2.10
         [8]:
           Monat: "2024-09-01"
           Fixkosten: 105.17
-          Verbrauch: 182.58
+          Verbrauch: 125.30
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -515.53
+          Saldo: 27.43
         [9]:
           Monat: "2024-10-01"
           Fixkosten: 105.17
-          Verbrauch: 201.07
+          Verbrauch: 174.93
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -561.77
+          Saldo: 7.33
         [10]:
           Monat: "2024-11-01"
           Fixkosten: 105.17
-          Verbrauch: 227.96
+          Verbrauch: 219.56
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -634.90
+          Saldo: -57.40
         [11]:
           Monat: "2024-12-01"
           Fixkosten: 105.17
-          Verbrauch: 274.94
+          Verbrauch: 271.78
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -755.01
+          Saldo: -174.35
       Uebertrag:
         Vorhanden: true
-        Betrag: -76.88
+        Betrag: 13.62
         Von: "2023-08-01"
         Bis: "2023-12-01"
         Hinweis: ""
       Fixkosten: 1262.04
-      Verbrauch: 2536.09
+      Verbrauch: 2045.93
       Abschlag: 3120.00
       Gutschrift: 0.00
-      Endsaldo: -755.01
+      Endsaldo: -174.35
     Zaehlerstaende:
       Spalten: [10]
         [0]:
@@ -1675,7 +1675,7 @@ Abrechnung 2024 Wohnung 1:
           Ausgangsstand: true
           Staende: [10]
             [0]:
-              Wert: 45010.50
+              Wert: 44095.30
               Eigen: false
               Fehlt: false
             [1]:
@@ -1720,7 +1720,7 @@ Abrechnung 2024 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 46915.50
+              Wert: 45984.70
               Eigen: false
               Fehlt: false
             [1]:
@@ -1765,7 +1765,7 @@ Abrechnung 2024 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 48820.50
+              Wert: 47848.10
               Eigen: false
               Fehlt: false
             [1]:
@@ -1810,7 +1810,7 @@ Abrechnung 2024 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 50323.50
+              Wert: 49221.10
               Eigen: false
               Fehlt: false
             [1]:
@@ -1855,7 +1855,7 @@ Abrechnung 2024 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 51575.25
+              Wert: 50186.85
               Eigen: false
               Fehlt: false
             [1]:
@@ -1900,7 +1900,7 @@ Abrechnung 2024 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 52626.00
+              Wert: 50795.60
               Eigen: false
               Fehlt: false
             [1]:
@@ -1945,7 +1945,7 @@ Abrechnung 2024 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 53526.00
+              Wert: 51175.60
               Eigen: false
               Fehlt: false
             [1]:
@@ -1990,7 +1990,7 @@ Abrechnung 2024 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 54426.00
+              Wert: 51555.60
               Eigen: false
               Fehlt: false
             [1]:
@@ -2035,7 +2035,7 @@ Abrechnung 2024 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 55326.00
+              Wert: 52013.60
               Eigen: false
               Fehlt: false
             [1]:
@@ -2080,7 +2080,7 @@ Abrechnung 2024 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 56376.75
+              Wert: 52778.35
               Eigen: false
               Fehlt: false
             [1]:
@@ -2125,7 +2125,7 @@ Abrechnung 2024 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 57628.50
+              Wert: 53900.10
               Eigen: false
               Fehlt: false
             [1]:
@@ -2170,7 +2170,7 @@ Abrechnung 2024 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 59131.50
+              Wert: 55361.50
               Eigen: false
               Fehlt: false
             [1]:
@@ -2215,7 +2215,7 @@ Abrechnung 2024 Wohnung 1:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 61036.50
+              Wert: 57250.90
               Eigen: false
               Fehlt: false
             [1]:
@@ -2258,9 +2258,9 @@ Abrechnung 2024 Wohnung 1:
       [0]:
         Zaehler: "Stromzähler Gesamt"
         Einheit: "kWh"
-        Beginn: 45010.50
-        Ende: 61036.50
-        Verbrauch: 16026.00
+        Beginn: 44095.30
+        Ende: 57250.90
+        Verbrauch: 13155.60
         BeginnFehlt: false
         EndeFehlt: false
         Eigen: false
@@ -2381,13 +2381,13 @@ Abrechnung 2024 Wohnung 1:
         WPStromKWh: 250.00
         WaermeW1MWh: 0.00
         WaermeW2MWh: 0.00
-        Anteil: 25.85
+        Anteil: 22.23
       [6]:
         Monat: "2024-07-01"
         WPStromKWh: 250.00
         WaermeW1MWh: 0.00
         WaermeW2MWh: 0.00
-        Anteil: 25.95
+        Anteil: 22.32
       [7]:
         Monat: "2024-08-01"
         WPStromKWh: 250.00
@@ -2665,9 +2665,9 @@ Abrechnung 2024 Wohnung 2:
       Von: "2024-01-01"
       Bis: "2024-12-01"
       Schluessel: "70 % Wärmeverbrauch, 30 % Wohnfläche"
-      Gesamt: 1520.47
-      Betrag: 648.00
-      Prozent: 42.62
+      Gesamt: 1506.59
+      Betrag: 641.37
+      Prozent: 42.57
       Geteilt: false
     Wasser:
       Position: "Wasser und Abwasser (Verbrauch)"
@@ -2678,7 +2678,7 @@ Abrechnung 2024 Wohnung 2:
       Betrag: 395.99
       Prozent: 35.44
       Geteilt: false
-    Betriebskosten: 2116.67
+    Betriebskosten: 2110.04
     Strom:
       VerbrauchKWh: 2110.00
       Kosten: 418.30
@@ -2686,7 +2686,7 @@ Abrechnung 2024 Wohnung 2:
     PVGutschrift: nil
     Vorauszahlungen: 2280.00
     Saldo:
-      wert: -254.97
+      wert: -248.34
     Monatsverlauf:
       Zeilen: [12]
         [0]:
@@ -2727,52 +2727,52 @@ Abrechnung 2024 Wohnung 2:
         [5]:
           Monat: "2024-06-01"
           Fixkosten: 89.39
-          Verbrauch: 89.26
+          Verbrauch: 85.95
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -155.38
+          Saldo: -152.07
         [6]:
           Monat: "2024-07-01"
           Fixkosten: 89.39
-          Verbrauch: 89.53
+          Verbrauch: 86.21
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -144.30
+          Saldo: -137.67
         [7]:
           Monat: "2024-08-01"
           Fixkosten: 89.39
           Verbrauch: 89.81
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -133.50
+          Saldo: -126.87
         [8]:
           Monat: "2024-09-01"
           Fixkosten: 89.39
           Verbrauch: 99.35
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -132.24
+          Saldo: -125.61
         [9]:
           Monat: "2024-10-01"
           Fixkosten: 89.39
           Verbrauch: 115.90
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -147.53
+          Saldo: -140.90
         [10]:
           Monat: "2024-11-01"
           Fixkosten: 89.39
           Verbrauch: 136.64
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -183.56
+          Saldo: -176.93
         [11]:
           Monat: "2024-12-01"
           Fixkosten: 89.39
           Verbrauch: 169.81
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -252.76
+          Saldo: -246.13
       Uebertrag:
         Vorhanden: true
         Betrag: 2.21
@@ -2780,10 +2780,10 @@ Abrechnung 2024 Wohnung 2:
         Bis: "2023-12-01"
         Hinweis: ""
       Fixkosten: 1072.68
-      Verbrauch: 1462.29
+      Verbrauch: 1455.66
       Abschlag: 2280.00
       Gutschrift: 0.00
-      Endsaldo: -252.76
+      Endsaldo: -246.13
     Zaehlerstaende:
       Spalten: [10]
         [0]:
@@ -2833,7 +2833,7 @@ Abrechnung 2024 Wohnung 2:
           Ausgangsstand: true
           Staende: [10]
             [0]:
-              Wert: 45010.50
+              Wert: 44095.30
               Eigen: false
               Fehlt: false
             [1]:
@@ -2878,7 +2878,7 @@ Abrechnung 2024 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 46915.50
+              Wert: 45984.70
               Eigen: false
               Fehlt: false
             [1]:
@@ -2923,7 +2923,7 @@ Abrechnung 2024 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 48820.50
+              Wert: 47848.10
               Eigen: false
               Fehlt: false
             [1]:
@@ -2968,7 +2968,7 @@ Abrechnung 2024 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 50323.50
+              Wert: 49221.10
               Eigen: false
               Fehlt: false
             [1]:
@@ -3013,7 +3013,7 @@ Abrechnung 2024 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 51575.25
+              Wert: 50186.85
               Eigen: false
               Fehlt: false
             [1]:
@@ -3058,7 +3058,7 @@ Abrechnung 2024 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 52626.00
+              Wert: 50795.60
               Eigen: false
               Fehlt: false
             [1]:
@@ -3103,7 +3103,7 @@ Abrechnung 2024 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 53526.00
+              Wert: 51175.60
               Eigen: false
               Fehlt: false
             [1]:
@@ -3148,7 +3148,7 @@ Abrechnung 2024 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 54426.00
+              Wert: 51555.60
               Eigen: false
               Fehlt: false
             [1]:
@@ -3193,7 +3193,7 @@ Abrechnung 2024 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 55326.00
+              Wert: 52013.60
               Eigen: false
               Fehlt: false
             [1]:
@@ -3238,7 +3238,7 @@ Abrechnung 2024 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 56376.75
+              Wert: 52778.35
               Eigen: false
               Fehlt: false
             [1]:
@@ -3283,7 +3283,7 @@ Abrechnung 2024 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 57628.50
+              Wert: 53900.10
               Eigen: false
               Fehlt: false
             [1]:
@@ -3328,7 +3328,7 @@ Abrechnung 2024 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 59131.50
+              Wert: 55361.50
               Eigen: false
               Fehlt: false
             [1]:
@@ -3373,7 +3373,7 @@ Abrechnung 2024 Wohnung 2:
           Ausgangsstand: false
           Staende: [10]
             [0]:
-              Wert: 61036.50
+              Wert: 57250.90
               Eigen: false
               Fehlt: false
             [1]:
@@ -3416,9 +3416,9 @@ Abrechnung 2024 Wohnung 2:
       [0]:
         Zaehler: "Stromzähler Gesamt"
         Einheit: "kWh"
-        Beginn: 45010.50
-        Ende: 61036.50
-        Verbrauch: 16026.00
+        Beginn: 44095.30
+        Ende: 57250.90
+        Verbrauch: 13155.60
         BeginnFehlt: false
         EndeFehlt: false
         Eigen: false
@@ -3539,13 +3539,13 @@ Abrechnung 2024 Wohnung 2:
         WPStromKWh: 250.00
         WaermeW1MWh: 0.00
         WaermeW2MWh: 0.00
-        Anteil: 23.63
+        Anteil: 20.32
       [6]:
         Monat: "2024-07-01"
         WPStromKWh: 250.00
         WaermeW1MWh: 0.00
         WaermeW2MWh: 0.00
-        Anteil: 23.72
+        Anteil: 20.40
       [7]:
         Monat: "2024-08-01"
         WPStromKWh: 250.00
@@ -3823,9 +3823,9 @@ Abrechnung 2025 Wohnung 1:
       Von: "2025-01-01"
       Bis: "2025-12-01"
       Schluessel: "70 % Wärmeverbrauch, 30 % Wohnfläche"
-      Gesamt: 1593.19
-      Betrag: 914.21
-      Prozent: 57.38
+      Gesamt: 1578.64
+      Betrag: 906.61
+      Prozent: 57.43
       Geteilt: false
     Wasser:
       Position: "Wasser und Abwasser (Verbrauch)"
@@ -3836,114 +3836,114 @@ Abrechnung 2025 Wohnung 1:
       Betrag: 735.82
       Prozent: 64.56
       Geteilt: false
-    Betriebskosten: 2912.07
+    Betriebskosten: 2904.47
     Strom:
-      VerbrauchKWh: 4752.00
-      Kosten: 987.13
+      VerbrauchKWh: 2316.60
+      Kosten: 481.17
     Wallbox:
       VerbrauchKWh: 81.00
       Kosten: 17.18
     PVGutschrift: nil
     Vorauszahlungen: 3120.00
     Saldo:
-      wert: -796.38
+      wert: -282.82
     Monatsverlauf:
       Zeilen: [12]
         [0]:
           Monat: "2025-01-01"
           Fixkosten: 105.17
-          Verbrauch: 275.89
+          Verbrauch: 272.72
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -876.07
+          Saldo: -292.24
         [1]:
           Monat: "2025-02-01"
           Fixkosten: 105.17
-          Verbrauch: 277.76
+          Verbrauch: 269.27
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -999.00
+          Saldo: -406.68
         [2]:
           Monat: "2025-03-01"
           Fixkosten: 105.17
-          Verbrauch: 234.17
+          Verbrauch: 207.52
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1078.34
+          Saldo: -459.37
         [3]:
           Monat: "2025-04-01"
           Fixkosten: 105.17
-          Verbrauch: 210.56
+          Verbrauch: 151.71
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1134.07
+          Saldo: -456.25
         [4]:
           Monat: "2025-05-01"
           Fixkosten: 105.17
-          Verbrauch: 192.75
+          Verbrauch: 114.46
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1171.99
+          Saldo: -415.88
         [5]:
           Monat: "2025-06-01"
           Fixkosten: 105.17
-          Verbrauch: 175.08
+          Verbrauch: 94.56
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1192.24
+          Saldo: -355.61
         [6]:
           Monat: "2025-07-01"
           Fixkosten: 105.17
-          Verbrauch: 175.59
+          Verbrauch: 94.76
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1213.00
+          Saldo: -295.54
         [7]:
           Monat: "2025-08-01"
           Fixkosten: 105.17
-          Verbrauch: 173.31
+          Verbrauch: 96.00
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1231.48
+          Saldo: -236.71
         [8]:
           Monat: "2025-09-01"
           Fixkosten: 105.17
-          Verbrauch: 189.52
+          Verbrauch: 129.54
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1266.17
+          Saldo: -211.42
         [9]:
           Monat: "2025-10-01"
           Fixkosten: 105.17
-          Verbrauch: 208.99
+          Verbrauch: 181.62
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1320.33
+          Saldo: -238.21
         [10]:
           Monat: "2025-11-01"
           Fixkosten: 105.17
-          Verbrauch: 237.18
+          Verbrauch: 228.39
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1402.68
+          Saldo: -311.77
         [11]:
           Monat: "2025-12-01"
           Fixkosten: 105.17
-          Verbrauch: 303.54
+          Verbrauch: 300.23
           Abschlag: 260.00
           Gutschrift: 0.00
-          Saldo: -1551.39
+          Saldo: -457.17
       Uebertrag:
         Vorhanden: true
-        Betrag: -755.01
+        Betrag: -174.35
         Von: "2023-08-01"
         Bis: "2024-12-01"
         Hinweis: ""
       Fixkosten: 1262.04
-      Verbrauch: 2654.34
+      Verbrauch: 2140.78
       Abschlag: 3120.00
       Gutschrift: 0.00
-      Endsaldo: -1551.39
+      Endsaldo: -457.17
     Zaehlerstaende:
       Spalten: [12]
         [0]:
@@ -4001,7 +4001,7 @@ Abrechnung 2025 Wohnung 1:
           Ausgangsstand: true
           Staende: [12]
             [0]:
-              Wert: 61036.50
+              Wert: 57250.90
               Eigen: false
               Fehlt: false
             [1]:
@@ -4054,7 +4054,7 @@ Abrechnung 2025 Wohnung 1:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 62941.50
+              Wert: 59140.30
               Eigen: false
               Fehlt: false
             [1]:
@@ -4107,7 +4107,7 @@ Abrechnung 2025 Wohnung 1:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 64846.50
+              Wert: 61003.70
               Eigen: false
               Fehlt: false
             [1]:
@@ -4160,7 +4160,7 @@ Abrechnung 2025 Wohnung 1:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 66349.50
+              Wert: 62376.70
               Eigen: false
               Fehlt: false
             [1]:
@@ -4213,7 +4213,7 @@ Abrechnung 2025 Wohnung 1:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 67601.25
+              Wert: 63342.45
               Eigen: false
               Fehlt: false
             [1]:
@@ -4266,7 +4266,7 @@ Abrechnung 2025 Wohnung 1:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 68652.00
+              Wert: 63951.20
               Eigen: false
               Fehlt: false
             [1]:
@@ -4319,7 +4319,7 @@ Abrechnung 2025 Wohnung 1:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 69552.00
+              Wert: 64331.20
               Eigen: false
               Fehlt: false
             [1]:
@@ -4372,7 +4372,7 @@ Abrechnung 2025 Wohnung 1:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 70452.00
+              Wert: 64711.20
               Eigen: false
               Fehlt: false
             [1]:
@@ -4425,7 +4425,7 @@ Abrechnung 2025 Wohnung 1:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 71352.00
+              Wert: 65169.20
               Eigen: false
               Fehlt: false
             [1]:
@@ -4478,7 +4478,7 @@ Abrechnung 2025 Wohnung 1:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 72402.75
+              Wert: 65933.95
               Eigen: false
               Fehlt: false
             [1]:
@@ -4531,7 +4531,7 @@ Abrechnung 2025 Wohnung 1:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 73654.50
+              Wert: 67055.70
               Eigen: false
               Fehlt: false
             [1]:
@@ -4584,7 +4584,7 @@ Abrechnung 2025 Wohnung 1:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 75157.50
+              Wert: 68517.10
               Eigen: false
               Fehlt: false
             [1]:
@@ -4637,7 +4637,7 @@ Abrechnung 2025 Wohnung 1:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 77062.50
+              Wert: 70406.50
               Eigen: false
               Fehlt: false
             [1]:
@@ -4688,9 +4688,9 @@ Abrechnung 2025 Wohnung 1:
       [0]:
         Zaehler: "Stromzähler Gesamt"
         Einheit: "kWh"
-        Beginn: 61036.50
-        Ende: 77062.50
-        Verbrauch: 16026.00
+        Beginn: 57250.90
+        Ende: 70406.50
+        Verbrauch: 13155.60
         BeginnFehlt: false
         EndeFehlt: false
         Eigen: false
@@ -4829,13 +4829,13 @@ Abrechnung 2025 Wohnung 1:
         WPStromKWh: 250.00
         WaermeW1MWh: 0.00
         WaermeW2MWh: 0.00
-        Anteil: 27.08
+        Anteil: 23.29
       [6]:
         Monat: "2025-07-01"
         WPStromKWh: 250.00
         WaermeW1MWh: 0.00
         WaermeW2MWh: 0.00
-        Anteil: 27.19
+        Anteil: 23.38
       [7]:
         Monat: "2025-08-01"
         WPStromKWh: 250.00
@@ -5113,9 +5113,9 @@ Abrechnung 2025 Wohnung 2:
       Von: "2025-01-01"
       Bis: "2025-12-01"
       Schluessel: "70 % Wärmeverbrauch, 30 % Wohnfläche"
-      Gesamt: 1593.19
-      Betrag: 678.98
-      Prozent: 42.62
+      Gesamt: 1578.64
+      Betrag: 672.03
+      Prozent: 42.57
       Geteilt: false
     Wasser:
       Position: "Wasser und Abwasser (Verbrauch)"
@@ -5126,7 +5126,7 @@ Abrechnung 2025 Wohnung 2:
       Betrag: 403.85
       Prozent: 35.44
       Geteilt: false
-    Betriebskosten: 2155.51
+    Betriebskosten: 2148.56
     Strom:
       VerbrauchKWh: 2110.00
       Kosten: 438.33
@@ -5136,7 +5136,7 @@ Abrechnung 2025 Wohnung 2:
     PVGutschrift: nil
     Vorauszahlungen: 2280.00
     Saldo:
-      wert: -325.29
+      wert: -318.34
     Monatsverlauf:
       Zeilen: [12]
         [0]:
@@ -5145,95 +5145,95 @@ Abrechnung 2025 Wohnung 2:
           Verbrauch: 170.40
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -322.55
+          Saldo: -315.92
         [1]:
           Monat: "2025-02-01"
           Fixkosten: 89.39
           Verbrauch: 170.98
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -392.92
+          Saldo: -386.29
         [2]:
           Monat: "2025-03-01"
           Fixkosten: 89.39
           Verbrauch: 138.49
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -430.80
+          Saldo: -424.17
         [3]:
           Monat: "2025-04-01"
           Fixkosten: 89.39
           Verbrauch: 118.17
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -448.36
+          Saldo: -441.73
         [4]:
           Monat: "2025-05-01"
           Fixkosten: 89.39
           Verbrauch: 101.88
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -449.63
+          Saldo: -443.00
         [5]:
           Monat: "2025-06-01"
           Fixkosten: 89.39
-          Verbrauch: 92.60
+          Verbrauch: 89.13
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -441.62
+          Saldo: -431.52
         [6]:
           Monat: "2025-07-01"
           Fixkosten: 89.39
-          Verbrauch: 92.88
+          Verbrauch: 89.40
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -433.89
+          Saldo: -420.31
         [7]:
           Monat: "2025-08-01"
           Fixkosten: 89.39
           Verbrauch: 93.17
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -426.45
+          Saldo: -412.87
         [8]:
           Monat: "2025-09-01"
           Fixkosten: 89.39
           Verbrauch: 103.14
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -428.98
+          Saldo: -415.40
         [9]:
           Monat: "2025-10-01"
           Fixkosten: 89.39
           Verbrauch: 120.46
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -448.83
+          Saldo: -435.25
         [10]:
           Monat: "2025-11-01"
           Fixkosten: 89.39
           Verbrauch: 142.15
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -490.37
+          Saldo: -476.79
         [11]:
           Monat: "2025-12-01"
           Fixkosten: 89.39
           Verbrauch: 188.29
           Abschlag: 190.00
           Gutschrift: 0.00
-          Saldo: -578.05
+          Saldo: -564.47
       Uebertrag:
         Vorhanden: true
-        Betrag: -252.76
+        Betrag: -246.13
         Von: "2023-08-01"
         Bis: "2024-12-01"
         Hinweis: ""
       Fixkosten: 1072.68
-      Verbrauch: 1532.61
+      Verbrauch: 1525.66
       Abschlag: 2280.00
       Gutschrift: 0.00
-      Endsaldo: -578.05
+      Endsaldo: -564.47
     Zaehlerstaende:
       Spalten: [12]
         [0]:
@@ -5291,7 +5291,7 @@ Abrechnung 2025 Wohnung 2:
           Ausgangsstand: true
           Staende: [12]
             [0]:
-              Wert: 61036.50
+              Wert: 57250.90
               Eigen: false
               Fehlt: false
             [1]:
@@ -5344,7 +5344,7 @@ Abrechnung 2025 Wohnung 2:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 62941.50
+              Wert: 59140.30
               Eigen: false
               Fehlt: false
             [1]:
@@ -5397,7 +5397,7 @@ Abrechnung 2025 Wohnung 2:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 64846.50
+              Wert: 61003.70
               Eigen: false
               Fehlt: false
             [1]:
@@ -5450,7 +5450,7 @@ Abrechnung 2025 Wohnung 2:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 66349.50
+              Wert: 62376.70
               Eigen: false
               Fehlt: false
             [1]:
@@ -5503,7 +5503,7 @@ Abrechnung 2025 Wohnung 2:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 67601.25
+              Wert: 63342.45
               Eigen: false
               Fehlt: false
             [1]:
@@ -5556,7 +5556,7 @@ Abrechnung 2025 Wohnung 2:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 68652.00
+              Wert: 63951.20
               Eigen: false
               Fehlt: false
             [1]:
@@ -5609,7 +5609,7 @@ Abrechnung 2025 Wohnung 2:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 69552.00
+              Wert: 64331.20
               Eigen: false
               Fehlt: false
             [1]:
@@ -5662,7 +5662,7 @@ Abrechnung 2025 Wohnung 2:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 70452.00
+              Wert: 64711.20
               Eigen: false
               Fehlt: false
             [1]:
@@ -5715,7 +5715,7 @@ Abrechnung 2025 Wohnung 2:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 71352.00
+              Wert: 65169.20
               Eigen: false
               Fehlt: false
             [1]:
@@ -5768,7 +5768,7 @@ Abrechnung 2025 Wohnung 2:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 72402.75
+              Wert: 65933.95
               Eigen: false
               Fehlt: false
             [1]:
@@ -5821,7 +5821,7 @@ Abrechnung 2025 Wohnung 2:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 73654.50
+              Wert: 67055.70
               Eigen: false
               Fehlt: false
             [1]:
@@ -5874,7 +5874,7 @@ Abrechnung 2025 Wohnung 2:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 75157.50
+              Wert: 68517.10
               Eigen: false
               Fehlt: false
             [1]:
@@ -5927,7 +5927,7 @@ Abrechnung 2025 Wohnung 2:
           Ausgangsstand: false
           Staende: [12]
             [0]:
-              Wert: 77062.50
+              Wert: 70406.50
               Eigen: false
               Fehlt: false
             [1]:
@@ -5978,9 +5978,9 @@ Abrechnung 2025 Wohnung 2:
       [0]:
         Zaehler: "Stromzähler Gesamt"
         Einheit: "kWh"
-        Beginn: 61036.50
-        Ende: 77062.50
-        Verbrauch: 16026.00
+        Beginn: 57250.90
+        Ende: 70406.50
+        Verbrauch: 13155.60
         BeginnFehlt: false
         EndeFehlt: false
         Eigen: false
@@ -6119,13 +6119,13 @@ Abrechnung 2025 Wohnung 2:
         WPStromKWh: 250.00
         WaermeW1MWh: 0.00
         WaermeW2MWh: 0.00
-        Anteil: 24.76
+        Anteil: 21.29
       [6]:
         Monat: "2025-07-01"
         WPStromKWh: 250.00
         WaermeW1MWh: 0.00
         WaermeW2MWh: 0.00
-        Anteil: 24.85
+        Anteil: 21.37
       [7]:
         Monat: "2025-08-01"
         WPStromKWh: 250.00
@@ -6349,17 +6349,17 @@ Dashboard:
       Monat: "2026-10-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1251.75
+          NetzbezugGesamtKWh: 1121.75
           W2AnteilKWh: 173.75
           WPAnteilKWh: 565.00
           WallboxAnteilKWh: 122.00
-          W1RestKWh: 391.00
+          W1RestKWh: 261.00
           W2VerbrauchKWh: 173.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 38.23
-          KostenW1: 86.02
+          KostenW1: 57.42
           KostenWPGesamtUnrounded: 124.30
           KostenWallbox: 26.84
           WallboxVerteilt: true
@@ -6408,17 +6408,17 @@ Dashboard:
       Monat: "2026-09-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1050.75
+          NetzbezugGesamtKWh: 764.75
           W2AnteilKWh: 168.75
           WPAnteilKWh: 385.00
           WallboxAnteilKWh: 118.00
-          W1RestKWh: 379.00
+          W1RestKWh: 93.00
           W2VerbrauchKWh: 168.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 36.99
-          KostenW1: 83.08
+          KostenW1: 20.39
           KostenWPGesamtUnrounded: 84.40
           KostenWallbox: 25.87
           WallboxVerteilt: true
@@ -6467,24 +6467,24 @@ Dashboard:
       Monat: "2026-08-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 900.00
+          NetzbezugGesamtKWh: 458.00
           W2AnteilKWh: 165.00
           WPAnteilKWh: 250.00
-          WallboxAnteilKWh: 115.00
-          W1RestKWh: 370.00
+          WallboxAnteilKWh: 43.00
+          W1RestKWh: 0.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
-          PVAnteilWallboxKWh: 0.00
+          PVAnteilWallboxKWh: 72.00
           KostenW2: 36.04
-          KostenW1: 80.82
+          KostenW1: 0.00
           KostenWPGesamtUnrounded: 54.61
-          KostenWallbox: 25.12
+          KostenWallbox: 9.39
           WallboxVerteilt: true
-          KostenWallboxW1: 15.07
-          KostenWallboxW2: 10.05
-          WallboxW1KWh: 69.00
-          WallboxW2KWh: 46.00
+          KostenWallboxW1: 0.00
+          KostenWallboxW2: 9.39
+          WallboxW1KWh: 0.00
+          WallboxW2KWh: 43.00
           WallboxEinzelPruefbar: true
           WallboxEinzelSumme: 115.00
           WallboxEinzelAuffaellig: false
@@ -6526,24 +6526,24 @@ Dashboard:
       Monat: "2026-07-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 900.00
+          NetzbezugGesamtKWh: 380.00
           W2AnteilKWh: 165.00
-          WPAnteilKWh: 250.00
-          WallboxAnteilKWh: 115.00
-          W1RestKWh: 370.00
+          WPAnteilKWh: 215.00
+          WallboxAnteilKWh: 0.00
+          W1RestKWh: 0.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
-          PVAnteilWPKWh: 0.00
-          PVAnteilWallboxKWh: 0.00
+          PVAnteilWPKWh: 35.00
+          PVAnteilWallboxKWh: 115.00
           KostenW2: 35.91
-          KostenW1: 80.52
-          KostenWPGesamtUnrounded: 54.41
-          KostenWallbox: 25.03
+          KostenW1: 0.00
+          KostenWPGesamtUnrounded: 46.79
+          KostenWallbox: 0.00
           WallboxVerteilt: true
-          KostenWallboxW1: 15.02
-          KostenWallboxW2: 10.01
-          WallboxW1KWh: 69.00
-          WallboxW2KWh: 46.00
+          KostenWallboxW1: 0.00
+          KostenWallboxW2: 0.00
+          WallboxW1KWh: 0.00
+          WallboxW2KWh: 0.00
           WallboxEinzelPruefbar: true
           WallboxEinzelSumme: 115.00
           WallboxEinzelAuffaellig: false
@@ -6561,7 +6561,7 @@ Dashboard:
           KostenAbwasserW1: 56.00
           KostenAbwasserW2: 26.43
         Heizung:
-          TotalHeizungskostenUnrounded: 54.41
+          TotalHeizungskostenUnrounded: 46.79
           WaermeW1MWh: 0.00
           WaermeW2MWh: 0.00
           QMW1: 116.23
@@ -6570,10 +6570,10 @@ Dashboard:
           RatioWaermeW2: 0.50
           RatioFlaecheW1: 0.57
           RatioFlaecheW2: 0.43
-          KostenHeizungW1: 28.42
-          KostenHeizungW2: 25.98
-          WPAnteilW1KWh: 130.61
-          WPAnteilW2KWh: 119.39
+          KostenHeizungW1: 24.44
+          KostenHeizungW2: 22.35
+          WPAnteilW1KWh: 112.32
+          WPAnteilW2KWh: 102.68
           WPVerbrauchW1KWh: 130.61
           WPVerbrauchW2KWh: 119.39
         Einspeisung:
@@ -6585,24 +6585,24 @@ Dashboard:
       Monat: "2026-06-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 900.00
+          NetzbezugGesamtKWh: 380.00
           W2AnteilKWh: 165.00
-          WPAnteilKWh: 250.00
-          WallboxAnteilKWh: 115.00
-          W1RestKWh: 370.00
+          WPAnteilKWh: 215.00
+          WallboxAnteilKWh: 0.00
+          W1RestKWh: 0.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
-          PVAnteilWPKWh: 0.00
-          PVAnteilWallboxKWh: 0.00
+          PVAnteilWPKWh: 35.00
+          PVAnteilWallboxKWh: 115.00
           KostenW2: 35.78
-          KostenW1: 80.23
-          KostenWPGesamtUnrounded: 54.21
-          KostenWallbox: 24.94
+          KostenW1: 0.00
+          KostenWPGesamtUnrounded: 46.62
+          KostenWallbox: 0.00
           WallboxVerteilt: true
-          KostenWallboxW1: 14.97
-          KostenWallboxW2: 9.97
-          WallboxW1KWh: 69.00
-          WallboxW2KWh: 46.00
+          KostenWallboxW1: 0.00
+          KostenWallboxW2: 0.00
+          WallboxW1KWh: 0.00
+          WallboxW2KWh: 0.00
           WallboxEinzelPruefbar: true
           WallboxEinzelSumme: 115.00
           WallboxEinzelAuffaellig: false
@@ -6620,7 +6620,7 @@ Dashboard:
           KostenAbwasserW1: 55.92
           KostenAbwasserW2: 26.39
         Heizung:
-          TotalHeizungskostenUnrounded: 54.21
+          TotalHeizungskostenUnrounded: 46.62
           WaermeW1MWh: 0.00
           WaermeW2MWh: 0.00
           QMW1: 116.23
@@ -6629,10 +6629,10 @@ Dashboard:
           RatioWaermeW2: 0.50
           RatioFlaecheW1: 0.57
           RatioFlaecheW2: 0.43
-          KostenHeizungW1: 28.32
-          KostenHeizungW2: 25.89
-          WPAnteilW1KWh: 130.61
-          WPAnteilW2KWh: 119.39
+          KostenHeizungW1: 24.36
+          KostenHeizungW2: 22.27
+          WPAnteilW1KWh: 112.32
+          WPAnteilW2KWh: 102.68
           WPVerbrauchW1KWh: 130.61
           WPVerbrauchW2KWh: 119.39
         Einspeisung:
@@ -6644,23 +6644,23 @@ Dashboard:
       Monat: "2026-05-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1050.75
+          NetzbezugGesamtKWh: 608.75
           W2AnteilKWh: 168.75
           WPAnteilKWh: 385.00
-          WallboxAnteilKWh: 118.00
-          W1RestKWh: 379.00
+          WallboxAnteilKWh: 55.00
+          W1RestKWh: 0.00
           W2VerbrauchKWh: 168.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
-          PVAnteilWallboxKWh: 0.00
+          PVAnteilWallboxKWh: 63.00
           KostenW2: 36.46
-          KostenW1: 81.88
+          KostenW1: 0.00
           KostenWPGesamtUnrounded: 83.18
-          KostenWallbox: 25.49
+          KostenWallbox: 11.88
           WallboxVerteilt: true
-          KostenWallboxW1: 15.29
+          KostenWallboxW1: 1.68
           KostenWallboxW2: 10.20
-          WallboxW1KWh: 70.80
+          WallboxW1KWh: 7.80
           WallboxW2KWh: 47.20
           WallboxEinzelPruefbar: true
           WallboxEinzelSumme: 118.00
@@ -6703,17 +6703,17 @@ Dashboard:
       Monat: "2026-04-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1251.75
+          NetzbezugGesamtKWh: 965.75
           W2AnteilKWh: 173.75
           WPAnteilKWh: 565.00
           WallboxAnteilKWh: 122.00
-          W1RestKWh: 391.00
+          W1RestKWh: 105.00
           W2VerbrauchKWh: 173.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 37.40
-          KostenW1: 84.17
+          KostenW1: 22.60
           KostenWPGesamtUnrounded: 121.62
           KostenWallbox: 26.26
           WallboxVerteilt: true
@@ -6762,17 +6762,17 @@ Dashboard:
       Monat: "2026-03-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1503.00
+          NetzbezugGesamtKWh: 1373.00
           W2AnteilKWh: 180.00
           WPAnteilKWh: 790.00
           WallboxAnteilKWh: 127.00
-          W1RestKWh: 406.00
+          W1RestKWh: 276.00
           W2VerbrauchKWh: 180.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 38.61
-          KostenW1: 87.08
+          KostenW1: 59.19
           KostenWPGesamtUnrounded: 169.43
           KostenWallbox: 27.24
           WallboxVerteilt: true
@@ -6821,17 +6821,17 @@ Dashboard:
       Monat: "2026-02-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1905.00
+          NetzbezugGesamtKWh: 1863.40
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
-          W1RestKWh: 430.00
+          W1RestKWh: 388.40
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 40.60
-          KostenW1: 91.88
+          KostenW1: 82.99
           KostenWPGesamtUnrounded: 245.74
           KostenWallbox: 28.85
           WallboxVerteilt: true
@@ -6880,17 +6880,17 @@ Dashboard:
       Monat: "2026-01-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1905.00
+          NetzbezugGesamtKWh: 1889.40
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
-          W1RestKWh: 430.00
+          W1RestKWh: 414.40
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 40.45
-          KostenW1: 91.54
+          KostenW1: 88.22
           KostenWPGesamtUnrounded: 244.83
           KostenWallbox: 28.74
           WallboxVerteilt: true
@@ -6939,17 +6939,17 @@ Dashboard:
       Monat: "2025-12-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1905.00
+          NetzbezugGesamtKWh: 1889.40
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
-          W1RestKWh: 430.00
+          W1RestKWh: 414.40
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 40.30
-          KostenW1: 91.21
+          KostenW1: 87.90
           KostenWPGesamtUnrounded: 243.92
           KostenWallbox: 28.63
           WallboxVerteilt: true
@@ -6998,17 +6998,17 @@ Dashboard:
       Monat: "2025-11-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1503.00
+          NetzbezugGesamtKWh: 1461.40
           W2AnteilKWh: 180.00
           WPAnteilKWh: 790.00
           WallboxAnteilKWh: 127.00
-          W1RestKWh: 406.00
+          W1RestKWh: 364.40
           W2VerbrauchKWh: 180.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 38.04
-          KostenW1: 85.79
+          KostenW1: 77.00
           KostenWPGesamtUnrounded: 166.94
           KostenWallbox: 26.84
           WallboxVerteilt: false
@@ -7057,17 +7057,17 @@ Dashboard:
       Monat: "2025-10-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1251.75
+          NetzbezugGesamtKWh: 1121.75
           W2AnteilKWh: 173.75
           WPAnteilKWh: 565.00
           WallboxAnteilKWh: 122.00
-          W1RestKWh: 391.00
+          W1RestKWh: 261.00
           W2VerbrauchKWh: 173.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 36.58
-          KostenW1: 82.32
+          KostenW1: 54.95
           KostenWPGesamtUnrounded: 118.95
           KostenWallbox: 25.68
           WallboxVerteilt: false
@@ -7116,17 +7116,17 @@ Dashboard:
       Monat: "2025-09-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1050.75
+          NetzbezugGesamtKWh: 764.75
           W2AnteilKWh: 168.75
           WPAnteilKWh: 385.00
           WallboxAnteilKWh: 118.00
-          W1RestKWh: 379.00
+          W1RestKWh: 93.00
           W2VerbrauchKWh: 168.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 35.39
-          KostenW1: 79.49
+          KostenW1: 19.51
           KostenWPGesamtUnrounded: 80.75
           KostenWallbox: 24.75
           WallboxVerteilt: false
@@ -7175,19 +7175,19 @@ Dashboard:
       Monat: "2025-08-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 900.00
+          NetzbezugGesamtKWh: 458.00
           W2AnteilKWh: 165.00
           WPAnteilKWh: 250.00
-          WallboxAnteilKWh: 115.00
-          W1RestKWh: 370.00
+          WallboxAnteilKWh: 43.00
+          W1RestKWh: 0.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
-          PVAnteilWallboxKWh: 0.00
+          PVAnteilWallboxKWh: 72.00
           KostenW2: 34.48
-          KostenW1: 77.31
+          KostenW1: 0.00
           KostenWPGesamtUnrounded: 52.24
-          KostenWallbox: 24.03
+          KostenWallbox: 8.98
           WallboxVerteilt: false
           KostenWallboxW1: 0.00
           KostenWallboxW2: 0.00
@@ -7234,19 +7234,19 @@ Dashboard:
       Monat: "2025-07-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 900.00
+          NetzbezugGesamtKWh: 380.00
           W2AnteilKWh: 165.00
-          WPAnteilKWh: 250.00
-          WallboxAnteilKWh: 115.00
-          W1RestKWh: 370.00
+          WPAnteilKWh: 215.00
+          WallboxAnteilKWh: 0.00
+          W1RestKWh: 0.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
-          PVAnteilWPKWh: 0.00
-          PVAnteilWallboxKWh: 0.00
+          PVAnteilWPKWh: 35.00
+          PVAnteilWallboxKWh: 115.00
           KostenW2: 34.35
-          KostenW1: 77.02
-          KostenWPGesamtUnrounded: 52.04
-          KostenWallbox: 23.94
+          KostenW1: 0.00
+          KostenWPGesamtUnrounded: 44.75
+          KostenWallbox: 0.00
           WallboxVerteilt: false
           KostenWallboxW1: 0.00
           KostenWallboxW2: 0.00
@@ -7269,7 +7269,7 @@ Dashboard:
           KostenAbwasserW1: 55.02
           KostenAbwasserW2: 25.96
         Heizung:
-          TotalHeizungskostenUnrounded: 52.04
+          TotalHeizungskostenUnrounded: 44.75
           WaermeW1MWh: 0.00
           WaermeW2MWh: 0.00
           QMW1: 116.23
@@ -7278,10 +7278,10 @@ Dashboard:
           RatioWaermeW2: 0.50
           RatioFlaecheW1: 0.57
           RatioFlaecheW2: 0.43
-          KostenHeizungW1: 27.19
-          KostenHeizungW2: 24.85
-          WPAnteilW1KWh: 130.61
-          WPAnteilW2KWh: 119.39
+          KostenHeizungW1: 23.38
+          KostenHeizungW2: 21.37
+          WPAnteilW1KWh: 112.32
+          WPAnteilW2KWh: 102.68
           WPVerbrauchW1KWh: 130.61
           WPVerbrauchW2KWh: 119.39
         Einspeisung:
@@ -7293,19 +7293,19 @@ Dashboard:
       Monat: "2025-06-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 900.00
+          NetzbezugGesamtKWh: 380.00
           W2AnteilKWh: 165.00
-          WPAnteilKWh: 250.00
-          WallboxAnteilKWh: 115.00
-          W1RestKWh: 370.00
+          WPAnteilKWh: 215.00
+          WallboxAnteilKWh: 0.00
+          W1RestKWh: 0.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
-          PVAnteilWPKWh: 0.00
-          PVAnteilWallboxKWh: 0.00
+          PVAnteilWPKWh: 35.00
+          PVAnteilWallboxKWh: 115.00
           KostenW2: 34.22
-          KostenW1: 76.73
-          KostenWPGesamtUnrounded: 51.84
-          KostenWallbox: 23.85
+          KostenW1: 0.00
+          KostenWPGesamtUnrounded: 44.58
+          KostenWallbox: 0.00
           WallboxVerteilt: false
           KostenWallboxW1: 0.00
           KostenWallboxW2: 0.00
@@ -7328,7 +7328,7 @@ Dashboard:
           KostenAbwasserW1: 54.94
           KostenAbwasserW2: 25.92
         Heizung:
-          TotalHeizungskostenUnrounded: 51.84
+          TotalHeizungskostenUnrounded: 44.58
           WaermeW1MWh: 0.00
           WaermeW2MWh: 0.00
           QMW1: 116.23
@@ -7337,10 +7337,10 @@ Dashboard:
           RatioWaermeW2: 0.50
           RatioFlaecheW1: 0.57
           RatioFlaecheW2: 0.43
-          KostenHeizungW1: 27.08
-          KostenHeizungW2: 24.76
-          WPAnteilW1KWh: 130.61
-          WPAnteilW2KWh: 119.39
+          KostenHeizungW1: 23.29
+          KostenHeizungW2: 21.29
+          WPAnteilW1KWh: 112.32
+          WPAnteilW2KWh: 102.68
           WPVerbrauchW1KWh: 130.61
           WPVerbrauchW2KWh: 119.39
         Einspeisung:
@@ -7352,19 +7352,19 @@ Dashboard:
       Monat: "2025-05-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1050.75
+          NetzbezugGesamtKWh: 608.75
           W2AnteilKWh: 168.75
           WPAnteilKWh: 385.00
-          WallboxAnteilKWh: 118.00
-          W1RestKWh: 379.00
+          WallboxAnteilKWh: 55.00
+          W1RestKWh: 0.00
           W2VerbrauchKWh: 168.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
-          PVAnteilWallboxKWh: 0.00
+          PVAnteilWallboxKWh: 63.00
           KostenW2: 34.86
-          KostenW1: 78.29
+          KostenW1: 0.00
           KostenWPGesamtUnrounded: 79.53
-          KostenWallbox: 24.38
+          KostenWallbox: 11.36
           WallboxVerteilt: false
           KostenWallboxW1: 0.00
           KostenWallboxW2: 0.00
@@ -7411,17 +7411,17 @@ Dashboard:
       Monat: "2025-04-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1251.75
+          NetzbezugGesamtKWh: 965.75
           W2AnteilKWh: 173.75
           WPAnteilKWh: 565.00
           WallboxAnteilKWh: 122.00
-          W1RestKWh: 391.00
+          W1RestKWh: 105.00
           W2VerbrauchKWh: 173.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 35.76
-          KostenW1: 80.46
+          KostenW1: 21.61
           KostenWPGesamtUnrounded: 116.27
           KostenWallbox: 25.11
           WallboxVerteilt: false
@@ -7470,17 +7470,17 @@ Dashboard:
       Monat: "2025-03-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1503.00
+          NetzbezugGesamtKWh: 1373.00
           W2AnteilKWh: 180.00
           WPAnteilKWh: 790.00
           WallboxAnteilKWh: 127.00
-          W1RestKWh: 406.00
+          W1RestKWh: 276.00
           W2VerbrauchKWh: 180.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 36.90
-          KostenW1: 83.23
+          KostenW1: 56.58
           KostenWPGesamtUnrounded: 161.95
           KostenWallbox: 26.04
           WallboxVerteilt: false
@@ -7529,17 +7529,17 @@ Dashboard:
       Monat: "2025-02-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1905.00
+          NetzbezugGesamtKWh: 1863.40
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
-          W1RestKWh: 430.00
+          W1RestKWh: 388.40
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 38.80
-          KostenW1: 87.81
+          KostenW1: 79.32
           KostenWPGesamtUnrounded: 234.84
           KostenWallbox: 27.57
           WallboxVerteilt: false
@@ -7588,17 +7588,17 @@ Dashboard:
       Monat: "2025-01-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1905.00
+          NetzbezugGesamtKWh: 1889.40
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
-          W1RestKWh: 430.00
+          W1RestKWh: 414.40
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 38.65
-          KostenW1: 87.47
+          KostenW1: 84.30
           KostenWPGesamtUnrounded: 233.93
           KostenWallbox: 27.46
           WallboxVerteilt: false
@@ -7647,17 +7647,17 @@ Dashboard:
       Monat: "2024-12-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1905.00
+          NetzbezugGesamtKWh: 1889.40
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
-          W1RestKWh: 430.00
+          W1RestKWh: 414.40
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 38.50
-          KostenW1: 87.13
+          KostenW1: 83.97
           KostenWPGesamtUnrounded: 233.03
           KostenWallbox: 27.36
           WallboxVerteilt: false
@@ -7706,17 +7706,17 @@ Dashboard:
       Monat: "2024-11-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1503.00
+          NetzbezugGesamtKWh: 1461.40
           W2AnteilKWh: 180.00
           WPAnteilKWh: 790.00
           WallboxAnteilKWh: 127.00
-          W1RestKWh: 406.00
+          W1RestKWh: 364.40
           W2VerbrauchKWh: 180.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 36.33
-          KostenW1: 81.95
+          KostenW1: 73.55
           KostenWPGesamtUnrounded: 159.46
           KostenWallbox: 25.63
           WallboxVerteilt: false
@@ -7765,17 +7765,17 @@ Dashboard:
       Monat: "2024-10-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1251.75
+          NetzbezugGesamtKWh: 1121.75
           W2AnteilKWh: 173.75
           WPAnteilKWh: 565.00
           WallboxAnteilKWh: 122.00
-          W1RestKWh: 391.00
+          W1RestKWh: 261.00
           W2VerbrauchKWh: 173.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 34.93
-          KostenW1: 78.61
+          KostenW1: 52.47
           KostenWPGesamtUnrounded: 113.59
           KostenWallbox: 24.53
           WallboxVerteilt: false
@@ -7824,17 +7824,17 @@ Dashboard:
       Monat: "2024-09-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1050.75
+          NetzbezugGesamtKWh: 764.75
           W2AnteilKWh: 168.75
           WPAnteilKWh: 385.00
           WallboxAnteilKWh: 118.00
-          W1RestKWh: 379.00
+          W1RestKWh: 93.00
           W2VerbrauchKWh: 168.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 33.79
-          KostenW1: 75.90
+          KostenW1: 18.62
           KostenWPGesamtUnrounded: 77.10
           KostenWallbox: 23.63
           WallboxVerteilt: false
@@ -7883,19 +7883,19 @@ Dashboard:
       Monat: "2024-08-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 900.00
+          NetzbezugGesamtKWh: 458.00
           W2AnteilKWh: 165.00
           WPAnteilKWh: 250.00
-          WallboxAnteilKWh: 115.00
-          W1RestKWh: 370.00
+          WallboxAnteilKWh: 43.00
+          W1RestKWh: 0.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
-          PVAnteilWallboxKWh: 0.00
+          PVAnteilWallboxKWh: 72.00
           KostenW2: 32.91
-          KostenW1: 73.81
+          KostenW1: 0.00
           KostenWPGesamtUnrounded: 49.87
-          KostenWallbox: 22.94
+          KostenWallbox: 8.58
           WallboxVerteilt: false
           KostenWallboxW1: 0.00
           KostenWallboxW2: 0.00
@@ -7942,19 +7942,19 @@ Dashboard:
       Monat: "2024-07-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 900.00
+          NetzbezugGesamtKWh: 380.00
           W2AnteilKWh: 165.00
-          WPAnteilKWh: 250.00
-          WallboxAnteilKWh: 115.00
-          W1RestKWh: 370.00
+          WPAnteilKWh: 215.00
+          WallboxAnteilKWh: 0.00
+          W1RestKWh: 0.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
-          PVAnteilWPKWh: 0.00
-          PVAnteilWallboxKWh: 0.00
+          PVAnteilWPKWh: 35.00
+          PVAnteilWallboxKWh: 115.00
           KostenW2: 32.78
-          KostenW1: 73.51
-          KostenWPGesamtUnrounded: 49.67
-          KostenWallbox: 22.85
+          KostenW1: 0.00
+          KostenWPGesamtUnrounded: 42.72
+          KostenWallbox: 0.00
           WallboxVerteilt: false
           KostenWallboxW1: 0.00
           KostenWallboxW2: 0.00
@@ -7977,7 +7977,7 @@ Dashboard:
           KostenAbwasserW1: 54.03
           KostenAbwasserW2: 25.50
         Heizung:
-          TotalHeizungskostenUnrounded: 49.67
+          TotalHeizungskostenUnrounded: 42.72
           WaermeW1MWh: 0.00
           WaermeW2MWh: 0.00
           QMW1: 116.23
@@ -7986,10 +7986,10 @@ Dashboard:
           RatioWaermeW2: 0.50
           RatioFlaecheW1: 0.57
           RatioFlaecheW2: 0.43
-          KostenHeizungW1: 25.95
-          KostenHeizungW2: 23.72
-          WPAnteilW1KWh: 130.61
-          WPAnteilW2KWh: 119.39
+          KostenHeizungW1: 22.32
+          KostenHeizungW2: 20.40
+          WPAnteilW1KWh: 112.32
+          WPAnteilW2KWh: 102.68
           WPVerbrauchW1KWh: 130.61
           WPVerbrauchW2KWh: 119.39
         Einspeisung:
@@ -8001,19 +8001,19 @@ Dashboard:
       Monat: "2024-06-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 900.00
+          NetzbezugGesamtKWh: 380.00
           W2AnteilKWh: 165.00
-          WPAnteilKWh: 250.00
-          WallboxAnteilKWh: 115.00
-          W1RestKWh: 370.00
+          WPAnteilKWh: 215.00
+          WallboxAnteilKWh: 0.00
+          W1RestKWh: 0.00
           W2VerbrauchKWh: 165.00
           PVAnteilW2KWh: 0.00
-          PVAnteilWPKWh: 0.00
-          PVAnteilWallboxKWh: 0.00
+          PVAnteilWPKWh: 35.00
+          PVAnteilWallboxKWh: 115.00
           KostenW2: 32.65
-          KostenW1: 73.22
-          KostenWPGesamtUnrounded: 49.47
-          KostenWallbox: 22.76
+          KostenW1: 0.00
+          KostenWPGesamtUnrounded: 42.55
+          KostenWallbox: 0.00
           WallboxVerteilt: false
           KostenWallboxW1: 0.00
           KostenWallboxW2: 0.00
@@ -8036,7 +8036,7 @@ Dashboard:
           KostenAbwasserW1: 53.95
           KostenAbwasserW2: 25.46
         Heizung:
-          TotalHeizungskostenUnrounded: 49.47
+          TotalHeizungskostenUnrounded: 42.55
           WaermeW1MWh: 0.00
           WaermeW2MWh: 0.00
           QMW1: 116.23
@@ -8045,10 +8045,10 @@ Dashboard:
           RatioWaermeW2: 0.50
           RatioFlaecheW1: 0.57
           RatioFlaecheW2: 0.43
-          KostenHeizungW1: 25.85
-          KostenHeizungW2: 23.63
-          WPAnteilW1KWh: 130.61
-          WPAnteilW2KWh: 119.39
+          KostenHeizungW1: 22.23
+          KostenHeizungW2: 20.32
+          WPAnteilW1KWh: 112.32
+          WPAnteilW2KWh: 102.68
           WPVerbrauchW1KWh: 130.61
           WPVerbrauchW2KWh: 119.39
         Einspeisung:
@@ -8060,19 +8060,19 @@ Dashboard:
       Monat: "2024-05-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1050.75
+          NetzbezugGesamtKWh: 608.75
           W2AnteilKWh: 168.75
           WPAnteilKWh: 385.00
-          WallboxAnteilKWh: 118.00
-          W1RestKWh: 379.00
+          WallboxAnteilKWh: 55.00
+          W1RestKWh: 0.00
           W2VerbrauchKWh: 168.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
-          PVAnteilWallboxKWh: 0.00
+          PVAnteilWallboxKWh: 63.00
           KostenW2: 33.26
-          KostenW1: 74.70
+          KostenW1: 0.00
           KostenWPGesamtUnrounded: 75.89
-          KostenWallbox: 23.26
+          KostenWallbox: 10.84
           WallboxVerteilt: false
           KostenWallboxW1: 0.00
           KostenWallboxW2: 0.00
@@ -8119,17 +8119,17 @@ Dashboard:
       Monat: "2024-04-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1251.75
+          NetzbezugGesamtKWh: 965.75
           W2AnteilKWh: 173.75
           WPAnteilKWh: 565.00
           WallboxAnteilKWh: 122.00
-          W1RestKWh: 391.00
+          W1RestKWh: 105.00
           W2VerbrauchKWh: 173.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 34.11
-          KostenW1: 76.76
+          KostenW1: 20.61
           KostenWPGesamtUnrounded: 110.92
           KostenWallbox: 23.95
           WallboxVerteilt: false
@@ -8178,17 +8178,17 @@ Dashboard:
       Monat: "2024-03-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1503.00
+          NetzbezugGesamtKWh: 1373.00
           W2AnteilKWh: 180.00
           WPAnteilKWh: 790.00
           WallboxAnteilKWh: 127.00
-          W1RestKWh: 406.00
+          W1RestKWh: 276.00
           W2VerbrauchKWh: 180.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 35.19
-          KostenW1: 79.38
+          KostenW1: 53.97
           KostenWPGesamtUnrounded: 154.47
           KostenWallbox: 24.83
           WallboxVerteilt: false
@@ -8237,17 +8237,17 @@ Dashboard:
       Monat: "2024-02-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1905.00
+          NetzbezugGesamtKWh: 1863.40
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
-          W1RestKWh: 430.00
+          W1RestKWh: 388.40
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 37.00
-          KostenW1: 83.74
+          KostenW1: 75.64
           KostenWPGesamtUnrounded: 223.95
           KostenWallbox: 26.29
           WallboxVerteilt: false
@@ -8296,17 +8296,17 @@ Dashboard:
       Monat: "2024-01-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1905.00
+          NetzbezugGesamtKWh: 1889.40
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
-          W1RestKWh: 430.00
+          W1RestKWh: 414.40
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 36.85
-          KostenW1: 83.40
+          KostenW1: 80.37
           KostenWPGesamtUnrounded: 223.04
           KostenWallbox: 26.18
           WallboxVerteilt: false
@@ -8355,17 +8355,17 @@ Dashboard:
       Monat: "2023-12-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1905.00
+          NetzbezugGesamtKWh: 1889.40
           W2AnteilKWh: 190.00
           WPAnteilKWh: 1150.00
           WallboxAnteilKWh: 135.00
-          W1RestKWh: 430.00
+          W1RestKWh: 414.40
           W2VerbrauchKWh: 190.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 36.70
-          KostenW1: 83.06
+          KostenW1: 80.04
           KostenWPGesamtUnrounded: 222.13
           KostenWallbox: 26.08
           WallboxVerteilt: false
@@ -8414,17 +8414,17 @@ Dashboard:
       Monat: "2023-11-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1503.00
+          NetzbezugGesamtKWh: 1461.40
           W2AnteilKWh: 180.00
           WPAnteilKWh: 790.00
           WallboxAnteilKWh: 127.00
-          W1RestKWh: 406.00
+          W1RestKWh: 364.40
           W2VerbrauchKWh: 180.00
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 34.63
-          KostenW1: 78.10
+          KostenW1: 70.10
           KostenWPGesamtUnrounded: 151.97
           KostenWallbox: 24.43
           WallboxVerteilt: false
@@ -8473,17 +8473,17 @@ Dashboard:
       Monat: "2023-10-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1251.75
+          NetzbezugGesamtKWh: 1121.75
           W2AnteilKWh: 173.75
           WPAnteilKWh: 565.00
           WallboxAnteilKWh: 122.00
-          W1RestKWh: 391.00
+          W1RestKWh: 261.00
           W2VerbrauchKWh: 173.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 33.29
-          KostenW1: 74.91
+          KostenW1: 50.00
           KostenWPGesamtUnrounded: 108.24
           KostenWallbox: 23.37
           WallboxVerteilt: false
@@ -8532,17 +8532,17 @@ Dashboard:
       Monat: "2023-09-01"
       K:
         Strom:
-          NetzbezugGesamtKWh: 1050.75
+          NetzbezugGesamtKWh: 764.75
           W2AnteilKWh: 168.75
           WPAnteilKWh: 385.00
           WallboxAnteilKWh: 118.00
-          W1RestKWh: 379.00
+          W1RestKWh: 93.00
           W2VerbrauchKWh: 168.75
           PVAnteilW2KWh: 0.00
           PVAnteilWPKWh: 0.00
           PVAnteilWallboxKWh: 0.00
           KostenW2: 32.20
-          KostenW1: 72.31
+          KostenW1: 17.74
           KostenWPGesamtUnrounded: 73.45
           KostenWallbox: 22.51
           WallboxVerteilt: false
