@@ -6,6 +6,7 @@
 <div class="panel" style="border-color:#e6a700">{{.FixkostenBanner.Text}}{{if .Vermieter}} <a href="{{.Base}}{{.FixkostenBanner.Pfad}}">{{.FixkostenBanner.LinkText}}</a>{{end}}</div>
 {{end}}
 
+<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:.75rem;flex-wrap:wrap">
 <div class="field" style="max-width:220px">
   <label>Andere Ablesung anzeigen</label>
   <select onchange="if(this.value) location.href=this.value">
@@ -13,6 +14,8 @@
     <option value="{{$.Base}}/ablesungen/{{.ID}}" {{if eq .ID $.Period.ID}}selected{{end}}>{{.Label}}</option>
     {{end}}
   </select>
+</div>
+{{if or .Vermieter (and .IstTeilstand .KannAblesungAnlegen)}}<a href="{{.Base}}/ablesungen/{{.Period.ID}}/bearbeiten" class="button secondary" style="margin-bottom:.9rem">{{if .IstTeilstand}}Ablesung vervollständigen{{else}}Eingabe korrigieren{{end}}</a>{{end}}
 </div>
 
 <div class="panel">
@@ -141,7 +144,6 @@
 {{if or .Vermieter (and .IstTeilstand .KannAblesungAnlegen)}}
 <div class="btn-row">
   {{if .KannAblesungAnlegen}}<a href="{{.Base}}/ablesungen/neu" class="button success">Neue Ablesung</a>{{end}}
-  <a href="{{.Base}}/ablesungen/{{.Period.ID}}/bearbeiten" class="button secondary">{{if .IstTeilstand}}Ablesung vervollständigen{{else}}Ablesung korrigieren{{end}}</a>
   {{if .Vermieter}}
   <form method="post" action="{{.Base}}/ablesungen/{{.Period.ID}}/loeschen" onsubmit="return confirm('Ablesung vom {{deDatum .Period.ReadingDate}} wirklich löschen?');">
     <button type="submit" class="danger">Ablesung löschen</button>

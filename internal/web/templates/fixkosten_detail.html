@@ -4,6 +4,7 @@
 
 {{template "fixkostenHinweise" .}}
 
+<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:.75rem;flex-wrap:wrap">
 <div class="field" style="max-width:220px">
   <label>Andere Eingabe anzeigen</label>
   <select onchange="if(this.value) location.href=this.value">
@@ -11,6 +12,8 @@
     <option value="{{$.Base}}/fixkosten/{{.ID}}" {{if eq .ID $.Eingabe.ID}}selected{{end}}>{{.Label}}</option>
     {{end}}
   </select>
+</div>
+{{if .Vermieter}}<a href="{{.Base}}/fixkosten/{{.Eingabe.ID}}/bearbeiten" class="button secondary" style="margin-bottom:.9rem">Eingabe korrigieren</a>{{end}}
 </div>
 
 <div class="panel">
@@ -49,9 +52,8 @@
 {{if .Vermieter}}
 <div class="btn-row">
   <a href="{{.Base}}/fixkosten/neu" class="button success">Neue Fixkosteneingabe</a>
-  <a href="{{.Base}}/fixkosten/{{.Eingabe.ID}}/bearbeiten" class="button secondary">Eingabe korrigieren</a>
   <form method="post" action="{{.Base}}/fixkosten/{{.Eingabe.ID}}/loeschen" onsubmit="return confirm('Fixkosten-Eingabe {{.MonatLabel}} wirklich löschen?'){{if .LoeschenFrage}} && confirm({{.LoeschenFrage}}){{end}};">
-    <button type="submit" class="danger">Eingabe löschen</button>
+    <button type="submit" class="danger">Fixkosteneingabe löschen</button>
   </form>
 </div>
 {{end}}
