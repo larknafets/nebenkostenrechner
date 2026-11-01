@@ -3,6 +3,7 @@ package web
 import (
 	"database/sql"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 
@@ -18,6 +19,15 @@ type dashboardData struct {
 	PeriodenKosten []periodKosten
 	FixkostenListe []fixkostenKosten
 	Jahr           int
+	// Monate are all Abrechnungsmonate with a reading or a Fixkosteneingabe,
+	// newest first. NeuesJahr is the year of the newest one, Jahr the shown
+	// year (NeuesJahr until waehleJahr picks another).
+	Monate    []string
+	NeuesJahr int
+	// BisMonate are the Monate of Jahr: the months of the timeline. Bis is the
+	// chosen one ("YYYY-MM-01"), "" = no limit (the newest month of Jahr).
+	BisMonate []string
+	Bis       string
 	// WallboxWeiterberechnen is the house flag of the same name; with the
 	// Wohnungsstatus it decides whether a zero Wallbox line is shown.
 	WallboxWeiterberechnen bool
@@ -106,14 +116,115 @@ func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, []calc.OffenerM
 
 	fixkostenListe := alleFixkostenKosten(calc.FixkostenreiheAus(ds))
 
+	jahr := anzeigeJahr(allPeriods, fixkostenEingaben)
+	var monate []string
+	for _, p := range allPeriods {
+		monate = append(monate, p.Monat)
+	}
+	for _, e := range fixkostenEingaben {
+		monate = append(monate, e.Monat)
+	}
+	alle := monateImJahr(monate, 0)
+
 	return dashboardData{
 		HasAnyData:             true,
 		Apartments:             apartments,
 		PeriodenKosten:         periodenKosten,
 		FixkostenListe:         fixkostenListe,
-		Jahr:                   anzeigeJahr(allPeriods, fixkostenEingaben),
+		Jahr:                   jahr,
+		Monate:                 alle,
+		NeuesJahr:              jahr,
+		BisMonate:              monateImJahr(alle, jahr),
 		WallboxWeiterberechnen: ds.Haus.WallboxWeiterberechnen,
 	}, miete, verbrauchskosten.OffeneMonate(), nil
+}
+
+// monateImJahr returns the distinct months of jahr (0 = every year), newest
+// first.
+func monateImJahr(monate []string, jahr int) []string {
+	var out []string
+	for _, m := range monate {
+		if y, ok := store.Abrechnungsmonat(m).Jahr(); ok && (jahr == 0 || y == jahr) && !slices.Contains(out, m) {
+			out = append(out, m)
+		}
+	}
+	slices.Sort(out)
+	slices.Reverse(out)
+	return out
+}
+
+// waehleJahr shows another year. A wish without any month of data (or 0) keeps
+// the newest year.
+func (dd *dashboardData) waehleJahr(wunsch int) {
+	if monate := monateImJahr(dd.Monate, wunsch); wunsch != 0 && len(monate) > 0 {
+		dd.Jahr, dd.BisMonate = wunsch, monate
+	}
+}
+
+// jahrLinks are the links to the year before and after Jahr that hold data, ""
+// = none. The newest year links to the page without a parameter.
+func jahrLinks(dd dashboardData) (zurueck, vor string) {
+	var jahre []int
+	for _, m := range dd.Monate {
+		if y, ok := store.Abrechnungsmonat(m).Jahr(); ok && !slices.Contains(jahre, y) {
+			jahre = append(jahre, y)
+		}
+	}
+	slices.Sort(jahre)
+	i := slices.Index(jahre, dd.Jahr)
+	if i > 0 {
+		zurueck = jahrAbfrage(jahre[i-1], dd.NeuesJahr)
+	}
+	if i >= 0 && i < len(jahre)-1 {
+		vor = jahrAbfrage(jahre[i+1], dd.NeuesJahr)
+	}
+	return zurueck, vor
+}
+
+// jahrAbfrage is the query for showing jahr: empty for the newest year.
+func jahrAbfrage(jahr, neuesJahr int) string {
+	if jahr == neuesJahr {
+		return "?"
+	}
+	return "?jahr=" + strconv.Itoa(jahr)
+}
+
+// waehleBis sets the month the yearly totals run up to. A wish that is not one
+// of BisMonate (bad format, other year, month without data) or the newest month
+// means no limit.
+func (dd *dashboardData) waehleBis(wunsch string) {
+	if len(dd.BisMonate) > 0 && wunsch != dd.BisMonate[0] && slices.Contains(dd.BisMonate, wunsch) {
+		dd.Bis = wunsch
+	}
+}
+
+// bisGrenze is the last month that counts into the yearly totals and the
+// Saldo: the Bis-Monat, for an older year its last month, "" = no limit.
+func (dd dashboardData) bisGrenze() string {
+	if dd.Bis == "" && dd.Jahr != dd.NeuesJahr && len(dd.BisMonate) > 0 {
+		return dd.BisMonate[0]
+	}
+	return dd.Bis
+}
+
+func pkMonat(pk periodKosten) string        { return pk.Monat }
+func fkMonat(fk fixkostenKosten) string     { return fk.Monat }
+func mieteMonatKey(m mieteMonat) string     { return m.Monat }
+func offenMonat(o calc.OffenerMonat) string { return o.Monat }
+
+// bisMonat keeps the entries up to and including bis ("" = all). Monat values
+// are "YYYY-MM-01", so they compare as strings.
+func bisMonat[T any](xs []T, bis string, monat func(T) string) []T {
+	if bis == "" {
+		return xs
+	}
+	var out []T
+	for _, x := range xs {
+		if monat(x) <= bis {
+			out = append(out, x)
+		}
+	}
+	return out
 }
 
 // handleDashboard serves the redesigned Dashboard (Issue #60): yearly-
@@ -152,6 +263,10 @@ func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 			}
 			return
 		}
+		if y, err := strconv.Atoi(r.URL.Query().Get("jahr")); err == nil {
+			dd.waehleJahr(y)
+		}
+		dd.waehleBis(r.URL.Query().Get("bis"))
 		jahr := dd.Jahr
 
 		if err := nav.Fehler(); err != nil {
@@ -166,40 +281,100 @@ func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 		for i := range view.VerlaufSpalten {
 			view.VerlaufSpalten[i].Base, view.VerlaufSpalten[i].MitLink = nav.Base, nav.Vermieter
 		}
+		bisPunkte, bisFuell := bisZeitleiste(dd)
+		jahrZurueck, jahrVor := jahrLinks(dd)
 		data := struct {
 			navData
-			Aktuell            string
-			FixkostenHinweis   *fixkostenHinweis
-			HasAnyData         bool
-			AnzeigeJahr        int
-			AnzeigeJahrLaufend bool
-			Cards              []dashboardJahresCard
-			VerlaufSpalten     []dashboardVerlaufSpalte
-			Haus               []sichtbarerSimple
-			VerlaufAuswahl     []verlaufOption
-			Version            string
-			BuildDate          string
-			UpdateAvailable    bool
-			LatestVersion      string
+			Aktuell          string
+			FixkostenHinweis *fixkostenHinweis
+			HasAnyData       bool
+			AnzeigeJahr      int
+			BisZeitleiste    []bisPunkt
+			BisFuell         int
+			JahrZurueck      string
+			JahrVor          string
+			BisLabel         string
+			Cards            []dashboardJahresCard
+			VerlaufSpalten   []dashboardVerlaufSpalte
+			Haus             []sichtbarerSimple
+			VerlaufAuswahl   []verlaufOption
+			Version          string
+			BuildDate        string
+			UpdateAvailable  bool
+			LatestVersion    string
 		}{
-			navData:            nav,
-			Aktuell:            "dashboard",
-			FixkostenHinweis:   fixkostenFehlenHinweis(kontextDashboard, offen, nil),
-			HasAnyData:         true,
-			AnzeigeJahr:        jahr,
-			AnzeigeJahrLaufend: jahr == time.Now().Year(),
-			Cards:              view.Cards,
-			VerlaufSpalten:     view.VerlaufSpalten,
-			Haus:               view.Haus,
-			VerlaufAuswahl:     verlaufAuswahl(view),
-			Version:            version,
-			BuildDate:          buildDate,
-			UpdateAvailable:    updateAvailable,
-			LatestVersion:      latestVersion,
+			navData:          nav,
+			Aktuell:          "dashboard",
+			FixkostenHinweis: fixkostenFehlenHinweis(kontextDashboard, offen, nil),
+			HasAnyData:       true,
+			AnzeigeJahr:      jahr,
+			BisLabel:         bisLabel(dd.Bis),
+			BisZeitleiste:    bisPunkte,
+			BisFuell:         bisFuell,
+			JahrZurueck:      jahrZurueck,
+			JahrVor:          jahrVor,
+			Cards:            view.Cards,
+			VerlaufSpalten:   view.VerlaufSpalten,
+			Haus:             view.Haus,
+			VerlaufAuswahl:   verlaufAuswahl(view),
+			Version:          version,
+			BuildDate:        buildDate,
+			UpdateAvailable:  updateAvailable,
+			LatestVersion:    latestVersion,
 		}
 
 		if err := dashboardTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
+}
+
+// bisPunkt is one month of the timeline above the yearly totals: a link that
+// sets the Bis-Monat. Drin = the month counts into the totals, Gewaehlt = it is
+// the Bis-Monat.
+type bisPunkt struct {
+	Link, Kurz, Name string
+	Drin, Gewaehlt   bool
+}
+
+// bisZeitleiste lists the months oldest first with the share (0-100) of the
+// line that is filled up to the chosen month. The newest month links to the
+// page without a limit.
+func bisZeitleiste(dd dashboardData) (punkte []bisPunkt, fuellProzent int) {
+	n := len(dd.BisMonate)
+	gewaehlt := n - 1 // index in oldest-first order
+	if dd.Bis != "" {
+		gewaehlt = n - 1 - slices.Index(dd.BisMonate, dd.Bis)
+	}
+	for i := n - 1; i >= 0; i-- {
+		m := dd.BisMonate[i]
+		pos := n - 1 - i
+		link := jahrAbfrage(dd.Jahr, dd.NeuesJahr)
+		if i != 0 && link == "?" {
+			link = "?bis=" + m
+		} else if i != 0 {
+			link += "&bis=" + m
+		}
+		kurz := m
+		if t, err := time.Parse("2006-01-02", m); err == nil {
+			kurz = store.Monatsnamen[t.Month()-1][:3]
+		}
+		punkte = append(punkte, bisPunkt{Link: link, Kurz: kurz, Name: "bis " + store.MonatLabel(m), Drin: pos <= gewaehlt, Gewaehlt: pos == gewaehlt})
+	}
+	if n > 1 {
+		fuellProzent = gewaehlt * 100 / (n - 1)
+	}
+	return punkte, fuellProzent
+}
+
+// bisLabel is the month name for the heading, "" without a limit.
+func bisLabel(bis string) string {
+	if bis == "" {
+		return ""
+	}
+	t, err := time.Parse("2006-01-02", bis)
+	if err != nil {
+		return ""
+	}
+	return store.Monatsnamen[t.Month()-1]
 }
