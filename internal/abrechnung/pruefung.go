@@ -276,7 +276,7 @@ func bestimmeZeitraum(periods []*store.LatestPeriod, jahr int, bereich Monatsber
 		res.Maengel = append(res.Maengel, Mangel{
 			Art:    MangelKeinZeitraum,
 			Text:   "Das Datum der ersten Ablesung ist ungültig: " + first.ReadingDate,
-			Aktion: "Ablesung korrigieren",
+			Aktion: "Eingabe korrigieren",
 			Pfad:   "/ablesungen/" + strconv.FormatInt(first.ID, 10) + "/bearbeiten",
 		})
 		return z, ablesungVon, fixkostenVon, false

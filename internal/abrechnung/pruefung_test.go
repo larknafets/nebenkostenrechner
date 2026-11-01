@@ -283,8 +283,8 @@ func TestPruefeAbrechnung_KeinZeitraum(t *testing.T) {
 			t.Fatalf("got Zeitraum %+v, Maengel %v, want no Zeitraum and the invalid-date message", got.Zeitraum, maengelTexte(got))
 		}
 		m := got.Maengel[0]
-		if !m.HatZiel() || m.Pfad != "/ablesungen/1/bearbeiten" || m.Aktion != "Ablesung korrigieren" {
-			t.Errorf("finding: Pfad %q Aktion %q, want a link to /ablesungen/1/bearbeiten labelled Ablesung korrigieren", m.Pfad, m.Aktion)
+		if !m.HatZiel() || m.Pfad != "/ablesungen/1/bearbeiten" || m.Aktion != "Eingabe korrigieren" {
+			t.Errorf("finding: Pfad %q Aktion %q, want a link to /ablesungen/1/bearbeiten labelled Eingabe korrigieren", m.Pfad, m.Aktion)
 		}
 	})
 	t.Run("laufendes Jahr nennt die fehlenden Monate", func(t *testing.T) {
