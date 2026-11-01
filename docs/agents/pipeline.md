@@ -24,5 +24,4 @@ The standard order for a larger change: `/wayfinder` (map and decision tickets),
 
 ## Last step before the PR
 
-- After `scripts/check` and `/review` (`checks.md`) run `/ponytail-review` on the branch, once, as the last step before the PR is proposed. It applies to product changes that go through a PR, for an `epic/` branch once before the epic PR, not after every ticket. Developer changes straight to `main` skip it.
-- The agent fixes nothing by itself: it shows the numbered findings and the user names the ones to fix. Fixes land as commits on the branch, then the PR is proposed.
+- `/ponytail-review` follows `/implement-spec` and `/code-review`. Its rules (when, once per branch, who fixes) are in `checks.md`.

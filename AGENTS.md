@@ -27,7 +27,7 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 | Writing a commit message, or a command line containing a push or another blocked git command | `docs/agents/git-commit-messages.md`, `docs/agents/agents.md` |
 | Adding a changelog line, writing release notes | `docs/agents/changelog.md` |
 | Releasing: version, tag, nightly, checklist | `docs/agents/releases.md` |
-| Before a commit or PR: `scripts/check`, hooks, review, `actionlint` | `docs/agents/checks.md` |
+| Before a commit or PR: `scripts/check`, hooks, `/code-review`, `/ponytail-review`, `actionlint`, `scripts/dev-server` | `docs/agents/checks.md` |
 | Starting an implementer or reviewer subagent, Haiku, git inside a worktree | `docs/agents/agents.md` |
 | Writing any text: which language | `docs/agents/language-convention.md` |
 | Working with issues or Wayfinder | `docs/agents/issue-tracker.md` |
