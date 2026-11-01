@@ -190,6 +190,9 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			// WallboxKWh is the grid-draw share of the Wallboxen, a pure meter
 			// value shown next to the hint.
 			WallboxKWh float64
+			// KannKorrigieren shows the correct/complete button (Vermieter, or
+			// a Teilstand the user may complete).
+			KannKorrigieren bool
 		}{
 			navData:          z.NavData(r),
 			TeilstandStatus:  status,
@@ -209,6 +212,7 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 			FixkostenHinweis: hinweis,
 			WallboxKWh:       wallboxKWh,
 		}
+		data.KannKorrigieren = data.Vermieter || (data.IstTeilstand && data.KannAblesungAnlegen)
 		// One note per page: the banner only where the Kostenbereich shows none
 		// (Teilstand, first Ablesung).
 		if r.URL.Query().Get(fixkostenFehlenParam) != "" && hinweis == nil {

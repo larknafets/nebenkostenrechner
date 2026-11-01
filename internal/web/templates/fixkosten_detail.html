@@ -4,7 +4,7 @@
 
 {{template "fixkostenHinweise" .}}
 
-<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:.75rem;flex-wrap:wrap">
+<div class="select-row">
 <div class="field" style="max-width:220px">
   <label>Andere Eingabe anzeigen</label>
   <select onchange="if(this.value) location.href=this.value">
@@ -13,7 +13,7 @@
     {{end}}
   </select>
 </div>
-{{if .Vermieter}}<a href="{{.Base}}/fixkosten/{{.Eingabe.ID}}/bearbeiten" class="button secondary" style="margin-bottom:.9rem">Eingabe korrigieren</a>{{end}}
+{{if .Vermieter}}<a href="{{.Base}}/fixkosten/{{.Eingabe.ID}}/bearbeiten" class="button secondary">Eingabe korrigieren</a>{{end}}
 </div>
 
 <div class="panel">

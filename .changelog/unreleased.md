@@ -43,7 +43,7 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Verbesserungen
 
-- „Eingabe korrigieren“ steht in der Fixkosten- und Ablesungsanzeige oben rechts, der Button zum Löschen einer Fixkosten-Eingabe heißt „Fixkosteneingabe löschen“.
+- „Eingabe korrigieren“ steht in der Fixkosten- und Ablesungsanzeige oben rechts, der Button zum Löschen einer Fixkosteneingabe heißt „Fixkosteneingabe löschen“.
 
 ## Fehlerkorrekturen
 
