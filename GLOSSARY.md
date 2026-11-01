@@ -5,7 +5,7 @@ Monatliche Nebenkostenabrechnung für ein Zweifamilienhaus mit Wärmepumpe und P
 ## Language
 
 **Ablesung**:
-Eine Erfassung der Zählerstände zu einem Ablesedatum, einem Abrechnungsmonat zugeordnet. Personenzahl, Preise und Häkchen gehören nicht dazu, sie stehen bei der **Fixkosten-Eingabe** des Abrechnungsmonats. Im Code auch "Periode" genannt.
+Eine Erfassung der Zählerstände zu einem Ablesedatum, einem Abrechnungsmonat zugeordnet. Personenzahl, Preise und Häkchen gehören nicht dazu, sie stehen bei der **Fixkosteneingabe** des Abrechnungsmonats. Im Code auch "Periode" genannt.
 _Avoid_: Eintrag, Datensatz
 
 **Teilstand**:
@@ -32,7 +32,7 @@ Wallbox Wohnung 2 bestimmt (samt Vorperiode) die Kosten von Wohnung 2, Wallbox W
 _Avoid_: Wallbox-Zähler (unklar gegenüber dem Zwischenzähler "Wallboxen")
 
 **Wallboxen vollständig Wohnung 1**:
-Der Schalter je Fixkosten-Eingabe (nicht je Ablesung), der alle Wallbox-Kosten (kWh und EUR, inkl. Solarzuteilung) auf Wohnung 1 legt und die Einzelzähler überstimmt. Neue Eingaben belegen ihn aus der letzten vor. Alle Ablesungen eines Abrechnungsmonats nutzen den Schalter dieser Eingabe.
+Der Schalter je Fixkosteneingabe (nicht je Ablesung), der alle Wallbox-Kosten (kWh und EUR, inkl. Solarzuteilung) auf Wohnung 1 legt und die Einzelzähler überstimmt. Neue Eingaben belegen ihn aus der letzten vor. Alle Ablesungen eines Abrechnungsmonats nutzen den Schalter dieser Eingabe.
 _Avoid_: Wallbox-Schalter
 
 **Wallbox-Block**:
@@ -42,17 +42,17 @@ Die Wallbox steht dann nicht mehr im Hauptbalken und bei den Chips der Jahreskar
 _Avoid_: Wallbox-Zeile
 
 **Wallbox (Kostenposition)**:
-Die Kosten des Zwischenzählers "Wallboxen" (Netzbezug-Anteil mal Strompreis), je Ablesung (mit den Werten der Fixkosten-Eingabe ihres Monats) auf Wohnung 1 und Wohnung 2 verteilt: mit Schalter alles Wohnung 1, sonst zahlt Wohnung 2 `min(Verbrauch Wallbox Wohnung 2, Netzbezug-Anteil)` mal Strompreis (gerundet) und Wohnung 1 den Rest. Ohne Schalter und ohne Verbrauch von Wallbox Wohnung 2 bleibt sie informativ und keiner Wohnung zugeordnet.
+Die Kosten des Zwischenzählers "Wallboxen" (Netzbezug-Anteil mal Strompreis), je Ablesung (mit den Werten der Fixkosteneingabe ihres Monats) auf Wohnung 1 und Wohnung 2 verteilt: mit Schalter alles Wohnung 1, sonst zahlt Wohnung 2 `min(Verbrauch Wallbox Wohnung 2, Netzbezug-Anteil)` mal Strompreis (gerundet) und Wohnung 1 den Rest. Ohne Schalter und ohne Verbrauch von Wallbox Wohnung 2 bleibt sie informativ und keiner Wohnung zugeordnet.
 
 **PV-Gutschrift**:
-Die Einspeisevergütung einer Ablesung (`Einspeisung.Ertrag`), per Schalter "PV-Gutschrift Wohnung 1" der Fixkosten-Eingabe des Monats Wohnung 1 zugeordnet. Sie erhöht deren Guthaben im Saldo ohne Deckel, ist aber keine Kostenposition (kein Umlagefähig-Flag, keine Berechnungslogik) und mindert nicht die Verbrauchskosten. Ohne Schalter gibt es sie nicht, die Einspeisung bleibt haus-weit und informativ. Wohnung 2 hat nie eine.
+Die Einspeisevergütung einer Ablesung (`Einspeisung.Ertrag`), per Schalter "PV-Gutschrift Wohnung 1" der Fixkosteneingabe des Monats Wohnung 1 zugeordnet. Sie erhöht deren Guthaben im Saldo ohne Deckel, ist aber keine Kostenposition (kein Umlagefähig-Flag, keine Berechnungslogik) und mindert nicht die Verbrauchskosten. Ohne Schalter gibt es sie nicht, die Einspeisung bleibt haus-weit und informativ. Wohnung 2 hat nie eine.
 _Avoid_: Einspeisevergütung (das ist der haus-weite Ertrag, nicht die Zuordnung)
 
 **Verbrauch**:
 Die Differenz zwischen dem Zählerstand einer Ablesung und dem der chronologisch nächst-älteren Ablesung desselben Zählers.
 
 **Verbrauchskosten**:
-Die aus dem Verbrauch einer Ablesung berechneten Kosten (Strom, Wasser, Heizung, Einspeisung), noch ohne Fixkosten. Nur für eine vollständige Ablesung mit Vorperiode und mit vollständiger Fixkosten-Eingabe ihres Abrechnungsmonats berechenbar, ein Teilstand, die erste Ablesung oder **Fixkosten fehlen** ist es nicht. Je Ablesung, nicht je Monat: mehrere Ablesungen desselben Abrechnungsmonats haben je eigene Verbrauchskosten.
+Die aus dem Verbrauch einer Ablesung berechneten Kosten (Strom, Wasser, Heizung, Einspeisung), noch ohne Fixkosten. Nur für eine vollständige Ablesung mit Vorperiode und mit vollständiger Fixkosteneingabe ihres Abrechnungsmonats berechenbar, ein Teilstand, die erste Ablesung oder **Fixkosten fehlen** ist es nicht. Je Ablesung, nicht je Monat: mehrere Ablesungen desselben Abrechnungsmonats haben je eigene Verbrauchskosten.
 _Avoid_: Monatskosten (mehrere Ablesungen pro Abrechnungsmonat möglich)
 
 **Abrechnungsmonat**:
@@ -116,7 +116,7 @@ Die ins Netz eingespeiste PV-Überschussmenge (Zähler `strom_einspeisung`) und 
 **Stammdaten** (`/stammdaten`):
 Die Seite für Werte, die sich selten ändern und nicht Teil einer monatlichen Erfassung sind: Wohnungsgröße/Flurstücksgröße je Wohnung, Wohnungsstatus, Angaben zu Mieter:innen und Vermieter:innen, das Umlagefähig-Flag je Kostenposition und die Flags "Stromverbrauch weiterberechnen" und "Wallbox weiterberechnen" (aktuelle Einzelwerte).
 Name der Mieter:innen bzw. Bewohner:innen, Zustellanschrift, Vermieter:innen, Objektanschrift und IBAN sind personenbezogen: sie sind nur für angemeldete Personen sichtbar und änderbar (ohne gesetztes Kennwort der Vermieter:innen sind alle angemeldet).
-Änderungen wirken sofort auf alle Monate, nicht eingefroren wie ein Ablesungs- oder Fixkosten-Eingabe-Wert.
+Änderungen wirken sofort auf alle Monate, nicht eingefroren wie ein Ablesungs- oder Fixkosteneingabe-Wert.
 
 **Wohnungsstatus**:
 Je Wohnung "Vermietung" oder "Eigennutzung" (Stammdaten, Startwert Wohnung 1 Eigennutzung, Wohnung 2 Vermietung).
@@ -143,7 +143,7 @@ _Avoid_: Mietbeginn, Einzugsdatum (das Feld hat nur den Monat)
 Ein Ja/Nein-Flag je Kostenposition in den Stammdaten: Nur umlagefähige Positionen erscheinen in der Jahresabrechnung.
 Ein einzelner aktueller Wert ohne Jahresbezug, wirkt rückwirkend auf alle Jahre.
 Dashboard, Monatsverlauf und Jahreskarten ignorieren das Flag und zeigen weiterhin alle Positionen.
-Es ersetzt nicht die Berechnungslogik: Eine teilweise umlagefähige Position teilen die Vermieter:innen über die Logik der Fixkosten-Eingabe auf.
+Es ersetzt nicht die Berechnungslogik: Eine teilweise umlagefähige Position teilen die Vermieter:innen über die Logik der Fixkosteneingabe auf.
 Keine Abweichung von ADR 0001, der nur einen jahresweisen Stammdaten-Block für Logik/Typ/Wert verworfen hat.
 _Avoid_: umlegbar, abrechenbar (das ist die Vollständigkeit eines Abrechnungsjahres)
 
@@ -157,21 +157,21 @@ Der Haushaltsstrom ist keine Betriebskostenart, deshalb ein eigenes Flag statt d
 **Wallbox weiterberechnen**:
 Ein haus-weites Ja/Nein-Flag in den Stammdaten (Startwert Ja, auch für bestehende Datenbanken), ob der Wallbox-Anteil einer vermieteten Wohnung in deren Jahresabrechnung steht. Unabhängig von "Stromverbrauch weiterberechnen" (Haushaltsstrom). Bei Eigennutzung gilt das Flag nicht, dort steht die Wallbox immer in der Abrechnung. Die Tabelle steht unter **Wohnungsstatus**.
 
-**Fixkosten-Eingabe**:
+**Fixkosteneingabe**:
 Eine monatliche Erfassung, analog zur Ablesung, aber **genau eine je Monat** (beim Anlegen, beim Ändern des Monats und beim CSV-Import erzwungen, per UNIQUE-Index abgesichert; anders als bei Ablesungen gibt es keine untermonatigen Zusatzeingaben): Personenzahl je Wohnung (Dezimalzahl mit höchstens 2 Nachkommastellen, z. B. 1,25; 0 erlaubt; die einzige Personenzahl der App), die vier Preise (Strom, Frischwasser, Abwasser, Einspeisung; Pflicht im Formular, 0 erlaubt) und die zwei Häkchen "Wallboxen vollständig Wohnung 1" und "PV-Gutschrift Wohnung 1" (Gruppe "Preise und Einstellungen des Monats"), für Wohnungen mit Status Vermietung Nebenkostenabschlag und **Miete / Mieteinnahmen** und für jede Kostenposition ihre Berechnungslogik, ihr Typ und ihr Wert.
 Eine **vollständige Eingabe** hat alle vier Preise erfasst, sonst ist sie unvollständig.
 Anders als die Ablesung hängt sie nicht von einer Vorperiode ab (kein Verbrauch, keine Zählerstand-Differenz); Logik/Typ/Wert sind, wie Personen und der Nebenkostenabschlag, je Eingabe unabhängig gespeichert und von der letzten Eingabe vorbelegt, nicht jahresweise zentral gepflegt.
 _Avoid_: Fixkosten-Eintrag, Fixkosten-Periode
 
 **Fixkosten fehlen**:
-Der Zustand einer Ablesung, deren Abrechnungsmonat keine vollständige Fixkosten-Eingabe hat, also keine Eingabe oder eine unvollständige ("Fixkosten für <Monat> fehlen" bzw. "sind unvollständig"). Die Ablesung ist dann nicht berechenbar, ohne Rückgriff auf einen anderen Monat; Zählerstände und Differenzen bleiben sichtbar. Technisch ein eigener Grund neben dem **Teilstand**, deshalb darf auch eine ältere Ablesung ihn haben.
+Der Zustand einer Ablesung, deren Abrechnungsmonat keine vollständige Fixkosteneingabe hat, also keine Eingabe oder eine unvollständige ("Fixkosten für <Monat> fehlen" bzw. "sind unvollständig"). Die Ablesung ist dann nicht berechenbar, ohne Rückgriff auf einen anderen Monat; Zählerstände und Differenzen bleiben sichtbar. Technisch ein eigener Grund neben dem **Teilstand**, deshalb darf auch eine ältere Ablesung ihn haben.
 _Avoid_: Preise fehlen, Personen fehlen
 
 **Kostenposition**:
-Eine der festen Positionen (Grundsteuer, Wohngebäudeversicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise Strom/Wasser/Abwasser/Internet, Wärmepumpen-Wartung, PV-Anlagen-Wartung, Streaming-Dienste, Sonstige Kosten) - Struktur so fix wie die Zähler, geseeded wie `meters`. Ihre Logik/Typ/Wert sind dagegen an der jeweiligen Fixkosten-Eingabe gepflegte Daten.
+Eine der festen Positionen (Grundsteuer, Wohngebäudeversicherung, Deichbeiträge, Abfallwirtschaft, Grundpreise Strom/Wasser/Abwasser/Internet, Wärmepumpen-Wartung, PV-Anlagen-Wartung, Streaming-Dienste, Sonstige Kosten) - Struktur so fix wie die Zähler, geseeded wie `meters`. Ihre Logik/Typ/Wert sind dagegen an der jeweiligen Fixkosteneingabe gepflegte Daten.
 
 **Berechnungslogik**:
-Die Regel, nach der eine Kostenposition auf Wohnung 1/2 aufgeteilt wird: Je Wohneinheit (50/50), Je anteiliges Flurstück, Je anteilige Wohnungsgröße, Je Anzahl Personen (aus derselben Fixkosten-Eingabe), oder vollständig Wohnung 1 bzw. Wohnung 2 (100/0).
+Die Regel, nach der eine Kostenposition auf Wohnung 1/2 aufgeteilt wird: Je Wohneinheit (50/50), Je anteiliges Flurstück, Je anteilige Wohnungsgröße, Je Anzahl Personen (aus derselben Fixkosteneingabe), oder vollständig Wohnung 1 bzw. Wohnung 2 (100/0).
 _Avoid_: Verteilungsschlüssel, Split (das ist die Heizungs-Gewichtung, ein anderer Begriff)
 
 **Typ (jährlich/monatlich)**:
@@ -187,21 +187,21 @@ Der einer Kostenposition für einen konkreten Monat tatsächlich zugerechnete Be
 Die Grundstücksgröße je Wohnung (`apartments.flurstueck_groesse`), Grundlage der Berechnungslogik "Je anteiliges Flurstück" (z.B. für Deichbeiträge). Wie die Wohnungsgröße ein aktueller Einzelwert, nicht historisiert - auf der Stammdaten-Seite gepflegt.
 
 **Nebenkostenabschlag**:
-Die monatliche Vorauszahlung je Wohnung (Tabelle `nebenkosten_abschlaege`), an der jeweiligen Fixkosten-Eingabe erfasst wie ein monatlich-typisierter Wert, aber keine Kostenposition - deckt Fixkosten UND Verbräuche gemeinsam ab, zählt nicht in die Fixkosten-Summen und hat keine Berechnungslogik (direkter Wert je Wohnung, kein Split).
+Die monatliche Vorauszahlung je Wohnung (Tabelle `nebenkosten_abschlaege`), an der jeweiligen Fixkosteneingabe erfasst wie ein monatlich-typisierter Wert, aber keine Kostenposition - deckt Fixkosten UND Verbräuche gemeinsam ab, zählt nicht in die Fixkosten-Summen und hat keine Berechnungslogik (direkter Wert je Wohnung, kein Split).
 Das Formular erfasst ihn nur für Wohnungen mit Status Vermietung (Pflicht, 0 erlaubt), bei Eigennutzung gibt es kein Feld: ein früher gespeicherter Wert bleibt erhalten und zählt weiter, ein fehlender zählt als 0.
 _Avoid_: Abschlag ohne "Nebenkosten"-Präfix (zu unspezifisch), Vorauszahlung
 
 **Miete**:
-Die monatliche Miete je Wohnung (Tabelle `mieten`), an der Fixkosten-Eingabe erfasst wie der Nebenkostenabschlag, aber reine Einnahmen-Information: keine Kostenposition, keine Berechnungslogik, geht in keinen Saldo, Übertrag und keine Abrechnung ein.
+Die monatliche Miete je Wohnung (Tabelle `mieten`), an der Fixkosteneingabe erfasst wie der Nebenkostenabschlag, aber reine Einnahmen-Information: keine Kostenposition, keine Berechnungslogik, geht in keinen Saldo, Übertrag und keine Abrechnung ein.
 Das Formularfeld und die Anzeige (Jahressumme in der Jahreskarte) heißen "Miete". Im Code und in älteren Texten steht für die Jahressumme auch "Mieteinnahmen".
 Wie der Abschlag nur für Wohnungen mit Status Vermietung erfasst (Pflicht, 0 erlaubt, vorbelegt aus der letzten Eingabe), bei Eigennutzung gibt es kein Feld.
 Ein früher gespeicherter Abschlag einer inzwischen eigengenutzten Wohnung zählt weiter und bleibt beim Korrigieren unverändert.
 Im CSV immer `abschlag_1`, `abschlag_2`, `miete_1`, `miete_2`, eine leere Zelle heißt nicht erfasst, der Import übernimmt Werte unabhängig vom Status.
-Sichtbarkeit: Die Detailseite der Fixkosten-Eingabe zeigt die Miete je vermieteter Wohnung ohne Berechtigungsprüfung (auch ohne Login, wie den Abschlag; bewusste Entscheidung des Eigentums), die Mieteinnahmen der Jahreskarte nur für angemeldete Personen, die Liste der Eingaben und der Monatsverlauf zeigen keine Miete.
+Sichtbarkeit: Die Detailseite der Fixkosteneingabe zeigt die Miete je vermieteter Wohnung ohne Berechtigungsprüfung (auch ohne Login, wie den Abschlag; bewusste Entscheidung des Eigentums), die Mieteinnahmen der Jahreskarte nur für angemeldete Personen, die Liste der Eingaben und der Monatsverlauf zeigen keine Miete.
 _Avoid_: Kaltmiete, Mietzahlung
 
 **Abrechnungszeitraum**:
-Der Zeitraum einer Jahresabrechnung: das Kalenderjahr, im ersten Erfassungsjahr ab dem Datum der ersten Ablesung (dem Ausgangsstand, der selbst keinen Verbrauch liefert) bis 31.12. Fixkosten-Eingaben und Nebenkostenabschläge sind dort erst ab dem Folgemonat des Ausgangsstands nötig. Der Verbrauch jeder späteren Ablesung ist die Differenz zur vorherigen, deshalb ist er im Zeitraum immer berechenbar.
+Der Zeitraum einer Jahresabrechnung: das Kalenderjahr, im ersten Erfassungsjahr ab dem Datum der ersten Ablesung (dem Ausgangsstand, der selbst keinen Verbrauch liefert) bis 31.12. Fixkosteneingaben und Nebenkostenabschläge sind dort erst ab dem Folgemonat des Ausgangsstands nötig. Der Verbrauch jeder späteren Ablesung ist die Differenz zur vorherigen, deshalb ist er im Zeitraum immer berechenbar.
 
 Auf der Abrechnungsseite lässt sich der Zeitraum per Häkchen auf volle Monate eines Jahres eingrenzen (Wechsel der Mietpartei unterjährig, Von-/Bis-Monat); der Standard bleibt das Kalenderjahr.
 Ein Monat gehört ganz in den Zeitraum, in den die Ablesung seines Abrechnungsmonats fällt, auch bei einem Wechsel mitten im Monat.
@@ -210,7 +210,7 @@ Die Frist nach § 556 Abs. 3 BGB endet am Ende des zwölften Monats nach dem Zei
 Ein Zeitraum liegt immer innerhalb eines Kalenderjahres.
 
 **Mangel** (Abrechnungsprüfung):
-Ein Grund, warum für ein Jahr und eine Wohnung noch keine Jahresabrechnung entstehen kann: fehlende oder unvollständige Ablesung (Teilstand) eines Abrechnungsmonats, fehlende, unvollständige oder mehrfache Fixkosten-Eingabe eines Monats, fehlende Pflicht-Stammdaten. Die Prüfung liefert alle Mängel auf einmal, jeweils mit dem Ort zum Beheben, statt einer Abrechnung. Ein fehlender Nebenkostenabschlag ist kein Mangel (zählt als 0).
+Ein Grund, warum für ein Jahr und eine Wohnung noch keine Jahresabrechnung entstehen kann: fehlende oder unvollständige Ablesung (Teilstand) eines Abrechnungsmonats, fehlende, unvollständige oder mehrfache Fixkosteneingabe eines Monats, fehlende Pflicht-Stammdaten. Die Prüfung liefert alle Mängel auf einmal, jeweils mit dem Ort zum Beheben, statt einer Abrechnung. Ein fehlender Nebenkostenabschlag ist kein Mangel (zählt als 0).
 _Avoid_: Fehler, Warnung
 
 **Jahresabrechnung**:
