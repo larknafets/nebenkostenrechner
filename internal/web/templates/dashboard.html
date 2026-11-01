@@ -14,7 +14,21 @@
 {{with .FixkostenHinweis}}<div class="dashboard-hinweis">
   <p>{{.Text}}{{if $.Vermieter}} <a href="{{$.Base}}{{.Pfad}}">{{.LinkText}}</a>{{end}}</p>
 </div>{{end}}
-<h2>Jahressummen {{.AnzeigeJahr}}{{if .AnzeigeJahrLaufend}} <span class="badge">laufend</span>{{end}}</h2>
+<div class="jahr-kopf">
+<h2>Jahressummen {{.AnzeigeJahr}}{{if .BisLabel}} <span class="badge">bis {{.BisLabel}}</span>{{end}}</h2>
+{{if or .JahrZurueck .JahrVor}}<span class="jahr-nav">
+  {{if .JahrZurueck}}<a href="{{.JahrZurueck}}" title="Vorjahr" aria-label="Vorjahr">‹</a>{{else}}<span class="aus" aria-hidden="true">‹</span>{{end}}
+  {{if .JahrVor}}<a href="{{.JahrVor}}" title="Folgejahr" aria-label="Folgejahr">›</a>{{else}}<span class="aus" aria-hidden="true">›</span>{{end}}
+</span>{{end}}
+</div>
+{{if gt (len .BisZeitleiste) 1}}
+<nav class="zeit" aria-label="Jahressummen bis Monat" style="--fuell:{{.BisFuell}}%">
+  <div class="zeit-linie"></div><div class="zeit-fuell"></div>
+  <div class="zeit-punkte">
+    {{range .BisZeitleiste}}<a class="zeit-p{{if .Drin}} in{{end}}{{if .Gewaehlt}} on{{end}}" href="{{.Link}}" title="{{.Name}}" aria-label="{{.Name}}"{{if .Gewaehlt}} aria-current="true"{{end}}><i></i><b>{{.Kurz}}</b></a>{{end}}
+  </div>
+</nav>
+{{end}}
 <div class="grid jahressummen-grid">
   {{range .Cards}}
   <div class="panel stat-card">

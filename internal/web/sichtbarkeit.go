@@ -121,7 +121,7 @@ func (v *ansicht) addWohnung(z Zugriff, dd dashboardData, a store.Apartment, mie
 	// Miete (#278, #311): only for a rented apartment and a role that has the
 	// right, so the rent stays out of the view otherwise.
 	if store.NewWohnungsregelnOhneHaus(a).Mieteinnahmen() && z.Darf(store.RechtMiete) {
-		summe := mieteinnahmen(a.ID, dd.Jahr, miete)
+		summe := mieteinnahmen(a.ID, dd.Jahr, bisMonat(miete, dd.bisGrenze(), mieteMonatKey))
 		card.Mieteinnahmen = &summe
 	}
 	v.Cards = append(v.Cards, card)
@@ -130,7 +130,7 @@ func (v *ansicht) addWohnung(z Zugriff, dd dashboardData, a store.Apartment, mie
 
 func buildSichtbarerSimple(s simpleSeries, dd dashboardData) sichtbarerSimple {
 	return sichtbarerSimple{
-		Card:    buildSimpleJahresCard(s, dd.Jahr, dd.PeriodenKosten),
+		Card:    buildSimpleJahresCard(s, dd.Jahr, bisMonat(dd.PeriodenKosten, dd.bisGrenze(), pkMonat)),
 		Verlauf: buildSimpleVerlauf(s, dd.PeriodenKosten),
 	}
 }

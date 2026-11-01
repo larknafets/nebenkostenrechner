@@ -39,7 +39,12 @@ func wallboxBlock(card dashboardJahresCard) *dashboardSimpleCard {
 func buildEntityView(dd dashboardData, offen []calc.OffenerMonat, apartmentID int64) (dashboardJahresCard, dashboardVerlaufSpalte) {
 	a := findApartment(dd.Apartments, apartmentID)
 	verlauf := buildDashboardVerlauf(a.ID, a.Name, dd.PeriodenKosten, dd.FixkostenListe, offen)
-	card := buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, dd.Jahr, dd.PeriodenKosten, dd.FixkostenListe)
+	// The yearly card runs up to the chosen month (dd.Bis), the Verlauf keeps
+	// every month.
+	grenze := dd.bisGrenze()
+	bisPK := bisMonat(dd.PeriodenKosten, grenze, pkMonat)
+	bisFK := bisMonat(dd.FixkostenListe, grenze, fkMonat)
+	card := buildJahresCard(a.ID, a.Name, a.QM, a.FlurstueckGroesse, dd.Jahr, bisPK, bisFK)
 	// The Wallbox block (#304) shows only when the Wohnung carries the
 	// Wallbox in its Abrechnung and the costs are assigned to the apartments.
 	// Totals and Saldo stay untouched (the Wallbox is in them either way).
@@ -47,7 +52,14 @@ func buildEntityView(dd dashboardData, offen []calc.OffenerMonat, apartmentID in
 	if regeln.AbrechnungWallbox() && card.WallboxVerteilt {
 		card.Wallbox = wallboxBlock(card)
 	}
+	// The Saldo is cumulative, so up to the chosen month it comes from a Verlauf
+	// of the months up to then.
 	card.Saldo = verlauf.LatestSaldo
+	if grenze != "" {
+		bisOffen := bisMonat(offen, grenze, offenMonat)
+		card.Saldo = buildDashboardVerlauf(a.ID, a.Name, bisPK, bisFK, bisOffen).LatestSaldo
+		offen = bisOffen
+	}
 	card.Vorlaeufig = vorlaeufigText(offen, dd.Jahr)
 	return card, verlauf
 }
