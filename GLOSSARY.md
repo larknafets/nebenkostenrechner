@@ -59,6 +59,14 @@ _Avoid_: Monatskosten (mehrere Ablesungen pro Abrechnungsmonat möglich)
 Der Monat, dem eine Ablesung für die Abrechnung zugeordnet ist (`periods.monat`) - unabhängig vom Ablesedatum, das nur der tatsächliche Erfassungszeitpunkt ist. Wird beim Anlegen aus dem Ablesedatum vorbelegt, ist aber manuell überschreibbar; mehrere Ablesungen desselben Abrechnungsmonats (untermonatige Ablesungen) bleiben als eigene Datensätze erhalten, ihre Kosten werden für die Monatsanzeige summiert. Muss chronologisch monoton nicht-fallend mit dem Ablesedatum bleiben.
 _Avoid_: Zeitraum, Monat (zu unspezifisch - Ablesedatum trägt ebenfalls einen Monat)
 
+**Anzeigejahr**:
+Das Jahr, dessen Summen das Dashboard in den Jahreskarten zeigt. Ohne Wahl ist es das Jahr des jüngsten Abrechnungsmonats mit Daten (laufendes Jahr). Mit den Pfeilen neben der Überschrift lässt sich ein Jahr mit Daten wählen, ein früheres Jahr zeigt zunächst seinen letzten Monat (das ganze Jahr), der Saldo ist dann der Stand an dessen Ende.
+_Avoid_: Auswertungsjahr
+
+**Bis-Monat**:
+Der Abrechnungsmonat, bis zu dem das Dashboard die Jahressummen des Anzeigejahrs rechnet, vom Januar an gezählt. Zur Wahl stehen die Abrechnungsmonate des Anzeigejahrs mit einer Ablesung oder einer Fixkosteneingabe, ohne Wahl gilt der letzte. Er wirkt auf die Jahreskarten samt Kennzahlen, Miete, Saldo und Personen-Schnitt, nicht auf die Monatsübersicht.
+_Avoid_: Stichmonat, Filtermonat
+
 **Netzbezug**:
 Die vom Stromnetz bezogene Energiemenge (Zähler `strom_gesamt`) - bereits netto nach PV-Eigenverbrauch, da PV-Eigenverbrauch nie durch diesen Zähler läuft.
 
