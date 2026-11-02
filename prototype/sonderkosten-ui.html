@@ -311,7 +311,10 @@ function A(){
 // Variante B: nach Monat gruppiert, Maske klappt oben inline auf
 function B(){
  var h=jahr()+summen()+'<div class="btn-row"><button class="button success" onclick="zeige(!S.form)">'+(S.form?'Schließen':'Neue Sonderkosten')+'</button></div>'+(S.form?form("Neue Sonderkosten"):"");
- var cur="";D.forEach(function(d){if(d.m!==cur){cur=d.m;var s=0;D.forEach(function(e){if(e.m===cur&&e.umleg)s+=e.betrag});h+='<div class="sk-mon"><span>'+ml(cur)+'</span><span class="muted">umlegbar '+eur(s)+'</span></div>'}
+ var fa=S.art||"",L=D.filter(function(d){return !fa||d.art===fa});
+ h+='<div class="field" style="max-width:14rem;margin:.6rem 0 0"><label>Art</label><select onchange="S.art=this.value;draw()">'+["","Reparatur","Neuanschaffung","Wartung","Modernisierung","Sonstiges"].map(function(a){return '<option value="'+a+'"'+(a===fa?" selected":"")+'>'+(a||"Alle Arten")+'</option>'}).join("")+'</select></div>';
+ if(!L.length)h+='<p class="muted">Keine Sonderkosten dieser Art.</p>';
+ var cur="";L.forEach(function(d){if(d.m!==cur){cur=d.m;var s=0;L.forEach(function(e){if(e.m===cur&&e.umleg)s+=e.betrag});h+='<div class="sk-mon"><span>'+ml(cur)+'</span><span class="muted">umlegbar '+eur(s)+'</span></div>'}
   h+='<div class="panel" style="margin:.3rem 0"><div class="sk-l1"><strong>'+d.b+'</strong><span class="badge">'+d.art+'</span><span class="betrag">'+eur(d.betrag)+'</span></div>'+
   '<div class="sk-l2">'+d.firma+(d.nr?' · Nr. '+d.nr:'')+'</div>'+
   '<div class="sk-l2">'+tag(d)+' '+zuord(d)+acts()+'</div>'+
