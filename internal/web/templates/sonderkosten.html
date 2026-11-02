@@ -35,7 +35,8 @@
   <div class="field" style="min-width:8rem">
     <label for="jahr">Jahr</label>
     <select id="jahr" name="jahr" onchange="this.form.submit()">
-      {{range .Jahre}}<option value="{{.}}"{{if eq . $.Jahr}} selected{{end}}>{{.}}</option>{{end}}
+      {{range .Jahre}}<option value="{{.}}"{{if and (not $.AlleJahre) (eq . $.Jahr)}} selected{{end}}>{{.}}</option>{{end}}
+      <option value="alle"{{if .AlleJahre}} selected{{end}}>Alle Jahre</option>
     </select>
   </div>
   <div class="field" style="min-width:10rem">

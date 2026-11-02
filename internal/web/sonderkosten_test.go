@@ -127,3 +127,18 @@ func TestSonderkosten_JahrFilterListetJahreMitEintraegen(t *testing.T) {
 		t.Errorf("order button %d, Jahr %d, Art %d, sums %d: want ascending", b, j, a, g)
 	}
 }
+
+// "Alle Jahre" sums and lists the entries of every year.
+func TestSonderkosten_AlleJahre(t *testing.T) {
+	mux, _ := sonderkostenMux(t, beispielSonderkosten...)
+	c := loginCookies(t, mux, "vermieter", "geheim")
+	body := getMitCookies(t, mux, "/sonderkosten?jahr=alle", c).Body.String()
+	for _, want := range []string{`<option value="alle" selected>`, "Wasserhahn", "Heizungspumpe", "März 2025", "1.929,30"} { // 1745 + 184,30
+		if !strings.Contains(body, want) {
+			t.Errorf("Alle Jahre: Seite enthält %q nicht", want)
+		}
+	}
+	if strings.Contains(body, `<option value="2026" selected>`) {
+		t.Error("Alle Jahre: ein einzelnes Jahr ist ebenfalls gewählt")
+	}
+}
