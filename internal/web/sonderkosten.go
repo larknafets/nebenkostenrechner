@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"net/http"
 	"slices"
 	"strconv"
@@ -13,11 +14,32 @@ import (
 
 // sonderkostenKarte is one entry of the list, ready for the template.
 type sonderkostenKarte struct {
+	ID                                                 int64
 	Betreff, Beschreibung, Art, Firma, Rechnungsnummer string
 	Betrag                                             float64
 	Umlegbar                                           bool
 	// Zuordnung says who carries the bill (GLOSSARY.md, Sonderkosten).
 	Zuordnung string
+	// Maske is the prefilled form for Korrigieren.
+	Maske sonderkostenMaske
+	// LoeschenZusatz is the extra line of the delete overlay, only for umlegbar entries.
+	LoeschenZusatz string
+}
+
+// sonderkostenMaske is the data of the shared form fields ("sk-felder"):
+// P prefixes the element ids, the rest prefills the fields.
+type sonderkostenMaske struct {
+	P                  string
+	ID                 int64
+	Monat, Betrag      string
+	S                  store.Sonderkosten
+	Arten, Umsetzungen []store.Auswahl
+	Logiken, Hinweise  []store.Auswahl
+}
+
+func neueMaske(p string, s store.Sonderkosten, monat, betrag string) sonderkostenMaske {
+	return sonderkostenMaske{P: p, ID: s.ID, Monat: monat, Betrag: betrag, S: s, Arten: store.SonderkostenArten,
+		Umsetzungen: store.SonderkostenUmsetzungen, Logiken: sonderkostenLogiken, Hinweise: sonderkostenHinweise}
 }
 
 // sonderkostenMonat is the group of one Abrechnungsmonat.
@@ -63,40 +85,97 @@ func hinweisPraefix(was string) string {
 	return "Hinweis: " + was + " sind in der Regel keine umlegbaren Betriebskosten. Bitte vor dem Umlegen prüfen."
 }
 
-// handleSonderkostenSpeichern creates one entry from the form. The Logik is
-// dropped unless it applies (the form always sends its hidden select), then
-// store.ValidiereSonderkosten decides.
+// sonderkostenAusForm reads and validates the entry form, for Erfassen and
+// Korrigieren alike. The Logik is dropped unless it applies (the form always
+// sends its hidden select), then store.ValidiereSonderkosten decides. On an
+// error it has answered already and returns false.
+func sonderkostenAusForm(w http.ResponseWriter, r *http.Request) (store.Sonderkosten, bool) {
+	db := dbFromContext(r.Context())
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "invalid form: "+err.Error(), http.StatusBadRequest)
+		return store.Sonderkosten{}, false
+	}
+	f := r.PostForm
+	s := store.Sonderkosten{
+		Betreff: strings.TrimSpace(f.Get("betreff")), Beschreibung: strings.TrimSpace(f.Get("beschreibung")),
+		Art: f.Get("art"), Firma: strings.TrimSpace(f.Get("firma")), Rechnungsnummer: strings.TrimSpace(f.Get("rechnungsnummer")),
+		Umsetzung: f.Get("umsetzung"), Umlegbar: f.Get("umlegbar") != "", Logik: f.Get("logik"),
+	}
+	// An unparsable month or amount stays empty/0, the validation reports it.
+	s.Monat, _ = parseFixkostenMonat(f.Get("monat"))
+	s.Betrag, _ = parseDecimalDE(f.Get("betrag"))
+	if s.Umsetzung != store.UmsetzungHaus || !s.Umlegbar {
+		s.Logik = ""
+	}
+	hatEingabe, err := store.MonatHatFixkosteneingabe(db, s.Monat)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return s, false
+	}
+	if fehler := store.ValidiereSonderkosten(s, hatEingabe); len(fehler) > 0 {
+		http.Error(w, strings.Join(fehler, "\n"), http.StatusBadRequest)
+		return s, false
+	}
+	return s, true
+}
+
+// handleSonderkostenSpeichern creates one entry from the form.
 func handleSonderkostenSpeichern() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		db := dbFromContext(r.Context())
-		if err := r.ParseForm(); err != nil {
-			http.Error(w, "invalid form: "+err.Error(), http.StatusBadRequest)
+		s, ok := sonderkostenAusForm(w, r)
+		if !ok {
 			return
 		}
-		f := r.PostForm
-		s := store.Sonderkosten{
-			Betreff: strings.TrimSpace(f.Get("betreff")), Beschreibung: strings.TrimSpace(f.Get("beschreibung")),
-			Art: f.Get("art"), Firma: strings.TrimSpace(f.Get("firma")), Rechnungsnummer: strings.TrimSpace(f.Get("rechnungsnummer")),
-			Umsetzung: f.Get("umsetzung"), Umlegbar: f.Get("umlegbar") != "", Logik: f.Get("logik"),
-		}
-		// An unparsable month or amount stays empty/0, the validation reports it.
-		s.Monat, _ = parseFixkostenMonat(f.Get("monat"))
-		s.Betrag, _ = parseDecimalDE(f.Get("betrag"))
-		if s.Umsetzung != store.UmsetzungHaus || !s.Umlegbar {
-			s.Logik = ""
-		}
-		hatEingabe, err := store.MonatHatFixkosteneingabe(db, s.Monat)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		fehler := store.ValidiereSonderkosten(s, hatEingabe)
-		if len(fehler) > 0 {
-			http.Error(w, strings.Join(fehler, "\n"), http.StatusBadRequest)
-			return
-		}
-		if _, err := store.CreateSonderkosten(db, s); err != nil {
+		if _, err := store.CreateSonderkosten(dbFromContext(r.Context()), s); err != nil {
 			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, requestBase(r)+"/sonderkosten", http.StatusFound)
+	}
+}
+
+// handleSonderkostenKorrigieren replaces the entry {id} by the form, with the
+// same validation as Erfassen. No lock for a settled year.
+func handleSonderkostenKorrigieren() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+		if err != nil {
+			http.Error(w, "invalid sonderkosten id", http.StatusBadRequest)
+			return
+		}
+		s, ok := sonderkostenAusForm(w, r)
+		if !ok {
+			return
+		}
+		s.ID = id
+		if err := store.UpdateSonderkosten(dbFromContext(r.Context()), s); err != nil {
+			if errors.Is(err, store.ErrSonderkostenNotFound) {
+				http.NotFound(w, r)
+				return
+			}
+			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// Back to the year of the (possibly moved) entry.
+		jahr, _ := store.Abrechnungsmonat(s.Monat).Jahr()
+		http.Redirect(w, r, requestBase(r)+"/sonderkosten?jahr="+strconv.Itoa(jahr), http.StatusFound)
+	}
+}
+
+// handleSonderkostenLoeschen deletes the entry {id}.
+func handleSonderkostenLoeschen() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+		if err != nil {
+			http.Error(w, "invalid sonderkosten id", http.StatusBadRequest)
+			return
+		}
+		if err := store.DeleteSonderkosten(dbFromContext(r.Context()), id); err != nil {
+			if errors.Is(err, store.ErrSonderkostenNotFound) {
+				http.NotFound(w, r)
+				return
+			}
+			http.Error(w, "delete: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		http.Redirect(w, r, requestBase(r)+"/sonderkosten", http.StatusFound)
@@ -160,7 +239,11 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 			m.Karten = append(m.Karten, sonderkostenKarte{
 				Betreff: s.Betreff, Beschreibung: s.Beschreibung, Art: artLabel[s.Art], Firma: s.Firma,
 				Rechnungsnummer: s.Rechnungsnummer, Betrag: s.Betrag, Umlegbar: s.Umlegbar, Zuordnung: sonderkostenZuordnung(s),
+				ID: s.ID, Maske: neueMaske("sk-"+strconv.FormatInt(s.ID, 10), s, s.Monat[:7], formatDecimalDE2(s.Betrag)),
 			})
+			if s.Umlegbar {
+				m.Karten[len(m.Karten)-1].LoeschenZusatz = "Saldo und Abrechnung ändern sich."
+			}
 		}
 		// Newest month first, like the Dashboard.
 		slices.Reverse(monate)
@@ -187,15 +270,13 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 			Monate          []sonderkostenMonat
 			HatEintraege    bool
 			NeuMonat        string
-			Umsetzungen     []store.Auswahl
-			Logiken         []store.Auswahl
-			Hinweise        []store.Auswahl
+			NeuMaske        sonderkostenMaske
 		}{
 			navData: z.NavData(r), Aktuell: "sonderkosten", Jahr: jahr, JahrZurueck: zurueck, JahrVor: vor,
 			Gesamt: gesamt, Umlegbar: umlegbar, VermieterTraegt: gesamt - umlegbar,
 			Arten: store.SonderkostenArten, Art: art, Monate: monate, HatEintraege: len(alle) > 0,
-			NeuMonat: time.Now().Format("2006-01"), Umsetzungen: store.SonderkostenUmsetzungen,
-			Logiken: sonderkostenLogiken, Hinweise: sonderkostenHinweise,
+			NeuMonat: time.Now().Format("2006-01"),
+			NeuMaske: neueMaske("sk", store.Sonderkosten{Art: store.ArtReparatur, Umsetzung: store.UmsetzungHaus}, time.Now().Format("2006-01"), ""),
 		}
 		if err := sonderkostenTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
