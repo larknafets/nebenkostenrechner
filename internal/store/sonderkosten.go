@@ -62,7 +62,14 @@ type Sonderkosten struct {
 // CreateSonderkosten inserts s and returns its id. It validates nothing:
 // the entry form and the CSV import check before they call it.
 func CreateSonderkosten(db *sql.DB, s Sonderkosten) (int64, error) {
-	res, err := db.Exec(
+	return insertSonderkosten(db, s)
+}
+
+// insertSonderkosten runs on a *sql.DB or a *sql.Tx.
+func insertSonderkosten(e interface {
+	Exec(string, ...any) (sql.Result, error)
+}, s Sonderkosten) (int64, error) {
+	res, err := e.Exec(
 		`INSERT INTO sonderkosten (monat, betreff, beschreibung, art, firma, rechnungsnummer, betrag, umsetzung, umlegbar, logik)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		s.Monat, s.Betreff, s.Beschreibung, s.Art, s.Firma, s.Rechnungsnummer, s.Betrag, s.Umsetzung, s.Umlegbar, s.Logik,

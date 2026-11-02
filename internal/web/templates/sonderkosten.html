@@ -61,6 +61,15 @@
 
 {{if not .HatEintraege}}
 <p class="muted" style="margin-top:1rem">Noch keine Sonderkosten erfasst.</p>
+{{if .Vermieter}}
+<form method="post" action="{{.Base}}/sonderkosten/import" enctype="multipart/form-data" data-fehler-overlay class="panel">
+  <div class="field">
+    <label>Oder: Sonderkosten aus CSV importieren (gleiches Format wie der CSV-Export)</label>
+    <input type="file" name="csv" accept=".csv,text/csv" required>
+  </div>
+  <button type="submit" class="secondary">CSV Import</button>
+</form>
+{{end}}
 {{else}}
 <form method="get" class="field" style="max-width:14rem;margin-top:1rem">
   <label for="art">Art</label>
