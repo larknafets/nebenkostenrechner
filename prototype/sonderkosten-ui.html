@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE Sonderkosten</title>
+<!-- PROTOTYPE, wegwerfen. Frage (Ticket "Sonderkosten: Übersicht und Erfassungsmaske"): wie sieht die effiziente Ansicht aus?
+     Drei Varianten, umschaltbar per ?variant=A|B|C oder Pfeiltasten. Statische Daten, nichts wird gespeichert. -->
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f5f7; --panel: #ffffff; --border: #e0e2e7; --text: #1c1e21;
+    --muted: #6b7280; --accent: #2563eb; --accent-soft: #eef2ff; --success: #16a34a;
+    --danger: #b91c1c; --warning: #b45309;
+    --cat-wallbox: #14b8a6; --cat-strom: #f59e0b; --cat-heizung: #ef4444; --cat-wasser: #3b82f6; --cat-fix: #8b5cf6;
+    --logik-wohneinheit: #8b5cf6; --logik-flurstueck: #22c55e; --logik-qm: #ec4899; --logik-personen: #06b6d4;
+    --logik-wohnung1: #f59e0b; --logik-wohnung2: #6366f1;
+    --tooltip-bg: #1c1e21; --tooltip-text: #ffffff;
+    --feld-abstand: .9rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #14161a; --panel: #1c1f26; --border: #2e323c; --text: #e8eaed;
+      --muted: #9aa1ac; --accent: #5b9bf5; --accent-soft: #1e2a3f; --success: #16a34a;
+      --danger: #f87171; --warning: #fbbf24;
+      --cat-wallbox: #2dd4bf; --cat-strom: #fbbf24; --cat-heizung: #f87171; --cat-wasser: #60a5fa; --cat-fix: #a78bfa;
+      --logik-wohneinheit: #a78bfa; --logik-flurstueck: #4ade80; --logik-qm: #f472b6; --logik-personen: #22d3ee;
+      --logik-wohnung1: #fbbf24; --logik-wohnung2: #818cf8;
+      --tooltip-bg: #e8eaed; --tooltip-text: #14161a;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #14161a; --panel: #1c1f26; --border: #2e323c; --text: #e8eaed;
+    --muted: #9aa1ac; --accent: #5b9bf5; --accent-soft: #1e2a3f; --success: #16a34a;
+    --danger: #f87171; --warning: #fbbf24;
+    --cat-wallbox: #2dd4bf; --cat-strom: #fbbf24; --cat-heizung: #f87171; --cat-wasser: #60a5fa; --cat-fix: #a78bfa;
+    --logik-wohneinheit: #a78bfa; --logik-flurstueck: #4ade80; --logik-qm: #f472b6; --logik-personen: #22d3ee;
+    --logik-wohnung1: #fbbf24; --logik-wohnung2: #818cf8;
+    --tooltip-bg: #e8eaed; --tooltip-text: #14161a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  a { color: var(--accent); }
+  h1, h2, h3 { margin: 0 0 .5rem; }
+  .app { max-width: 700px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
+  /* Screen-only controls and notes: hidden in print and PDF. */
+  @media print { .no-print { display: none !important; } }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; }
+  .muted { color: var(--muted); font-size: .85rem; }
+  label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: .25rem; }
+  input[type=number], input[type=date], input[type=password], select { width: 100%; padding: .5rem .6rem; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
+  input:disabled { opacity: .6; cursor: not-allowed; }
+  .demo-banner { background: var(--warning); color: #1a1200; font-size: .85rem; font-weight: 600; text-align: center; padding: .5rem 1rem; margin-bottom: 1rem; border-radius: 8px; }
+  .login-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .login-backdrop[hidden] { display: none; }
+  .login-modal { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; width: 320px; max-width: 90vw; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+  .login-error { color: var(--danger); font-size: .8rem; margin-top: .3rem; }
+  .fehler-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 200; }
+  .fehler-backdrop[hidden] { display: none; }
+  .fehler-modal { background: var(--panel); border: 1px solid var(--border); border-top: 4px solid var(--danger); border-radius: 10px; padding: 1.25rem 1.5rem; width: 420px; max-width: 92vw; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+  .fehler-modal h3 { margin: 0 0 .6rem; color: var(--danger); }
+  .fehler-modal ul { margin: 0 0 0 1.1rem; padding: 0; }
+  .fehler-feld { border-color: var(--danger) !important; outline: 2px solid var(--danger); }
+  .field { margin-bottom: var(--feld-abstand); }
+  .select-row { display: flex; justify-content: space-between; align-items: flex-end; gap: .75rem; flex-wrap: wrap; }
+  .select-row .button { margin-bottom: var(--feld-abstand); }
+  .radio-options { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+  .radio-option { display: flex; align-items: center; gap: .35rem; width: auto; font-size: .9rem; color: var(--text); margin-bottom: 0; }
+  .radio-option input[type=radio] { width: auto; }
+  .warning { color: var(--warning); font-size: .8rem; margin-top: .25rem; min-height: 1em; white-space: pre-line; }
+  .grid { display: grid; gap: 1rem; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .jahressummen-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  button, a.button { display: inline-block; border-radius: 6px; padding: .6rem 1.1rem; font-size: .9rem; cursor: pointer; text-decoration: none; line-height: 1.2; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  /* Quadratischer Symbolbutton (z. B. Pfeile der Positionsreihenfolge). */
+  .icon-btn { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--accent); }
+  .icon-btn:hover:not(:disabled) { background: var(--accent-soft); }
+  .zeit-p:focus-visible i, .jahr-nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .icon-btn:disabled { opacity: .3; }
+  .icon-btn svg { width: 18px; height: 18px; }
+  /* Reihenfolge der Kostenpositionen auf /stammdaten. */
+  .reihenfolge-zeile { display: flex; align-items: center; gap: .75rem; padding: .45rem 0; border-bottom: 1px solid var(--border); }
+  .reihenfolge-zeile:last-child { border-bottom: none; }
+  .reihenfolge-nr { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: .75rem; font-weight: 700; }
+  .reihenfolge-label { flex: 1; min-width: 0; }
+  .reihenfolge-aktionen { display: flex; gap: .35rem; margin: 0; }
+  button.primary, a.button.primary { background: var(--accent); color: white; border: none; }
+  button.secondary, a.button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  button.success, a.button.success { background: var(--success); color: white; border: none; }
+  button.danger, a.button.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+  .btn-row { display: flex; gap: .75rem; justify-content: center; align-items: center; flex-wrap: wrap; margin-top: 1.25rem; }
+  .wizard-actions { display: flex; justify-content: space-between; margin-top: 1.25rem; }
+  .c-steps { display: flex; gap: .5rem; margin-bottom: 1.25rem; }
+  .c-step-dot { flex: 1; text-align: center; padding: .5rem; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-size: .8rem; font-weight: 600; }
+  .c-step-dot.active { background: var(--accent); color: white; }
+  .c-pane { display: none; }
+  .c-pane.active { display: block; }
+  .formula { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: .75rem 1rem; font-size: .85rem; overflow-x: auto; white-space: pre; }
+  table.letzte { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  table.letzte th, table.letzte td { padding: .4rem .5rem; text-align: left; border-bottom: 1px solid var(--border); }
+  .badge { display: inline-block; background: var(--accent-soft); color: var(--accent); font-size: .75rem; padding: .15rem .5rem; border-radius: 999px; }
+  .badge-icon { display: inline-flex; align-items: center; gap: .25rem; }
+  .badge-icon svg { width: 12px; height: 12px; fill: currentColor; flex-shrink: 0; }
+  /* Jahressummen: smaller badges so Fläche, Flurstück and Personen fit one line. */
+  .stat-card .badge-icon { font-size: .6rem; padding: .1rem .35rem; gap: .2rem; }
+  /* Teilstand (Ticket #131) - dieselbe Warnfarben-Kombination wie .demo-banner. */
+  .badge-warning { background: var(--warning); color: #1a1200; }
+  .text-warning { color: var(--warning); }
+  .stat-card .stat-value { font-size: 1.5rem; font-weight: 700; margin-top: .3rem; }
+  .stat-bar-track { display: flex; height: .5rem; border-radius: 999px; overflow: hidden; background: var(--border); margin-top: .5rem; }
+  .stat-bar-seg { height: 100%; }
+  .cat-strom { background: var(--cat-strom); }
+  .cat-wallbox { background: var(--cat-wallbox); }
+  .cat-heizung { background: var(--cat-heizung); }
+  .cat-wasser { background: var(--cat-wasser); }
+  .cat-fix { background: var(--cat-fix); }
+  .cat-pv { background: var(--success); }
+  .cat-verbrauch-gesamt { background: var(--accent); }
+  .logik-wohneinheit { background: var(--logik-wohneinheit); }
+  .logik-flurstueck { background: var(--logik-flurstueck); }
+  .logik-qm { background: var(--logik-qm); }
+  .logik-personen { background: var(--logik-personen); }
+  .logik-wohnung1 { background: var(--logik-wohnung1); }
+  .logik-wohnung2 { background: var(--logik-wohnung2); }
+  .stat-kategorien { margin-top: .4rem; display: flex; flex-wrap: wrap; gap: .1rem .75rem; }
+  .stat-kategorien span { font-weight: normal; }
+  .berechtigungen { width: 100%; border-collapse: collapse; margin: .5rem 0; }
+  .berechtigungen th, .berechtigungen td { padding: .35rem .5rem; border-bottom: 1px solid var(--border); text-align: center; font-size: .9rem; }
+  .berechtigungen th:first-child, .berechtigungen td:first-child { text-align: left; }
+  .stat-wallbox { margin-top: .7rem; padding-top: .7rem; border-top: 1px solid var(--border); }
+
+  .wohnung-auswahl { margin: 1.5rem 0 1rem; display: flex; align-items: center; gap: .6rem; }
+  .wohnung-auswahl label { font-size: .85rem; }
+  .wohnung-auswahl select { width: auto; min-width: 12rem; font-weight: 600; }
+  .jahr-kopf { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+  .jahr-nav { display: inline-flex; gap: .25rem; }
+  .jahr-nav a, .jahr-nav .aus { width: 1.7rem; height: 1.7rem; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--border); background: var(--panel); font-weight: 700; text-decoration: none; }
+  .jahr-nav a { color: var(--accent); }
+  .jahr-nav a:hover { background: var(--accent-soft); }
+  .jahr-nav .aus { color: var(--muted); opacity: .4; }
+  .zeit { position: relative; margin: .5rem 1rem 1.25rem; height: 2.4rem; }
+  .zeit-linie, .zeit-fuell { position: absolute; left: 0; top: .55rem; height: 4px; border-radius: 2px; }
+  .zeit-linie { right: 0; background: var(--border); }
+  .zeit-fuell { width: var(--fuell); background: var(--accent); }
+  .zeit-punkte { position: absolute; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; }
+  .zeit-p { position: relative; display: flex; flex-direction: column; align-items: center; width: 1px; font-size: .65rem; color: var(--muted); text-decoration: none; }
+  .zeit-p::after { content: ""; position: absolute; left: 50%; transform: translateX(-50%); width: 1.6rem; top: -.3rem; bottom: -.3rem; }
+  .zeit-p i { display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--panel); border: 2px solid var(--border); margin-bottom: .15rem; }
+  .zeit-p.in i { border-color: var(--accent); background: var(--accent); }
+  .zeit-p.on i { box-shadow: 0 0 0 4px var(--accent-soft); }
+  .zeit-p b { font-weight: 400; white-space: nowrap; }
+  .zeit-p.on b { color: var(--accent); font-weight: 700; }
+  .wohnung-panel { display: none; }
+  .wohnung-panel.active { display: block; }
+
+  .verlauf-legend { display: flex; align-items: center; gap: .3rem 1.25rem; font-size: .75rem; color: var(--muted); margin-bottom: .9rem; flex-wrap: wrap; }
+  .verlauf-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: .35rem; vertical-align: middle; }
+  .mode-toggle { order: -1; flex: 1 0 100%; margin-bottom: .3rem; display: flex; justify-content: flex-end; gap: .3rem; flex-wrap: wrap; }
+  .mode-toggle button { padding: .25rem .6rem; font-size: .72rem; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; }
+  .mode-toggle button.active { background: var(--accent); color: white; border-color: var(--accent); }
+  [data-modus] { display: none; } /* JS setzt die aktive Modus-Variante wieder sichtbar (leerer inline style, siehe applyModus) - jede Regel unten fuer ein data-modus-Element muss ihr eigenes display deklarieren, sonst gewinnt diese Regel per Cascade weiter */
+  .verlauf-year-row span[data-modus] { display: inline; } /* die Modus-Varianten der Jahreszeilen-Summe sind klassenlose <span>, brauchen daher diese explizite Regel statt eine eigene .stat-*-Klasse */
+  .legend-item { display: inline-flex; align-items: center; }
+  .verbrauch-liste { display: block; font-size: .72rem; color: var(--muted); }
+  .v-strom { color: var(--cat-strom); font-weight: 600; }
+  .v-wallbox { color: var(--cat-wallbox); font-weight: 600; }
+  .v-heizung { color: var(--cat-heizung); font-weight: 600; }
+  .v-wasser { color: var(--cat-wasser); font-weight: 600; }
+  .v-fix { color: var(--cat-fix); font-weight: 600; }
+  .v-pv { color: var(--success); font-weight: 600; }
+  .verlauf-tooltip { display: none; position: fixed; background: var(--tooltip-bg); color: var(--tooltip-text); font-size: .72rem; font-weight: 600; padding: .25rem .5rem; border-radius: 4px; pointer-events: none; z-index: 30; white-space: nowrap; }
+  .verlauf-row { display: flex; align-items: center; gap: .5rem; padding: .3rem 0; }
+  .verlauf-row.is-current .month-label { font-weight: 700; color: var(--text); }
+  .month-label { width: 60px; font-size: .72rem; color: var(--muted); flex-shrink: 0; }
+  .value-label { display: inline-block; min-width: 60px; text-align: right; font-size: .78rem; font-weight: 600; flex-shrink: 0; white-space: nowrap; }
+  .bar-track { display: flex; flex: 1; min-width: 0; height: 20px; border-radius: 4px; background: var(--border); overflow: hidden; }
+  .bar-track > div { height: 100%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .bar-track > div span { color: #fff; font-size: .68rem; font-weight: 600; white-space: nowrap; padding: 0 .2rem; text-shadow: 0 1px 1px rgba(0,0,0,.25); }
+  .bar-track > div.fix-seg { border-left: 2px dashed rgba(255,255,255,.6); }
+  .verlauf-row.is-current .bar-track { box-shadow: 0 0 0 2px var(--accent); }
+  /* Fixkosten fehlen (#364): Banner oben, "vorläufig" an der Jahreskarte, Zeile im Verlauf. */
+  .dashboard-hinweis { background: var(--warning); color: #1a1200; padding: .5rem 1rem; margin-bottom: 1rem; border-radius: 8px; }
+  .dashboard-hinweis p { margin: 0; }
+  .dashboard-hinweis a { color: inherit; font-weight: 600; }
+  .vorlaeufig { font-size: .75rem; }
+  .verlauf-row-offen { flex-wrap: wrap; }
+  .verlauf-none { display: flex; align-items: center; justify-content: center; flex: 1; height: 100%; text-align: center; font-size: .72rem; color: var(--muted); }
+  .verlauf-year-row { display: flex; justify-content: space-between; align-items: center; background: var(--accent-soft); border-radius: 6px; padding: .5rem .7rem; margin-bottom: .5rem; font-weight: 700; font-size: .85rem; color: var(--accent); gap: 1rem; }
+
+  /* Nebenkostenabschlag - Formular-/Stammdaten-Abstandshalter (zeigt: Abschlag zaehlt nicht zu den Fixkosten) */
+  .abschlag-divider { border-top: 1px dashed var(--border); margin: 1.1rem 0; }
+
+  /* Nebenkostenabschlag - Guthaben/Nachzahlung als eigener Wert auf der Jahressummen-Karte (Variante B) */
+  .abschlag-value { margin-top: .7rem; padding-top: .7rem; border-top: 1px solid var(--border); }
+  .abschlag-value .label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  .abschlag-value .amount { font-size: 1.35rem; font-weight: 700; margin-top: .15rem; font-variant-numeric: tabular-nums; }
+  .abschlag-value.guthaben .amount { color: var(--success); }
+  .abschlag-value.nachzahlung .amount { color: var(--danger); }
+  .abschlag-value.ausgeglichen .amount { color: var(--muted); }
+
+  /* Nebenkostenabschlag - Monatsverlauf-Reiter: zentrierter Balken, Nullpunkt mittig */
+  .bar-track-center { display: block; position: relative; flex: 1; min-width: 0; height: 20px; border-radius: 4px; background: var(--border); overflow: hidden; }
+  .bar-track-center .zero-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--muted); opacity: .55; }
+  .bar-track-center .fill { position: absolute; top: 0; height: 100%; }
+  .bar-track-center .fill.guthaben { left: 50%; background: var(--success); border-radius: 0 3px 3px 0; }
+  .bar-track-center .fill.nachzahlung { right: 50%; background: var(--danger); border-radius: 3px 0 0 3px; }
+  .verlauf-row.is-current .bar-track-center { box-shadow: 0 0 0 2px var(--accent); }
+  .value-label.guthaben { color: var(--success); }
+  .value-label.nachzahlung { color: var(--danger); }
+  .value-label.ausgeglichen { color: var(--muted); font-weight: normal; }
+
+  .footer-version { position: fixed; bottom: .85rem; right: 1rem; display: flex; align-items: center; gap: .4rem; color: var(--muted); font-size: .78rem; z-index: 40; }
+  .footer-version a { color: var(--muted); display: flex; align-items: center; }
+  .footer-version a:hover { color: var(--text); }
+  .footer-version span { cursor: default; border-bottom: 1px dotted var(--border); }
+  .footer-version a.update-dot { color: var(--success); text-decoration: none; font-size: .7rem; line-height: 1; }
+  /* The generic ".footer-version a { display: flex }" above would otherwise
+     override the hidden attribute and show the dot without an update. */
+  .footer-version a.update-dot[hidden] { display: none; }
+
+  .theme-toggle { position: fixed; top: .75rem; right: 1rem; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: .25rem; z-index: 40; }
+  .theme-btn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: none; background: transparent; border-radius: 6px; color: var(--muted); cursor: pointer; }
+  .theme-btn:hover { background: var(--bg); }
+  .theme-btn svg { width: 16px; height: 16px; }
+
+  @media (max-width: 480px) {
+    .app { padding: 1rem 1rem 3rem; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .c-steps { flex-wrap: wrap; }
+    .c-step-dot { flex: 1 1 45%; font-size: .75rem; }
+    .verlauf-row { flex-wrap: wrap; row-gap: .2rem; }
+    .month-label { order: 1; }
+    .value-label { order: 2; margin-left: auto; }
+    .bar-track { order: 3; flex-basis: 100%; }
+    .bar-track-center { order: 3; flex-basis: 100%; }
+    .verbrauch-liste { order: 3; flex-basis: 100%; }
+    .hide-mobil { display: none; }
+    .badge-umbruch { display: block; width: fit-content; margin-top: .2rem; }
+    table.letzte th, table.letzte td { padding: .4rem .3rem; }
+  }
+  .nur-mobil { display: none; }
+  @media (max-width: 480px) { .nur-mobil { display: block; font-size: .75rem; color: var(--muted); } }
+.proto-bar{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#111;color:#fff;border-radius:99px;padding:.4rem .9rem;display:flex;gap:.8rem;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.4);z-index:99;font-size:.9rem}
+.proto-bar button{background:none;border:0;color:#fff;font-size:1.2rem;cursor:pointer;width:auto;padding:0 .3rem}
+.sk-row{padding:.55rem .2rem;border-bottom:1px solid var(--border,#ddd)}
+.sk-l1{display:flex;gap:.7rem;align-items:baseline}
+.sk-l1 .betrag{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.sk-l2{font-size:.85rem;opacity:.7;margin-top:.15rem}
+.sk-tag{font-size:.75rem;border:1px solid currentColor;border-radius:4px;padding:0 .35rem;opacity:.8;white-space:nowrap}
+.sk-nl{opacity:.55;text-decoration:none}
+.sk-actions a{font-size:.85rem;margin-left:.6rem}
+.sk-sum{display:flex;gap:1.5rem;flex-wrap:wrap;margin:.6rem 0}
+.sk-sum div{font-size:.85rem;opacity:.85}.sk-sum strong{display:block;font-size:1.15rem;opacity:1}
+.sk-mon{font-weight:600;margin:1rem 0 .2rem;display:flex;justify-content:space-between}
+.sk-chips span{display:inline-block;border:1px solid #888;border-radius:99px;padding:.1rem .7rem;margin:0 .3rem .3rem 0;cursor:pointer;font-size:.85rem}
+.sk-chips span.on{background:#2e7d32;color:#fff;border-color:#2e7d32}
+.sk-split{display:grid;grid-template-columns:minmax(0,1fr) 22rem;gap:1rem;align-items:start}
+@media(max-width:800px){.sk-split{grid-template-columns:1fr}}
+.sk-sel{background:rgba(46,125,50,.12)}
+details summary{cursor:pointer;opacity:.8;font-size:.85rem}
+</style></head><body>
+<div class="app">
+<h1>Sonderkosten</h1>
+<p class="muted">Dashboard · Ablesungen · Fixkosten · <strong>Sonderkosten</strong> · Stammdaten · Abrechnung · Wie wird gerechnet?</p>
+<div id="root"></div>
+</div>
+<div class="proto-bar"><button id="prev">‹</button><span id="vl"></span><button id="next">›</button></div>
+<script>
+// PROTOTYPE: Beispieldaten, nichts wird gespeichert.
+var D=[
+ {id:1,m:"2026-10",b:"Heizungspumpe getauscht",art:"Reparatur",firma:"Haustechnik Meier GmbH",nr:"RE-2026-0412",betrag:1428.50,ziel:"Haus",umleg:true,logik:"Je Wohneinheit",txt:"Umwälzpumpe Heizkreis 2 defekt, Austausch inkl. Anfahrt."},
+ {id:2,m:"2026-10",b:"Rauchmelder Wartung",art:"Wartung",firma:"Brandschutz Nord",nr:"2026/889",betrag:96.00,ziel:"Haus",umleg:true,logik:"Je Wohneinheit",txt:"Jährliche Wartung aller Rauchmelder."},
+ {id:3,m:"2026-09",b:"Neue Spülmaschine",art:"Neuanschaffung",firma:"Elektro Schmitt",nr:"",betrag:649.00,ziel:"Wohnung 2",umleg:false,logik:"",txt:"Einbaugerät Küche Wohnung 2."},
+ {id:4,m:"2026-07",b:"Gartenzaun erneuert",art:"Modernisierung",firma:"Holzbau Krause",nr:"R-5531",betrag:2210.00,ziel:"Haus",umleg:false,logik:"",txt:"Neuer Zaun zur Straße, trägt der Vermieter."},
+ {id:5,m:"2026-03",b:"Wasserhahn Bad",art:"Reparatur",firma:"Sanitär Lehmann",nr:"L-77",betrag:184.30,ziel:"Wohnung 1",umleg:true,logik:"",txt:"Dichtung und Kartusche."}
+];
+var ML={"01":"Januar","02":"Februar","03":"März","04":"April","05":"Mai","06":"Juni","07":"Juli","08":"August","09":"September","10":"Oktober","11":"November","12":"Dezember"};
+function ml(m){return ML[m.slice(5)]+" "+m.slice(0,4)}
+function eur(x){return x.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €"}
+function zuord(d){return d.umleg?(d.ziel==="Haus"?"umgelegt: "+d.logik:"trägt "+d.ziel):"trägt Vermieter:in"}
+function tag(d){return d.umleg?'<span class="sk-tag">umlegbar</span>':'<span class="sk-tag sk-nl">nicht umlegbar</span>'}
+function summen(){var u=0,n=0;D.forEach(function(d){d.umleg?u+=d.betrag:n+=d.betrag});return '<div class="sk-sum"><div><strong>'+eur(u+n)+'</strong>Gesamt 2026</div><div><strong>'+eur(u)+'</strong>davon umlegbar</div><div><strong>'+eur(n)+'</strong>trägt Vermieter:in</div></div>'}
+function jahr(){return '<div class="jahr-nav"><button class="secondary">‹</button> <strong>2026</strong> <button class="secondary">›</button></div>'}
+function form(titel){return '<form class="panel" onsubmit="return false"><h3 style="margin-top:0">'+titel+'</h3>'+
+ '<div class="grid grid-2"><div class="field"><label>Abrechnungsmonat</label><input type="month" value="2026-10"></div>'+
+ '<div class="field"><label>Art</label><select><option>Reparatur</option><option>Neuanschaffung</option><option>Wartung</option><option>Modernisierung</option><option>Sonstiges</option></select></div></div>'+
+ '<div class="field"><label>Betreff</label><input type="text"></div>'+
+ '<div class="field"><label>Kurzbeschreibung</label><input type="text"></div>'+
+ '<div class="grid grid-2"><div class="field"><label>Firma</label><input type="text"></div><div class="field"><label>Rechnungsnummer <span class="badge">optional</span></label><input type="text"></div></div>'+
+ '<div class="grid grid-2"><div class="field"><label>Betrag brutto (EUR)</label><input type="number" step="0.01" min="0.01"></div>'+
+ '<div class="field"><label>Umsetzung in</label><select id="zl" onchange="zz()"><option>Haus</option><option>Wohnung 1</option><option>Wohnung 2</option></select></div></div>'+
+ '<div class="field"><label><input type="checkbox" id="ul" checked onchange="zz()"> Umlegbar (auf die Betriebskostenabrechnung)</label></div>'+
+ '<div class="field" id="lg"><label>Berechnungslogik</label><select><option>Je Wohneinheit</option><option>Je anteiliges Flurstück</option><option>Je anteilige Wohnungsgröße</option><option>Je Anzahl Personen</option></select></div>'+
+ '<p class="muted" id="hint" style="display:none">Hinweis: Reparaturen und Neuanschaffungen sind rechtlich meist nicht umlegbar.</p>'+
+ '<div class="btn-row"><button class="primary" type="submit">Speichern</button><button class="secondary" type="button" onclick="zeige(false)">Abbrechen</button></div></form>'}
+function zz(){var ul=document.getElementById("ul"),zl=document.getElementById("zl");if(!ul)return;document.getElementById("lg").style.display=(ul.checked&&zl.value==="Haus")?"":"none"}
+function acts(){return '<span class="sk-actions"><a href="#">Korrigieren</a><a href="#">Löschen</a></span>'}
+
+// Variante A: Liste mit zwei Zeilen je Eintrag, Maske als eigene Seite
+function A(){
+ if(S.form)return form("Sonderkosten erfassen");
+ var h=jahr()+summen()+'<div class="btn-row"><button class="button success" onclick="zeige(true)">Neue Sonderkosten</button></div><div class="panel">';
+ D.forEach(function(d){h+='<div class="sk-row"><div class="sk-l1"><span class="muted" style="min-width:6.5rem">'+ml(d.m)+'</span><strong>'+d.b+'</strong><span class="sk-tag">'+d.art+'</span><span class="betrag">'+eur(d.betrag)+'</span></div>'+
+  '<div class="sk-l2">'+d.firma+(d.nr?' · '+d.nr:'')+' · '+zuord(d)+' · '+tag(d)+acts()+'</div>'+
+  '<details><summary>Beschreibung</summary><div class="sk-l2">'+d.txt+'</div></details></div>'});
+ return h+'</div>'}
+
+// Variante B: nach Monat gruppiert, Maske klappt oben inline auf
+function B(){
+ var h=jahr()+summen()+'<div class="btn-row"><button class="button success" onclick="zeige(!S.form)">'+(S.form?'Schließen':'+ Neue Sonderkosten')+'</button></div>'+(S.form?form("Neue Sonderkosten"):"");
+ var cur="";D.forEach(function(d){if(d.m!==cur){cur=d.m;var s=0;D.forEach(function(e){if(e.m===cur&&e.umleg)s+=e.betrag});h+='<div class="sk-mon"><span>'+ml(cur)+'</span><span class="muted">umlegbar '+eur(s)+'</span></div>'}
+  h+='<div class="panel" style="margin:.3rem 0"><div class="sk-l1"><strong>'+d.b+'</strong><span class="betrag">'+eur(d.betrag)+'</span></div>'+
+  '<div class="sk-l2">'+d.art+' · '+d.firma+(d.nr?' · Nr. '+d.nr:'')+'</div><div class="sk-l2">'+d.txt+'</div>'+
+  '<div class="sk-l2">'+tag(d)+' '+zuord(d)+acts()+'</div></div>'});
+ return h}
+
+// Variante C: kompakte Tabelle mit Filter, Master/Detail rechts (Anzeigen, Korrigieren, Neu)
+function C(){
+ var f=S.f||"alle",sel=S.sel;
+ var h=jahr()+summen()+'<div class="sk-chips">'+["alle","umlegbar","nicht umlegbar","Reparatur","Neuanschaffung","Wartung"].map(function(c){return '<span class="'+(c===f?"on":"")+'" onclick="S.f=\''+c+'\';S.sel=null;S.form=false;draw()">'+c+'</span>'}).join("")+'</div><div class="sk-split"><div class="panel"><table><thead><tr><th>Monat</th><th>Betreff</th><th>Umsetzung</th><th style="text-align:right">Betrag</th></tr></thead><tbody>';
+ D.forEach(function(d){if(f==="umlegbar"&&!d.umleg||f==="nicht umlegbar"&&d.umleg||["Reparatur","Neuanschaffung","Wartung"].indexOf(f)>=0&&d.art!==f)return;
+  h+='<tr class="'+(sel===d.id?"sk-sel":"")+'" style="cursor:pointer" onclick="S.sel='+d.id+';S.form=false;draw()"><td>'+ml(d.m).replace(" 20"," ")+'</td><td>'+d.b+'<div class="sk-l2">'+d.firma+(d.nr?' · '+d.nr:'')+'</div></td><td>'+d.ziel+(d.umleg?'':' <span class="sk-nl">·&nbsp;nicht umgelegt</span>')+'</td><td style="text-align:right">'+eur(d.betrag)+'</td></tr>'});
+ h+='</tbody></table></div><div>';
+ var d=D.filter(function(x){return x.id===sel})[0];
+ if(S.form)h+=form("Neue Sonderkosten");
+ else if(d)h+='<div class="panel"><h3 style="margin-top:0">'+d.b+'</h3><div class="sk-l2">'+ml(d.m)+' · '+d.art+'</div><p>'+d.txt+'</p><p class="sk-l2">'+d.firma+'<br>Rechnungsnummer: '+(d.nr||"-")+'<br>'+zuord(d)+'</p><p><strong>'+eur(d.betrag)+'</strong> brutto</p><div class="btn-row"><button class="secondary">Korrigieren</button><button class="secondary">Löschen</button></div></div>';
+ else h+='<div class="panel muted">Eintrag wählen oder neu erfassen.</div>';
+ return h+'<div class="btn-row"><button class="button success" onclick="zeige(true)">Neue Sonderkosten</button></div></div></div>'}
+
+var S={form:false,sel:null,f:"alle"},V=["A","B","C"],N={A:"Liste, Zwei-Zeilen-Einträge, Maske eigene Seite",B:"nach Monat gruppiert, Maske inline",C:"Tabelle mit Filter, Detail rechts"};
+var cur=(new URLSearchParams(location.search).get("variant")||"A").toUpperCase();if(V.indexOf(cur)<0)cur="A";
+function zeige(x){S.form=x;draw()}
+function draw(){document.getElementById("root").innerHTML={A:A,B:B,C:C}[cur]();document.getElementById("vl").textContent=cur+" ("+N[cur]+")";zz()}
+function go(i){cur=V[(V.indexOf(cur)+i+V.length)%V.length];S.form=false;S.sel=null;history.replaceState(null,"","?variant="+cur);draw()}
+document.getElementById("prev").onclick=function(){go(-1)};document.getElementById("next").onclick=function(){go(1)};
+document.addEventListener("keydown",function(e){if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;if(e.key==="ArrowLeft")go(-1);if(e.key==="ArrowRight")go(1)});
+draw();
+</script></body></html>
