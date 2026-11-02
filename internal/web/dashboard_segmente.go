@@ -63,10 +63,17 @@ func alleFixkostenKosten(reihe *calc.Fixkostenreihe) []fixkostenKosten {
 // (allocation logic) into the 4 fixed buckets the "Fixkosten" mode bar
 // shows (always all 4, even at 0 - same "show every category" convention
 // as kategorien()).
-func fixkostenGruppen(apartmentID int64, erg *calc.FixkostenErgebnis) []dashboardSegment {
+func fixkostenGruppen(apartmentID int64, erg *calc.FixkostenErgebnis, sonderkosten []calc.MonatsSonderkosten) []dashboardSegment {
 	sums := map[string]float64{}
-	for _, p := range erg.Positionen {
-		sums[p.Logik] += p.KostenFor(apartmentID)
+	if erg != nil {
+		for _, p := range erg.Positionen {
+			sums[p.Logik] += p.KostenFor(apartmentID)
+		}
+	}
+	// Sonderkosten have no bucket of their own: they sit in the group of their
+	// Logik (Wohnung 1/2 for an entry assigned to one apartment).
+	for _, sk := range sonderkosten {
+		sums[sk.Logik] += sk.Betrag
 	}
 	logiken := []string{store.LogikWohneinheit, store.LogikFlurstueck, store.LogikQM, store.LogikPersonen, store.LogikWohnung1, store.LogikWohnung2}
 	out := make([]dashboardSegment, len(logiken))

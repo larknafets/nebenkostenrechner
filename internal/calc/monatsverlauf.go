@@ -37,6 +37,10 @@ type Posten struct {
 	// summing, like the bars of the Dashboard show them. Otherwise the
 	// unrounded positions are summed.
 	FixkostenJeLogik bool
+	// Sonderkosten are the amounts of the apartment (SonderkostenMonate) that
+	// count: an extra item beside the Fixkosten, summed into the month's
+	// Fixkosten. The Wohnungsstatus does not decide, nil counts none.
+	Sonderkosten []MonatsSonderkosten
 }
 
 // Monatswert is the value of one Abrechnungsmonat. The sums are not rounded.
@@ -51,6 +55,10 @@ type Monatswert struct {
 	// HatFixkosten is false for a month without one.
 	Fixkosten, Abschlag float64
 	HatFixkosten        bool
+	// HatSonderkosten is true for a month with a counting Sonderkosten entry,
+	// its amount is part of Fixkosten. A month with nothing else still has a
+	// value.
+	HatSonderkosten bool
 	// Gutschrift is the PV-Gutschrift, 0 if it is not part of the Posten.
 	Gutschrift float64
 }
@@ -107,6 +115,13 @@ func Monatswerte(apartmentID int64, kosten []MonatsKosten, fixkosten []MonatsFix
 				}
 			}
 		}
+	}
+
+	// After the Fixkosten: FixkostenJeLogik recomputes the month's sum.
+	for _, s := range p.Sonderkosten {
+		w := wert(s.Monat)
+		w.HatSonderkosten = true
+		w.Fixkosten += s.Betrag
 	}
 
 	out := make([]Monatswert, 0, len(byMonat))
