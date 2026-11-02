@@ -149,3 +149,17 @@ func TestSonderkostenErfassen_MaskeUndHinweisNurMitRecht(t *testing.T) {
 		t.Errorf("POST mit Recht: status %d", w.Code)
 	}
 }
+
+// The mask offers "Je Anzahl Personen" only for months with a
+// Fixkosteneingabe: the page hands the script the list of those months.
+func TestSonderkostenErfassen_MaskeKenntMonateMitFixkosteneingabe(t *testing.T) {
+	mux, db := sonderkostenMux(t)
+	if _, err := store.CreateFixkostenEingabe(db, seedFixkostenInput("2026-10-01")); err != nil {
+		t.Fatal(err)
+	}
+	c := loginCookies(t, mux, "vermieter", "geheim")
+	body := getMitCookies(t, mux, "/sonderkosten", c).Body.String()
+	if !strings.Contains(body, `var skFixMonate = ["2026-10"];`) {
+		t.Errorf("Monate mit Fixkosteneingabe fehlen im Skript")
+	}
+}

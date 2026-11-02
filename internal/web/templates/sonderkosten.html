@@ -79,14 +79,19 @@
 {{if .Vermieter}}<div class="btn-row"><a href="{{.Base}}/sonderkosten/export.csv" class="button secondary">CSV Export</a></div>{{end}}
 <script>
 // Shows the Logik select and the Hinweis of a Sonderkosten form as its fields demand.
+var skFixMonate = {{.FixMonate}};
 function skAktualisiere(f) {
   var art = f.elements.art.value, ul = f.elements.umlegbar.checked;
+  // "Je Anzahl Personen" needs the Fixkosteneingabe of the month.
+  var logik = f.elements.logik, personen = logik.querySelector('option[value="personen"]');
+  personen.disabled = skFixMonate.indexOf(f.elements.monat.value) < 0;
+  if (personen.disabled && logik.value === "personen") logik.selectedIndex = 0;
   f.querySelector(".sk-logik-feld").hidden = !(ul && f.elements.umsetzung.value === "haus");
   f.querySelectorAll(".sk-hinweis").forEach(function (p) { p.hidden = !(ul && p.dataset.art === art); });
 }
 document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll("form.sk-maske").forEach(function (f) {
-    ["art", "umlegbar", "umsetzung"].forEach(function (n) { f.elements[n].addEventListener("change", function () { skAktualisiere(f); }); });
+    ["monat", "art", "umlegbar", "umsetzung"].forEach(function (n) { f.elements[n].addEventListener("change", function () { skAktualisiere(f); }); });
     skAktualisiere(f);
   });
   document.querySelectorAll("[data-sk-korrigieren]").forEach(function (b) {

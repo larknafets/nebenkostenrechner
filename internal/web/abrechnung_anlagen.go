@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"slices"
 
 	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
 )
@@ -33,7 +34,7 @@ var sonderkostenAnlage = abrechnungAnlage{Key: "sonderkosten", Nr: 8, Titel: "So
 
 // anlageUeberschrift is the heading of an Anlage, "Anlage N: Titel".
 func anlageUeberschrift(key string) (string, error) {
-	for _, a := range append(abrechnungAnlagen[:len(abrechnungAnlagen):len(abrechnungAnlagen)], sonderkostenAnlage) {
+	for _, a := range alleAnlagen() {
 		if a.Key == key {
 			return fmt.Sprintf("Anlage %d: %s", a.Nr, a.Titel), nil
 		}
@@ -46,5 +47,10 @@ func anlagenListe(ab *abr.Jahresabrechnung) []abrechnungAnlage {
 	if len(ab.SonderkostenAnlage) == 0 {
 		return abrechnungAnlagen
 	}
-	return append(abrechnungAnlagen[:len(abrechnungAnlagen):len(abrechnungAnlagen)], sonderkostenAnlage)
+	return alleAnlagen()
+}
+
+// alleAnlagen is abrechnungAnlagen plus the Sonderkosten Anlage, as a copy.
+func alleAnlagen() []abrechnungAnlage {
+	return append(slices.Clone(abrechnungAnlagen), sonderkostenAnlage)
 }
