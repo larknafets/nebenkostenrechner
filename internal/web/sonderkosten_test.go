@@ -40,15 +40,14 @@ func TestSonderkosten_SeiteZeigtKopfSummenUndKarten(t *testing.T) {
 	}
 	body := w.Body.String()
 	for _, want := range []string{
-		"Sonderkosten 2026",
-		"1.745,00", // Gesamt 1000 + 96 + 649
-		"1.649,00", // umlegbar
-		"96,00",    // trägt Vermieter:in
+		`<option value="2026" selected>`, // Jahr filter, the current year by default
+		"1.745,00",                       // Gesamt 1000 + 96 + 649
+		"1.649,00",                       // umlegbar
+		"96,00",                          // trägt Vermieter:in
 		"Oktober 2026", "September 2026",
 		"Heizungspumpe", "Reparatur", "Meier GmbH", "RE-412", "Je Wohneinheit",
 		"trägt Wohnung 2", "trägt Vermieter:in", "nicht umlegbar",
 		"Pumpe Heizkreis 2", "<details",
-		`href="?jahr=2025"`, // Pfeil zurück
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("Seite enthält %q nicht", want)
@@ -56,6 +55,9 @@ func TestSonderkosten_SeiteZeigtKopfSummenUndKarten(t *testing.T) {
 	}
 	if strings.Contains(body, "Wasserhahn") {
 		t.Error("Eintrag aus 2025 steht im Jahr 2026")
+	}
+	if strings.Contains(body, "<h2>Sonderkosten") || strings.Contains(body, `class="jahr-nav"`) {
+		t.Error("Überschrift und Jahrespfeile sind durch den Jahresfilter ersetzt")
 	}
 	if !strings.Contains(body, "<strong>Sonderkosten</strong>") || !strings.Contains(getMitCookies(t, mux, "/dashboard", c).Body.String(), `<a href="/sonderkosten">Sonderkosten</a>`) {
 		t.Error("Menüpunkt Sonderkosten fehlt")
@@ -67,7 +69,7 @@ func TestSonderkosten_JahrwahlUndArtfilter(t *testing.T) {
 	c := loginCookies(t, mux, "vermieter", "geheim")
 
 	alt := getMitCookies(t, mux, "/sonderkosten?jahr=2025", c).Body.String()
-	if !strings.Contains(alt, "Sonderkosten 2025") || !strings.Contains(alt, "Wasserhahn") || strings.Contains(alt, "Heizungspumpe") {
+	if !strings.Contains(alt, `<option value="2025" selected>`) || !strings.Contains(alt, "Wasserhahn") || strings.Contains(alt, "Heizungspumpe") {
 		t.Error("?jahr=2025 zeigt nicht das Jahr 2025")
 	}
 
@@ -75,8 +77,9 @@ func TestSonderkosten_JahrwahlUndArtfilter(t *testing.T) {
 	if !strings.Contains(gefiltert, "Rauchmelder") || strings.Contains(gefiltert, "Heizungspumpe") {
 		t.Error("Artfilter wartung zeigt nicht nur Wartung")
 	}
-	if !strings.Contains(gefiltert, "1.745,00") {
-		t.Error("die Summen folgen dem Artfilter, sie sollen das ganze Jahr zeigen")
+	// The sums follow the filters (Jahr and Art): only the Wartung of 2026.
+	if strings.Contains(gefiltert, "1.745,00") || !strings.Contains(gefiltert, "96,00") {
+		t.Error("die Summen sollen dem Artfilter folgen")
 	}
 }
 
@@ -118,8 +121,9 @@ func TestSonderkosten_JahrFilterListetJahreMitEintraegen(t *testing.T) {
 	if i2026 < 0 || i2025 < 0 || i2026 > i2025 {
 		t.Errorf("Jahr filter: 2026 at %d (selected), 2025 at %d, want both, newest first", i2026, i2025)
 	}
-	// The button comes before the Jahr heading, like Ablesungen and Fixkosten.
-	if b, h := strings.Index(body, "Neue Sonderkosten"), strings.Index(body, "<h2>Sonderkosten 2026"); b < 0 || b > h {
-		t.Errorf("Neue Sonderkosten at %d, want before the heading at %d", b, h)
+	// The Jahr filter comes first, then Art, then the sums; the button sits above all.
+	b, j, a, g := strings.Index(body, "Neue Sonderkosten"), strings.Index(body, `id="jahr"`), strings.Index(body, `id="art"`), strings.Index(body, "Gesamt")
+	if b < 0 || b >= j || j >= a || a >= g {
+		t.Errorf("order button %d, Jahr %d, Art %d, sums %d: want ascending", b, j, a, g)
 	}
 }

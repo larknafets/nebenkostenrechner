@@ -203,17 +203,18 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 			fixMonate = append(fixMonate, e.Monat[:7])
 		}
 
-		var jahre []int
+		// The Jahr filter lists every year with entries and always the current
+		// year, which is the default.
+		aktuell := time.Now().Year()
+		jahre := []int{aktuell}
 		for _, s := range alle {
 			if y, ok := store.Abrechnungsmonat(s.Monat).Jahr(); ok && !slices.Contains(jahre, y) {
 				jahre = append(jahre, y)
 			}
 		}
 		slices.Sort(jahre)
-		jahr := time.Now().Year()
-		if len(jahre) > 0 {
-			jahr = jahre[len(jahre)-1]
-		}
+		slices.Reverse(jahre)
+		jahr := aktuell
 		if wunsch, err := strconv.Atoi(r.URL.Query().Get("jahr")); err == nil && slices.Contains(jahre, wunsch) {
 			jahr = wunsch
 		}
@@ -228,12 +229,12 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 			if y, _ := store.Abrechnungsmonat(s.Monat).Jahr(); y != jahr {
 				continue
 			}
+			if art != "" && s.Art != art {
+				continue
+			}
 			gesamt += s.Betrag
 			if s.Umlegbar {
 				umlegbar += s.Betrag
-			}
-			if art != "" && s.Art != art {
-				continue
 			}
 			if n := len(monate); n == 0 || monate[n-1].Label != store.MonatLabel(s.Monat) {
 				monate = append(monate, sonderkostenMonat{Label: store.MonatLabel(s.Monat)})
@@ -254,23 +255,11 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 		// Newest month first, like the Dashboard.
 		slices.Reverse(monate)
 
-		jahreNeuZuAlt := slices.Clone(jahre)
-		slices.Reverse(jahreNeuZuAlt)
-		var zurueck, vor string
-		if i := slices.Index(jahre, jahr); i > 0 {
-			zurueck = "?jahr=" + strconv.Itoa(jahre[i-1])
-		}
-		if i := slices.Index(jahre, jahr); i >= 0 && i < len(jahre)-1 {
-			vor = "?jahr=" + strconv.Itoa(jahre[i+1])
-		}
-
 		data := struct {
 			navData
 			Aktuell         string
 			Jahr            int
-			Jahre           []int // years with entries, newest first, for the Jahr filter
-			JahrZurueck     string
-			JahrVor         string
+			Jahre           []int // years for the Jahr filter, newest first
 			Gesamt          float64
 			Umlegbar        float64
 			VermieterTraegt float64
@@ -282,7 +271,7 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 			NeuMaske        sonderkostenMaske
 			FixMonate       []string // months ("YYYY-MM") with a Fixkosteneingabe, for the Personen option
 		}{
-			navData: z.NavData(r), Aktuell: "sonderkosten", Jahr: jahr, Jahre: jahreNeuZuAlt, JahrZurueck: zurueck, JahrVor: vor,
+			navData: z.NavData(r), Aktuell: "sonderkosten", Jahr: jahr, Jahre: jahre,
 			Gesamt: gesamt, Umlegbar: umlegbar, VermieterTraegt: gesamt - umlegbar,
 			Arten: store.SonderkostenArten, Art: art, Monate: monate, HatEintraege: len(alle) > 0,
 			NeuMonat: time.Now().Format("2006-01"), FixMonate: fixMonate,
