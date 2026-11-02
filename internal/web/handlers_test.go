@@ -238,7 +238,7 @@ func TestBuildDashboardVerlauf_Skalierung(t *testing.T) {
 		{ReadingDate: "2026-10-01", Monat: "2026-10-01", K: alt},
 	}
 
-	spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, nil, nil)
+	spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, nil, nil, nil)
 	var monate []dashboardMonat
 	for _, e := range spalte.Eintraege {
 		if e.Monat != nil {
@@ -286,7 +286,7 @@ func TestBuildDashboardVerlauf_Skalierung(t *testing.T) {
 	}
 
 	t.Run("leere Eintraege", func(t *testing.T) {
-		spalte := buildDashboardVerlauf(2, "Wohnung 2", nil, nil, nil)
+		spalte := buildDashboardVerlauf(2, "Wohnung 2", nil, nil, nil, nil)
 		if spalte.Eintraege != nil {
 			t.Errorf("want nil Eintraege for empty input, got %+v", spalte.Eintraege)
 		}
@@ -294,7 +294,7 @@ func TestBuildDashboardVerlauf_Skalierung(t *testing.T) {
 
 	t.Run("neuester VerbrauchGesamt 0 erzeugt kein NaN", func(t *testing.T) {
 		zero := calc.Kosten{Strom: &calc.StromErgebnis{}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
-		spalte := buildDashboardVerlauf(2, "Wohnung 2", []periodKosten{{ReadingDate: "2026-11-15", Monat: "2026-11-01", K: zero}}, nil, nil)
+		spalte := buildDashboardVerlauf(2, "Wohnung 2", []periodKosten{{ReadingDate: "2026-11-15", Monat: "2026-11-01", K: zero}}, nil, nil, nil)
 		for _, seg := range spalte.Eintraege[0].Monat.VerbrauchSegmente {
 			if seg.ProzentNeuestesGesamt != 0 {
 				t.Errorf("ProzentNeuestesGesamt = %v, want 0", seg.ProzentNeuestesGesamt)
@@ -439,7 +439,7 @@ func TestBuildDashboardVerlauf_KombiniertModus(t *testing.T) {
 	periods := []periodKosten{{ReadingDate: "2026-09-01", Monat: "2026-09-01", K: verbrauch}}
 	fixkostenListe := []fixkostenKosten{{Monat: "2026-09-01", Erg: fix}}
 
-	spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, fixkostenListe, nil)
+	spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, fixkostenListe, nil, nil)
 	if len(spalte.Eintraege) != 2 { // 1 Monat + 1 Jahreszeile
 		t.Fatalf("want 2 Eintraege, got %d: %+v", len(spalte.Eintraege), spalte.Eintraege)
 	}
@@ -469,7 +469,7 @@ func TestBuildDashboardVerlauf_NurFixkosten(t *testing.T) {
 		Positionen: []calc.FixkostenPosition{{Key: "abfall_haushalt", Label: "Abfallwirtschaft Grundgebühr Haushalt", Logik: store.LogikWohneinheit, KostenW1: 15, KostenW2: 25}},
 		KostenW1:   15, KostenW2: 25,
 	}
-	spalte := buildDashboardVerlauf(1, "Wohnung 1", nil, []fixkostenKosten{{Monat: "2026-09-01", Erg: fix}}, nil)
+	spalte := buildDashboardVerlauf(1, "Wohnung 1", nil, []fixkostenKosten{{Monat: "2026-09-01", Erg: fix}}, nil, nil)
 	m := spalte.Eintraege[0].Monat
 	if m == nil {
 		t.Fatal("Eintraege[0] should be a Monat")
@@ -505,7 +505,7 @@ func TestBuildDashboardVerlauf_AbschlagSaldo_UeberspringtMonatOhneFixkosten(t *t
 		{Monat: "2026-01-01", Erg: fix, Abschlag: map[int64]float64{2: 100}}, // Jan: Fixkosteneingabe mit Abschlag
 	}
 
-	spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, fixkostenListe, nil)
+	spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, fixkostenListe, nil, nil)
 	if len(spalte.Eintraege) != 3 { // Feb, Jan, Jahreszeile 2026
 		t.Fatalf("want 3 Eintraege (Feb+Jan+Jahreszeile), got %d: %+v", len(spalte.Eintraege), spalte.Eintraege)
 	}
@@ -592,7 +592,7 @@ func TestBuildDashboardVerlauf_LatestSaldo(t *testing.T) {
 		fixkostenListe := []fixkostenKosten{
 			{Monat: "2026-01-01", Erg: fix, Abschlag: map[int64]float64{2: 100}},
 		}
-		spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, fixkostenListe, nil)
+		spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, fixkostenListe, nil, nil)
 		if got := spalte.LatestSaldo; got == nil || got.Betrag() != 80 || !got.Guthaben() {
 			t.Fatalf("LatestSaldo = %+v, want Betrag 80/Guthaben (aus Jan, Feb uebersprungen)", got)
 		}
@@ -601,14 +601,14 @@ func TestBuildDashboardVerlauf_LatestSaldo(t *testing.T) {
 	t.Run("kein Monat mit Fixkosteneingabe -> nil", func(t *testing.T) {
 		verbrauch := calc.Kosten{Strom: &calc.StromErgebnis{KostenW2: 20}, Wasser: &calc.WasserErgebnis{}, Heizung: &calc.HeizungErgebnis{}}
 		periods := []periodKosten{{ReadingDate: "2026-02-01", Monat: "2026-02-01", K: verbrauch}}
-		spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, nil, nil)
+		spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, nil, nil, nil)
 		if got := spalte.LatestSaldo; got != nil {
 			t.Fatalf("LatestSaldo = %+v, want nil (keine Fixkosteneingabe)", got)
 		}
 	})
 
 	t.Run("leere Eingabe -> nil", func(t *testing.T) {
-		if got := buildDashboardVerlauf(2, "Wohnung 2", nil, nil, nil).LatestSaldo; got != nil {
+		if got := buildDashboardVerlauf(2, "Wohnung 2", nil, nil, nil, nil).LatestSaldo; got != nil {
 			t.Fatalf("LatestSaldo = %+v, want nil", got)
 		}
 	})
@@ -645,7 +645,7 @@ func TestMitJahreszeilen(t *testing.T) {
 			{ReadingDate: "2025-12-15", Monat: "2025-12-01", K: leer}, // 10
 			{ReadingDate: "2025-11-15", Monat: "2025-11-01", K: leer}, // 10
 		}
-		spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, nil, nil)
+		spalte := buildDashboardVerlauf(2, "Wohnung 2", periods, nil, nil, nil)
 		eintraege := spalte.Eintraege
 
 		if len(eintraege) != 5 { // 3 Monate + 2 Jahreszeilen (2026 und 2025)
@@ -712,7 +712,7 @@ func TestBuildJahresCard(t *testing.T) {
 		{Monat: "2025-09-01", Erg: &calc.FixkostenErgebnis{KostenW1: 999, KostenW2: 999}, Personen: map[int64]float64{1: 3, 2: 99}}, // anderes Jahr
 	}
 
-	card := buildJahresCard(2, "Wohnung 2", 86, 120.5, 2026, periods, fixkostenListe)
+	card := buildJahresCard(2, "Wohnung 2", 86, 120.5, 2026, periods, fixkostenListe, nil)
 	if card.StromEUR != 40 || card.HeizungEUR != 20 || card.WasserEUR != 20 {
 		t.Errorf("Strom/Heizung/Wasser = %v/%v/%v, want 40/20/20 (2 Perioden in 2026)", card.StromEUR, card.HeizungEUR, card.WasserEUR)
 	}
@@ -748,19 +748,19 @@ func TestBuildJahresCard_PVAnteilKWh(t *testing.T) {
 		{ReadingDate: "2025-09-01", Monat: "2025-09-01", K: kMitPV(999)}, // anderes Jahr
 	}
 
-	w2 := buildJahresCard(2, "Wohnung 2", 86, 120.5, 2026, periods, nil)
+	w2 := buildJahresCard(2, "Wohnung 2", 86, 120.5, 2026, periods, nil, nil)
 	if w2.PVAnteilKWh != 42 {
 		t.Errorf("Wohnung 2 PVAnteilKWh = %v, want 42 (30+12, 2025er ausgeschlossen)", w2.PVAnteilKWh)
 	}
 
-	w1 := buildJahresCard(1, "Wohnung 1", 116.23, 200, 2026, periods, nil)
+	w1 := buildJahresCard(1, "Wohnung 1", 116.23, 200, 2026, periods, nil, nil)
 	if w1.PVAnteilKWh != 0 {
 		t.Errorf("Wohnung 1 PVAnteilKWh = %v, want 0 (kein eigener Stromzähler, kein PV-Anteil)", w1.PVAnteilKWh)
 	}
 }
 
 func TestBuildJahresCard_PersonenSchnittOhneAblesung(t *testing.T) {
-	card := buildJahresCard(1, "Wohnung 1", 116.23, 200, 2026, nil, nil)
+	card := buildJahresCard(1, "Wohnung 1", 116.23, 200, 2026, nil, nil, nil)
 	if card.PersonenSchnitt != 0 {
 		t.Errorf("PersonenSchnitt = %v, want 0 (keine Fixkosteneingabe im Jahr)", card.PersonenSchnitt)
 	}
