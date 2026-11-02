@@ -280,10 +280,10 @@ var D=[
 var ML={"01":"Januar","02":"Februar","03":"März","04":"April","05":"Mai","06":"Juni","07":"Juli","08":"August","09":"September","10":"Oktober","11":"November","12":"Dezember"};
 function ml(m){return ML[m.slice(5)]+" "+m.slice(0,4)}
 function eur(x){return x.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €"}
-function zuord(d){return d.umleg?(d.ziel==="Haus"?"umgelegt: "+d.logik:"trägt "+d.ziel):"trägt Vermieter:in"}
+function zuord(d){return d.umleg?(d.ziel==="Haus"?d.logik:"trägt "+d.ziel):"trägt Vermieter:in"}
 function tag(d){return d.umleg?'<span class="sk-tag">umlegbar</span>':'<span class="sk-tag sk-nl">nicht umlegbar</span>'}
 function summen(){var u=0,n=0;D.forEach(function(d){d.umleg?u+=d.betrag:n+=d.betrag});return '<div class="sk-sum"><div><strong>'+eur(u+n)+'</strong>Gesamt 2026</div><div><strong>'+eur(u)+'</strong>davon umlegbar</div><div><strong>'+eur(n)+'</strong>trägt Vermieter:in</div></div>'}
-function jahr(){return '<div class="jahr-nav"><button class="secondary">‹</button> <strong>2026</strong> <button class="secondary">›</button></div>'}
+function jahr(){return '<div class="jahr-kopf"><h2>Sonderkosten 2026</h2><span class="jahr-nav"><a href="#" title="Vorjahr" aria-label="Vorjahr">‹</a><span class="aus" aria-hidden="true">›</span></span></div>'}
 function form(titel){return '<form class="panel" onsubmit="return false"><h3 style="margin-top:0">'+titel+'</h3>'+
  '<div class="grid grid-2"><div class="field"><label>Abrechnungsmonat</label><input type="month" value="2026-10"></div>'+
  '<div class="field"><label>Art</label><select><option>Reparatur</option><option>Neuanschaffung</option><option>Wartung</option><option>Modernisierung</option><option>Sonstiges</option></select></div></div>'+
@@ -297,7 +297,7 @@ function form(titel){return '<form class="panel" onsubmit="return false"><h3 sty
  '<p class="muted" id="hint" style="display:none">Hinweis: Reparaturen und Neuanschaffungen sind rechtlich meist nicht umlegbar.</p>'+
  '<div class="btn-row"><button class="primary" type="submit">Speichern</button><button class="secondary" type="button" onclick="zeige(false)">Abbrechen</button></div></form>'}
 function zz(){var ul=document.getElementById("ul"),zl=document.getElementById("zl");if(!ul)return;document.getElementById("lg").style.display=(ul.checked&&zl.value==="Haus")?"":"none"}
-function acts(){return '<span class="sk-actions"><a href="#">Korrigieren</a><a href="#">Löschen</a></span>'}
+function acts(){return '<span class="sk-actions"> · <a href="#" style="margin-left:0">Korrigieren</a> · <a href="#" style="margin-left:0">Löschen</a></span>'}
 
 // Variante A: Liste mit zwei Zeilen je Eintrag, Maske als eigene Seite
 function A(){
@@ -310,11 +310,12 @@ function A(){
 
 // Variante B: nach Monat gruppiert, Maske klappt oben inline auf
 function B(){
- var h=jahr()+summen()+'<div class="btn-row"><button class="button success" onclick="zeige(!S.form)">'+(S.form?'Schließen':'+ Neue Sonderkosten')+'</button></div>'+(S.form?form("Neue Sonderkosten"):"");
+ var h=jahr()+summen()+'<div class="btn-row"><button class="button success" onclick="zeige(!S.form)">'+(S.form?'Schließen':'Neue Sonderkosten')+'</button></div>'+(S.form?form("Neue Sonderkosten"):"");
  var cur="";D.forEach(function(d){if(d.m!==cur){cur=d.m;var s=0;D.forEach(function(e){if(e.m===cur&&e.umleg)s+=e.betrag});h+='<div class="sk-mon"><span>'+ml(cur)+'</span><span class="muted">umlegbar '+eur(s)+'</span></div>'}
-  h+='<div class="panel" style="margin:.3rem 0"><div class="sk-l1"><strong>'+d.b+'</strong><span class="betrag">'+eur(d.betrag)+'</span></div>'+
-  '<div class="sk-l2">'+d.art+' · '+d.firma+(d.nr?' · Nr. '+d.nr:'')+'</div><div class="sk-l2">'+d.txt+'</div>'+
-  '<div class="sk-l2">'+tag(d)+' '+zuord(d)+acts()+'</div></div>'});
+  h+='<div class="panel" style="margin:.3rem 0"><div class="sk-l1"><strong>'+d.b+'</strong><span class="badge">'+d.art+'</span><span class="betrag">'+eur(d.betrag)+'</span></div>'+
+  '<div class="sk-l2">'+d.firma+(d.nr?' · Nr. '+d.nr:'')+'</div>'+
+  '<div class="sk-l2">'+tag(d)+' '+zuord(d)+acts()+'</div>'+
+  '<details style="margin-top:.3rem"><summary>Beschreibung</summary><div class="sk-l2" style="margin-top:.2rem">'+d.txt+'</div></details></div>'});
  return h}
 
 // Variante C: kompakte Tabelle mit Filter, Master/Detail rechts (Anzeigen, Korrigieren, Neu)
@@ -331,7 +332,7 @@ function C(){
  return h+'<div class="btn-row"><button class="button success" onclick="zeige(true)">Neue Sonderkosten</button></div></div></div>'}
 
 var S={form:false,sel:null,f:"alle"},V=["A","B","C"],N={A:"Liste, Zwei-Zeilen-Einträge, Maske eigene Seite",B:"nach Monat gruppiert, Maske inline",C:"Tabelle mit Filter, Detail rechts"};
-var cur=(new URLSearchParams(location.search).get("variant")||"A").toUpperCase();if(V.indexOf(cur)<0)cur="A";
+var cur=(new URLSearchParams(location.search).get("variant")||"B").toUpperCase();if(V.indexOf(cur)<0)cur="B";
 function zeige(x){S.form=x;draw()}
 function draw(){document.getElementById("root").innerHTML={A:A,B:B,C:C}[cur]();document.getElementById("vl").textContent=cur+" ("+N[cur]+")";zz()}
 function go(i){cur=V[(V.indexOf(cur)+i+V.length)%V.length];S.form=false;S.sel=null;history.replaceState(null,"","?variant="+cur);draw()}
