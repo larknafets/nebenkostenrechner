@@ -64,6 +64,8 @@ func routen(z *Zugang, version, buildDate string) []route {
 
 		{http.MethodGet, "/sonderkosten", Braucht(store.RechtSonderkostenAnsehen), handleSonderkostenListe(z)},
 		{http.MethodPost, "/sonderkosten", Braucht(store.RechtSonderkostenErfassen), handleSonderkostenSpeichern()},
+		{http.MethodPost, "/sonderkosten/{id}", NurVermieter, handleSonderkostenKorrigieren()},
+		{http.MethodPost, "/sonderkosten/{id}/loeschen", NurVermieter, handleSonderkostenLoeschen()},
 		{http.MethodGet, "/sonderkosten/export.csv", NurVermieter, handleSonderkostenExport()},
 	}
 }

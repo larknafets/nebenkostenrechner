@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -71,6 +72,35 @@ func CreateSonderkosten(db *sql.DB, s Sonderkosten) (int64, error) {
 		return 0, fmt.Errorf("insert sonderkosten: %w", err)
 	}
 	return res.LastInsertId()
+}
+
+// ErrSonderkostenNotFound is returned by Update/DeleteSonderkosten for an unknown id.
+var ErrSonderkostenNotFound = errors.New("sonderkosten not found")
+
+// UpdateSonderkosten replaces every field of the entry s.ID. Like Create it
+// validates nothing. It works in a settled year as well, there is no lock.
+func UpdateSonderkosten(db *sql.DB, s Sonderkosten) error {
+	res, err := db.Exec(
+		`UPDATE sonderkosten SET monat=?, betreff=?, beschreibung=?, art=?, firma=?, rechnungsnummer=?, betrag=?, umsetzung=?, umlegbar=?, logik=? WHERE id=?`,
+		s.Monat, s.Betreff, s.Beschreibung, s.Art, s.Firma, s.Rechnungsnummer, s.Betrag, s.Umsetzung, s.Umlegbar, s.Logik, s.ID,
+	)
+	return sonderkostenGeaendert(res, err, "update")
+}
+
+// DeleteSonderkosten removes the entry id.
+func DeleteSonderkosten(db *sql.DB, id int64) error {
+	res, err := db.Exec(`DELETE FROM sonderkosten WHERE id = ?`, id)
+	return sonderkostenGeaendert(res, err, "delete")
+}
+
+func sonderkostenGeaendert(res sql.Result, err error, was string) error {
+	if err != nil {
+		return fmt.Errorf("%s sonderkosten: %w", was, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrSonderkostenNotFound
+	}
+	return nil
 }
 
 // logikenHaus are the Berechnungslogiken a Haus entry can be split by.
