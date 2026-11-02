@@ -44,6 +44,7 @@ Keep every section, an empty one included. Do not change the headings.
 ## Verbesserungen
 
 - Die Zählerliste einer Ablesung zeigt den Rest von Wohnung 1 für Strom (wenn Netzbezug übrig bleibt) und Wasser.
+- Löschen von Ablesung und Fixkosteneingabe fragt jetzt in einem eigenen Dialog nach statt im Browser-Fenster (#401).
 
 ## Fehlerkorrekturen
 

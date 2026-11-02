@@ -469,8 +469,8 @@ func handleUpdateAblesung() http.HandlerFunc {
 
 // handleDeleteAblesung deletes a period (Ticket #45). Any period is
 // deletable, including the last remaining one - no "closed" (abgeschlossen)
-// status exists in this app; the client-side confirm() dialog is the only
-// safety net (see ablesung.html).
+// status exists in this app; the confirmation overlay (data-bestaetigen in
+// ablesung.html) is the only safety net.
 func handleDeleteAblesung() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())

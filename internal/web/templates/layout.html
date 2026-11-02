@@ -70,6 +70,58 @@
     });
   })();
 </script>
+<div class="fehler-backdrop" id="bestaetigen-overlay" hidden>
+  <div class="fehler-modal" role="alertdialog" aria-modal="true" aria-labelledby="bestaetigen-titel" aria-describedby="bestaetigen-text">
+    <h3 id="bestaetigen-titel"></h3>
+    <div id="bestaetigen-text"></div>
+    <div class="btn-row" style="margin-top:.8rem;justify-content:flex-end">
+      <button type="button" class="secondary" id="bestaetigen-nein">Abbrechen</button>
+      <button type="button" class="danger" id="bestaetigen-ja">Löschen</button>
+    </div>
+  </div>
+</div>
+<script>
+// Bestätigungs-Overlay: Ein Formular mit data-bestaetigen (Frage, weitere
+// Zeilen in data-bestaetigen-zusatz) fragt vor dem Absenden nach, Titel aus
+// data-bestaetigen-titel. Esc und Klick auf den Hintergrund brechen ab, der
+// Fokus liegt auf "Abbrechen". Ohne JavaScript sendet das Formular normal ab.
+// Läuft vor dem Fehler-Overlay, das ein abgebrochenes Submit überspringt.
+(function () {
+  var overlay = document.getElementById("bestaetigen-overlay");
+  var nein = document.getElementById("bestaetigen-nein");
+  var ja = document.getElementById("bestaetigen-ja");
+  var form = null, vorher = null;
+
+  function zu() {
+    overlay.hidden = true;
+    if (vorher) vorher.focus();
+  }
+  nein.addEventListener("click", zu);
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) zu(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !overlay.hidden) zu(); });
+  ja.addEventListener("click", function () {
+    var f = form;
+    overlay.hidden = true;
+    // submit() löst kein submit-Ereignis aus, es gibt also keine zweite Rückfrage.
+    if (f) f.submit();
+  });
+
+  document.addEventListener("submit", function (e) {
+    var f = e.target;
+    if (!f.hasAttribute || !f.hasAttribute("data-bestaetigen")) return;
+    e.preventDefault();
+    form = f;
+    vorher = document.activeElement;
+    document.getElementById("bestaetigen-titel").textContent = f.getAttribute("data-bestaetigen-titel") || "Wirklich löschen?";
+    var text = document.getElementById("bestaetigen-text");
+    text.textContent = "";
+    var zeilen = [f.getAttribute("data-bestaetigen"), f.getAttribute("data-bestaetigen-zusatz")].filter(Boolean);
+    zeilen.forEach(function (z) { var p = document.createElement("p"); p.textContent = z; text.appendChild(p); });
+    overlay.hidden = false;
+    nein.focus();
+  });
+})();
+</script>
 <div class="fehler-backdrop" id="fehler-overlay" hidden>
   <div class="fehler-modal" role="alertdialog" aria-modal="true" aria-labelledby="fehler-titel" aria-describedby="fehler-text">
     <h3 id="fehler-titel">Speichern nicht möglich</h3>

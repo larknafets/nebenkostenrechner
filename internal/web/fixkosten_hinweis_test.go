@@ -90,11 +90,14 @@ func TestFixkostenDetail_OhneBetroffeneAblesungenKeineZusatzBestaetigung(t *test
 		t.Fatal(err)
 	}
 	body := fixkostenDetailHTML(t, db, newZugang("", nil), id)
-	if strings.Contains(body, "unvollständig, bis") {
+	if strings.Contains(body, `data-bestaetigen-zusatz="`) {
 		t.Error("Zusatz-Bestätigung ohne betroffene Ablesungen")
 	}
-	if n := strings.Count(body, "confirm("); n != 1 {
-		t.Errorf("confirm( kommt %d mal vor, want 1", n)
+	if !strings.Contains(body, `data-bestaetigen="Fixkosteneingabe`) {
+		t.Error("Löschen-Rückfrage fehlt")
+	}
+	if strings.Contains(body, "confirm(") {
+		t.Error("Browser-confirm() statt Bestätigungs-Overlay")
 	}
 }
 
