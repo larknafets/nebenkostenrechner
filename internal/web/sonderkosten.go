@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
@@ -39,6 +40,67 @@ func sonderkostenZuordnung(s store.Sonderkosten) string {
 		return "trägt Wohnung 2"
 	}
 	return calc.LogikLabels[s.Logik]
+}
+
+// sonderkostenLogiken are the Berechnungslogiken of a Haus entry, in display order.
+var sonderkostenLogiken = []store.Auswahl{
+	{Wert: store.LogikWohneinheit, Label: calc.LogikLabels[store.LogikWohneinheit]},
+	{Wert: store.LogikFlurstueck, Label: calc.LogikLabels[store.LogikFlurstueck]},
+	{Wert: store.LogikQM, Label: calc.LogikLabels[store.LogikQM]},
+	{Wert: store.LogikPersonen, Label: calc.LogikLabels[store.LogikPersonen]},
+}
+
+// sonderkostenHinweise is the notice under the Umlegbar checkbox of the form,
+// by Art (Wert). Wartung has none. Only a notice, never a block.
+var sonderkostenHinweise = []store.Auswahl{
+	{Wert: store.ArtReparatur, Label: hinweisPraefix("Reparaturen")},
+	{Wert: store.ArtNeuanschaffung, Label: hinweisPraefix("Neuanschaffungen")},
+	{Wert: store.ArtModernisierung, Label: hinweisPraefix("Modernisierungen")},
+	{Wert: store.ArtSonstiges, Label: "Hinweis: Nicht jede sonstige Rechnung ist umlegbar. Bitte vor dem Umlegen prüfen."},
+}
+
+func hinweisPraefix(was string) string {
+	return "Hinweis: " + was + " sind in der Regel keine umlegbaren Betriebskosten. Bitte vor dem Umlegen prüfen."
+}
+
+// handleSonderkostenSpeichern creates one entry from the form. The Logik is
+// dropped unless it applies (the form always sends its hidden select), then
+// store.ValidiereSonderkosten decides.
+func handleSonderkostenSpeichern() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		db := dbFromContext(r.Context())
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "invalid form: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		f := r.PostForm
+		s := store.Sonderkosten{
+			Betreff: strings.TrimSpace(f.Get("betreff")), Beschreibung: strings.TrimSpace(f.Get("beschreibung")),
+			Art: f.Get("art"), Firma: strings.TrimSpace(f.Get("firma")), Rechnungsnummer: strings.TrimSpace(f.Get("rechnungsnummer")),
+			Umsetzung: f.Get("umsetzung"), Umlegbar: f.Get("umlegbar") != "", Logik: f.Get("logik"),
+		}
+		// An unparsable month or amount stays empty/0, the validation reports it.
+		s.Monat, _ = parseFixkostenMonat(f.Get("monat"))
+		s.Betrag, _ = parseDecimalDE(f.Get("betrag"))
+		if s.Umsetzung != store.UmsetzungHaus || !s.Umlegbar {
+			s.Logik = ""
+		}
+		hatEingabe, err := store.MonatHatFixkosteneingabe(db, s.Monat)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		fehler := store.ValidiereSonderkosten(s, hatEingabe)
+		if len(fehler) > 0 {
+			http.Error(w, strings.Join(fehler, "\n"), http.StatusBadRequest)
+			return
+		}
+		if _, err := store.CreateSonderkosten(db, s); err != nil {
+			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, requestBase(r)+"/sonderkosten", http.StatusFound)
+	}
 }
 
 // handleSonderkostenListe shows the Sonderkosten of one year (?jahr=, newest
@@ -124,10 +186,16 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 			Art             string
 			Monate          []sonderkostenMonat
 			HatEintraege    bool
+			NeuMonat        string
+			Umsetzungen     []store.Auswahl
+			Logiken         []store.Auswahl
+			Hinweise        []store.Auswahl
 		}{
 			navData: z.NavData(r), Aktuell: "sonderkosten", Jahr: jahr, JahrZurueck: zurueck, JahrVor: vor,
 			Gesamt: gesamt, Umlegbar: umlegbar, VermieterTraegt: gesamt - umlegbar,
 			Arten: store.SonderkostenArten, Art: art, Monate: monate, HatEintraege: len(alle) > 0,
+			NeuMonat: time.Now().Format("2006-01"), Umsetzungen: store.SonderkostenUmsetzungen,
+			Logiken: sonderkostenLogiken, Hinweise: sonderkostenHinweise,
 		}
 		if err := sonderkostenTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -3,6 +3,8 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"slices"
+	"strings"
 )
 
 // Art values for sonderkosten.art.
@@ -69,6 +71,53 @@ func CreateSonderkosten(db *sql.DB, s Sonderkosten) (int64, error) {
 		return 0, fmt.Errorf("insert sonderkosten: %w", err)
 	}
 	return res.LastInsertId()
+}
+
+// logikenHaus are the Berechnungslogiken a Haus entry can be split by.
+var logikenHaus = []string{LogikWohneinheit, LogikFlurstueck, LogikQM, LogikPersonen}
+
+// ValidiereSonderkosten checks s and returns one German message per
+// violation (empty: valid). hatFixkosteneingabe says whether the
+// Abrechnungsmonat of s has a Fixkosteneingabe, the Personen-Logik needs its
+// Personen. The entry form and the CSV import both call it.
+func ValidiereSonderkosten(s Sonderkosten, hatFixkosteneingabe bool) []string {
+	var fehler []string
+	if !validAbrechnungsmonat(s.Monat) {
+		fehler = append(fehler, "Der Abrechnungsmonat ist ungültig.")
+	}
+	if strings.TrimSpace(s.Betreff) == "" {
+		fehler = append(fehler, "Der Betreff fehlt.")
+	}
+	if !slices.ContainsFunc(SonderkostenArten, func(a Auswahl) bool { return a.Wert == s.Art }) {
+		fehler = append(fehler, "Die Art ist ungültig.")
+	}
+	if !slices.ContainsFunc(SonderkostenUmsetzungen, func(a Auswahl) bool { return a.Wert == s.Umsetzung }) {
+		fehler = append(fehler, "Die Umsetzung ist ungültig.")
+	}
+	if !(s.Betrag > 0) {
+		fehler = append(fehler, "Der Betrag muss größer als 0 sein.")
+	}
+	switch {
+	case s.Umsetzung == UmsetzungHaus && s.Umlegbar:
+		switch {
+		case !slices.Contains(logikenHaus, s.Logik):
+			fehler = append(fehler, "Die Berechnungslogik fehlt oder ist ungültig.")
+		case s.Logik == LogikPersonen && !hatFixkosteneingabe:
+			fehler = append(fehler, "Je Anzahl Personen geht nur, wenn der Abrechnungsmonat eine Fixkosteneingabe hat.")
+		}
+	case s.Logik != "":
+		fehler = append(fehler, "Die Berechnungslogik gibt es nur bei Umsetzung Haus und umlegbar.")
+	}
+	return fehler
+}
+
+// MonatHatFixkosteneingabe reports whether monat ("YYYY-MM-01") has a Fixkosteneingabe.
+func MonatHatFixkosteneingabe(db *sql.DB, monat string) (bool, error) {
+	var n int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM fixkosten_eingaben WHERE monat = ?`, monat).Scan(&n); err != nil {
+		return false, fmt.Errorf("check fixkosteneingabe %s: %w", monat, err)
+	}
+	return n > 0, nil
 }
 
 // AllSonderkosten reads every entry, oldest Abrechnungsmonat first, then id.
