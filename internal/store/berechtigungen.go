@@ -11,16 +11,18 @@ import (
 type Recht string
 
 const (
-	RechtWohnung1          Recht = "wohnung1"
-	RechtWohnung2          Recht = "wohnung2"
-	RechtWaermepumpe       Recht = "waermepumpe"
-	RechtWallboxen         Recht = "wallboxen"
-	RechtPVAnlage          Recht = "pv_anlage"
-	RechtAblesungenAnsehen Recht = "ablesungen_ansehen"
-	RechtAblesungAnlegen   Recht = "ablesung_anlegen"
-	RechtStammdatenAnsehen Recht = "stammdaten_ansehen"
-	RechtFixkostenAnsehen  Recht = "fixkosten_ansehen"
-	RechtMiete             Recht = "miete"
+	RechtWohnung1             Recht = "wohnung1"
+	RechtWohnung2             Recht = "wohnung2"
+	RechtWaermepumpe          Recht = "waermepumpe"
+	RechtWallboxen            Recht = "wallboxen"
+	RechtPVAnlage             Recht = "pv_anlage"
+	RechtAblesungenAnsehen    Recht = "ablesungen_ansehen"
+	RechtAblesungAnlegen      Recht = "ablesung_anlegen"
+	RechtStammdatenAnsehen    Recht = "stammdaten_ansehen"
+	RechtFixkostenAnsehen     Recht = "fixkosten_ansehen"
+	RechtMiete                Recht = "miete"
+	RechtSonderkostenAnsehen  Recht = "sonderkosten_ansehen"
+	RechtSonderkostenErfassen Recht = "sonderkosten_erfassen"
 )
 
 // Rolle is a role whose rights are configurable.
@@ -57,6 +59,8 @@ var Rechte = []RechtInfo{
 	{RechtStammdatenAnsehen, "Stammdaten ansehen (ohne Personenbezug)", true, true},
 	{RechtFixkostenAnsehen, "Fixkosten ansehen", true, true},
 	{RechtMiete, "Miete (Block in der Jahreskarte)", false, false},
+	{RechtSonderkostenAnsehen, "Sonderkosten ansehen", false, false},
+	{RechtSonderkostenErfassen, "Sonderkosten erfassen", false, false},
 }
 
 // wohnungRechte maps an apartment id to the right that shows it, next to the

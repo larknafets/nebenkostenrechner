@@ -1,0 +1,43 @@
+{{define "content"}}
+<h1>Sonderkosten</h1>
+{{template "nav" .}}
+
+<div class="jahr-kopf">
+<h2>Sonderkosten {{.Jahr}}</h2>
+{{if or .JahrZurueck .JahrVor}}<span class="jahr-nav">
+  {{if .JahrZurueck}}<a href="{{.JahrZurueck}}" title="Vorjahr" aria-label="Vorjahr">‹</a>{{else}}<span class="aus" aria-hidden="true">‹</span>{{end}}
+  {{if .JahrVor}}<a href="{{.JahrVor}}" title="Folgejahr" aria-label="Folgejahr">›</a>{{else}}<span class="aus" aria-hidden="true">›</span>{{end}}
+</span>{{end}}
+</div>
+
+<div class="grid grid-3">
+  <div class="panel stat-card"><div class="muted">Gesamt {{.Jahr}}</div><div class="stat-value">{{deEUR .Gesamt}}&nbsp;€</div></div>
+  <div class="panel stat-card"><div class="muted">davon umlegbar</div><div class="stat-value">{{deEUR .Umlegbar}}&nbsp;€</div></div>
+  <div class="panel stat-card"><div class="muted">trägt Vermieter:in</div><div class="stat-value">{{deEUR .VermieterTraegt}}&nbsp;€</div></div>
+</div>
+
+{{if not .HatEintraege}}
+<p class="muted" style="margin-top:1rem">Noch keine Sonderkosten erfasst.</p>
+{{else}}
+<form method="get" class="field" style="max-width:14rem;margin-top:1rem">
+  <label for="art">Art</label>
+  <select id="art" name="art" onchange="this.form.submit()">
+    <option value="">Alle Arten</option>
+    {{range .Arten}}<option value="{{.Wert}}"{{if eq .Wert $.Art}} selected{{end}}>{{.Label}}</option>{{end}}
+  </select>
+  <input type="hidden" name="jahr" value="{{.Jahr}}">
+</form>
+{{if not .Monate}}<p class="muted">Keine Sonderkosten dieser Art.</p>{{end}}
+{{range .Monate}}
+<div class="sk-monat"><strong>{{.Label}}</strong><span class="muted">umlegbar {{deEUR .Umlegbar}}&nbsp;€</span></div>
+{{range .Karten}}
+<div class="panel sk-karte">
+  <div class="sk-zeile1"><strong>{{.Betreff}}</strong><span class="badge">{{.Art}}</span><span class="sk-betrag">{{deEUR .Betrag}}&nbsp;€</span></div>
+  <div class="muted">{{.Firma}}{{if .Rechnungsnummer}} · Nr. {{.Rechnungsnummer}}{{end}}</div>
+  <div class="muted">{{if .Umlegbar}}umlegbar{{else}}nicht umlegbar{{end}} · {{.Zuordnung}}</div>
+  {{if .Beschreibung}}<details><summary class="muted">Beschreibung</summary><div class="muted" style="white-space:pre-line">{{.Beschreibung}}</div></details>{{end}}
+</div>
+{{end}}
+{{end}}
+{{end}}
+{{end}}

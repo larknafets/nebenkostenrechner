@@ -12,16 +12,18 @@ func TestGetBerechtigungen_Defaults(t *testing.T) {
 	}
 	// Written out from the decision, not from Rechte.
 	want := map[Recht][2]bool{ // {nicht angemeldet, mieter}
-		RechtWohnung1:          {false, false},
-		RechtWohnung2:          {true, true},
-		RechtWaermepumpe:       {true, true},
-		RechtWallboxen:         {false, false},
-		RechtPVAnlage:          {false, false},
-		RechtAblesungenAnsehen: {true, true},
-		RechtAblesungAnlegen:   {true, true},
-		RechtStammdatenAnsehen: {true, true},
-		RechtFixkostenAnsehen:  {true, true},
-		RechtMiete:             {false, false},
+		RechtWohnung1:             {false, false},
+		RechtWohnung2:             {true, true},
+		RechtWaermepumpe:          {true, true},
+		RechtWallboxen:            {false, false},
+		RechtPVAnlage:             {false, false},
+		RechtAblesungenAnsehen:    {true, true},
+		RechtAblesungAnlegen:      {true, true},
+		RechtStammdatenAnsehen:    {true, true},
+		RechtFixkostenAnsehen:     {true, true},
+		RechtMiete:                {false, false},
+		RechtSonderkostenAnsehen:  {false, false},
+		RechtSonderkostenErfassen: {false, false},
 	}
 	if len(Rechte) != len(want) {
 		t.Fatalf("%d Rechte, want %d", len(Rechte), len(want))
