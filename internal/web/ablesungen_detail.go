@@ -55,6 +55,9 @@ type meterZeile struct {
 	// NichtBerechenbar: the Stand exists, but the consumption can't be
 	// computed because the previous reading lacks it.
 	NichtBerechenbar bool
+	// Abgeleitet: Wohnung 1 has no meter, this row shows its remainder
+	// (italic), only Diff is set.
+	Abgeleitet bool
 }
 
 // formatMeterDiff renders one meter's absolute change since the previous
@@ -144,6 +147,12 @@ func handleAblesungDetail(z *Zugang) http.HandlerFunc {
 				}
 			}
 			meters = append(meters, entry)
+			if len(vorperiode) == 0 {
+				continue
+			}
+			if z := wohnung1RestZeile(m.Key, m.Unit, period.Readings, vorperiode[0].Readings); z != nil {
+				meters = append(meters, *z)
+			}
 		}
 
 		v := calc.KostenAus(ds)
@@ -290,4 +299,43 @@ func pvGedeckt(s *calc.StromErgebnis) float64 {
 		return 0
 	}
 	return s.PVGedecktKWh()
+}
+
+// wohnung1RestZeile is the italic remainder row of apartment 1, which has no
+// meter: it follows the last meter of the Strom group (key) or the Wasser
+// group, so a new meter at the end of a group in meterDisplayOrder moves the
+// anchor (TestWohnung1RestZeile_AnkerLetzterZaehler). nil when the row does not apply: Strom only while the grid draw
+// leaves a remainder (otherwise PV covered it and the amount is unknown),
+// and only when every consumption it depends on is recorded in both readings.
+func wohnung1RestZeile(key, unit string, cur, vor map[string]float64) *meterZeile {
+	var label string
+	var rest float64
+	switch key {
+	case store.MeterKeyWallboxWohnung2:
+		verbrauch := make(map[string]float64, len(store.MeterKeys))
+		for _, k := range store.MeterKeys {
+			v, ok := store.Verbrauch(cur, vor, k)
+			if !ok {
+				return nil
+			}
+			verbrauch[k] = v
+		}
+		if rest = calc.StromZuteilung(verbrauch).W1RestKWh; rest <= 0 {
+			return nil
+		}
+		label = "Strom Wohnung 1 (Rest)"
+	case "wasser_warmwasseraufbereitung":
+		verbrauch := make(map[string]float64, 3)
+		for _, k := range []string{"wasser_gesamt", "wasser_wohnung2", key} {
+			v, ok := store.Verbrauch(cur, vor, k)
+			if !ok {
+				return nil
+			}
+			verbrauch[k] = v
+		}
+		rest, label = calc.WasserRestW1(verbrauch), "Wasser Wohnung 1 (Rest)"
+	default:
+		return nil
+	}
+	return &meterZeile{Label: label, Unit: unit, Diff: formatMeterDiff(rest, 0), Abgeleitet: true}
 }
