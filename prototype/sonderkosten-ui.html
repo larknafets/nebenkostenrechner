@@ -267,6 +267,8 @@ details summary{cursor:pointer;opacity:.8;font-size:.85rem}
 <p class="muted">Dashboard · Ablesungen · Fixkosten · <strong>Sonderkosten</strong> · Stammdaten · Abrechnung · Wie wird gerechnet?</p>
 <div id="root"></div>
 </div>
+<div class="fehler-backdrop" id="ov" hidden><div class="fehler-modal" role="alertdialog" aria-modal="true">
+<h3 id="ov-t"></h3><div id="ov-x"></div><div class="btn-row" id="ov-b" style="margin-top:.8rem;justify-content:flex-end"></div></div></div>
 <div class="proto-bar"><button id="prev">‹</button><span id="vl"></span><button id="next">›</button></div>
 <script>
 // PROTOTYPE: Beispieldaten, nichts wird gespeichert.
@@ -341,8 +343,18 @@ function C(){
 var S={edit:null,msg:null,form:false,sel:null,f:"alle"},V=["A","B","C"],N={A:"Liste, Zwei-Zeilen-Einträge, Maske eigene Seite",B:"nach Monat gruppiert, Maske inline",C:"Tabelle mit Filter, Detail rechts"};
 var cur=(new URLSearchParams(location.search).get("variant")||"B").toUpperCase();if(V.indexOf(cur)<0)cur="B";
 function zeige(x){S.form=x;S.edit=null;draw()}
-function speichern(){var m=S.edit?"Änderung gespeichert (im Prototyp nicht wirklich).":"Gespeichert (im Prototyp nicht wirklich).";S.form=false;S.edit=null;S.msg=m;draw()}
-function loesche(id){var d=D.filter(function(x){return x.id===id})[0];if(confirm('Sonderkosten "'+d.b+'" ('+ml(d.m)+') wirklich löschen?'+(d.umleg?'\n\nDie Kosten sind umlegbar und fließen in Saldo und Abrechnung ein. Mit dem Löschen ändern sie sich.':''))){D=D.filter(function(x){return x.id!==id});S.msg='Sonderkosten "'+d.b+'" gelöscht.';draw()}}
+function speichern(){var f=document.querySelector("form.panel:not(:has(input[type=file]))"),fehl=[];
+ if(f){var t=f.querySelectorAll("input[type=text]"),n=f.querySelector("input[type=number]");if(!t[0].value.trim())fehl.push("Betreff fehlt.");if(!t[1].value.trim())fehl.push("Firma fehlt.");if(!(parseFloat(n.value)>0))fehl.push("Betrag muss größer als 0 sein.")}
+ if(fehl.length){ov("Speichern nicht möglich",fehl,[["Verstanden","primary"]]);return}
+ var m=S.edit?"Änderung gespeichert (im Prototyp nicht wirklich).":"Gespeichert (im Prototyp nicht wirklich).";S.form=false;S.edit=null;S.msg=m;draw()}
+function ov(titel,zeilen,knoepfe){var o=document.getElementById("ov");document.getElementById("ov-t").textContent=titel;
+ var x=document.getElementById("ov-x");x.textContent="";if(zeilen.length>1){var ul=document.createElement("ul");zeilen.forEach(function(z){var li=document.createElement("li");li.textContent=z;ul.appendChild(li)});x.appendChild(ul)}else x.textContent=zeilen[0]||"";
+ var b=document.getElementById("ov-b");b.textContent="";knoepfe.forEach(function(k){var e=document.createElement("button");e.type="button";e.className=k[1];e.textContent=k[0];e.onclick=function(){o.hidden=true;if(k[2])k[2]()};b.appendChild(e)});
+ o.hidden=false;b.lastChild.focus()}
+document.addEventListener("keydown",function(e){if(e.key==="Escape")document.getElementById("ov").hidden=true});
+function loesche(id){var d=D.filter(function(x){return x.id===id})[0];
+ ov("Sonderkosten löschen?",['"'+d.b+'" ('+ml(d.m)+', '+eur(d.betrag)+') wirklich löschen?'].concat(d.umleg?["Die Kosten sind umlegbar und fließen in Saldo und Abrechnung ein. Mit dem Löschen ändern sie sich."]:[]),
+  [["Abbrechen","secondary"],["Löschen","danger",function(){D=D.filter(function(x){return x.id!==id});S.msg='Sonderkosten "'+d.b+'" gelöscht.';draw()}]])}
 function draw(){var keep=S.msg;document.getElementById("root").innerHTML={A:A,B:B,C:C}[cur]();document.getElementById("vl").textContent=cur+" ("+N[cur]+")";zz();if(keep===S.msg)S.msg=null}
 function go(i){cur=V[(V.indexOf(cur)+i+V.length)%V.length];S.form=false;S.sel=null;history.replaceState(null,"","?variant="+cur);draw()}
 document.getElementById("prev").onclick=function(){go(-1)};document.getElementById("next").onclick=function(){go(1)};
