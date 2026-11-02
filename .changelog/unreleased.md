@@ -41,12 +41,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
-- Neue Seite "Sonderkosten" (zwischen Fixkosten und Stammdaten) mit Jahressummen, Liste nach Abrechnungsmonat und Artfilter. Sichtbar mit dem neuen Recht "Sonderkosten ansehen", standardmäßig nur für Vermieter:in (#411, #408, #404, #409).
-- Neue Seite "Sonderkosten" (zwischen Fixkosten und Stammdaten) mit Jahressummen, Liste nach Abrechnungsmonat und Artfilter. Sichtbar mit dem neuen Recht "Sonderkosten ansehen", standardmäßig nur für Vermieter:in (#411, #406).
+- Neue Seite "Sonderkosten": Rechnungen erfassen, korrigieren und löschen, nach Abrechnungsmonat gruppiert mit Jahressummen und Artfilter, als CSV exportieren und importieren. Umlegbare Sonderkosten gehen in Monatssumme, Saldo und Dashboard ein. Sichtbar mit den neuen Rechten "Sonderkosten ansehen" und "Sonderkosten erfassen", standardmäßig nur für Vermieter:in (#411, #408, #404, #405, #406, #409).
 
-- Neue Seite "Sonderkosten" (zwischen Fixkosten und Stammdaten) mit Jahressummen, Liste nach Abrechnungsmonat und Artfilter. Sichtbar mit dem neuen Recht "Sonderkosten ansehen", standardmäßig nur für Vermieter:in (#411, #408, #404, #405).
-- Neue Seite "Sonderkosten" (zwischen Fixkosten und Stammdaten) mit Jahressummen, Liste nach Abrechnungsmonat und Artfilter. Sichtbar mit dem neuen Recht "Sonderkosten ansehen", standardmäßig nur für Vermieter:in (#411, #406).
-- Neue Seite "Sonderkosten" (zwischen Fixkosten und Stammdaten) mit Jahressummen, Liste nach Abrechnungsmonat und Artfilter. Sichtbar mit dem neuen Recht "Sonderkosten ansehen", 
 ## Verbesserungen
 
 - Die Zählerliste einer Ablesung zeigt den Rest von Wohnung 1 für Strom (wenn Netzbezug übrig bleibt) und Wasser.
