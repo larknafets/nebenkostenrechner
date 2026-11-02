@@ -101,7 +101,18 @@ func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, []calc.OffenerM
 		fixkostenEingaben[len(ds.Eingaben)-1-i] = store.FixkostenEingabeSummary{ID: e.ID, Monat: e.Monat}
 	}
 
-	if len(allPeriods) == 0 && len(fixkostenEingaben) == 0 {
+	reihe := calc.FixkostenreiheAus(ds)
+	sonderkosten := map[int64][]calc.MonatsSonderkosten{}
+	var skMonate []string
+	for _, a := range apartments {
+		sonderkosten[a.ID] = calc.SonderkostenMonate(ds.Sonderkosten, apartments, reihe, a.ID)
+		for _, s := range sonderkosten[a.ID] {
+			skMonate = append(skMonate, s.Monat)
+		}
+	}
+	skMonate = monateImJahr(skMonate, 0)
+
+	if len(allPeriods) == 0 && len(fixkostenEingaben) == 0 && len(skMonate) == 0 {
 		return dashboardData{Apartments: apartments}, miete, nil, nil
 	}
 
@@ -116,15 +127,16 @@ func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, []calc.OffenerM
 		periodenKosten = append(periodenKosten, periodKosten{ReadingDate: a.Period.ReadingDate, Monat: a.Period.Monat, K: a.Kosten})
 	}
 
-	reihe := calc.FixkostenreiheAus(ds)
 	fixkostenListe := alleFixkostenKosten(reihe)
-	sonderkosten := map[int64][]calc.MonatsSonderkosten{}
-	for _, a := range apartments {
-		sonderkosten[a.ID] = calc.SonderkostenMonate(ds.Sonderkosten, apartments, reihe, a.ID)
-	}
 
 	jahr := anzeigeJahr(allPeriods, fixkostenEingaben)
-	var monate []string
+	// A month with only Sonderkosten counts like one with a reading (#413).
+	if len(skMonate) > 0 {
+		if y, ok := store.Abrechnungsmonat(skMonate[0]).Jahr(); ok && (y > jahr || len(allPeriods)+len(fixkostenEingaben) == 0) {
+			jahr = y
+		}
+	}
+	monate := slices.Clone(skMonate)
 	for _, p := range allPeriods {
 		monate = append(monate, p.Monat)
 	}

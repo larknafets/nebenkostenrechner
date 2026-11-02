@@ -98,3 +98,52 @@ func TestDashboard_SonderkostenPersonenOhneEingabeWirktNirgends(t *testing.T) {
 		}
 	}
 }
+
+// A month with only Sonderkosten, newer than every Ablesung and Fixkosten-
+// eingabe, is reachable: its year by the year arrows, its month in the Bis
+// selection (#413). Entries that are not umlegbar or not calculable add no month.
+func TestDashboard_NurSonderkostenMonatIstErreichbar(t *testing.T) {
+	db := openTestDB(t)
+	for i, monat := range []string{"2026-10-01", "2026-11-01"} {
+		in := seedPeriodInputAt(monat)
+		in.Readings["strom_gesamt"] = float64(100 * i)
+		if _, err := createPeriod(db, in); err != nil {
+			t.Fatalf("createPeriod %s: %v", monat, err)
+		}
+	}
+	for _, s := range []store.Sonderkosten{
+		{Monat: "2027-02-01", Betreff: "Dach", Art: store.ArtReparatur, Betrag: 40, Umsetzung: store.UmsetzungWohnung2, Umlegbar: true},
+		{Monat: "2027-03-01", Betreff: "Eigene", Art: store.ArtSonstiges, Betrag: 40, Umsetzung: store.UmsetzungWohnung2},
+		{Monat: "2027-04-01", Betreff: "Personen", Art: store.ArtSonstiges, Betrag: 40, Umsetzung: store.UmsetzungHaus, Umlegbar: true, Logik: store.LogikPersonen},
+	} {
+		if _, err := store.CreateSonderkosten(db, s); err != nil {
+			t.Fatalf("CreateSonderkosten: %v", err)
+		}
+	}
+	dd := mustLoadDashboard(t, db)
+	if dd.Jahr != 2027 || dd.NeuesJahr != 2027 || len(dd.BisMonate) != 1 || dd.BisMonate[0] != "2027-02-01" {
+		t.Errorf("Jahr %d, BisMonate %v, want 2027 mit [2027-02-01]", dd.Jahr, dd.BisMonate)
+	}
+	if zurueck, vor := jahrLinks(dd); zurueck != "?jahr=2026" || vor != "" {
+		t.Errorf("jahrLinks = %q, %q, want ?jahr=2026 und leer", zurueck, vor)
+	}
+}
+
+// Without any Ablesung and Fixkosteneingabe the Dashboard still shows the
+// umlegbare Sonderkosten (#413).
+func TestDashboard_NurSonderkostenOhneAblesungUndFixkosten(t *testing.T) {
+	db := openTestDB(t)
+	if _, err := store.CreateSonderkosten(db, store.Sonderkosten{Monat: "2026-05-01", Betreff: "Dach", Art: store.ArtReparatur, Betrag: 123, Umsetzung: store.UmsetzungWohnung2, Umlegbar: true}); err != nil {
+		t.Fatalf("CreateSonderkosten: %v", err)
+	}
+	card, verlauf := buildEntityView(mustLoadDashboard(t, db), nil, 2)
+	if card.FixkostenEUR != 123 || card.Saldo.Wert() != -123 {
+		t.Errorf("Jahreskarte Fixkosten %v, Saldo %v, want 123 und -123", card.FixkostenEUR, card.Saldo.Wert())
+	}
+	if m := verlaufMonat(t, verlauf, "Mai 2026"); m.FixkostenGesamt != 123 {
+		t.Errorf("Verlauf Mai = %+v, want 123 €", m)
+	}
+	if body := dashboardHTML(t, db); !strings.Contains(body, formatEuroDE(123)) {
+		t.Error("Dashboard zeigt die Sonderkosten nicht")
+	}
+}
