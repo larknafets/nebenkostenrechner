@@ -186,6 +186,14 @@ Eine der festen Positionen (Grundsteuer, Wohngebäudeversicherung, Deichbeiträg
 Die Regel, nach der eine Kostenposition auf Wohnung 1/2 aufgeteilt wird: Je Wohneinheit (50/50), Je anteiliges Flurstück, Je anteilige Wohnungsgröße, Je Anzahl Personen (aus derselben Fixkosteneingabe), oder vollständig Wohnung 1 bzw. Wohnung 2 (100/0).
 _Avoid_: Verteilungsschlüssel, Split (das ist die Heizungs-Gewichtung, ein anderer Begriff)
 
+**Sonderkosten**:
+Eine Rechnung, die in keine **Kostenposition** und keine **Ablesung** passt (defekte Heizungspumpe, neue Spülmaschine, Zaun), als Eintrag auf der Seite "Sonderkosten": Abrechnungsmonat, Betreff, Kurzbeschreibung, Art, Firma, optionale Rechnungsnummer, Betrag (brutto), **Umsetzung** und das Häkchen **umlegbar**. Der Betrag fällt voll in den Abrechnungsmonat, er wird nicht durch 12 geteilt. Sonderkosten sind ein eigener Posten statt einer Pseudo-Kostenposition: Die Kostenpositionen bleiben die feste Liste, siehe ADR 0005.
+Umlegbar: Nur Einträge mit Häkchen wirken wie eine weitere Zeile bei den Fixkosten ihres Abrechnungsmonats (Monatssumme, Jahreskarten, Saldo, Jahresabrechnung); die Vermieter:in trägt alle anderen, sie stehen nur in der Sonderkosten-Übersicht. Das Häkchen entscheidet allein, der **Wohnungsstatus** nicht (wie bei **Umlagefähig**), und es ist je Eintrag gesetzt, nicht je Art.
+Umsetzung: Haus, Wohnung 1 oder Wohnung 2. Wohnung 1 und Wohnung 2 legen den ganzen Betrag auf diese Wohnung. Haus teilt ihn nach einer **Berechnungslogik** (Je Wohneinheit, Je anteiliges Flurstück, Je anteilige Wohnungsgröße oder Je Anzahl Personen), je Anzahl Personen nur, wenn der Abrechnungsmonat eine **Fixkosteneingabe** hat, sonst ist der Eintrag noch nicht berechenbar und zählt nirgends.
+In der Jahresabrechnung steht eine Zeile "Sonderkosten" in der Kostenübersicht und die **Anlage** 8 mit allen Einträgen der abgerechneten Wohnung. "Gesamt" der Zeile ist die Summe der Rechnungsbeträge genau dieser Einträge, nicht aller Sonderkosten des Hauses.
+Zugriff über die zwei **Rechte** "Sonderkosten ansehen" und "Sonderkosten erfassen" (neu anlegen), beide standardmäßig aus. Korrigieren, Löschen und der CSV-Export und -Import (Import nur, solange noch keine Sonderkosten existieren) sind den Vermieter:innen fest vorbehalten.
+_Avoid_: Sonderposten, Einmalkosten, Sonder-Kostenposition (Sonderkosten sind keine **Kostenposition**: keine feste Struktur, kein Typ, kein Jahreswert, kein Umlagefähig-Flag in den Stammdaten)
+
 **Typ (jährlich/monatlich)**:
 Ob eine Kostenposition in dieser Eingabe einen Jahreswert hat, der für die Monatsanzeige automatisch durch 12 geteilt wird ("jährlich"), oder ob ihr Wert direkt der Monatsbetrag ist ("monatlich").
 
