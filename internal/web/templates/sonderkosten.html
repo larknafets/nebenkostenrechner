@@ -60,7 +60,7 @@
   <div class="sk-ansicht">
   <div class="sk-zeile1"><strong>{{.Betreff}}</strong><span class="badge">{{.Art}}</span><span class="sk-betrag">{{deEUR .Betrag}}&nbsp;€</span></div>
   <div class="muted">{{.Firma}}{{if .Rechnungsnummer}} · Nr. {{.Rechnungsnummer}}{{end}}</div>
-  <div class="muted">{{if .Umlegbar}}umlegbar{{else}}nicht umlegbar{{end}} · {{.Zuordnung}}</div>
+  <div class="muted">{{if .Umlegbar}}umlegbar{{else}}nicht umlegbar{{end}} · {{.Zuordnung}}{{if .NichtBerechenbar}} <span class="badge badge-warning">nicht berechenbar, Fixkosteneingabe fehlt</span>{{end}}</div>
   {{if .Beschreibung}}<details><summary class="muted">Beschreibung</summary><div class="muted" style="white-space:pre-line">{{.Beschreibung}}</div></details>{{end}}
   {{if $.Vermieter}}<div class="btn-row" style="justify-content:flex-start">
     <button type="button" class="secondary" data-sk-korrigieren>Korrigieren</button>

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"database/sql"
 	"errors"
 	"net/http"
 	"slices"
@@ -24,6 +25,9 @@ type sonderkostenKarte struct {
 	Maske sonderkostenMaske
 	// LoeschenZusatz is the extra line of the delete overlay, only for umlegbar entries.
 	LoeschenZusatz string
+	// NichtBerechenbar: "Je Anzahl Personen" in a month without a
+	// Fixkosteneingabe, the entry counts nowhere until one exists.
+	NichtBerechenbar bool
 }
 
 // sonderkostenMaske is the data of the shared form fields ("sk-felder"):
@@ -130,7 +134,9 @@ func handleSonderkostenSpeichern() http.HandlerFunc {
 			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		http.Redirect(w, r, requestBase(r)+"/sonderkosten", http.StatusFound)
+		// Show the year of the new entry, it may not be the current one.
+		jahr, _ := store.Abrechnungsmonat(s.Monat).Jahr()
+		http.Redirect(w, r, requestBase(r)+"/sonderkosten?jahr="+strconv.Itoa(jahr), http.StatusFound)
 	}
 }
 
@@ -182,9 +188,9 @@ func handleSonderkostenLoeschen() http.HandlerFunc {
 	}
 }
 
-// handleSonderkostenListe shows the Sonderkosten of one year (?jahr=, newest
-// by default), grouped by Abrechnungsmonat. ?art= filters the list only, the
-// three sums always cover the whole year.
+// handleSonderkostenListe shows the Sonderkosten of one year (?jahr=, the
+// current year by default, "alle" for every year), grouped by
+// Abrechnungsmonat. ?jahr= and ?art= filter the list and the three sums alike.
 func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		alle, err := store.AllSonderkosten(dbFromContext(r.Context()))
@@ -247,7 +253,8 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 			m.Karten = append(m.Karten, sonderkostenKarte{
 				Betreff: s.Betreff, Beschreibung: s.Beschreibung, Art: sonderkostenArtLabel(s.Art), Firma: s.Firma,
 				Rechnungsnummer: s.Rechnungsnummer, Betrag: s.Betrag, Umlegbar: s.Umlegbar, Zuordnung: sonderkostenZuordnung(s),
-				ID: s.ID, Maske: neueMaske("sk-"+strconv.FormatInt(s.ID, 10), s, s.Monat[:7], formatDecimalDE2(s.Betrag)),
+				NichtBerechenbar: s.Umlegbar && s.Logik == store.LogikPersonen && !slices.Contains(fixMonate, s.Monat[:7]),
+				ID:               s.ID, Maske: neueMaske("sk-"+strconv.FormatInt(s.ID, 10), s, s.Monat[:7], formatDecimalDE2(s.Betrag)),
 			})
 			if s.Umlegbar {
 				m.Karten[len(m.Karten)-1].LoeschenZusatz = "Saldo und Abrechnung ändern sich."
@@ -283,4 +290,27 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
+}
+
+// sonderkostenLoeschenFrage is the extra line when a Fixkosteneingabe is
+// deleted: the Sonderkosten of its month with "Je Anzahl Personen" need it and
+// count nowhere without it. "" when none is affected or the read fails.
+func sonderkostenLoeschenFrage(db *sql.DB, monat string) string {
+	alle, err := store.AllSonderkosten(db)
+	if err != nil {
+		return ""
+	}
+	n := 0
+	for _, s := range alle {
+		if s.Monat == monat && s.Umlegbar && s.Logik == store.LogikPersonen {
+			n++
+		}
+	}
+	switch n {
+	case 0:
+		return ""
+	case 1:
+		return "Dann zählt 1 Sonderkosten-Eintrag mit \"Je Anzahl Personen\" für " + store.MonatLabel(monat) + " nicht mehr, bis die Fixkosteneingabe neu erfasst ist."
+	}
+	return "Dann zählen " + strconv.Itoa(n) + " Sonderkosten-Einträge mit \"Je Anzahl Personen\" für " + store.MonatLabel(monat) + " nicht mehr, bis die Fixkosteneingabe neu erfasst ist."
 }

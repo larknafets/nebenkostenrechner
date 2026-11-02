@@ -1,6 +1,7 @@
 package store
 
 import (
+	"math"
 	"strings"
 	"testing"
 )
@@ -22,6 +23,9 @@ func TestValidiereSonderkosten(t *testing.T) {
 		{"gültig", func(*Sonderkosten) {}, false, ""},
 		{"Betrag 0", func(s *Sonderkosten) { s.Betrag = 0 }, false, "Betrag"},
 		{"Betrag negativ", func(s *Sonderkosten) { s.Betrag = -5 }, false, "Betrag"},
+		{"Betrag unendlich", func(s *Sonderkosten) { s.Betrag = math.Inf(1) }, false, "Betrag"},
+		{"Betrag mit Bruchteil eines Cents", func(s *Sonderkosten) { s.Betrag = 10.005 }, false, "Betrag"},
+		{"Betrag in ganzen Cent", func(s *Sonderkosten) { s.Betrag = 1234.5 }, false, ""},
 		{"Betreff leer", func(s *Sonderkosten) { s.Betreff = " " }, false, "Betreff"},
 		{"Monat kein Monatserster", func(s *Sonderkosten) { s.Monat = "2026-10-15" }, false, "Abrechnungsmonat"},
 		{"Art unbekannt", func(s *Sonderkosten) { s.Art = "luxus" }, false, "Art"},

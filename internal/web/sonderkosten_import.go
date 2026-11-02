@@ -56,8 +56,8 @@ func parseSonderkostenImportRow(db *sql.DB, record []string, colIdx map[string]i
 		return sonderkostenImportRow{}, fmt.Errorf("Zeile %d: %s", line, msg)
 	}
 	s := store.Sonderkosten{
-		Monat: cell("monat"), Betreff: cell("betreff"), Beschreibung: cell("beschreibung"),
-		Firma: cell("firma"), Rechnungsnummer: cell("rechnungsnummer"), Logik: cell("logik"),
+		Monat: cell("monat"), Betreff: csvTextLesen(cell("betreff")), Beschreibung: csvTextLesen(cell("beschreibung")),
+		Firma: csvTextLesen(cell("firma")), Rechnungsnummer: csvTextLesen(cell("rechnungsnummer")), Logik: cell("logik"),
 	}
 	var ok bool
 	if s.Art, ok = sonderkostenArtSchluessel(cell("art")); !ok {

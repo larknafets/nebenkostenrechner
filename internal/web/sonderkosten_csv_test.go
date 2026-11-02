@@ -69,3 +69,23 @@ func TestSonderkostenCsv_BezeichnungenRoundtrip(t *testing.T) {
 		t.Error("unbekannte Art wird akzeptiert")
 	}
 }
+
+// A free text that would run as a spreadsheet formula gets a leading ' in the
+// export, the import takes it off again.
+func TestSonderkostenCsv_FormelTextWirdEntschaerft(t *testing.T) {
+	for _, text := range []string{"=HYPERLINK(\"http://x\")", "+1", "-1", "@SUM(A1)"} {
+		row := formatSonderkostenCSVRow(store.Sonderkosten{Betreff: text, Art: store.ArtReparatur, Umsetzung: store.UmsetzungHaus, Betrag: 1})
+		if row[1] != "'"+text {
+			t.Errorf("Betreff %q wird als %q exportiert", text, row[1])
+		}
+		if got := csvTextLesen(row[1]); got != text {
+			t.Errorf("Import von %q ergibt %q, want %q", row[1], got, text)
+		}
+	}
+	if got := csvText("Heizungspumpe"); got != "Heizungspumpe" {
+		t.Errorf("normaler Text verändert: %q", got)
+	}
+	if got := csvTextLesen("'normal"); got != "'normal" {
+		t.Errorf("ein Apostroph am Anfang eines normalen Texts wird entfernt: %q", got)
+	}
+}

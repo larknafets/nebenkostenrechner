@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 	"slices"
+	"strings"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
@@ -46,6 +47,25 @@ func sonderkostenUmsetzungSchluessel(label string) (string, bool) {
 	return auswahlSchluessel(store.SonderkostenUmsetzungen, label)
 }
 
+// csvText defuses a free text for spreadsheets: a text that starts with = + - @
+// or a control character would run as a formula, so it gets a leading '.
+// csvTextLesen undoes it on import.
+func csvText(s string) string {
+	if s != "" && strings.ContainsRune("=+-@\t\r", rune(s[0])) {
+		return "'" + s
+	}
+	return s
+}
+
+// csvTextLesen is the reverse of csvText: it strips the ' that csvText put in
+// front of a text starting with = + - @ or a control character.
+func csvTextLesen(s string) string {
+	if len(s) > 1 && s[0] == '\'' && strings.ContainsRune("=+-@\t\r", rune(s[1])) {
+		return s[1:]
+	}
+	return s
+}
+
 // formatSonderkostenCSVRow renders one entry in sonderkostenCsvHeader order.
 func formatSonderkostenCSVRow(s store.Sonderkosten) []string {
 	umlegbar := "0"
@@ -53,7 +73,7 @@ func formatSonderkostenCSVRow(s store.Sonderkosten) []string {
 		umlegbar = "1"
 	}
 	return []string{
-		s.Monat, s.Betreff, s.Beschreibung, sonderkostenArtLabel(s.Art), s.Firma, s.Rechnungsnummer,
+		s.Monat, csvText(s.Betreff), csvText(s.Beschreibung), sonderkostenArtLabel(s.Art), csvText(s.Firma), csvText(s.Rechnungsnummer),
 		formatDecimalDE(s.Betrag), sonderkostenUmsetzungLabel(s.Umsetzung), umlegbar, s.Logik,
 	}
 }

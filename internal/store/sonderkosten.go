@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"slices"
 	"strings"
 )
@@ -131,8 +132,10 @@ func ValidiereSonderkosten(s Sonderkosten, hatFixkosteneingabe bool) []string {
 	if !slices.ContainsFunc(SonderkostenUmsetzungen, func(a Auswahl) bool { return a.Wert == s.Umsetzung }) {
 		fehler = append(fehler, "Die Umsetzung ist ungültig.")
 	}
-	if !(s.Betrag > 0) {
-		fehler = append(fehler, "Der Betrag muss größer als 0 sein.")
+	// Finite and whole cents: Inf passes "> 0", and a fraction of a cent breaks
+	// the exact split of the Betrag onto both apartments.
+	if !(s.Betrag > 0) || math.IsInf(s.Betrag, 0) || s.Betrag != math.Round(s.Betrag*100)/100 {
+		fehler = append(fehler, "Der Betrag muss größer als 0 sein und höchstens zwei Nachkommastellen haben.")
 	}
 	switch {
 	case s.Umsetzung == UmsetzungHaus && s.Umlegbar:
