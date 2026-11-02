@@ -34,7 +34,8 @@
     <thead><tr><th>Zähler</th><th>Stand</th></tr></thead>
     <tbody>
       {{range .Meters}}
-      <tr><td{{if .Eingerueckt}} style="padding-left:1.5rem"{{end}}>{{.Label}}</td><td>{{if .Erfasst}}{{de3 .Value}}&nbsp;{{.Unit}}{{if .Diff}} ({{.Diff}}&nbsp;{{.Unit}}){{else if .NichtBerechenbar}} <span class="muted">(nicht berechenbar)</span>{{end}}{{else if .Optional}}<span class="muted">nicht erfasst</span>{{else}}<span class="text-warning">noch offen</span>{{end}}</td></tr>
+      {{if .Abgeleitet}}<tr><td><em>{{.Label}}</em></td><td><em>({{.Diff}}&nbsp;{{.Unit}})</em></td></tr>{{else}}
+      <tr><td{{if .Eingerueckt}} style="padding-left:1.5rem"{{end}}>{{.Label}}</td><td>{{if .Erfasst}}{{de3 .Value}}&nbsp;{{.Unit}}{{if .Diff}} ({{.Diff}}&nbsp;{{.Unit}}){{else if .NichtBerechenbar}} <span class="muted">(nicht berechenbar)</span>{{end}}{{else if .Optional}}<span class="muted">nicht erfasst</span>{{else}}<span class="text-warning">noch offen</span>{{end}}</td></tr>{{end}}
       {{end}}
     </tbody>
   </table>

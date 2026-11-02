@@ -43,6 +43,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Verbesserungen
 
+- Die Zählerliste einer Ablesung zeigt den Rest von Wohnung 1 für Strom (wenn Netzbezug übrig bleibt) und Wasser.
+
 ## Fehlerkorrekturen
 
 ## Wartung

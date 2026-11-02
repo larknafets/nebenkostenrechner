@@ -35,6 +35,14 @@ type wasserEingabe struct {
 	PersonenW1, PersonenW2           float64
 }
 
+// WasserRestW1 is apartment 1's water remainder in m³: the total minus
+// apartment 2's submeter and the hot water preparation, before the
+// preparation is split by occupants. Not clamped, a meter swap can make it
+// negative.
+func WasserRestW1(verbrauch map[string]float64) float64 {
+	return verbrauch["wasser_gesamt"] - verbrauch["wasser_wohnung2"] - verbrauch["wasser_warmwasseraufbereitung"]
+}
+
 // berechneWasser is the allocation itself, a pure function of its input.
 func berechneWasser(in wasserEingabe) *WasserErgebnis {
 	verbrauch := in.Verbrauch
@@ -46,7 +54,7 @@ func berechneWasser(in wasserEingabe) *WasserErgebnis {
 	wwAnteilW2 := wwGesamt * ratioP2
 
 	frischwasserW2 := verbrauch["wasser_wohnung2"] + wwAnteilW2
-	frischwasserW1 := (verbrauch["wasser_gesamt"] - verbrauch["wasser_wohnung2"] - wwGesamt) + wwAnteilW1
+	frischwasserW1 := WasserRestW1(verbrauch) + wwAnteilW1
 
 	return &WasserErgebnis{
 		PersonenW1: p1,
