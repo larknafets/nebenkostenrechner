@@ -43,6 +43,7 @@ Keep every section, an empty one included. Do not change the headings.
 
 - Neue Seite "Sonderkosten" (zwischen Fixkosten und Stammdaten) mit Jahressummen, Liste nach Abrechnungsmonat und Artfilter. Sichtbar mit dem neuen Recht "Sonderkosten ansehen", standardmäßig nur für Vermieter:in (#411, #406, #407).
 - Neue Seite "Sonderkosten" (zwischen Fixkosten und Stammdaten) mit Jahressummen, Liste nach Abrechnungsmonat und Artfilter. Sichtbar mit dem neuen Recht "Sonderkosten ansehen", standardmäßig nur für Vermieter:in (#411, #408, #404).
+- Neue Seite "Sonderkosten": Rechnungen erfassen, korrigieren und löschen, nach Abrechnungsmonat gruppiert mit Jahressummen und Artfilter, als CSV exportieren und importieren. Umlegbare Sonderkosten gehen in Monatssumme, Saldo und Dashboard ein. Sichtbar mit den neuen Rechten "Sonderkosten ansehen" und "Sonderkosten erfassen", standardmäßig nur für Vermieter:in (#411, #408, #404, #405, #406, #409).
 
 ## Verbesserungen
 
