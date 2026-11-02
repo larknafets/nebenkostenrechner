@@ -1,0 +1,132 @@
+{{define "content"}}
+<h1>Sonderkosten</h1>
+{{template "nav" .}}
+
+{{if .KannSonderkostenErfassen}}
+<div class="btn-row" id="sk-neu-zeile"><button type="button" class="button success" id="sk-neu">Neue Sonderkosten</button></div>
+<form method="post" action="{{.Base}}/sonderkosten" class="panel sk-maske" id="sk-maske" data-fehler-overlay hidden style="margin:1.25rem 0 1rem">
+  <h3 style="margin-top:0">Neue Sonderkosten</h3>
+  {{template "sk-felder" .NeuMaske}}
+  <div class="btn-row"><button class="primary" type="submit">Speichern</button><button class="secondary" type="button" id="sk-abbrechen">Abbrechen</button></div>
+</form>
+<script>
+(function () {
+  var f = document.getElementById("sk-maske"), neu = document.getElementById("sk-neu-zeile");
+  function zeige(an) { f.hidden = !an; neu.hidden = an; if (an) { skAktualisiere(f); document.getElementById("sk-betreff").focus(); } }
+  document.getElementById("sk-neu").addEventListener("click", function () { zeige(true); });
+  document.getElementById("sk-abbrechen").addEventListener("click", function () { f.reset(); zeige(false); });
+})();
+</script>
+{{end}}
+
+{{if not .HatEintraege}}
+<p class="muted" style="margin-top:1rem">Noch keine Sonderkosten erfasst.</p>
+{{if .Vermieter}}
+<form method="post" action="{{.Base}}/sonderkosten/import" enctype="multipart/form-data" data-fehler-overlay class="panel">
+  <div class="field">
+    <label>Oder: Sonderkosten aus CSV importieren (gleiches Format wie der CSV-Export)</label>
+    <input type="file" name="csv" accept=".csv,text/csv" required>
+  </div>
+  <button type="submit" class="secondary">CSV Import</button>
+</form>
+{{end}}
+{{else}}
+<form method="get" style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem">
+  <div class="field" style="min-width:8rem">
+    <label for="jahr">Jahr</label>
+    <select id="jahr" name="jahr" onchange="this.form.submit()">
+      {{range .Jahre}}<option value="{{.}}"{{if and (not $.AlleJahre) (eq . $.Jahr)}} selected{{end}}>{{.}}</option>{{end}}
+      <option value="alle"{{if .AlleJahre}} selected{{end}}>Alle Jahre</option>
+    </select>
+  </div>
+  <div class="field" style="min-width:10rem">
+    <label for="art">Art</label>
+    <select id="art" name="art" onchange="this.form.submit()">
+      <option value="">Alle Arten</option>
+      {{range .Arten}}<option value="{{.Wert}}"{{if eq .Wert $.Art}} selected{{end}}>{{.Label}}</option>{{end}}
+    </select>
+  </div>
+</form>
+<div class="grid grid-3">
+  <div class="panel stat-card"><div class="muted">Gesamt</div><div class="stat-value">{{deEUR .Gesamt}}&nbsp;€</div></div>
+  <div class="panel stat-card"><div class="muted">davon umlegbar</div><div class="stat-value">{{deEUR .Umlegbar}}&nbsp;€</div></div>
+  <div class="panel stat-card"><div class="muted">trägt Vermieter:in</div><div class="stat-value">{{deEUR .VermieterTraegt}}&nbsp;€</div></div>
+</div>
+{{if not .Monate}}<p class="muted">Keine Sonderkosten für diese Auswahl.</p>{{end}}
+{{range .Monate}}
+<div class="sk-monat"><strong>{{.Label}}</strong><span class="muted">umlegbar {{deEUR .Umlegbar}}&nbsp;€</span></div>
+{{range .Karten}}
+<div class="panel sk-karte">
+  <div class="sk-ansicht">
+  <div class="sk-zeile1"><strong>{{.Betreff}}</strong><span class="badge">{{.Art}}</span><span class="sk-betrag">{{deEUR .Betrag}}&nbsp;€</span></div>
+  <div class="muted">{{.Firma}}{{if .Rechnungsnummer}} · Nr. {{.Rechnungsnummer}}{{end}}</div>
+  <div class="muted">{{if .Umlegbar}}umlegbar{{else}}nicht umlegbar{{end}} · {{.Zuordnung}}{{if .NichtBerechenbar}} <span class="badge badge-warning">nicht berechenbar, Fixkosteneingabe fehlt</span>{{end}}</div>
+  {{if .Beschreibung}}<details><summary class="muted">Beschreibung</summary><div class="muted" style="white-space:pre-line">{{.Beschreibung}}</div></details>{{end}}
+  {{if $.Vermieter}}<div class="btn-row" style="justify-content:flex-start">
+    <button type="button" class="secondary" data-sk-korrigieren>Korrigieren</button>
+    <form method="post" action="{{$.Base}}/sonderkosten/{{.ID}}/loeschen" data-bestaetigen-titel="Sonderkosten löschen?" data-bestaetigen="Sonderkosten &quot;{{.Betreff}}&quot; wirklich löschen?"{{if .LoeschenZusatz}} data-bestaetigen-zusatz="{{.LoeschenZusatz}}"{{end}}><button type="submit" class="danger">Löschen</button></form>
+  </div>{{end}}
+  </div>
+  {{if $.Vermieter}}<form method="post" action="{{$.Base}}/sonderkosten/{{.ID}}" class="sk-maske" data-fehler-overlay hidden>
+    {{template "sk-felder" .Maske}}
+    <div class="btn-row"><button class="primary" type="submit">Speichern</button><button class="secondary" type="button" data-sk-abbrechen>Abbrechen</button></div>
+  </form>{{end}}
+</div>
+{{end}}
+{{end}}
+{{end}}
+{{if .Vermieter}}<div class="btn-row"><a href="{{.Base}}/sonderkosten/export.csv" class="button secondary">CSV Export</a></div>{{end}}
+<script>
+// Shows the Logik select and the Hinweis of a Sonderkosten form as its fields demand.
+var skFixMonate = {{.FixMonate}};
+function skAktualisiere(f) {
+  var art = f.elements.art.value, ul = f.elements.umlegbar.checked;
+  // "Je Anzahl Personen" needs the Fixkosteneingabe of the month.
+  var logik = f.elements.logik, personen = logik.querySelector('option[value="personen"]');
+  personen.disabled = skFixMonate.indexOf(f.elements.monat.value) < 0;
+  if (personen.disabled && logik.value === "personen") logik.selectedIndex = 0;
+  f.querySelector(".sk-logik-feld").hidden = !(ul && f.elements.umsetzung.value === "haus");
+  f.querySelectorAll(".sk-hinweis").forEach(function (p) { p.hidden = !(ul && p.dataset.art === art); });
+}
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll("form.sk-maske").forEach(function (f) {
+    ["monat", "art", "umlegbar", "umsetzung"].forEach(function (n) { f.elements[n].addEventListener("change", function () { skAktualisiere(f); }); });
+    skAktualisiere(f);
+  });
+  document.querySelectorAll("[data-sk-korrigieren]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var k = b.closest(".sk-karte"); k.querySelector(".sk-ansicht").hidden = true; k.querySelector("form.sk-maske").hidden = false;
+    });
+  });
+  document.querySelectorAll("[data-sk-abbrechen]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var k = b.closest(".sk-karte"); k.querySelector("form.sk-maske").reset(); skAktualisiere(k.querySelector("form.sk-maske"));
+      k.querySelector("form.sk-maske").hidden = true; k.querySelector(".sk-ansicht").hidden = false;
+    });
+  });
+});
+</script>
+{{end}}
+{{define "sk-felder"}}
+  <div class="grid grid-2">
+    <div class="field"><label for="{{.P}}-monat">Abrechnungsmonat</label><input id="{{.P}}-monat" type="month" name="monat" value="{{.Monat}}" required></div>
+    <div class="field"><label for="{{.P}}-art">Art</label><select id="{{.P}}-art" name="art">{{range .Arten}}<option value="{{.Wert}}"{{if eq .Wert $.S.Art}} selected{{end}}>{{.Label}}</option>{{end}}</select></div>
+  </div>
+  <div class="grid grid-2">
+    <div>
+      <div class="field"><label for="{{.P}}-betreff">Betreff</label><input id="{{.P}}-betreff" type="text" name="betreff" value="{{.S.Betreff}}" required></div>
+      <div class="field"><label for="{{.P}}-beschreibung">Kurzbeschreibung</label><textarea id="{{.P}}-beschreibung" name="beschreibung" rows="5" style="width:100%;box-sizing:border-box;font:inherit">{{.S.Beschreibung}}</textarea></div>
+    </div>
+    <div>
+      <div class="field"><label for="{{.P}}-firma">Firma</label><input id="{{.P}}-firma" type="text" name="firma" value="{{.S.Firma}}"></div>
+      <div class="field"><label for="{{.P}}-nr">Rechnungsnummer <span class="badge">optional</span></label><input id="{{.P}}-nr" type="text" name="rechnungsnummer" value="{{.S.Rechnungsnummer}}"></div>
+    </div>
+  </div>
+  <div class="grid grid-2">
+    <div class="field"><label for="{{.P}}-betrag">Betrag brutto (EUR)</label><input id="{{.P}}-betrag" type="text" inputmode="decimal" name="betrag" value="{{.Betrag}}" required></div>
+    <div class="field"><label for="{{.P}}-umsetzung">Umsetzung in</label><select id="{{.P}}-umsetzung" name="umsetzung">{{range .Umsetzungen}}<option value="{{.Wert}}"{{if eq .Wert $.S.Umsetzung}} selected{{end}}>{{.Label}}</option>{{end}}</select></div>
+  </div>
+  <div class="field"><label><input type="checkbox" id="{{.P}}-umlegbar" name="umlegbar" value="1"{{if .S.Umlegbar}} checked{{end}}> Umlegbar (auf die Betriebskostenabrechnung)</label></div>
+  {{range .Hinweise}}<p class="muted sk-hinweis" data-art="{{.Wert}}" hidden>{{.Label}}</p>{{end}}
+  <div class="field sk-logik-feld" hidden><label for="{{.P}}-logik">Berechnungslogik</label><select id="{{.P}}-logik" name="logik">{{range .Logiken}}<option value="{{.Wert}}"{{if eq .Wert $.S.Logik}} selected{{end}}>{{.Label}}</option>{{end}}</select></div>
+{{end}}

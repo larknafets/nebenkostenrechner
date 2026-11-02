@@ -63,15 +63,23 @@ func alleFixkostenKosten(reihe *calc.Fixkostenreihe) []fixkostenKosten {
 // (allocation logic) into the 4 fixed buckets the "Fixkosten" mode bar
 // shows (always all 4, even at 0 - same "show every category" convention
 // as kategorien()).
-func fixkostenGruppen(apartmentID int64, erg *calc.FixkostenErgebnis) []dashboardSegment {
+func fixkostenGruppen(apartmentID int64, erg *calc.FixkostenErgebnis, sonderkosten []calc.MonatsSonderkosten) []dashboardSegment {
 	sums := map[string]float64{}
-	for _, p := range erg.Positionen {
-		sums[p.Logik] += p.KostenFor(apartmentID)
+	if erg != nil {
+		for _, p := range erg.Positionen {
+			sums[p.Logik] += p.KostenFor(apartmentID)
+		}
 	}
 	logiken := []string{store.LogikWohneinheit, store.LogikFlurstueck, store.LogikQM, store.LogikPersonen, store.LogikWohnung1, store.LogikWohnung2}
-	out := make([]dashboardSegment, len(logiken))
+	out := make([]dashboardSegment, len(logiken), len(logiken)+1)
 	for i, logik := range logiken {
 		out[i] = dashboardSegment{Farbe: "logik-" + logik, Label: calc.LogikLabels[logik], Kosten: calc.Round2(sums[logik])}
 	}
-	return out
+	// All Sonderkosten of the month are one segment, whatever their Logik, so
+	// a large invoice does not make a Logik group look more expensive.
+	var sk float64
+	for _, s := range sonderkosten {
+		sk += s.Betrag
+	}
+	return append(out, dashboardSegment{Farbe: "logik-sonderkosten", Label: "Sonderkosten", Kosten: calc.Round2(sk)})
 }

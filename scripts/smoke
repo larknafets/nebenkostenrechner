@@ -26,7 +26,7 @@ for _ in $(seq 50); do
 done
 
 fail=0
-for path in dashboard fixkosten fixkosten/neu stammdaten berechnungslogik abrechnung; do
+for path in dashboard fixkosten fixkosten/neu sonderkosten stammdaten berechnungslogik abrechnung; do
   code=$(curl -s -o "$dir/body" -w '%{http_code}' "localhost:$port/$path")
   if [ "$code" = 200 ] && grep -q '</html>' "$dir/body"; then
     printf 'ok   /%s\n' "$path"

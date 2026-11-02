@@ -1,6 +1,11 @@
 package web
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+
+	abr "github.com/larknafets/nebenkostenrechner/internal/abrechnung"
+)
 
 // abrechnungAnlage is one numbered Anlage of the Anhang. The list on page 1
 // and the headings of the Anhang both come from abrechnungAnlagen, so title
@@ -23,9 +28,13 @@ var abrechnungAnlagen = []abrechnungAnlage{
 	{Key: "zaehlerstaende", Nr: 7, Titel: "Zählerstände"},
 }
 
+// sonderkostenAnlage comes last and only with umlegbar Sonderkosten in the
+// period (#407), so the numbers 1 to 7 never move.
+var sonderkostenAnlage = abrechnungAnlage{Key: "sonderkosten", Nr: 8, Titel: "Sonderkosten"}
+
 // anlageUeberschrift is the heading of an Anlage, "Anlage N: Titel".
 func anlageUeberschrift(key string) (string, error) {
-	for _, a := range abrechnungAnlagen {
+	for _, a := range alleAnlagen() {
 		if a.Key == key {
 			return fmt.Sprintf("Anlage %d: %s", a.Nr, a.Titel), nil
 		}
@@ -33,7 +42,15 @@ func anlageUeberschrift(key string) (string, error) {
 	return "", fmt.Errorf("unbekannte Anlage %q", key)
 }
 
-// anlagenListe is the list of the Anlagen for page 1.
-func anlagenListe() []abrechnungAnlage {
-	return abrechnungAnlagen
+// anlagenListe is the list of the Anlagen of ab for page 1.
+func anlagenListe(ab *abr.Jahresabrechnung) []abrechnungAnlage {
+	if len(ab.SonderkostenAnlage) == 0 {
+		return abrechnungAnlagen
+	}
+	return alleAnlagen()
+}
+
+// alleAnlagen is abrechnungAnlagen plus the Sonderkosten Anlage, as a copy.
+func alleAnlagen() []abrechnungAnlage {
+	return append(slices.Clone(abrechnungAnlagen), sonderkostenAnlage)
 }

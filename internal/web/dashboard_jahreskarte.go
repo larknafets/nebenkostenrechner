@@ -110,12 +110,19 @@ func mieteinnahmen(apartmentID int64, jahr int, eingaben []mieteMonat) float64 {
 // averages the apartment's occupant count over jahr's Fixkosteneingaben
 // (exactly one per Monat, so each month weighs the same; shown with up to 2
 // decimal places, 0 if the year has no entry yet).
-func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apartmentFlurstueck float64, jahr int, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten) dashboardJahresCard {
+func buildJahresCard(apartmentID int64, apartmentName string, apartmentQM, apartmentFlurstueck float64, jahr int, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten, sonderkosten []calc.MonatsSonderkosten) dashboardJahresCard {
 	var strom, wallbox, heizung, wasser, fix, gutschrift float64
 	var wallboxKWh, pvAnteilKWh float64
 	var wallboxVerteilt bool
 	var personenSumme float64
 	var personenAnzahl int
+	// Sonderkosten are one more item of the Fixkosten, the same number as in
+	// the Verlauf and the Jahresabrechnung.
+	for _, sk := range sonderkosten {
+		if y, ok := store.Abrechnungsmonat(sk.Monat).Jahr(); ok && y == jahr {
+			fix += sk.Betrag
+		}
+	}
 	for _, pk := range periodenKosten {
 		y, ok := store.Abrechnungsmonat(pk.Monat).Jahr()
 		if !ok || y != jahr {

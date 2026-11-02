@@ -22,8 +22,9 @@ import (
 // and switches on fixkosten_eingaben (#359). Version 4: they are filled from
 // the Ablesungen of the same month (#361). Version 5: the Ablesung fields are
 // dropped (#368, destructive): the six columns of periods and the table
-// period_occupancy. The save .vor-schema-4-<time> is made before that.
-const schemaVersion = 5
+// period_occupancy. The save .vor-schema-4-<time> is made before that. Version 6: table
+// sonderkosten (#403), created by schema.sql like mieten, so no step either.
+const schemaVersion = 6
 
 // sicherungenBehalten is how many saves made before a migration are kept.
 const sicherungenBehalten = 3

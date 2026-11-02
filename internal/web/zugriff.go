@@ -143,7 +143,11 @@ type Zugriff struct {
 	KannAblesungenAnsehen bool
 	KannAblesungAnlegen   bool
 	KannFixkostenAnsehen  bool
-	KannStammdatenAnsehen bool
+	// Sonderkosten: the menu item needs ansehen, the "Neue Sonderkosten" button
+	// (ticket #404) erfassen. Correcting, deleting and CSV stay with the Vermieter.
+	KannSonderkostenAnsehen  bool
+	KannSonderkostenErfassen bool
+	KannStammdatenAnsehen    bool
 
 	lade *matrixLauf
 }
@@ -238,6 +242,8 @@ func (z *Zugang) bauen(r *http.Request) Zugriff {
 	zg.KannAblesungenAnsehen = zg.Darf(store.RechtAblesungenAnsehen)
 	zg.KannAblesungAnlegen = zg.Darf(store.RechtAblesungAnlegen)
 	zg.KannFixkostenAnsehen = zg.Darf(store.RechtFixkostenAnsehen)
+	zg.KannSonderkostenAnsehen = zg.Darf(store.RechtSonderkostenAnsehen)
+	zg.KannSonderkostenErfassen = zg.Darf(store.RechtSonderkostenErfassen)
 	zg.KannStammdatenAnsehen = zg.Darf(store.RechtStammdatenAnsehen)
 	return zg
 }

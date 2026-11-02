@@ -28,5 +28,6 @@ func abrechnungsDaten(ds *store.Datenstand) abr.BerechnungsDaten {
 		Meters:           ds.Meters,
 		Fixkosten:        calc.FixkostenreiheAus(ds),
 		Kosten:           calc.KostenAus(ds),
+		Sonderkosten:     ds.Sonderkosten,
 	}
 }

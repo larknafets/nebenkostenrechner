@@ -61,5 +61,12 @@ func routen(z *Zugang, version, buildDate string) []route {
 		{http.MethodGet, "/fixkosten/{id}/bearbeiten", NurVermieter, handleFixkostenEditForm(z)},
 		{http.MethodPost, "/fixkosten/{id}", NurVermieter, handleUpdateFixkosten()},
 		{http.MethodPost, "/fixkosten/{id}/loeschen", NurVermieter, handleDeleteFixkosten()},
+
+		{http.MethodGet, "/sonderkosten", Braucht(store.RechtSonderkostenAnsehen), handleSonderkostenListe(z)},
+		{http.MethodPost, "/sonderkosten", Braucht(store.RechtSonderkostenErfassen), handleSonderkostenSpeichern()},
+		{http.MethodPost, "/sonderkosten/{id}", NurVermieter, handleSonderkostenKorrigieren()},
+		{http.MethodPost, "/sonderkosten/{id}/loeschen", NurVermieter, handleSonderkostenLoeschen()},
+		{http.MethodGet, "/sonderkosten/export.csv", NurVermieter, handleSonderkostenExport()},
+		{http.MethodPost, "/sonderkosten/import", NurVermieter, handleSonderkostenImport()},
 	}
 }

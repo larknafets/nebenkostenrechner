@@ -188,6 +188,8 @@ Abrechnung 2023 Wohnung 1:
       Betrag: 220.62
       Prozent: 62.88
       Geteilt: false
+    Sonderkosten: nil
+    SonderkostenAnlage: [0]
     Betriebskosten: 1068.50
     Strom:
       VerbrauchKWh: 1132.80
@@ -854,6 +856,8 @@ Abrechnung 2023 Wohnung 2:
       Betrag: 130.25
       Prozent: 37.12
       Geteilt: false
+    Sonderkosten: nil
+    SonderkostenAnlage: [0]
     Betriebskosten: 810.97
     Strom:
       VerbrauchKWh: 712.50
@@ -1520,6 +1524,8 @@ Abrechnung 2024 Wohnung 1:
       Betrag: 721.51
       Prozent: 64.56
       Geteilt: false
+    Sonderkosten: nil
+    SonderkostenAnlage: [0]
     Betriebskosten: 2848.77
     Strom:
       VerbrauchKWh: 2316.60
@@ -2678,6 +2684,8 @@ Abrechnung 2024 Wohnung 2:
       Betrag: 395.99
       Prozent: 35.44
       Geteilt: false
+    Sonderkosten: nil
+    SonderkostenAnlage: [0]
     Betriebskosten: 2110.04
     Strom:
       VerbrauchKWh: 2110.00
@@ -3836,6 +3844,8 @@ Abrechnung 2025 Wohnung 1:
       Betrag: 735.82
       Prozent: 64.56
       Geteilt: false
+    Sonderkosten: nil
+    SonderkostenAnlage: [0]
     Betriebskosten: 2904.47
     Strom:
       VerbrauchKWh: 2316.60
@@ -5126,6 +5136,8 @@ Abrechnung 2025 Wohnung 2:
       Betrag: 403.85
       Prozent: 35.44
       Geteilt: false
+    Sonderkosten: nil
+    SonderkostenAnlage: [0]
     Betriebskosten: 2148.56
     Strom:
       VerbrauchKWh: 2110.00
@@ -14359,6 +14371,29 @@ Dashboard:
       Personen: {2}
         1: 2.00
         2: 2.00
+  Sonderkosten: {2}
+    1: [3]
+      [0]:
+        Monat: "2026-02-01"
+        Logik: "wohnung1"
+        Betrag: 184.30
+      [1]:
+        Monat: "2026-09-01"
+        Logik: "wohneinheit"
+        Betrag: 714.25
+      [2]:
+        Monat: "2026-09-01"
+        Logik: "qm"
+        Betrag: 55.18
+    2: [2]
+      [0]:
+        Monat: "2026-09-01"
+        Logik: "wohneinheit"
+        Betrag: 714.25
+      [1]:
+        Monat: "2026-09-01"
+        Logik: "qm"
+        Betrag: 40.82
   Jahr: 2026
   Monate: [39]
     [0]: "2026-10-01"

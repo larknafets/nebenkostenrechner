@@ -33,6 +33,7 @@ var (
 	abrechnungTemplate        = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/abrechnung.html"))
 
 	fixkostenListeTemplate  = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_hinweise.html", "templates/fixkosten.html"))
+	sonderkostenTemplate    = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/sonderkosten.html"))
 	fixkostenFormTemplate   = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_form.html"))
 	fixkostenDetailTemplate = template.Must(template.New("layout.html").Funcs(templateFuncs).ParseFS(templateFS, "templates/layout.html", "templates/fixkosten_hinweise.html", "templates/fixkosten_detail.html"))
 )
@@ -66,23 +67,25 @@ func kategorieIcon(label string) template.HTML {
 }
 
 var templateFuncs = template.FuncMap{
-	"updateURL":     updateURL,
-	"de":            formatDecimalDE,
-	"de0":           formatDecimalDE0,
-	"de1":           formatDecimalDE1,
-	"de2":           formatDecimalDE2,
-	"de3":           formatDecimalDE3,
-	"deEUR":         formatEuroDE,
-	"dePreis":       formatPreisDE,
-	"deDatum":       formatDatumDE,
-	"monat":         store.MonatLabel,
-	"monatKurz":     germanPeriodLabelShort,
-	"personen":      personenZelle,
-	"mieterSeit":    func(stored string) monatInput { return monatInputFromStored(stored) },
-	"anlage":        anlageUeberschrift,
-	"anlagen":       anlagenListe,
-	"deDatumZeit":   formatDatumZeitDE,
-	"kategorieIcon": kategorieIcon,
+	"updateURL":             updateURL,
+	"de":                    formatDecimalDE,
+	"de0":                   formatDecimalDE0,
+	"de1":                   formatDecimalDE1,
+	"de2":                   formatDecimalDE2,
+	"de3":                   formatDecimalDE3,
+	"deEUR":                 formatEuroDE,
+	"dePreis":               formatPreisDE,
+	"deDatum":               formatDatumDE,
+	"monat":                 store.MonatLabel,
+	"monatKurz":             germanPeriodLabelShort,
+	"personen":              personenZelle,
+	"mieterSeit":            func(stored string) monatInput { return monatInputFromStored(stored) },
+	"anlage":                anlageUeberschrift,
+	"anlagen":               anlagenListe,
+	"sonderkostenArt":       sonderkostenArtLabel,
+	"sonderkostenUmsetzung": sonderkostenUmsetzungLabel,
+	"deDatumZeit":           formatDatumZeitDE,
+	"kategorieIcon":         kategorieIcon,
 	// hasReading (Ticket #131): whether the wizard may prefill a meter value
 	// from the completing EditReadings - "index" alone silently returns the
 	// zero value for a missing key, which couldn't distinguish "not

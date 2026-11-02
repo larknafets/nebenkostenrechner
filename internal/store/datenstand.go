@@ -14,7 +14,9 @@ type Datenstand struct {
 	// Periods are the Ablesungen, oldest first by reading date, then id.
 	Periods []*LatestPeriod
 	// Eingaben are the Fixkosteneingaben, oldest first.
-	Eingaben         []*FixkostenEingabeDetails
+	Eingaben []*FixkostenEingabeDetails
+	// Sonderkosten are all entries, oldest Abrechnungsmonat first.
+	Sonderkosten     []Sonderkosten
 	Apartments       []Apartment
 	Haus             Haus
 	Kostenpositionen []Kostenposition
@@ -47,5 +49,9 @@ func LadeDatenstand(db *sql.DB) (*Datenstand, error) {
 	if err != nil {
 		return nil, fmt.Errorf("meters: %w", err)
 	}
-	return &Datenstand{Periods: periods, Eingaben: eingaben, Apartments: apartments, Haus: haus, Kostenpositionen: kostenpositionen, Meters: meters}, nil
+	sonderkosten, err := AllSonderkosten(db)
+	if err != nil {
+		return nil, fmt.Errorf("sonderkosten: %w", err)
+	}
+	return &Datenstand{Periods: periods, Eingaben: eingaben, Sonderkosten: sonderkosten, Apartments: apartments, Haus: haus, Kostenpositionen: kostenpositionen, Meters: meters}, nil
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
@@ -665,7 +666,7 @@ func handleFixkostenDetail(z *Zugang) http.HandlerFunc {
 			navData:       z.NavData(r),
 			Aktuell:       "fixkosten-detail",
 			Hinweise:      hinweise,
-			LoeschenFrage: fixkostenLoeschenFrage(eingabe.Monat, betroffene),
+			LoeschenFrage: strings.TrimSpace(fixkostenLoeschenFrage(eingabe.Monat, betroffene) + " " + sonderkostenLoeschenFrage(db, eingabe.Monat)),
 			Eingabe:       eingabe,
 			MonatLabel:    store.MonatLabel(eingabe.Monat),
 			AllEingaben:   allItems,

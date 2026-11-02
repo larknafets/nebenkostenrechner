@@ -38,9 +38,10 @@ Alle Bilder stammen aus dem [Demo-Modus](#demo-modus), die Daten sind erfunden.
 - **Ablesungen:** Zählerstände einmal im Monat in einem Wizard (Strom, Wärme, Wasser) erfassen. Auch ein Teilstand ist möglich und wird später vervollständigt. Warnungen bei negativem Verbrauch und bei Ausreißern.
 - **Fixkosten:** Je Monat eine Eingabe mit Kostenpositionen (Grundsteuer, Versicherung, Abfall, Grundgebühren, Wartung u. a.), Preisen, Personenzahl, Nebenkostenabschlag und Miete.
 - **Dashboard:** Jahreskarten je Wohnung, Karten für Wärmepumpe, Wallboxen und PV-Anlage, Monatsverlauf mit Saldo.
-- **Jahresabrechnung:** Betriebskostenabrechnung je Wohnung und Jahr (auch für einen Teilzeitraum), druckbar als PDF mit Anlagen.
+- **Sonderkosten:** Einzelne Rechnungen, die in keine Kostenposition passen (Reparatur, Neuanschaffung, Wartung u. a.), mit Abrechnungsmonat, Art, Firma, Betrag und Umsetzung (Haus, Wohnung 1 oder Wohnung 2). Umlegbare Einträge gehen voll in den Abrechnungsmonat ein, in Monatssumme, Jahreskarten, Saldo und Jahresabrechnung, die übrigen trägt die Vermieter:in und sie stehen nur in der Übersicht.
+- **Jahresabrechnung:** Betriebskostenabrechnung je Wohnung und Jahr (auch für einen Teilzeitraum), druckbar als PDF mit Anlagen. Umlegbare Sonderkosten stehen als Zeile "Sonderkosten" in der Kostenübersicht und als eigene Anlage 8 mit allen Einträgen der Wohnung.
 - **Stammdaten:** Wohnungsgrößen, Wohnungsstatus (Vermietung oder Eigennutzung), Namen und Anschriften, Heizungsgewichtung, Reihenfolge und Umlagefähigkeit der Kostenpositionen.
-- **CSV:** Export und Import von Ablesungen und Fixkosten.
+- **CSV:** Export und Import von Ablesungen, Fixkosten und Sonderkosten (Sonderkosten nur für Vermieter:innen, der Import nur, solange noch keine Sonderkosten existieren).
 - **Rollen:** Vermieter:in, Mieter:in und nicht angemeldet mit einstellbaren Berechtigungen.
 - **Demo-Modus:** Eigene Datenbank mit erfundenen Daten zum Ausprobieren.
 
@@ -95,6 +96,8 @@ Die Image-Tags folgen den [Releases](https://github.com/larknafets/nebenkostenre
 
 "Anmelden" öffnet ein Overlay mit der Wahl der Rolle (**Mieter:in**, **Vermieter:in**, **Demo**) und einem Kennwort.
 Die Vermieter:innen dürfen alles, was nicht angemeldete Personen und Mieter:innen sehen und tun dürfen, stellen sie auf der Stammdaten-Seite unter "Berechtigungen" ein.
+Zu den Berechtigungen gehören auch "Sonderkosten ansehen" (die Seite) und "Sonderkosten erfassen" (neue Einträge anlegen), beide standardmäßig aus.
+Korrigieren, Löschen sowie CSV-Export und -Import der Sonderkosten bleiben den Vermieter:innen vorbehalten.
 Die App gehört nicht direkt ins Internet, sondern hinter Home Assistant Ingress oder ins Heimnetz.
 
 ### Demo-Modus
