@@ -16,6 +16,49 @@
   <div class="panel stat-card"><div class="muted">trägt Vermieter:in</div><div class="stat-value">{{deEUR .VermieterTraegt}}&nbsp;€</div></div>
 </div>
 
+{{if .KannSonderkostenErfassen}}
+<div class="btn-row" id="sk-neu-zeile" style="justify-content:flex-start"><button type="button" class="button success" id="sk-neu">Neue Sonderkosten</button></div>
+<form method="post" action="{{.Base}}/sonderkosten" class="panel sk-maske" id="sk-maske" data-fehler-overlay hidden>
+  <h3 style="margin-top:0">Neue Sonderkosten</h3>
+  <div class="grid grid-2">
+    <div class="field"><label for="sk-monat">Abrechnungsmonat</label><input id="sk-monat" type="month" name="monat" value="{{.NeuMonat}}" required></div>
+    <div class="field"><label for="sk-art">Art</label><select id="sk-art" name="art">{{range .Arten}}<option value="{{.Wert}}">{{.Label}}</option>{{end}}</select></div>
+  </div>
+  <div class="grid grid-2">
+    <div>
+      <div class="field"><label for="sk-betreff">Betreff</label><input id="sk-betreff" type="text" name="betreff" required></div>
+      <div class="field"><label for="sk-beschreibung">Kurzbeschreibung</label><textarea id="sk-beschreibung" name="beschreibung" rows="5" style="width:100%;box-sizing:border-box;font:inherit"></textarea></div>
+    </div>
+    <div>
+      <div class="field"><label for="sk-firma">Firma</label><input id="sk-firma" type="text" name="firma"></div>
+      <div class="field"><label for="sk-nr">Rechnungsnummer <span class="badge">optional</span></label><input id="sk-nr" type="text" name="rechnungsnummer"></div>
+    </div>
+  </div>
+  <div class="grid grid-2">
+    <div class="field"><label for="sk-betrag">Betrag brutto (EUR)</label><input id="sk-betrag" type="text" inputmode="decimal" name="betrag" required></div>
+    <div class="field"><label for="sk-umsetzung">Umsetzung in</label><select id="sk-umsetzung" name="umsetzung">{{range .Umsetzungen}}<option value="{{.Wert}}">{{.Label}}</option>{{end}}</select></div>
+  </div>
+  <div class="field"><label><input type="checkbox" id="sk-umlegbar" name="umlegbar" value="1"> Umlegbar (auf die Betriebskostenabrechnung)</label></div>
+  {{range .Hinweise}}<p class="muted sk-hinweis" data-art="{{.Wert}}" hidden>{{.Label}}</p>{{end}}
+  <div class="field" id="sk-logik-feld" hidden><label for="sk-logik">Berechnungslogik</label><select id="sk-logik" name="logik">{{range .Logiken}}<option value="{{.Wert}}">{{.Label}}</option>{{end}}</select></div>
+  <div class="btn-row"><button class="primary" type="submit">Speichern</button><button class="secondary" type="button" id="sk-abbrechen">Abbrechen</button></div>
+</form>
+<script>
+(function () {
+  var f = document.getElementById("sk-maske"), neu = document.getElementById("sk-neu-zeile");
+  var art = document.getElementById("sk-art"), ul = document.getElementById("sk-umlegbar"), zu = document.getElementById("sk-umsetzung");
+  function aktualisiere() {
+    document.getElementById("sk-logik-feld").hidden = !(ul.checked && zu.value === "haus");
+    f.querySelectorAll(".sk-hinweis").forEach(function (p) { p.hidden = !(ul.checked && p.dataset.art === art.value); });
+  }
+  function zeige(an) { f.hidden = !an; neu.hidden = an; if (an) { aktualisiere(); document.getElementById("sk-betreff").focus(); } }
+  document.getElementById("sk-neu").addEventListener("click", function () { zeige(true); });
+  document.getElementById("sk-abbrechen").addEventListener("click", function () { f.reset(); zeige(false); });
+  [art, ul, zu].forEach(function (e) { e.addEventListener("change", aktualisiere); });
+})();
+</script>
+{{end}}
+
 {{if not .HatEintraege}}
 <p class="muted" style="margin-top:1rem">Noch keine Sonderkosten erfasst.</p>
 {{else}}
@@ -40,4 +83,5 @@
 {{end}}
 {{end}}
 {{end}}
+{{if .Vermieter}}<div class="btn-row"><a href="{{.Base}}/sonderkosten/export.csv" class="button secondary">CSV Export</a></div>{{end}}
 {{end}}

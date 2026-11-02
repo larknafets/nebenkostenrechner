@@ -150,6 +150,7 @@ func TestRouten_Policy(t *testing.T) {
 	ausnahmen := map[string]Anspruch{
 		"POST /ablesungen":                Braucht(store.RechtAblesungAnlegen),
 		"POST /ablesungen/{id}":           AnlegenOderVermieter,
+		"POST /sonderkosten":              Braucht(store.RechtSonderkostenErfassen),
 		"POST /login":                     Offen,
 		"POST /logout":                    Offen,
 		"GET /ablesungen/neu":             Braucht(store.RechtAblesungAnlegen),
