@@ -41,7 +41,7 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
-- Neue Seite "Sonderkosten" (zwischen Fixkosten und Stammdaten) mit Jahressummen, Liste nach Abrechnungsmonat und Artfilter. Sichtbar mit dem neuen Recht "Sonderkosten ansehen", standardmäßig nur für Vermieter:in (#411).
+- Neue Seite "Sonderkosten" (zwischen Fixkosten und Stammdaten) mit Jahressummen, Liste nach Abrechnungsmonat und Artfilter. Sichtbar mit dem neuen Recht "Sonderkosten ansehen", standardmäßig nur für Vermieter:in (#411, #408).
 
 ## Verbesserungen
 
