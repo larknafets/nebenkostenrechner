@@ -108,3 +108,18 @@ func TestSonderkosten_Rechte(t *testing.T) {
 		}
 	}
 }
+
+// The Jahr filter next to the Art filter lists every year with entries.
+func TestSonderkosten_JahrFilterListetJahreMitEintraegen(t *testing.T) {
+	mux, _ := sonderkostenMux(t, beispielSonderkosten...)
+	c := loginCookies(t, mux, "vermieter", "geheim")
+	body := getMitCookies(t, mux, "/sonderkosten", c).Body.String()
+	i2026, i2025 := strings.Index(body, `<option value="2026" selected>`), strings.Index(body, `<option value="2025">`)
+	if i2026 < 0 || i2025 < 0 || i2026 > i2025 {
+		t.Errorf("Jahr filter: 2026 at %d (selected), 2025 at %d, want both, newest first", i2026, i2025)
+	}
+	// The button comes before the Jahr heading, like Ablesungen and Fixkosten.
+	if b, h := strings.Index(body, "Neue Sonderkosten"), strings.Index(body, "<h2>Sonderkosten 2026"); b < 0 || b > h {
+		t.Errorf("Neue Sonderkosten at %d, want before the heading at %d", b, h)
+	}
+}

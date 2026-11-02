@@ -41,7 +41,7 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
-- Neue Seite "Sonderkosten": Rechnungen erfassen, korrigieren und löschen, nach Abrechnungsmonat gruppiert mit Jahressummen und Artfilter, als CSV exportieren und importieren. Umlegbare Sonderkosten gehen in Monatssumme, Saldo, Dashboard und Jahresabrechnung ein (Zeile "Sonderkosten" in der Kostenübersicht und neue Anlage 8), nicht umlegbare trägt die Vermieter:in und sie ändern keine Abrechnung. Sichtbar mit den neuen Rechten "Sonderkosten ansehen" und "Sonderkosten erfassen", standardmäßig nur für Vermieter:in (#411, #408, #404, #405, #406, #409, #407, #410).
+- Neue Seite "Sonderkosten": Rechnungen erfassen, korrigieren und löschen, nach Abrechnungsmonat gruppiert mit Jahressummen sowie Art- und Jahresfilter, als CSV exportieren und importieren. Umlegbare Sonderkosten gehen in Monatssumme, Saldo, Dashboard und Jahresabrechnung ein (Zeile "Sonderkosten" in der Kostenübersicht und neue Anlage 8), nicht umlegbare trägt die Vermieter:in und sie ändern keine Abrechnung. Sichtbar mit den neuen Rechten "Sonderkosten ansehen" und "Sonderkosten erfassen", standardmäßig nur für Vermieter:in (#411, #408, #404, #405, #406, #409, #407, #410).
 
 ## Verbesserungen
 

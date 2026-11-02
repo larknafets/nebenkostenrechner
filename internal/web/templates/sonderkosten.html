@@ -2,23 +2,9 @@
 <h1>Sonderkosten</h1>
 {{template "nav" .}}
 
-<div class="jahr-kopf">
-<h2>Sonderkosten {{.Jahr}}</h2>
-{{if or .JahrZurueck .JahrVor}}<span class="jahr-nav">
-  {{if .JahrZurueck}}<a href="{{.JahrZurueck}}" title="Vorjahr" aria-label="Vorjahr">‹</a>{{else}}<span class="aus" aria-hidden="true">‹</span>{{end}}
-  {{if .JahrVor}}<a href="{{.JahrVor}}" title="Folgejahr" aria-label="Folgejahr">›</a>{{else}}<span class="aus" aria-hidden="true">›</span>{{end}}
-</span>{{end}}
-</div>
-
-<div class="grid grid-3">
-  <div class="panel stat-card"><div class="muted">Gesamt {{.Jahr}}</div><div class="stat-value">{{deEUR .Gesamt}}&nbsp;€</div></div>
-  <div class="panel stat-card"><div class="muted">davon umlegbar</div><div class="stat-value">{{deEUR .Umlegbar}}&nbsp;€</div></div>
-  <div class="panel stat-card"><div class="muted">trägt Vermieter:in</div><div class="stat-value">{{deEUR .VermieterTraegt}}&nbsp;€</div></div>
-</div>
-
 {{if .KannSonderkostenErfassen}}
-<div class="btn-row" id="sk-neu-zeile" style="justify-content:flex-start"><button type="button" class="button success" id="sk-neu">Neue Sonderkosten</button></div>
-<form method="post" action="{{.Base}}/sonderkosten" class="panel sk-maske" id="sk-maske" data-fehler-overlay hidden>
+<div class="btn-row" id="sk-neu-zeile"><button type="button" class="button success" id="sk-neu">Neue Sonderkosten</button></div>
+<form method="post" action="{{.Base}}/sonderkosten" class="panel sk-maske" id="sk-maske" data-fehler-overlay hidden style="margin:1.25rem 0 1rem">
   <h3 style="margin-top:0">Neue Sonderkosten</h3>
   {{template "sk-felder" .NeuMaske}}
   <div class="btn-row"><button class="primary" type="submit">Speichern</button><button class="secondary" type="button" id="sk-abbrechen">Abbrechen</button></div>
@@ -33,6 +19,20 @@
 </script>
 {{end}}
 
+<div class="jahr-kopf">
+<h2>Sonderkosten {{.Jahr}}</h2>
+{{if or .JahrZurueck .JahrVor}}<span class="jahr-nav">
+  {{if .JahrZurueck}}<a href="{{.JahrZurueck}}" title="Vorjahr" aria-label="Vorjahr">‹</a>{{else}}<span class="aus" aria-hidden="true">‹</span>{{end}}
+  {{if .JahrVor}}<a href="{{.JahrVor}}" title="Folgejahr" aria-label="Folgejahr">›</a>{{else}}<span class="aus" aria-hidden="true">›</span>{{end}}
+</span>{{end}}
+</div>
+
+<div class="grid grid-3">
+  <div class="panel stat-card"><div class="muted">Gesamt {{.Jahr}}</div><div class="stat-value">{{deEUR .Gesamt}}&nbsp;€</div></div>
+  <div class="panel stat-card"><div class="muted">davon umlegbar</div><div class="stat-value">{{deEUR .Umlegbar}}&nbsp;€</div></div>
+  <div class="panel stat-card"><div class="muted">trägt Vermieter:in</div><div class="stat-value">{{deEUR .VermieterTraegt}}&nbsp;€</div></div>
+</div>
+
 {{if not .HatEintraege}}
 <p class="muted" style="margin-top:1rem">Noch keine Sonderkosten erfasst.</p>
 {{if .Vermieter}}
@@ -45,13 +45,20 @@
 </form>
 {{end}}
 {{else}}
-<form method="get" class="field" style="max-width:14rem;margin-top:1rem">
-  <label for="art">Art</label>
-  <select id="art" name="art" onchange="this.form.submit()">
-    <option value="">Alle Arten</option>
-    {{range .Arten}}<option value="{{.Wert}}"{{if eq .Wert $.Art}} selected{{end}}>{{.Label}}</option>{{end}}
-  </select>
-  <input type="hidden" name="jahr" value="{{.Jahr}}">
+<form method="get" style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem">
+  <div class="field" style="min-width:10rem">
+    <label for="art">Art</label>
+    <select id="art" name="art" onchange="this.form.submit()">
+      <option value="">Alle Arten</option>
+      {{range .Arten}}<option value="{{.Wert}}"{{if eq .Wert $.Art}} selected{{end}}>{{.Label}}</option>{{end}}
+    </select>
+  </div>
+  <div class="field" style="min-width:8rem">
+    <label for="jahr">Jahr</label>
+    <select id="jahr" name="jahr" onchange="this.form.submit()">
+      {{range .Jahre}}<option value="{{.}}"{{if eq . $.Jahr}} selected{{end}}>{{.}}</option>{{end}}
+    </select>
+  </div>
 </form>
 {{if not .Monate}}<p class="muted">Keine Sonderkosten dieser Art.</p>{{end}}
 {{range .Monate}}
