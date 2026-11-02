@@ -70,15 +70,16 @@ func fixkostenGruppen(apartmentID int64, erg *calc.FixkostenErgebnis, sonderkost
 			sums[p.Logik] += p.KostenFor(apartmentID)
 		}
 	}
-	// Sonderkosten have no bucket of their own: they sit in the group of their
-	// Logik (Wohnung 1/2 for an entry assigned to one apartment).
-	for _, sk := range sonderkosten {
-		sums[sk.Logik] += sk.Betrag
-	}
 	logiken := []string{store.LogikWohneinheit, store.LogikFlurstueck, store.LogikQM, store.LogikPersonen, store.LogikWohnung1, store.LogikWohnung2}
-	out := make([]dashboardSegment, len(logiken))
+	out := make([]dashboardSegment, len(logiken), len(logiken)+1)
 	for i, logik := range logiken {
 		out[i] = dashboardSegment{Farbe: "logik-" + logik, Label: calc.LogikLabels[logik], Kosten: calc.Round2(sums[logik])}
 	}
-	return out
+	// All Sonderkosten of the month are one segment, whatever their Logik, so
+	// a large invoice does not make a Logik group look more expensive.
+	var sk float64
+	for _, s := range sonderkosten {
+		sk += s.Betrag
+	}
+	return append(out, dashboardSegment{Farbe: "logik-sonderkosten", Label: "Sonderkosten", Kosten: calc.Round2(sk)})
 }
