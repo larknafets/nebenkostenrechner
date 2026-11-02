@@ -284,21 +284,23 @@ function zuord(d){return d.umleg?(d.ziel==="Haus"?d.logik:"trägt "+d.ziel):"tr�
 function tag(d){return d.umleg?'<span class="sk-tag">umlegbar</span>':'<span class="sk-tag sk-nl">nicht umlegbar</span>'}
 function summen(){var u=0,n=0;D.forEach(function(d){d.umleg?u+=d.betrag:n+=d.betrag});return '<div class="sk-sum"><div><strong>'+eur(u+n)+'</strong>Gesamt 2026</div><div><strong>'+eur(u)+'</strong>davon umlegbar</div><div><strong>'+eur(n)+'</strong>trägt Vermieter:in</div></div>'}
 function jahr(){return '<div class="jahr-kopf"><h2>Sonderkosten 2026</h2><span class="jahr-nav"><a href="#" title="Vorjahr" aria-label="Vorjahr">‹</a><span class="aus" aria-hidden="true">›</span></span></div>'}
-function form(titel){return '<form class="panel" onsubmit="return false" style="margin-bottom:1rem"><h3 style="margin-top:0">'+titel+'</h3>'+
- '<div class="grid grid-2"><div class="field"><label>Abrechnungsmonat</label><input type="month" value="2026-10"></div>'+
- '<div class="field"><label>Art</label><select><option>Reparatur</option><option>Neuanschaffung</option><option>Wartung</option><option>Modernisierung</option><option>Sonstiges</option></select></div></div>'+
- '<div class="grid grid-2"><div><div class="field"><label>Betreff</label><input type="text"></div>'+
- '<div class="field"><label>Kurzbeschreibung</label><textarea rows="5" style="width:100%;box-sizing:border-box;font:inherit"></textarea></div></div>'+
- '<div><div class="field"><label>Firma</label><input type="text"></div><div class="field"><label>Rechnungsnummer <span class="badge">optional</span></label><input type="text"></div></div></div>'+
- '<div class="grid grid-2"><div class="field"><label>Betrag brutto (EUR)</label><input type="number" step="0.01" min="0.01"></div>'+
- '<div class="field"><label>Umsetzung in</label><select id="zl" onchange="zz()"><option>Haus</option><option>Wohnung 1</option><option>Wohnung 2</option></select></div></div>'+
- '<div class="field"><label><input type="checkbox" id="ul" checked onchange="zz()"> Umlegbar (auf die Betriebskostenabrechnung)</label></div>'+
- '<div class="field" id="lg"><label>Berechnungslogik</label><select><option>Je Wohneinheit</option><option>Je anteiliges Flurstück</option><option>Je anteilige Wohnungsgröße</option><option>Je Anzahl Personen</option></select></div>'+
+function sel(opts,v){return opts.map(function(o){return '<option'+(o===v?' selected':'')+'>'+o+'</option>'}).join("")}
+function form(titel,d){d=d||{m:"2026-10",art:"Reparatur",b:"",txt:"",firma:"",nr:"",betrag:"",ziel:"Haus",umleg:true,logik:"Je Wohneinheit"};
+ return '<form class="panel" onsubmit="return false" style="margin-bottom:1rem"><h3 style="margin-top:0">'+titel+'</h3>'+
+ '<div class="grid grid-2"><div class="field"><label>Abrechnungsmonat</label><input type="month" value="'+d.m+'"></div>'+
+ '<div class="field"><label>Art</label><select>'+sel(["Reparatur","Neuanschaffung","Wartung","Modernisierung","Sonstiges"],d.art)+'</select></div></div>'+
+ '<div class="grid grid-2"><div><div class="field"><label>Betreff</label><input type="text" value="'+d.b+'"></div>'+
+ '<div class="field"><label>Kurzbeschreibung</label><textarea rows="5" style="width:100%;box-sizing:border-box;font:inherit">'+d.txt+'</textarea></div></div>'+
+ '<div><div class="field"><label>Firma</label><input type="text" value="'+d.firma+'"></div><div class="field"><label>Rechnungsnummer <span class="badge">optional</span></label><input type="text" value="'+d.nr+'"></div></div></div>'+
+ '<div class="grid grid-2"><div class="field"><label>Betrag brutto (EUR)</label><input type="number" step="0.01" min="0.01" value="'+d.betrag+'"></div>'+
+ '<div class="field"><label>Umsetzung in</label><select id="zl" onchange="zz()">'+sel(["Haus","Wohnung 1","Wohnung 2"],d.ziel)+'</select></div></div>'+
+ '<div class="field"><label><input type="checkbox" id="ul" '+(d.umleg?'checked ':'')+'onchange="zz()"> Umlegbar (auf die Betriebskostenabrechnung)</label></div>'+
+ '<div class="field" id="lg"><label>Berechnungslogik</label><select>'+sel(["Je Wohneinheit","Je anteiliges Flurstück","Je anteilige Wohnungsgröße","Je Anzahl Personen"],d.logik||"Je Wohneinheit")+'</select></div>'+
  '<p class="muted" id="hint" style="display:none">Hinweis: Reparaturen und Neuanschaffungen sind rechtlich meist nicht umlegbar.</p>'+
- '<div class="btn-row"><button class="primary" type="submit">Speichern</button><button class="secondary" type="button" onclick="zeige(false)">Abbrechen</button></div></form>'}
+ '<div class="btn-row"><button class="primary" type="submit" onclick="speichern()">Speichern</button><button class="secondary" type="button" onclick="zeige(false)">Abbrechen</button></div></form>'}
 function zz(){var ul=document.getElementById("ul"),zl=document.getElementById("zl");if(!ul)return;document.getElementById("lg").style.display=(ul.checked&&zl.value==="Haus")?"":"none"}
 function imp(){return '<form class="panel" onsubmit="return false" style="margin-bottom:1rem"><div class="field"><label>Oder: Sonderkosten aus CSV importieren (gleiches Format wie der CSV-Export)</label><input type="file" accept=".csv,text/csv"></div><button type="submit" class="secondary">CSV Import</button><div class="muted" style="margin-top:.4rem">Prototyp-Hinweis: wie bei Fixkosten/Ablesung nur sichtbar, solange noch nichts erfasst ist (nur Vermieter:in).</div></form>'}
-function acts(){return '<span class="sk-actions"> · <a href="#" style="margin-left:0">Korrigieren</a> · <a href="#" style="margin-left:0;color:var(--danger)">Löschen</a></span>'}
+function acts(id){return '<span class="sk-actions"> · <a href="#" style="margin-left:0" onclick="S.edit='+id+';S.form=false;draw();return false">Korrigieren</a> · <a href="#" style="margin-left:0;color:var(--danger)" onclick="loesche('+id+');return false">Löschen</a></span>'}
 
 // Variante A: Liste mit zwei Zeilen je Eintrag, Maske als eigene Seite
 function A(){
@@ -311,14 +313,15 @@ function A(){
 
 // Variante B: nach Monat gruppiert, Maske klappt oben inline auf
 function B(){
- var h=jahr()+summen()+(S.form?'':'<div class="btn-row"><button class="button success" onclick="zeige(true)">Neue Sonderkosten</button></div>')+(S.form?imp()+form("Neue Sonderkosten"):"");
+ var h=jahr()+(S.msg?'<p class="panel" style="border-color:#2e7d32;margin-top:1rem">✓ '+S.msg+'</p>':'')+summen()+(S.form?'':'<div class="btn-row"><button class="button success" onclick="zeige(true)">Neue Sonderkosten</button></div>')+(S.form?imp()+form("Neue Sonderkosten"):"");
  var fa=S.art||"",L=D.filter(function(d){return !fa||d.art===fa});
  h+='<div class="field" style="max-width:14rem;margin:.6rem 0 0"><label>Art</label><select onchange="S.art=this.value;draw()">'+["","Reparatur","Neuanschaffung","Wartung","Modernisierung","Sonstiges"].map(function(a){return '<option value="'+a+'"'+(a===fa?" selected":"")+'>'+(a||"Alle Arten")+'</option>'}).join("")+'</select></div>';
  if(!L.length)h+='<p class="muted">Keine Sonderkosten dieser Art.</p>';
  var cur="";L.forEach(function(d){if(d.m!==cur){cur=d.m;var s=0;L.forEach(function(e){if(e.m===cur&&e.umleg)s+=e.betrag});h+='<div class="sk-mon"><span>'+ml(cur)+'</span><span class="muted">umlegbar '+eur(s)+'</span></div>'}
+  if(S.edit===d.id){h+=form("Sonderkosten korrigieren",d);return}
   h+='<div class="panel" style="margin:.3rem 0"><div class="sk-l1"><strong>'+d.b+'</strong><span class="badge">'+d.art+'</span><span class="betrag">'+eur(d.betrag)+'</span></div>'+
   '<div class="sk-l2">'+d.firma+(d.nr?' · Nr. '+d.nr:'')+'</div>'+
-  '<div class="sk-l2">'+tag(d)+' '+zuord(d)+acts()+'</div>'+
+  '<div class="sk-l2">'+tag(d)+' '+zuord(d)+acts(d.id)+'</div>'+
   '<details style="margin-top:.3rem"><summary>Beschreibung</summary><div class="sk-l2" style="margin-top:.2rem">'+d.txt+'</div></details></div>'});
  return h+'<div class="btn-row"><a href="#" class="button secondary">CSV Export</a></div>'}
 
@@ -335,10 +338,12 @@ function C(){
  else h+='<div class="panel muted">Eintrag wählen oder neu erfassen.</div>';
  return h+'<div class="btn-row"><button class="button success" onclick="zeige(true)">Neue Sonderkosten</button></div></div></div>'}
 
-var S={form:false,sel:null,f:"alle"},V=["A","B","C"],N={A:"Liste, Zwei-Zeilen-Einträge, Maske eigene Seite",B:"nach Monat gruppiert, Maske inline",C:"Tabelle mit Filter, Detail rechts"};
+var S={edit:null,msg:null,form:false,sel:null,f:"alle"},V=["A","B","C"],N={A:"Liste, Zwei-Zeilen-Einträge, Maske eigene Seite",B:"nach Monat gruppiert, Maske inline",C:"Tabelle mit Filter, Detail rechts"};
 var cur=(new URLSearchParams(location.search).get("variant")||"B").toUpperCase();if(V.indexOf(cur)<0)cur="B";
-function zeige(x){S.form=x;draw()}
-function draw(){document.getElementById("root").innerHTML={A:A,B:B,C:C}[cur]();document.getElementById("vl").textContent=cur+" ("+N[cur]+")";zz()}
+function zeige(x){S.form=x;S.edit=null;draw()}
+function speichern(){var m=S.edit?"Änderung gespeichert (im Prototyp nicht wirklich).":"Gespeichert (im Prototyp nicht wirklich).";S.form=false;S.edit=null;S.msg=m;draw()}
+function loesche(id){var d=D.filter(function(x){return x.id===id})[0];if(confirm('Sonderkosten "'+d.b+'" ('+ml(d.m)+') wirklich löschen?'+(d.umleg?'\n\nDie Kosten sind umlegbar und fließen in Saldo und Abrechnung ein. Mit dem Löschen ändern sie sich.':''))){D=D.filter(function(x){return x.id!==id});S.msg='Sonderkosten "'+d.b+'" gelöscht.';draw()}}
+function draw(){var keep=S.msg;document.getElementById("root").innerHTML={A:A,B:B,C:C}[cur]();document.getElementById("vl").textContent=cur+" ("+N[cur]+")";zz();if(keep===S.msg)S.msg=null}
 function go(i){cur=V[(V.indexOf(cur)+i+V.length)%V.length];S.form=false;S.sel=null;history.replaceState(null,"","?variant="+cur);draw()}
 document.getElementById("prev").onclick=function(){go(-1)};document.getElementById("next").onclick=function(){go(1)};
 document.addEventListener("keydown",function(e){if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;if(e.key==="ArrowLeft")go(-1);if(e.key==="ArrowRight")go(1)});
