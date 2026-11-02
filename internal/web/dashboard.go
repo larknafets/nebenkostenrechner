@@ -69,7 +69,7 @@ type mieteMonat struct {
 // costs (stopping at the oldest period without a previous period, same as
 // before), every fixed-costs entry's result, and the auto-following
 // display year. HasAnyData=false (zero-value everything else) when
-// neither readings nor fixed-costs entries exist yet. The second return value
+// neither readings, fixed-costs entries nor umlegbare Sonderkosten exist yet. The second return value
 // is the Miete projection taken from the same Datenstand (no second query),
 // the third the months whose Ablesungen wait for their Fixkosten (#364).
 func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, []calc.OffenerMonat, error) {
@@ -130,7 +130,9 @@ func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, []calc.OffenerM
 	fixkostenListe := alleFixkostenKosten(reihe)
 
 	jahr := anzeigeJahr(allPeriods, fixkostenEingaben)
-	// A month with only Sonderkosten counts like one with a reading (#413).
+	// A month with only Sonderkosten counts like one with a reading (#413). Its
+	// year wins when it is newer, or when there is no other data (anzeigeJahr
+	// would fall back to today's year then).
 	if len(skMonate) > 0 {
 		if y, ok := store.Abrechnungsmonat(skMonate[0]).Jahr(); ok && (y > jahr || len(allPeriods)+len(fixkostenEingaben) == 0) {
 			jahr = y
