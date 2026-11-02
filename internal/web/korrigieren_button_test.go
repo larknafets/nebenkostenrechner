@@ -54,3 +54,22 @@ func TestFixkostenDetail_KorrigierenObenLoeschenUnten(t *testing.T) {
 		t.Error("Fixkosteneingabe löschen fehlt")
 	}
 }
+
+func TestAblesungDetail_LoeschenFragtImBestaetigungsOverlay(t *testing.T) {
+	db := openTestDB(t)
+	id, err := store.CreatePeriod(db, seedPeriodInputAt("2026-11-01"))
+	if err != nil {
+		t.Fatalf("CreatePeriod: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/ablesungen/"+strconv.FormatInt(id, 10), nil)
+	req.SetPathValue("id", strconv.FormatInt(id, 10))
+	w := httptest.NewRecorder()
+	handleAblesungDetail(newZugang("", nil))(w, requestWithDB(req, db))
+	body := w.Body.String()
+	if !strings.Contains(body, `data-bestaetigen="Ablesung vom`) {
+		t.Error("Löschen-Rückfrage der Ablesung fehlt")
+	}
+	if strings.Contains(body, "confirm(") {
+		t.Error("Browser-confirm() statt Bestätigungs-Overlay")
+	}
+}
