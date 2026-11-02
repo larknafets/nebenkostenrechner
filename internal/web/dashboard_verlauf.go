@@ -149,13 +149,14 @@ func groupKostenByMonat(apartmentID int64, periodenKosten []periodKosten) map[st
 // are already newest-first). A month in offen (#364) gets a row of its own
 // even without data: "Fixkosten fehlen" if it has no Eingabe, "offen" for the
 // Verbrauch if it has an incomplete one.
-func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten, offen []calc.OffenerMonat) dashboardVerlaufSpalte {
+func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKosten []periodKosten, fixkostenListe []fixkostenKosten, offen []calc.OffenerMonat, sonderkosten []calc.MonatsSonderkosten) dashboardVerlaufSpalte {
 	type bucket struct {
 		label         string
 		jahr          int
 		verbrauchKats []kategorie
 		fixErg        *calc.FixkostenErgebnis
 		offen         bool
+		sonderkosten  []calc.MonatsSonderkosten
 	}
 	buckets := map[string]*bucket{}
 	var order []string
@@ -189,6 +190,11 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 			b.offen = true
 		}
 	}
+	for _, sk := range sonderkosten {
+		if b := ensure(sk.Monat); b != nil {
+			b.sonderkosten = append(b.sonderkosten, sk)
+		}
+	}
 
 	// What counts in the balance (Abschlag, PV-Gutschrift, the sums) is
 	// decided by calc.Monatswerte, the same fold the Jahresabrechnung reads.
@@ -202,7 +208,7 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 	for i, fk := range fixkostenListe {
 		fixkosten[i] = calc.MonatsFixkosten{Monat: fk.Monat, Ergebnis: fk.Erg, Abschlag: fk.Abschlag}
 	}
-	werte := calc.Monatswerte(apartmentID, kosten, fixkosten, calc.Posten{Strom: true, Wallbox: true, PVGutschrift: true, FixkostenJeLogik: true})
+	werte := calc.Monatswerte(apartmentID, kosten, fixkosten, calc.Posten{Strom: true, Wallbox: true, PVGutschrift: true, FixkostenJeLogik: true, Sonderkosten: sonderkosten})
 	gutschrift := make(map[string]float64, len(werte))
 	for _, w := range werte {
 		gutschrift[w.Monat] = w.Gutschrift
@@ -229,9 +235,9 @@ func buildDashboardVerlauf(apartmentID int64, apartmentName string, periodenKost
 			dm.VerbrauchGesamt = calc.Round2(dm.VerbrauchGesamt)
 		}
 
-		if b.fixErg != nil {
+		if b.fixErg != nil || len(b.sonderkosten) > 0 {
 			dm.HasFixkosten = true
-			dm.FixkostenSegmente = fixkostenGruppen(apartmentID, b.fixErg)
+			dm.FixkostenSegmente = fixkostenGruppen(apartmentID, b.fixErg, b.sonderkosten)
 			for _, seg := range dm.FixkostenSegmente {
 				dm.FixkostenGesamt += seg.Kosten
 			}

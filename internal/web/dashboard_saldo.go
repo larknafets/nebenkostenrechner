@@ -19,7 +19,8 @@ import (
 func applySaldo(monate []dashboardMonat, keys []string, werte []calc.Monatswert) {
 	var reihe []calc.Monatswert
 	for _, w := range werte {
-		if w.HatFixkosten {
+		// A month with only Sonderkosten has a row and a balance as well.
+		if w.HatFixkosten || w.HatSonderkosten {
 			reihe = append(reihe, w)
 		}
 	}

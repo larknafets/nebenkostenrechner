@@ -18,7 +18,9 @@ type dashboardData struct {
 	Apartments     []store.Apartment
 	PeriodenKosten []periodKosten
 	FixkostenListe []fixkostenKosten
-	Jahr           int
+	// Sonderkosten are the entries that count per apartment id (calc.SonderkostenMonate).
+	Sonderkosten map[int64][]calc.MonatsSonderkosten
+	Jahr         int
 	// Monate are all Abrechnungsmonate with a reading or a Fixkosteneingabe,
 	// newest first. NeuesJahr is the year of the newest one, Jahr the shown
 	// year (NeuesJahr until waehleJahr picks another).
@@ -114,7 +116,12 @@ func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, []calc.OffenerM
 		periodenKosten = append(periodenKosten, periodKosten{ReadingDate: a.Period.ReadingDate, Monat: a.Period.Monat, K: a.Kosten})
 	}
 
-	fixkostenListe := alleFixkostenKosten(calc.FixkostenreiheAus(ds))
+	reihe := calc.FixkostenreiheAus(ds)
+	fixkostenListe := alleFixkostenKosten(reihe)
+	sonderkosten := map[int64][]calc.MonatsSonderkosten{}
+	for _, a := range apartments {
+		sonderkosten[a.ID] = calc.SonderkostenMonate(ds.Sonderkosten, apartments, reihe, a.ID)
+	}
 
 	jahr := anzeigeJahr(allPeriods, fixkostenEingaben)
 	var monate []string
@@ -131,6 +138,7 @@ func loadDashboardData(db *sql.DB) (dashboardData, []mieteMonat, []calc.OffenerM
 		Apartments:             apartments,
 		PeriodenKosten:         periodenKosten,
 		FixkostenListe:         fixkostenListe,
+		Sonderkosten:           sonderkosten,
 		Jahr:                   jahr,
 		Monate:                 alle,
 		NeuesJahr:              jahr,
@@ -207,10 +215,11 @@ func (dd dashboardData) bisGrenze() string {
 	return dd.Bis
 }
 
-func pkMonat(pk periodKosten) string        { return pk.Monat }
-func fkMonat(fk fixkostenKosten) string     { return fk.Monat }
-func mieteMonatKey(m mieteMonat) string     { return m.Monat }
-func offenMonat(o calc.OffenerMonat) string { return o.Monat }
+func pkMonat(pk periodKosten) string            { return pk.Monat }
+func fkMonat(fk fixkostenKosten) string         { return fk.Monat }
+func skMonat(sk calc.MonatsSonderkosten) string { return sk.Monat }
+func mieteMonatKey(m mieteMonat) string         { return m.Monat }
+func offenMonat(o calc.OffenerMonat) string     { return o.Monat }
 
 // bisMonat keeps the entries up to and including bis ("" = all). Monat values
 // are "YYYY-MM-01", so they compare as strings.

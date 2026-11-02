@@ -227,6 +227,8 @@ type BerechnungsDaten struct {
 	Fixkosten *calc.Fixkostenreihe
 	// Kosten are the Verbrauchskosten of every Ablesung in Pruef.Periods.
 	Kosten *calc.Verbrauchskosten
+	// Sonderkosten are all entries (Datenstand.Sonderkosten).
+	Sonderkosten []store.Sonderkosten
 }
 
 // Ergebnis is what the page needs: the check and, if it found
@@ -350,6 +352,9 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	for _, z := range ab.Fixkosten {
 		ab.Betriebskosten += z.Betrag
 	}
+	for _, sk := range f.sonderkosten {
+		ab.Betriebskosten += sk.Betrag
+	}
 	ab.Betriebskosten = calc.Round2(ab.Betriebskosten)
 	ab.Vorauszahlungen = calc.Round2(ab.Vorauszahlungen)
 	// The Jahressaldo is one period of the same fold the Monatsverlauf uses.
@@ -396,6 +401,8 @@ type monatsfaltung struct {
 	// Abrechnung.
 	ablesungen []calc.Ablesung
 	werte      []calc.Monatswert
+	// sonderkosten are the entries of the range that count for the apartment.
+	sonderkosten []calc.MonatsSonderkosten
 }
 
 // faltMonate folds the months von to bis (first of month, both included) for
@@ -428,9 +435,17 @@ func faltMonate(d BerechnungsDaten, von, bis time.Time, apartmentID int64, s sto
 	for _, kp := range d.Kostenpositionen {
 		umlagefaehig[kp.Key] = kp.Umlagefaehig
 	}
+	// Like Umlagefähig of a Kostenposition, a Sonderkosten entry counts by its
+	// umlegbar flag alone, the Wohnungsstatus s does not matter.
+	for _, sk := range calc.SonderkostenMonate(d.Sonderkosten, d.Pruef.Apartments, d.Fixkosten, apartmentID) {
+		if f.imBereich[sk.Monat] {
+			f.sonderkosten = append(f.sonderkosten, sk)
+		}
+	}
 	f.werte = calc.Monatswerte(apartmentID, kosten, fixkosten, calc.Posten{
 		Strom: s.AbrechnungStrom(), Wallbox: s.AbrechnungWallbox(), PVGutschrift: s.AbrechnungPVGutschrift(),
-		Fixkosten: func(key string) bool { return umlagefaehig[key] },
+		Fixkosten:    func(key string) bool { return umlagefaehig[key] },
+		Sonderkosten: f.sonderkosten,
 	})
 	return f
 }

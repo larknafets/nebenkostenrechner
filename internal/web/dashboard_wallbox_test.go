@@ -196,7 +196,7 @@ func TestJahreszeile_NettoMitGutschriftSumme(t *testing.T) {
 		Strom: &calc.StromErgebnis{}, Wasser: &calc.WasserErgebnis{},
 		Heizung: &calc.HeizungErgebnis{KostenHeizungW1: 30}, PVGutschriftW1: 4.20,
 	}
-	spalte := buildDashboardVerlauf(1, "Wohnung 1", []periodKosten{{ReadingDate: "2026-11-15", Monat: "2026-11-01", K: k}}, nil, nil)
+	spalte := buildDashboardVerlauf(1, "Wohnung 1", []periodKosten{{ReadingDate: "2026-11-15", Monat: "2026-11-01", K: k}}, nil, nil, nil)
 	var jz *dashboardJahreszeile
 	for _, e := range spalte.Eintraege {
 		if e.Jahreszeile != nil {
