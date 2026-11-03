@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Checks the commit message against docs/agents/git-commit-messages.md: subject
-# format, length and no em dash. Enable once per clone:
+# format, length, body wrap at 72 and no em dash. Enable once per clone:
 #   git config core.hooksPath .githooks
 # Skip in an emergency with the --no-verify flag of the commit.
 set -euo pipefail
@@ -34,6 +34,11 @@ fi
 
 if printf '%s\n' "$message" | grep -q $'\xe2\x80\x94'; then
   fail "message contains an em dash, use a comma, a colon or ' - '"
+fi
+
+# Body lines wrap at 72 characters; a line with a URL may run over.
+if long=$(printf '%s\n' "$message" | sed 1d | awk 'length($0) > 72 && $0 !~ /https?:\/\// { print length($0) " characters"; exit }') && [ -n "$long" ]; then
+  fail "a body line has $long, wrap at 72 (git-commit-messages.md)"
 fi
 
 # Umlaute are written as ä, ö, ü, ß, never as ae, oe, ue, ss. A general pattern
