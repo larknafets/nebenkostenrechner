@@ -271,7 +271,7 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 			m.Karten = append(m.Karten, sonderkostenKarte{
 				Betreff: s.Betreff, Beschreibung: s.Beschreibung, Art: sonderkostenArtLabel(s.Art), Firma: s.Firma,
 				Rechnungsnummer: s.Rechnungsnummer, Betrag: s.Betrag, Umlegbar: s.Umlegbar, Zuordnung: sonderkostenZuordnung(s),
-				NichtBerechenbar: s.Umlegbar && s.Logik == store.LogikPersonen && !slices.Contains(fixMonate, s.Monat[:7]),
+				NichtBerechenbar: s.BrauchtFixkosteneingabe() && !slices.Contains(fixMonate, s.Monat[:7]),
 				ID:               s.ID, Maske: neueMaske("sk-"+strconv.FormatInt(s.ID, 10), s, s.Monat[:7], formatDecimalDE2(s.Betrag)),
 			})
 			if s.Umlegbar {
@@ -318,9 +318,15 @@ func sonderkostenLoeschenFrage(db *sql.DB, monat string) string {
 	if err != nil {
 		return ""
 	}
+	return loeschenFrageText(alle, monat)
+}
+
+// loeschenFrageText counts the entries of monat that need its Fixkosteneingabe
+// and builds the sentence. Pure, the DB part is sonderkostenLoeschenFrage.
+func loeschenFrageText(alle []store.Sonderkosten, monat string) string {
 	n := 0
 	for _, s := range alle {
-		if s.Monat == monat && s.Umlegbar && s.Logik == store.LogikPersonen {
+		if s.Monat == monat && s.BrauchtFixkosteneingabe() {
 			n++
 		}
 	}

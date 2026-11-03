@@ -61,6 +61,13 @@ type Sonderkosten struct {
 	Logik           string
 }
 
+// BrauchtFixkosteneingabe is the one place of the rule: an entry that is
+// umlegbar, assigned to the Haus and split by Je Anzahl Personen needs the
+// Fixkosteneingabe of its Abrechnungsmonat, without it it counts nowhere.
+func (s Sonderkosten) BrauchtFixkosteneingabe() bool {
+	return s.Umlegbar && s.Umsetzung == UmsetzungHaus && s.Logik == LogikPersonen
+}
+
 // SonderkostenFehler is the error of a write that failed validation, one
 // German message per violation (see PruefeSonderkosten).
 type SonderkostenFehler struct{ Meldungen []string }
@@ -185,7 +192,7 @@ func validiereSonderkosten(s Sonderkosten, hatFixkosteneingabe bool) []string {
 		switch {
 		case !slices.Contains(logikenHaus, s.Logik):
 			fehler = append(fehler, "Die Berechnungslogik fehlt oder ist ungültig.")
-		case s.Logik == LogikPersonen && !hatFixkosteneingabe:
+		case s.BrauchtFixkosteneingabe() && !hatFixkosteneingabe:
 			fehler = append(fehler, "Je Anzahl Personen geht nur, wenn der Abrechnungsmonat eine Fixkosteneingabe hat.")
 		}
 	case s.Logik != "":
