@@ -51,6 +51,7 @@ Keep every section, an empty one included. Do not change the headings.
 ## Fehlerkorrekturen
 
 - Das Dashboard zeigt das Jahr des Abrechnungsmonats: Bei einer Ablesung vom 2. Januar für den Abrechnungsmonat Dezember zeigte es ein Jahr ohne Monat mit Daten und leere Jahreskarten (#433).
+- Beim Korrigieren einer Ablesung wird die Reihenfolge jetzt in derselben Transaktion geprüft (#438).
 
 ## Wartung
 

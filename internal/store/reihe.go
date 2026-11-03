@@ -150,15 +150,15 @@ func neighborValues(all []PeriodSummary, periodID int64, currentDate string, val
 
 // periodNeighborContext fetches periodID's own (pre-edit) ReadingDate and
 // every period, for the neighbor-bounds check in checkReadingOrder.
-func periodNeighborContext(db *sql.DB, periodID int64) (currentDate string, all []PeriodSummary, err error) {
-	if err := db.QueryRow(`SELECT reading_date FROM periods WHERE id = ?`, periodID).Scan(&currentDate); err != nil {
+func periodNeighborContext(q querier, periodID int64) (currentDate string, all []PeriodSummary, err error) {
+	if err := q.QueryRow(`SELECT reading_date FROM periods WHERE id = ?`, periodID).Scan(&currentDate); err != nil {
 		if err == sql.ErrNoRows {
 			return "", nil, fmt.Errorf("%w: period %d", ErrPeriodNotFound, periodID)
 		}
 		return "", nil, fmt.Errorf("query period %d: %w", periodID, err)
 	}
 
-	all, err = AllPeriods(db)
+	all, err = AllPeriods(q)
 	if err != nil {
 		return "", nil, fmt.Errorf("periods: %w", err)
 	}
@@ -214,8 +214,8 @@ func (r orderRule) check(all []PeriodSummary, periodID int64, currentDate, v str
 // already occupies, not jump elsewhere and skip the check. The context is
 // loaded once for both rules; the date is checked first. Only UpdatePeriod
 // calls this, appending is checked by checkAppend.
-func checkReadingOrder(db *sql.DB, periodID int64, in PeriodInput) error {
-	currentDate, all, err := periodNeighborContext(db, periodID)
+func checkReadingOrder(q querier, periodID int64, in PeriodInput) error {
+	currentDate, all, err := periodNeighborContext(q, periodID)
 	if err != nil {
 		return err
 	}

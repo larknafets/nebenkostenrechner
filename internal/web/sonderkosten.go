@@ -1,7 +1,6 @@
 package web
 
 import (
-	"database/sql"
 	"errors"
 	"net/http"
 	"strconv"
@@ -257,26 +256,10 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 	}
 }
 
-// sonderkostenLoeschenFrage is the extra line when a Fixkosteneingabe is
-// deleted: the Sonderkosten of its month with "Je Anzahl Personen" need it and
-// count nowhere without it. "" when none is affected or the read fails.
-func sonderkostenLoeschenFrage(db *sql.DB, monat string) string {
-	alle, err := store.AllSonderkosten(db)
-	if err != nil {
-		return ""
-	}
-	return loeschenFrageText(alle, monat)
-}
-
-// loeschenFrageText counts the entries of monat that need its Fixkosteneingabe
-// and builds the sentence. Pure, the DB part is sonderkostenLoeschenFrage.
-func loeschenFrageText(alle []store.Sonderkosten, monat string) string {
-	n := 0
-	for _, s := range alle {
-		if s.Monat == monat && s.BrauchtFixkosteneingabe() {
-			n++
-		}
-	}
+// sonderkostenLoeschenText is the extra line when a Fixkosteneingabe is
+// deleted: n Sonderkosten of monat with "Je Anzahl Personen" need it and count
+// nowhere without it. "" for n = 0. The count is fixkostenWirkung.Sonderkosten.
+func sonderkostenLoeschenText(n int, monat string) string {
 	switch n {
 	case 0:
 		return ""
