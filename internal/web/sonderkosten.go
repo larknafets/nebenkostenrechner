@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -227,82 +226,30 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 			fixMonate = append(fixMonate, e.Monat[:7])
 		}
 
-		// The Jahr filter lists every year with entries and always the current
-		// year, which is the default.
-		aktuell := time.Now().Year()
-		jahre := []int{aktuell}
-		for _, s := range alle {
-			if y, ok := store.Abrechnungsmonat(s.Monat).Jahr(); ok && !slices.Contains(jahre, y) {
-				jahre = append(jahre, y)
-			}
-		}
-		slices.Sort(jahre)
-		slices.Reverse(jahre)
-		jahr := aktuell
-		alleJahre := r.URL.Query().Get("jahr") == "alle"
-		if wunsch, err := strconv.Atoi(r.URL.Query().Get("jahr")); err == nil && slices.Contains(jahre, wunsch) {
-			jahr = wunsch
-		}
-		art := r.URL.Query().Get("art")
-		if !slices.ContainsFunc(store.SonderkostenArten, func(a store.Auswahl) bool { return a.Wert == art }) {
-			art = ""
-		}
-
-		var gesamt, umlegbar float64
-		var monate []sonderkostenMonat
-		for _, s := range alle {
-			if y, _ := store.Abrechnungsmonat(s.Monat).Jahr(); !alleJahre && y != jahr {
-				continue
-			}
-			if art != "" && s.Art != art {
-				continue
-			}
-			gesamt += s.Betrag
-			if s.Umlegbar {
-				umlegbar += s.Betrag
-			}
-			if n := len(monate); n == 0 || monate[n-1].Label != store.MonatLabel(s.Monat) {
-				monate = append(monate, sonderkostenMonat{Label: store.MonatLabel(s.Monat)})
-			}
-			m := &monate[len(monate)-1]
-			if s.Umlegbar {
-				m.Umlegbar += s.Betrag
-			}
-			m.Karten = append(m.Karten, sonderkostenKarte{
-				Betreff: s.Betreff, Beschreibung: s.Beschreibung, Art: sonderkostenArtLabel(s.Art), Firma: s.Firma,
-				Rechnungsnummer: s.Rechnungsnummer, Betrag: s.Betrag, Umlegbar: s.Umlegbar, Zuordnung: sonderkostenZuordnung(s),
-				NichtBerechenbar: s.BrauchtFixkosteneingabe() && !slices.Contains(fixMonate, s.Monat[:7]),
-				ID:               s.ID, Maske: neueMaske("sk-"+strconv.FormatInt(s.ID, 10), s, s.Monat[:7], formatDecimalDE2(s.Betrag)),
-			})
-			if s.Umlegbar {
-				m.Karten[len(m.Karten)-1].LoeschenZusatz = "Saldo und Abrechnung ändern sich."
-			}
-		}
-		// Newest month first, like the Dashboard.
-		slices.Reverse(monate)
+		heute := time.Now()
+		jahre := sonderkostenJahre(alle, heute.Year())
+		filter := sonderkostenFilterAus(r.URL.Query().Get("jahr"), r.URL.Query().Get("art"), jahre, heute.Year())
+		liste := baueSonderkostenListe(alle, fixMonate, filter)
 
 		data := struct {
 			navData
-			Aktuell         string
-			Jahr            int
-			AlleJahre       bool  // the Jahr filter is "Alle Jahre"
-			Jahre           []int // years for the Jahr filter, newest first
-			Gesamt          float64
-			Umlegbar        float64
-			VermieterTraegt float64
-			Arten           []store.Auswahl
-			Art             string
-			Monate          []sonderkostenMonat
-			HatEintraege    bool
-			NeuMonat        string
-			NeuMaske        sonderkostenMaske
-			FixMonate       []string // months ("YYYY-MM") with a Fixkosteneingabe, for the Personen option
+			Aktuell string
+			sonderkostenListe
+			Jahr         int
+			AlleJahre    bool  // the Jahr filter is "Alle Jahre"
+			Jahre        []int // years for the Jahr filter, newest first
+			Arten        []store.Auswahl
+			Art          string
+			HatEintraege bool
+			NeuMonat     string
+			NeuMaske     sonderkostenMaske
+			FixMonate    []string // months ("YYYY-MM") with a Fixkosteneingabe, for the Personen option
 		}{
-			navData: z.NavData(r), Aktuell: "sonderkosten", Jahr: jahr, AlleJahre: alleJahre, Jahre: jahre,
-			Gesamt: gesamt, Umlegbar: umlegbar, VermieterTraegt: gesamt - umlegbar,
-			Arten: store.SonderkostenArten, Art: art, Monate: monate, HatEintraege: len(alle) > 0,
-			NeuMonat: time.Now().Format("2006-01"), FixMonate: fixMonate,
-			NeuMaske: neueMaske("sk", store.Sonderkosten{Art: store.ArtReparatur, Umsetzung: store.UmsetzungHaus}, time.Now().Format("2006-01"), ""),
+			navData: z.NavData(r), Aktuell: "sonderkosten", sonderkostenListe: liste,
+			Jahr: filter.Jahr, AlleJahre: filter.AlleJahre, Jahre: jahre,
+			Arten: store.SonderkostenArten, Art: filter.Art, HatEintraege: len(alle) > 0,
+			NeuMonat: heute.Format("2006-01"), FixMonate: fixMonate,
+			NeuMaske: neueMaske("sk", store.Sonderkosten{Art: store.ArtReparatur, Umsetzung: store.UmsetzungHaus}, heute.Format("2006-01"), ""),
 		}
 		if err := sonderkostenTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
