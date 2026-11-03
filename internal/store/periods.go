@@ -170,15 +170,16 @@ func UpdatePeriod(db *sql.DB, periodID int64, in PeriodInput) error {
 	if err := in.Validate(); err != nil {
 		return err
 	}
-	if err := checkReadingOrder(db, periodID, in); err != nil {
-		return err
-	}
 
 	tx, err := db.Begin()
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
 	defer tx.Rollback()
+
+	if err := checkReadingOrder(tx, periodID, in); err != nil {
+		return err
+	}
 
 	res, err := tx.Exec(
 		// Teilstand (Ticket #128): only overwrite monat when this round
@@ -295,8 +296,8 @@ type PeriodSummary struct {
 }
 
 // AllPeriods returns every period (newest first), without readings.
-func AllPeriods(db *sql.DB) ([]PeriodSummary, error) {
-	rows, err := db.Query(`SELECT id, reading_date, monat FROM periods ORDER BY reading_date DESC, id DESC`)
+func AllPeriods(q querier) ([]PeriodSummary, error) {
+	rows, err := q.Query(`SELECT id, reading_date, monat FROM periods ORDER BY reading_date DESC, id DESC`)
 	if err != nil {
 		return nil, fmt.Errorf("query periods: %w", err)
 	}
