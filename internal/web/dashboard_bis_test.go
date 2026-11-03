@@ -69,12 +69,12 @@ func TestDashboard_JahressummenBisMonat(t *testing.T) {
 }
 
 func TestDashboard_SaldoImVorjahr(t *testing.T) {
-	dd, _, offen, err := loadDashboardData(demoDB(t), wunsch{})
+	dd, _, offen, err := loadDashboardData(demoDB(t), wunsch{}, 2026)
 	if err != nil {
 		t.Fatal(err)
 	}
 	neu, _ := buildEntityView(dd, offen, 2)
-	dd, _, offen, err = loadDashboardData(demoDB(t), wunsch{jahr: 2025})
+	dd, _, offen, err = loadDashboardData(demoDB(t), wunsch{jahr: 2025}, 2026)
 	if err != nil {
 		t.Fatal(err)
 	}

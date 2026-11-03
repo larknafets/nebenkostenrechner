@@ -123,7 +123,7 @@ func TestLoadDashboardData_LiefertMieteProjektion(t *testing.T) {
 		t.Fatalf("import status %d (%s)", w.Code, w.Body.String())
 	}
 
-	_, miete, _, err := loadDashboardData(db, wunsch{})
+	_, miete, _, err := loadDashboardData(db, wunsch{}, 2026)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -64,7 +64,7 @@ type mieteMonat struct {
 // neither readings, fixed-costs entries nor umlegbare Sonderkosten exist yet. The second return value
 // is the Miete projection taken from the same Datenstand (no second query),
 // the third the months whose Ablesungen wait for their Fixkosten (#364).
-func loadDashboardData(db *sql.DB, w wunsch) (dashboardData, []mieteMonat, []calc.OffenerMonat, error) {
+func loadDashboardData(db *sql.DB, w wunsch, heute int) (dashboardData, []mieteMonat, []calc.OffenerMonat, error) {
 	ds, err := store.LadeDatenstand(db)
 	if err != nil {
 		return dashboardData{}, nil, nil, err
@@ -137,7 +137,7 @@ func loadDashboardData(db *sql.DB, w wunsch) (dashboardData, []mieteMonat, []cal
 		PeriodenKosten:         periodenKosten,
 		FixkostenListe:         fixkostenListe,
 		Sonderkosten:           sonderkosten,
-		monatsauswahl:          neueMonatsauswahl(monate, w, time.Now().Year()),
+		monatsauswahl:          neueMonatsauswahl(monate, w, heute),
 		WallboxWeiterberechnen: ds.Haus.WallboxWeiterberechnen,
 	}, miete, verbrauchskosten.OffeneMonate(), nil
 }
@@ -170,7 +170,7 @@ func bisMonat[T any](xs []T, bis string, monat func(T) string) []T {
 func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		jahrWunsch, _ := strconv.Atoi(r.URL.Query().Get("jahr"))
-		dd, miete, offen, err := loadDashboardData(dbFromContext(r.Context()), wunsch{jahr: jahrWunsch, bis: r.URL.Query().Get("bis")})
+		dd, miete, offen, err := loadDashboardData(dbFromContext(r.Context()), wunsch{jahr: jahrWunsch, bis: r.URL.Query().Get("bis")}, time.Now().Year())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

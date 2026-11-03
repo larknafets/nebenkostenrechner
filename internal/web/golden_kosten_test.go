@@ -104,7 +104,7 @@ func TestKostenDemodatenGolden(t *testing.T) {
 		}
 	}
 
-	dash, _, _, err := loadDashboardData(db, wunsch{})
+	dash, _, _, err := loadDashboardData(db, wunsch{}, 2026)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}

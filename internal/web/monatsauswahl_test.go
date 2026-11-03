@@ -70,6 +70,14 @@ func TestNeueMonatsauswahl(t *testing.T) {
 			zurueck: "?jahr=2025",
 		},
 		{
+			name:   "Dezember und Januar in verschiedenen Jahren: das neueste Jahr zählt",
+			monate: []string{"2026-12-01", "2027-01-01"},
+			want: monatsauswahl{Jahr: 2027, NeuesJahr: 2027,
+				Monate:    []string{"2027-01-01", "2026-12-01"},
+				BisMonate: []string{"2027-01-01"}},
+			zurueck: "?jahr=2026",
+		},
+		{
 			name:   "nur Sonderkosten-Monate",
 			monate: []string{"2027-02-01"},
 			want:   monatsauswahl{Jahr: 2027, NeuesJahr: 2027, Monate: []string{"2027-02-01"}, BisMonate: []string{"2027-02-01"}},
