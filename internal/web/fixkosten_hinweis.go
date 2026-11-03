@@ -150,48 +150,76 @@ func gueltigerMonat(s string) bool {
 	return err == nil && t.Day() == 1
 }
 
+// fixkostenWirkung is what a change of the Fixkosteneingabe of Monat means
+// for other data: the Ablesungen waiting for it and the Sonderkosten that need
+// it. Plain data, the wording stays in the callers.
+type fixkostenWirkung struct {
+	Monat        string
+	Vollstaendig bool  // the Monat has a Fixkosteneingabe with all prices
+	EingabeID    int64 // the Eingabe of the Monat, 0 = none
+	Ablesungen   []calc.Ablesung
+	Sonderkosten int // entries of the Monat that need the Eingabe
+}
+
+// fixkostenWirkungVon derives the Wirkung for monat from the Datenstand and
+// the Verbrauchskosten computed from it.
+func fixkostenWirkungVon(ds *store.Datenstand, v *calc.Verbrauchskosten, monat string) fixkostenWirkung {
+	w := fixkostenWirkung{Monat: monat, Vollstaendig: v.MonatVollstaendig(monat), Ablesungen: v.BetroffeneAblesungen(monat)}
+	if e := v.Eingabe(monat); e != nil {
+		w.EingabeID = e.ID
+	}
+	for _, s := range ds.Sonderkosten {
+		if s.Monat == monat && s.BrauchtFixkosteneingabe() {
+			w.Sonderkosten++
+		}
+	}
+	return w
+}
+
+// Fehlt: the Eingabe is incomplete and an Ablesung waits for it.
+func (w fixkostenWirkung) Fehlt() bool { return !w.Vollstaendig && len(w.Ablesungen) > 0 }
+
+// Berechenbar: the Eingabe is complete and an Ablesung waits for it.
+func (w fixkostenWirkung) Berechenbar() bool { return w.Vollstaendig && len(w.Ablesungen) > 0 }
+
 // fehlenHinweisAusQuery is the warning for the Monat named by param (geloescht
 // or alt), or nil: no such parameter, the Monat is complete, or there is no
 // Ablesung to name. The link leads to the incomplete Eingabe of the Monat or
 // to the form for a new one.
-func fehlenHinweisAusQuery(v *calc.Verbrauchskosten, q url.Values, param string) *fixkostenHinweis {
+func fehlenHinweisAusQuery(ds *store.Datenstand, v *calc.Verbrauchskosten, q url.Values, param string) *fixkostenHinweis {
 	monat := q.Get(param)
-	if !gueltigerMonat(monat) || v.MonatVollstaendig(monat) {
+	if !gueltigerMonat(monat) {
 		return nil
 	}
-	ps := v.BetroffeneAblesungen(monat)
-	if len(ps) == 0 {
+	w := fixkostenWirkungVon(ds, v, monat)
+	if !w.Fehlt() {
 		return nil
 	}
-	var eingabeID int64
-	if e := v.Eingabe(monat); e != nil {
-		eingabeID = e.ID
-	}
-	return fixkostenFehlenHinweis(kontextLoeschen, []calc.OffenerMonat{{Monat: monat, EingabeID: eingabeID}}, ps)
+	return fixkostenFehlenHinweis(kontextLoeschen, []calc.OffenerMonat{{Monat: monat, EingabeID: w.EingabeID}}, w.Ablesungen)
 }
 
 // berechenbarHinweis is the information for the new Monat of a moved Eingabe,
 // or nil when it is not complete or has no Ablesung that was waiting for it.
-func berechenbarHinweis(v *calc.Verbrauchskosten, monat string) *fixkostenHinweis {
-	ps := v.BetroffeneAblesungen(monat)
-	if !v.MonatVollstaendig(monat) || len(ps) == 0 {
+func berechenbarHinweis(ds *store.Datenstand, v *calc.Verbrauchskosten, monat string) *fixkostenHinweis {
+	w := fixkostenWirkungVon(ds, v, monat)
+	if !w.Berechenbar() {
 		return nil
 	}
-	return &fixkostenHinweis{Text: fixkostenBerechenbarText(monat, ps), Info: true}
+	return &fixkostenHinweis{Text: fixkostenBerechenbarText(monat, w.Ablesungen), Info: true}
 }
 
 // fixkostenHinweiseNachAenderung are the notes on the detail page after a move
 // of the Eingabe to another Monat: the warning for the old Monat and the
 // information for the new one (the query carries "alt" only after a move).
-func fixkostenHinweiseNachAenderung(v *calc.Verbrauchskosten, q url.Values, neuerMonat string) []fixkostenHinweis {
+func fixkostenHinweiseNachAenderung(ds *store.Datenstand, v *calc.Verbrauchskosten, q url.Values, neuerMonat string) []fixkostenHinweis {
 	if !gueltigerMonat(q.Get(paramAlterMonat)) {
 		return nil
 	}
 	var out []fixkostenHinweis
-	if h := fehlenHinweisAusQuery(v, q, paramAlterMonat); h != nil {
+	if h := fehlenHinweisAusQuery(ds, v, q, paramAlterMonat); h != nil {
 		out = append(out, *h)
 	}
-	if h := berechenbarHinweis(v, neuerMonat); h != nil {
+	if h := berechenbarHinweis(ds, v, neuerMonat); h != nil {
 		out = append(out, *h)
 	}
 	return out

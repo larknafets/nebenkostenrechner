@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
@@ -203,7 +204,11 @@ func TestSonderkosten_PersonenOhneFixkosteneingabeIstMarkiert(t *testing.T) {
 	if strings.Contains(getMitCookies(t, mux, "/sonderkosten?jahr=2026", c).Body.String(), "nicht berechenbar") {
 		t.Error("mit Fixkosteneingabe ist der Eintrag berechenbar")
 	}
-	if !strings.Contains(sonderkostenLoeschenFrage(db, "2026-10-01"), "1 Sonderkosten-Eintrag") {
+	ds, err := store.LadeDatenstand(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(sonderkostenLoeschenText(fixkostenWirkungVon(ds, calc.KostenAus(ds), "2026-10-01").Sonderkosten, "2026-10-01"), "1 Sonderkosten-Eintrag") {
 		t.Error("die Löschfrage der Fixkosteneingabe nennt den Eintrag nicht")
 	}
 	if err := store.DeleteFixkostenEingabe(db, id); err != nil {
