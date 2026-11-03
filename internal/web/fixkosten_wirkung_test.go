@@ -1,6 +1,9 @@
 package web
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
@@ -60,9 +63,40 @@ func TestFixkostenWirkungVon(t *testing.T) {
 	for _, tt := range tests {
 		ds := &store.Datenstand{Periods: tt.periods, Eingaben: tt.eingaben, Sonderkosten: tt.sonder, Apartments: []store.Apartment{{ID: 1, QM: 1}, {ID: 2, QM: 1}}}
 		w := fixkostenWirkungVon(ds, calc.KostenAus(ds), "2026-10-01")
-		if w.Monat != "2026-10-01" || w.Vollstaendig != tt.vollstaendig || w.EingabeID != tt.eingabeID ||
+		if w.Vollstaendig != tt.vollstaendig || w.EingabeID != tt.eingabeID ||
 			len(w.Ablesungen) != tt.ablesungen || w.Sonderkosten != tt.sonderkosten || w.Fehlt() != tt.fehlt || w.Berechenbar() != tt.bere {
 			t.Errorf("%s: got %+v (Fehlt %v, Berechenbar %v)", tt.name, w, w.Fehlt(), w.Berechenbar())
+		}
+	}
+}
+
+// A failing Datenstand load ends as HTTP 500 on the detail page and, after a
+// delete, on the list. Dropping the Sonderkosten table breaks only that load.
+func TestFixkostenSeiten_DatenstandLadefehlerIstHTTP500(t *testing.T) {
+	db := openTestDB(t)
+	id, err := store.CreateFixkostenEingabe(db, hinweisFixkosten("2026-07-01"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`DROP TABLE sonderkosten`); err != nil {
+		t.Fatal(err)
+	}
+	z := newZugang("", nil)
+	for name, call := range map[string]func(http.ResponseWriter, *http.Request){
+		"Detail": func(w http.ResponseWriter, r *http.Request) {
+			r.SetPathValue("id", strconv.FormatInt(id, 10))
+			handleFixkostenDetail(z)(w, r)
+		},
+		"Liste nach Löschen": handleFixkostenListe(z),
+	} {
+		target := "/fixkosten/" + strconv.FormatInt(id, 10)
+		if name != "Detail" {
+			target = "/fixkosten?" + paramGeloescht + "=2026-07"
+		}
+		w := httptest.NewRecorder()
+		call(w, requestWithDB(httptest.NewRequest(http.MethodGet, target, nil), db))
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("%s: status = %d, want 500", name, w.Code)
 		}
 	}
 }

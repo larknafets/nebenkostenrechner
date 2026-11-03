@@ -154,7 +154,6 @@ func gueltigerMonat(s string) bool {
 // for other data: the Ablesungen waiting for it and the Sonderkosten that need
 // it. Plain data, the wording stays in the callers.
 type fixkostenWirkung struct {
-	Monat        string
 	Vollstaendig bool  // the Monat has a Fixkosteneingabe with all prices
 	EingabeID    int64 // the Eingabe of the Monat, 0 = none
 	Ablesungen   []calc.Ablesung
@@ -164,14 +163,21 @@ type fixkostenWirkung struct {
 // fixkostenWirkungVon derives the Wirkung for monat from the Datenstand and
 // the Verbrauchskosten computed from it.
 func fixkostenWirkungVon(ds *store.Datenstand, v *calc.Verbrauchskosten, monat string) fixkostenWirkung {
-	w := fixkostenWirkung{Monat: monat, Vollstaendig: v.MonatVollstaendig(monat), Ablesungen: v.BetroffeneAblesungen(monat)}
-	if e := v.Eingabe(monat); e != nil {
-		w.EingabeID = e.ID
-	}
+	w := ablesungenWirkung(v, monat)
 	for _, s := range ds.Sonderkosten {
 		if s.Monat == monat && s.BrauchtFixkosteneingabe() {
 			w.Sonderkosten++
 		}
+	}
+	return w
+}
+
+// ablesungenWirkung is the Wirkung without the Sonderkosten count, enough for
+// the Hinweise.
+func ablesungenWirkung(v *calc.Verbrauchskosten, monat string) fixkostenWirkung {
+	w := fixkostenWirkung{Vollstaendig: v.MonatVollstaendig(monat), Ablesungen: v.BetroffeneAblesungen(monat)}
+	if e := v.Eingabe(monat); e != nil {
+		w.EingabeID = e.ID
 	}
 	return w
 }
@@ -186,12 +192,12 @@ func (w fixkostenWirkung) Berechenbar() bool { return w.Vollstaendig && len(w.Ab
 // or alt), or nil: no such parameter, the Monat is complete, or there is no
 // Ablesung to name. The link leads to the incomplete Eingabe of the Monat or
 // to the form for a new one.
-func fehlenHinweisAusQuery(ds *store.Datenstand, v *calc.Verbrauchskosten, q url.Values, param string) *fixkostenHinweis {
+func fehlenHinweisAusQuery(v *calc.Verbrauchskosten, q url.Values, param string) *fixkostenHinweis {
 	monat := q.Get(param)
 	if !gueltigerMonat(monat) {
 		return nil
 	}
-	w := fixkostenWirkungVon(ds, v, monat)
+	w := ablesungenWirkung(v, monat)
 	if !w.Fehlt() {
 		return nil
 	}
@@ -200,8 +206,8 @@ func fehlenHinweisAusQuery(ds *store.Datenstand, v *calc.Verbrauchskosten, q url
 
 // berechenbarHinweis is the information for the new Monat of a moved Eingabe,
 // or nil when it is not complete or has no Ablesung that was waiting for it.
-func berechenbarHinweis(ds *store.Datenstand, v *calc.Verbrauchskosten, monat string) *fixkostenHinweis {
-	w := fixkostenWirkungVon(ds, v, monat)
+func berechenbarHinweis(v *calc.Verbrauchskosten, monat string) *fixkostenHinweis {
+	w := ablesungenWirkung(v, monat)
 	if !w.Berechenbar() {
 		return nil
 	}
@@ -211,15 +217,15 @@ func berechenbarHinweis(ds *store.Datenstand, v *calc.Verbrauchskosten, monat st
 // fixkostenHinweiseNachAenderung are the notes on the detail page after a move
 // of the Eingabe to another Monat: the warning for the old Monat and the
 // information for the new one (the query carries "alt" only after a move).
-func fixkostenHinweiseNachAenderung(ds *store.Datenstand, v *calc.Verbrauchskosten, q url.Values, neuerMonat string) []fixkostenHinweis {
+func fixkostenHinweiseNachAenderung(v *calc.Verbrauchskosten, q url.Values, neuerMonat string) []fixkostenHinweis {
 	if !gueltigerMonat(q.Get(paramAlterMonat)) {
 		return nil
 	}
 	var out []fixkostenHinweis
-	if h := fehlenHinweisAusQuery(ds, v, q, paramAlterMonat); h != nil {
+	if h := fehlenHinweisAusQuery(v, q, paramAlterMonat); h != nil {
 		out = append(out, *h)
 	}
-	if h := berechenbarHinweis(ds, v, neuerMonat); h != nil {
+	if h := berechenbarHinweis(v, neuerMonat); h != nil {
 		out = append(out, *h)
 	}
 	return out

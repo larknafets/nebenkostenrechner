@@ -513,12 +513,22 @@ type fixkostenListItem struct {
 func handleFixkostenListe(z *Zugang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
-		ds, err := store.LadeDatenstand(db)
+		// The full Datenstand only for the Hinweis after a delete.
+		geloescht := len(r.URL.Query()[paramGeloescht]) > 0
+		var ds *store.Datenstand
+		var reihe *calc.Fixkostenreihe
+		var err error
+		if geloescht {
+			if ds, err = store.LadeDatenstand(db); err == nil {
+				reihe = calc.FixkostenreiheAus(ds)
+			}
+		} else {
+			reihe, err = calc.LoadFixkostenreihe(db)
+		}
 		if err != nil {
 			http.Error(w, "datenstand: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		reihe := calc.FixkostenreiheAus(ds)
 
 		neueste := reihe.Neueste()
 		items := make([]fixkostenListItem, 0, len(neueste))
@@ -532,8 +542,8 @@ func handleFixkostenListe(z *Zugang) http.HandlerFunc {
 		importedCount, _ := strconv.Atoi(r.URL.Query().Get("imported"))
 
 		var hinweise []fixkostenHinweis
-		if len(r.URL.Query()[paramGeloescht]) > 0 {
-			if h := fehlenHinweisAusQuery(ds, calc.KostenAus(ds), r.URL.Query(), paramGeloescht); h != nil {
+		if geloescht {
+			if h := fehlenHinweisAusQuery(calc.KostenAus(ds), r.URL.Query(), paramGeloescht); h != nil {
 				hinweise = append(hinweise, *h)
 			}
 		}
@@ -631,7 +641,7 @@ func handleFixkostenDetail(z *Zugang) http.HandlerFunc {
 		}
 
 		v := calc.KostenAus(ds)
-		hinweise := fixkostenHinweiseNachAenderung(ds, v, r.URL.Query(), eingabe.Monat)
+		hinweise := fixkostenHinweiseNachAenderung(v, r.URL.Query(), eingabe.Monat)
 		wirkung := fixkostenWirkungVon(ds, v, eingabe.Monat)
 		var betroffene []calc.Ablesung // only a complete Eingabe makes them berechenbar
 		if wirkung.Vollstaendig {
