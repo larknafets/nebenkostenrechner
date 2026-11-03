@@ -95,6 +95,7 @@ await shot('ablesung-bearbeiten', `/ablesungen/${ablesungId}/bearbeiten`);
 await shot('fixkosten', '/fixkosten');
 await shot('fixkosten-detail', `/fixkosten/${fixkostenId}`);
 await shot('fixkosten-neu', '/fixkosten/neu');
+await shot('sonderkosten', '/sonderkosten');
 await shot('stammdaten', '/stammdaten');
 await shot('abrechnung', '/abrechnung', { maxHeight: 1900 });
 
