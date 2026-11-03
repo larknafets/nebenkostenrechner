@@ -24,6 +24,19 @@ func sonderkostenMux(t *testing.T, eintraege ...store.Sonderkosten) (*http.Serve
 	return NewMux(db, openTestDB(t), "", ""), db
 }
 
+// sonderkostenRoh inserts s with a raw INSERT, past the store validation, for
+// tests that need an invalid old entry (Altlast).
+func sonderkostenRoh(t *testing.T, db *sql.DB, s store.Sonderkosten) {
+	t.Helper()
+	if _, err := db.Exec(
+		`INSERT INTO sonderkosten (monat, betreff, beschreibung, art, firma, rechnungsnummer, betrag, umsetzung, umlegbar, logik)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		s.Monat, s.Betreff, s.Beschreibung, s.Art, s.Firma, s.Rechnungsnummer, s.Betrag, s.Umsetzung, s.Umlegbar, s.Logik,
+	); err != nil {
+		t.Fatalf("raw insert sonderkosten: %v", err)
+	}
+}
+
 var beispielSonderkosten = []store.Sonderkosten{
 	{Monat: "2026-10-01", Betreff: "Heizungspumpe", Beschreibung: "Pumpe Heizkreis 2", Art: store.ArtReparatur, Firma: "Meier GmbH", Rechnungsnummer: "RE-412", Betrag: 1000, Umsetzung: store.UmsetzungHaus, Umlegbar: true, Logik: store.LogikWohneinheit},
 	{Monat: "2026-10-01", Betreff: "Rauchmelder", Art: store.ArtWartung, Firma: "Brandschutz Nord", Betrag: 96, Umsetzung: store.UmsetzungHaus},

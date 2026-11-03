@@ -19,7 +19,7 @@ func TestSonderkosten_AendernUndLoeschen(t *testing.T) {
 	if len(alle) != 1 || alle[0] != neu {
 		t.Fatalf("nach Update %+v, want %+v", alle, neu)
 	}
-	if err := UpdateSonderkosten(db, Sonderkosten{ID: id + 99}); !errors.Is(err, ErrSonderkostenNotFound) {
+	if err := UpdateSonderkosten(db, Sonderkosten{ID: id + 99, Monat: "2026-04-01", Betreff: "Zaun", Art: ArtNeuanschaffung, Betrag: 55.5, Umsetzung: UmsetzungWohnung2}); !errors.Is(err, ErrSonderkostenNotFound) {
 		t.Errorf("Update unbekannt: %v, want ErrSonderkostenNotFound", err)
 	}
 	if err := DeleteSonderkosten(db, id); err != nil {

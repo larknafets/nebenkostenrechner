@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"math"
 	"strings"
 	"testing"
@@ -41,7 +42,7 @@ func TestValidiereSonderkosten(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			s := gueltigeSonderkosten()
 			c.aendere(&s)
-			got := ValidiereSonderkosten(s, c.hatFixkosten)
+			got := validiereSonderkosten(s, c.hatFixkosten)
 			if c.want == "" && len(got) != 0 {
 				t.Fatalf("Meldungen %v, want keine", got)
 			}
@@ -50,4 +51,51 @@ func TestValidiereSonderkosten(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSonderkosten_StoreLehntUngueltigesAb(t *testing.T) {
+	ungueltig := gueltigeSonderkosten()
+	ungueltig.Betreff = ""
+	ungueltig.Logik = LogikPersonen // no Fixkosteneingabe in 2026-10
+
+	var fehler *SonderkostenFehler
+	t.Run("PruefeSonderkosten", func(t *testing.T) {
+		db := openTestDB(t)
+		msgs, err := PruefeSonderkosten(db, ungueltig)
+		if err != nil || len(msgs) != 2 {
+			t.Fatalf("PruefeSonderkosten = %v, %v, want zwei Meldungen", msgs, err)
+		}
+	})
+	t.Run("Create", func(t *testing.T) {
+		db := openTestDB(t)
+		if _, err := CreateSonderkosten(db, ungueltig); !errors.As(err, &fehler) || len(fehler.Meldungen) != 2 {
+			t.Fatalf("Create: %v, want *SonderkostenFehler mit zwei Meldungen", err)
+		}
+		if alle, _ := AllSonderkosten(db); len(alle) != 0 {
+			t.Errorf("gespeichert: %+v", alle)
+		}
+	})
+	t.Run("Update prüft neue Werte, Altdaten bleiben lesbar", func(t *testing.T) {
+		db := openTestDB(t)
+		// Altlast per rohem INSERT, Personen-Logik ohne Fixkosteneingabe.
+		if _, err := db.Exec(`INSERT INTO sonderkosten (id, monat, betreff, beschreibung, art, firma, rechnungsnummer, betrag, umsetzung, umlegbar, logik) VALUES (1, '2026-10-01', 'Alt', '', 'reparatur', '', '', 100, 'haus', 1, 'personen')`); err != nil {
+			t.Fatal(err)
+		}
+		if alle, err := AllSonderkosten(db); err != nil || len(alle) != 1 {
+			t.Fatalf("Lesen: %v, %v", alle, err)
+		}
+		ungueltig.ID = 1
+		if err := UpdateSonderkosten(db, ungueltig); !errors.As(err, &fehler) {
+			t.Fatalf("Update: %v, want *SonderkostenFehler", err)
+		}
+	})
+	t.Run("Import atomar", func(t *testing.T) {
+		db := openTestDB(t)
+		if _, err := ImportSonderkosten(db, []Sonderkosten{gueltigeSonderkosten(), ungueltig}); !errors.As(err, &fehler) {
+			t.Fatalf("Import: %v, want *SonderkostenFehler", err)
+		}
+		if alle, _ := AllSonderkosten(db); len(alle) != 0 {
+			t.Errorf("nicht atomar: %+v", alle)
+		}
+	})
 }

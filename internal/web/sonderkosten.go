@@ -91,7 +91,7 @@ func hinweisPraefix(was string) string {
 
 // sonderkostenAusForm reads and validates the entry form, for Erfassen and
 // Korrigieren alike. The Logik is dropped unless it applies (the form always
-// sends its hidden select), then store.ValidiereSonderkosten decides. On an
+// sends its hidden select), then store.PruefeSonderkosten decides. On an
 // error it has answered already and returns false.
 func sonderkostenAusForm(w http.ResponseWriter, r *http.Request) (store.Sonderkosten, bool) {
 	db := dbFromContext(r.Context())
@@ -111,16 +111,28 @@ func sonderkostenAusForm(w http.ResponseWriter, r *http.Request) (store.Sonderko
 	if s.Umsetzung != store.UmsetzungHaus || !s.Umlegbar {
 		s.Logik = ""
 	}
-	hatEingabe, err := store.MonatHatFixkosteneingabe(db, s.Monat)
+	fehler, err := store.PruefeSonderkosten(db, s)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return s, false
 	}
-	if fehler := store.ValidiereSonderkosten(s, hatEingabe); len(fehler) > 0 {
+	if len(fehler) > 0 {
 		http.Error(w, strings.Join(fehler, "\n"), http.StatusBadRequest)
 		return s, false
 	}
 	return s, true
+}
+
+// sonderkostenFehlerAntwort answers a *SonderkostenFehler of a write with 400
+// (the entry became invalid after the pre-check, a race) and reports whether
+// it did.
+func sonderkostenFehlerAntwort(w http.ResponseWriter, err error) bool {
+	var fehler *store.SonderkostenFehler
+	if !errors.As(err, &fehler) {
+		return false
+	}
+	http.Error(w, strings.Join(fehler.Meldungen, "\n"), http.StatusBadRequest)
+	return true
 }
 
 // handleSonderkostenSpeichern creates one entry from the form.
@@ -131,6 +143,9 @@ func handleSonderkostenSpeichern() http.HandlerFunc {
 			return
 		}
 		if _, err := store.CreateSonderkosten(dbFromContext(r.Context()), s); err != nil {
+			if sonderkostenFehlerAntwort(w, err) {
+				return
+			}
 			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -157,6 +172,9 @@ func handleSonderkostenKorrigieren() http.HandlerFunc {
 		if err := store.UpdateSonderkosten(dbFromContext(r.Context()), s); err != nil {
 			if errors.Is(err, store.ErrSonderkostenNotFound) {
 				http.NotFound(w, r)
+				return
+			}
+			if sonderkostenFehlerAntwort(w, err) {
 				return
 			}
 			http.Error(w, "save: "+err.Error(), http.StatusInternalServerError)
