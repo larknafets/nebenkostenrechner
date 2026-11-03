@@ -35,7 +35,7 @@ func SonderkostenAnteile(s store.Sonderkosten, apartments []store.Apartment, fix
 		return SonderkostenAnteil{W2: Round2(s.Betrag), Berechenbar: true}
 	}
 	var personenW1, personenW2 float64
-	if s.Logik == store.LogikPersonen {
+	if s.BrauchtFixkosteneingabe() {
 		if fixkosten == nil {
 			return SonderkostenAnteil{}
 		}
