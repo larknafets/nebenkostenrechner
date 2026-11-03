@@ -56,6 +56,13 @@ func dumpValue(sb *strings.Builder, name string, v reflect.Value, depth int) {
 		}
 		fmt.Fprintf(sb, "%s%s:\n", indent, name)
 		for i := 0; i < v.NumField(); i++ {
+			if f := v.Type().Field(i); f.Anonymous {
+				// Embedded fields are written flat, as if declared in place.
+				for j := 0; j < v.Field(i).NumField(); j++ {
+					dumpValue(sb, f.Type.Field(j).Name, v.Field(i).Field(j), depth+1)
+				}
+				continue
+			}
 			dumpValue(sb, v.Type().Field(i).Name, v.Field(i), depth+1)
 		}
 	case reflect.Slice, reflect.Array:
@@ -97,7 +104,7 @@ func TestKostenDemodatenGolden(t *testing.T) {
 		}
 	}
 
-	dash, _, _, err := loadDashboardData(db)
+	dash, _, _, err := loadDashboardData(db, wunsch{})
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}

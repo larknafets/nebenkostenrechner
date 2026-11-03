@@ -105,7 +105,7 @@ func TestDashboard_VerlaufZeileOffenerMonat(t *testing.T) {
 		t.Error("Link Fixkosten erfassen in der Zeile fehlt")
 	}
 
-	dd, _, offen, err := loadDashboardData(db)
+	dd, _, offen, err := loadDashboardData(db, wunsch{})
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
@@ -141,7 +141,7 @@ func TestDashboard_VerlaufZeileOffenerMonat(t *testing.T) {
 func TestDashboard_JahreskarteVorlaeufigBeiOffenemMonat(t *testing.T) {
 	db := openTestDB(t)
 	offeneMonateSetup(t, db)
-	dd, _, offen, err := loadDashboardData(db)
+	dd, _, offen, err := loadDashboardData(db, wunsch{})
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
@@ -173,7 +173,7 @@ func TestDashboard_OffenerMonatAuchBeiTeilstand(t *testing.T) {
 	if _, err := store.CreatePeriod(db, teil); err != nil {
 		t.Fatal(err)
 	}
-	_, _, offen, err := loadDashboardData(db)
+	_, _, offen, err := loadDashboardData(db, wunsch{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,7 +193,7 @@ func TestDashboard_TeilstandOhneAbrechnungsmonatKeinOffenerMonat(t *testing.T) {
 	if _, err := store.CreatePeriod(db, teil); err != nil {
 		t.Fatal(err)
 	}
-	_, _, offen, err := loadDashboardData(db)
+	_, _, offen, err := loadDashboardData(db, wunsch{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -209,7 +209,7 @@ func TestDashboard_TeilstandOhneAbrechnungsmonatKeinOffenerMonat(t *testing.T) {
 }
 
 func TestDashboard_JahreskarteNurOffeneMonateDesAnzeigejahres(t *testing.T) {
-	dd := dashboardData{Jahr: 2026}
+	dd := dashboardData{monatsauswahl: monatsauswahl{Jahr: 2026}}
 	offen := []calc.OffenerMonat{{Monat: "2025-12-01"}, {Monat: "2026-01-01"}}
 	if got, want := vorlaeufigText(offen, dd.Jahr), "vorläufig, ohne Januar 2026"; got != want {
 		t.Errorf("vorlaeufigText = %q, want %q", got, want)

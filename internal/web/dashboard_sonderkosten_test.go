@@ -120,8 +120,8 @@ func TestDashboard_NurSonderkostenMonatIstErreichbar(t *testing.T) {
 	if dd.Jahr != 2027 || dd.NeuesJahr != 2027 || len(dd.BisMonate) != 1 || dd.BisMonate[0] != "2027-02-01" {
 		t.Errorf("Jahr %d, BisMonate %v, want 2027 mit [2027-02-01]", dd.Jahr, dd.BisMonate)
 	}
-	if zurueck, vor := jahrLinks(dd); zurueck != "?jahr=2026" || vor != "" {
-		t.Errorf("jahrLinks = %q, %q, want ?jahr=2026 und leer", zurueck, vor)
+	if zurueck, vor := dd.JahrLinks(); zurueck != "?jahr=2026" || vor != "" {
+		t.Errorf("JahrLinks = %q, %q, want ?jahr=2026 und leer", zurueck, vor)
 	}
 }
 
