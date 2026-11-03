@@ -127,11 +127,6 @@ func loadDashboardData(db *sql.DB, w wunsch) (dashboardData, []mieteMonat, []cal
 	for _, p := range allPeriods {
 		monate = append(monate, p.Monat)
 	}
-	// Until #433 the display year of the newest Ablesung follows its
-	// Ablesedatum, not its Abrechnungsmonat (GLOSSARY.md). #433 removes this.
-	if len(allPeriods) > 0 && len(allPeriods[0].ReadingDate) >= 7 {
-		monate = append(monate, allPeriods[0].ReadingDate[:7]+"-01")
-	}
 	for _, e := range fixkostenEingaben {
 		monate = append(monate, e.Monat)
 	}

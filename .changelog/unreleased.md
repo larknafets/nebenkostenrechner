@@ -50,6 +50,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Fehlerkorrekturen
 
+- Das Dashboard zeigt das Jahr des Abrechnungsmonats: Bei einer Ablesung vom 2. Januar für den Abrechnungsmonat Dezember zeigte es ein Jahr ohne Monat mit Daten und leere Jahreskarten (#433).
+
 ## Wartung
 
 - Schema-Version 6: Die neue Tabelle `sonderkosten` entsteht beim Start, bestehende Daten ändern sich nicht. Die App legt beim ersten Start mit der neuen Version eine Sicherung der Datenbank an (#403).

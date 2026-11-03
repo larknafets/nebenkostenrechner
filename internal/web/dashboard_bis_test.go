@@ -123,3 +123,24 @@ func TestDashboard_Jahreswahl(t *testing.T) {
 		t.Error("?jahr=1999 weicht von der Standardseite ab")
 	}
 }
+
+// An Ablesung of 2 January for the Abrechnungsmonat December: the Anzeigejahr
+// follows the Abrechnungsmonat (GLOSSARY.md), so it is the year of December,
+// not the year of the Ablesedatum (#433).
+func TestDashboard_AnzeigejahrFolgtDemAbrechnungsmonat(t *testing.T) {
+	db := openTestDB(t)
+	for i, p := range []struct{ datum, monat string }{{"2026-11-01", "2026-11-01"}, {"2027-01-02", "2026-12-01"}} {
+		in := seedPeriodInputAt(p.datum)
+		in.Monat = p.monat
+		in.Readings["strom_gesamt"] = float64(100 * i)
+		if _, err := createPeriod(db, in); err != nil {
+			t.Fatalf("createPeriod %s: %v", p.monat, err)
+		}
+	}
+	if dd := mustLoadDashboard(t, db); dd.Jahr != 2026 || dd.NeuesJahr != 2026 {
+		t.Errorf("Jahr %d, NeuesJahr %d, want 2026", dd.Jahr, dd.NeuesJahr)
+	}
+	if body := dashboardBody(t, db, ""); !strings.Contains(body, "Jahressummen 2026") {
+		t.Error("Dashboard ohne Jahressummen 2026")
+	}
+}
