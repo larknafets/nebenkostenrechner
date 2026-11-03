@@ -708,7 +708,7 @@ func TestJahressaldo_GleichtDashboardSaldoAufDenCent(t *testing.T) {
 	saveStammdaten(t, db, func(s *store.StammdatenSave) {
 		s.Flags = store.StammdatenFlags{Umlagefaehig: all, StromWeiterberechnen: true, WallboxWeiterberechnen: true}
 	})
-	dd, _, _, err := loadDashboardData(db)
+	dd, _, _, err := loadDashboardData(db, wunsch{})
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
