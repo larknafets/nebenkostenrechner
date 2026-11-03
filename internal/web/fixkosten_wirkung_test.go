@@ -31,6 +31,8 @@ func TestFixkostenWirkungVon(t *testing.T) {
 	nichtUmlegbar.Umlegbar = false
 	anderer := personen
 	anderer.Monat = "2026-09-01"
+	altdaten := personen
+	altdaten.Umsetzung = store.UmsetzungWohnung1
 
 	basis := []*store.LatestPeriod{periode(1, "2026-09-10", "2026-09-01", false), periode(2, "2026-10-10", "2026-10-01", false)}
 	mehrere := []*store.LatestPeriod{basis[0], basis[1], periode(3, "2026-10-20", "2026-10-01", false)}
@@ -52,7 +54,7 @@ func TestFixkostenWirkungVon(t *testing.T) {
 		{"nur erste Ablesung", basis[1:], []*store.FixkostenEingabeDetails{eingabe(7, true)}, nil, true, 7, 0, 0, false, false},
 		{"nur Teilstand", teilstand, nil, nil, false, 0, 0, 0, false, false},
 		{"mehrere Ablesungen", mehrere, []*store.FixkostenEingabeDetails{eingabe(7, true)}, nil, true, 7, 2, 0, false, true},
-		{"eine Sonderkosten", basis, nil, []store.Sonderkosten{personen, nichtUmlegbar, anderer}, false, 0, 1, 1, true, false},
+		{"eine Sonderkosten", basis, nil, []store.Sonderkosten{personen, nichtUmlegbar, anderer, altdaten}, false, 0, 1, 1, true, false},
 		{"viele Sonderkosten", basis, []*store.FixkostenEingabeDetails{eingabe(7, true)}, []store.Sonderkosten{personen, personen}, true, 7, 1, 2, false, true},
 	}
 	for _, tt := range tests {
