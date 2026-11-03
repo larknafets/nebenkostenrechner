@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.24.0 - 2026-11-03
+
+### Neue Funktionen
+
+- Neue Seite "Sonderkosten": Rechnungen erfassen, korrigieren und löschen, nach Abrechnungsmonat gruppiert mit Jahressummen sowie Art- und Jahresfilter, als CSV exportieren und importieren. Umlegbare Sonderkosten gehen in Monatssumme, Saldo, Dashboard und Jahresabrechnung ein (Zeile "Sonderkosten" in der Kostenübersicht und neue Anlage 8), nicht umlegbare trägt die Vermieter:in und sie ändern keine Abrechnung. Sichtbar mit den neuen Rechten "Sonderkosten ansehen" und "Sonderkosten erfassen", standardmäßig nur für Vermieter:in (#411, #408, #404, #405, #406, #409, #407, #410).
+
+### Verbesserungen
+
+- Die Zählerliste einer Ablesung zeigt den Rest von Wohnung 1 für Strom (wenn Netzbezug übrig bleibt) und Wasser.
+- Löschen von Ablesung und Fixkosteneingabe fragt jetzt in einem eigenen Dialog nach statt im Browser-Fenster (#401).
+
+### Fehlerkorrekturen
+
+- Das Dashboard zeigt das Jahr des Abrechnungsmonats: Bei einer Ablesung vom 2. Januar für den Abrechnungsmonat Dezember zeigte es ein Jahr ohne Monat mit Daten und leere Jahreskarten (#433).
+- Beim Korrigieren einer Ablesung wird die Reihenfolge jetzt in derselben Transaktion geprüft (#438).
+
+### Wartung
+
+- Schema-Version 6: Die neue Tabelle `sonderkosten` entsteht beim Start, bestehende Daten ändern sich nicht. Die App legt beim ersten Start mit der neuen Version eine Sicherung der Datenbank an (#403).
+- Interne Aufräumarbeiten am Code ohne sichtbare Änderung
+
+Alle Änderungen im Vergleich: [v0.23.0...v0.24.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.23.0...v0.24.0)
+
 ## v0.23.0 - 2026-11-01
 
 ### Neue Funktionen
