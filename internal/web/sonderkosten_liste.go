@@ -19,8 +19,8 @@ type sonderkostenFilter struct {
 // to no filter, "alle" shows every year.
 func sonderkostenFilterAus(jahrQ, artQ string, jahre []int, heute int) sonderkostenFilter {
 	f := sonderkostenFilter{Jahr: heute, AlleJahre: jahrQ == "alle"}
-	if wunsch, err := strconv.Atoi(jahrQ); err == nil && slices.Contains(jahre, wunsch) {
-		f.Jahr = wunsch
+	if j, err := strconv.Atoi(jahrQ); err == nil && slices.Contains(jahre, j) {
+		f.Jahr = j
 	}
 	if slices.ContainsFunc(store.SonderkostenArten, func(a store.Auswahl) bool { return a.Wert == artQ }) {
 		f.Art = artQ
