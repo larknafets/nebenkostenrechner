@@ -23,9 +23,7 @@ func sonderkostenDashboardDB(t *testing.T, eintraege ...store.Sonderkosten) (car
 		}
 	}
 	for _, s := range eintraege {
-		if _, err := store.CreateSonderkosten(db, s); err != nil {
-			t.Fatalf("CreateSonderkosten: %v", err)
-		}
+		sonderkostenRoh(t, db, s) // may be an old invalid entry (Personen without Fixkosteneingabe)
 	}
 	card, verlauf = buildEntityView(mustLoadDashboard(t, db), nil, 2)
 	return card, verlauf, dashboardHTML(t, db)
@@ -116,16 +114,14 @@ func TestDashboard_NurSonderkostenMonatIstErreichbar(t *testing.T) {
 		{Monat: "2027-03-01", Betreff: "Eigene", Art: store.ArtSonstiges, Betrag: 40, Umsetzung: store.UmsetzungWohnung2},
 		{Monat: "2027-04-01", Betreff: "Personen", Art: store.ArtSonstiges, Betrag: 40, Umsetzung: store.UmsetzungHaus, Umlegbar: true, Logik: store.LogikPersonen},
 	} {
-		if _, err := store.CreateSonderkosten(db, s); err != nil {
-			t.Fatalf("CreateSonderkosten: %v", err)
-		}
+		sonderkostenRoh(t, db, s) // the Personen entry is an old invalid one
 	}
 	dd := mustLoadDashboard(t, db)
 	if dd.Jahr != 2027 || dd.NeuesJahr != 2027 || len(dd.BisMonate) != 1 || dd.BisMonate[0] != "2027-02-01" {
 		t.Errorf("Jahr %d, BisMonate %v, want 2027 mit [2027-02-01]", dd.Jahr, dd.BisMonate)
 	}
-	if zurueck, vor := jahrLinks(dd); zurueck != "?jahr=2026" || vor != "" {
-		t.Errorf("jahrLinks = %q, %q, want ?jahr=2026 und leer", zurueck, vor)
+	if zurueck, vor := dd.JahrLinks(); zurueck != "?jahr=2026" || vor != "" {
+		t.Errorf("JahrLinks = %q, %q, want ?jahr=2026 und leer", zurueck, vor)
 	}
 }
 

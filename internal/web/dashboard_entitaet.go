@@ -41,7 +41,7 @@ func buildEntityView(dd dashboardData, offen []calc.OffenerMonat, apartmentID in
 	verlauf := buildDashboardVerlauf(a.ID, a.Name, dd.PeriodenKosten, dd.FixkostenListe, offen, dd.Sonderkosten[a.ID])
 	// The yearly card runs up to the chosen month (dd.Bis), the Verlauf keeps
 	// every month.
-	grenze := dd.bisGrenze()
+	grenze := dd.Grenze()
 	bisPK := bisMonat(dd.PeriodenKosten, grenze, pkMonat)
 	bisFK := bisMonat(dd.FixkostenListe, grenze, fkMonat)
 	bisSK := bisMonat(dd.Sonderkosten[a.ID], grenze, skMonat)

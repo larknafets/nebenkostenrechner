@@ -61,16 +61,50 @@ type Sonderkosten struct {
 	Logik           string
 }
 
-// CreateSonderkosten inserts s and returns its id. It validates nothing:
-// the entry form and the CSV import check before they call it.
+// BrauchtFixkosteneingabe is the one place of the rule: an entry that is
+// umlegbar, assigned to the Haus and split by Je Anzahl Personen needs the
+// Fixkosteneingabe of its Abrechnungsmonat, without it it counts nowhere.
+func (s Sonderkosten) BrauchtFixkosteneingabe() bool {
+	return s.Umlegbar && s.Umsetzung == UmsetzungHaus && s.Logik == LogikPersonen
+}
+
+// SonderkostenFehler is the error of a write that failed validation, one
+// German message per violation (see PruefeSonderkosten).
+type SonderkostenFehler struct{ Meldungen []string }
+
+func (e *SonderkostenFehler) Error() string { return strings.Join(e.Meldungen, " ") }
+
+// sonderkostenDB is the part of *sql.DB and *sql.Tx the writes need.
+type sonderkostenDB interface {
+	Exec(string, ...any) (sql.Result, error)
+	QueryRow(string, ...any) *sql.Row
+}
+
+// CreateSonderkosten validates s (*SonderkostenFehler) and inserts it.
 func CreateSonderkosten(db *sql.DB, s Sonderkosten) (int64, error) {
 	return insertSonderkosten(db, s)
 }
 
-// insertSonderkosten runs on a *sql.DB or a *sql.Tx.
-func insertSonderkosten(e interface {
-	Exec(string, ...any) (sql.Result, error)
-}, s Sonderkosten) (int64, error) {
+// PruefeSonderkosten returns the validation messages for s (empty: valid),
+// looking up itself whether the Abrechnungsmonat has a Fixkosteneingabe. The
+// entry form and the CSV parser call it to answer before they write.
+func PruefeSonderkosten(db *sql.DB, s Sonderkosten) ([]string, error) {
+	return pruefeSonderkosten(db, s)
+}
+
+func pruefeSonderkosten(q sonderkostenDB, s Sonderkosten) ([]string, error) {
+	var n int
+	if err := q.QueryRow(`SELECT COUNT(*) FROM fixkosten_eingaben WHERE monat = ?`, s.Monat).Scan(&n); err != nil {
+		return nil, fmt.Errorf("check fixkosteneingabe %s: %w", s.Monat, err)
+	}
+	return validiereSonderkosten(s, n > 0), nil
+}
+
+// insertSonderkosten validates and inserts, on a *sql.DB or a *sql.Tx.
+func insertSonderkosten(e sonderkostenDB, s Sonderkosten) (int64, error) {
+	if err := sonderkostenGueltig(e, s); err != nil {
+		return 0, err
+	}
 	res, err := e.Exec(
 		`INSERT INTO sonderkosten (monat, betreff, beschreibung, art, firma, rechnungsnummer, betrag, umsetzung, umlegbar, logik)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -85,9 +119,25 @@ func insertSonderkosten(e interface {
 // ErrSonderkostenNotFound is returned by Update/DeleteSonderkosten for an unknown id.
 var ErrSonderkostenNotFound = errors.New("sonderkosten not found")
 
+// sonderkostenGueltig is nil for a valid s, else a *SonderkostenFehler.
+func sonderkostenGueltig(q sonderkostenDB, s Sonderkosten) error {
+	msgs, err := pruefeSonderkosten(q, s)
+	if err != nil {
+		return err
+	}
+	if len(msgs) > 0 {
+		return &SonderkostenFehler{Meldungen: msgs}
+	}
+	return nil
+}
+
 // UpdateSonderkosten replaces every field of the entry s.ID. Like Create it
-// validates nothing. It works in a settled year as well, there is no lock.
+// validates the new values completely (an old invalid entry is fixed by it).
+// It works in a settled year as well, there is no lock.
 func UpdateSonderkosten(db *sql.DB, s Sonderkosten) error {
+	if err := sonderkostenGueltig(db, s); err != nil {
+		return err
+	}
 	res, err := db.Exec(
 		`UPDATE sonderkosten SET monat=?, betreff=?, beschreibung=?, art=?, firma=?, rechnungsnummer=?, betrag=?, umsetzung=?, umlegbar=?, logik=? WHERE id=?`,
 		s.Monat, s.Betreff, s.Beschreibung, s.Art, s.Firma, s.Rechnungsnummer, s.Betrag, s.Umsetzung, s.Umlegbar, s.Logik, s.ID,
@@ -114,11 +164,11 @@ func sonderkostenGeaendert(res sql.Result, err error, was string) error {
 // logikenHaus are the Berechnungslogiken a Haus entry can be split by.
 var logikenHaus = []string{LogikWohneinheit, LogikFlurstueck, LogikQM, LogikPersonen}
 
-// ValidiereSonderkosten checks s and returns one German message per
+// validiereSonderkosten checks s and returns one German message per
 // violation (empty: valid). hatFixkosteneingabe says whether the
 // Abrechnungsmonat of s has a Fixkosteneingabe, the Personen-Logik needs its
-// Personen. The entry form and the CSV import both call it.
-func ValidiereSonderkosten(s Sonderkosten, hatFixkosteneingabe bool) []string {
+// Personen. Pure, the writes reach it through PruefeSonderkosten.
+func validiereSonderkosten(s Sonderkosten, hatFixkosteneingabe bool) []string {
 	var fehler []string
 	if !validAbrechnungsmonat(s.Monat) {
 		fehler = append(fehler, "Der Abrechnungsmonat ist ungültig.")
@@ -142,22 +192,13 @@ func ValidiereSonderkosten(s Sonderkosten, hatFixkosteneingabe bool) []string {
 		switch {
 		case !slices.Contains(logikenHaus, s.Logik):
 			fehler = append(fehler, "Die Berechnungslogik fehlt oder ist ungültig.")
-		case s.Logik == LogikPersonen && !hatFixkosteneingabe:
+		case s.BrauchtFixkosteneingabe() && !hatFixkosteneingabe:
 			fehler = append(fehler, "Je Anzahl Personen geht nur, wenn der Abrechnungsmonat eine Fixkosteneingabe hat.")
 		}
 	case s.Logik != "":
 		fehler = append(fehler, "Die Berechnungslogik gibt es nur bei Umsetzung Haus und umlegbar.")
 	}
 	return fehler
-}
-
-// MonatHatFixkosteneingabe reports whether monat ("YYYY-MM-01") has a Fixkosteneingabe.
-func MonatHatFixkosteneingabe(db *sql.DB, monat string) (bool, error) {
-	var n int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM fixkosten_eingaben WHERE monat = ?`, monat).Scan(&n); err != nil {
-		return false, fmt.Errorf("check fixkosteneingabe %s: %w", monat, err)
-	}
-	return n > 0, nil
 }
 
 // AllSonderkosten reads every entry, oldest Abrechnungsmonat first, then id.

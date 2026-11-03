@@ -99,7 +99,7 @@ func TestJahreskarte_WallboxBlockAusblendenAendertGesamtNicht(t *testing.T) {
 
 func mustLoadDashboard(t *testing.T, db *sql.DB) dashboardData {
 	t.Helper()
-	dd, _, _, err := loadDashboardData(db)
+	dd, _, _, err := loadDashboardData(db, wunsch{}, 2026)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}

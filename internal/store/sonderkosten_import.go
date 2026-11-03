@@ -3,7 +3,8 @@ package store
 import "database/sql"
 
 // ImportSonderkosten inserts every entry in one transaction: all or nothing.
-// Like CreateSonderkosten it validates nothing, the CSV import checks first.
+// Like CreateSonderkosten it validates every entry (*SonderkostenFehler),
+// inside the transaction, so a bad entry rolls everything back.
 func ImportSonderkosten(db *sql.DB, eintraege []Sonderkosten) (ids []int64, err error) {
 	err = inTx(db, func(tx *sql.Tx) error {
 		ids = make([]int64, 0, len(eintraege))

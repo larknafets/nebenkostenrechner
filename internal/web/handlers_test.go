@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
@@ -764,23 +763,6 @@ func TestBuildJahresCard_PersonenSchnittOhneAblesung(t *testing.T) {
 	if card.PersonenSchnitt != 0 {
 		t.Errorf("PersonenSchnitt = %v, want 0 (keine Fixkosteneingabe im Jahr)", card.PersonenSchnitt)
 	}
-}
-
-func TestAnzeigeJahr(t *testing.T) {
-	t.Run("folgt dem neueren der beiden Serien", func(t *testing.T) {
-		periods := []store.PeriodSummary{{ReadingDate: "2026-01-15"}}
-		fixkosten := []store.FixkostenEingabeSummary{{Monat: "2027-03-01"}}
-		if got := anzeigeJahr(periods, fixkosten); got != 2027 {
-			t.Errorf("anzeigeJahr = %d, want 2027 (Fixkosten ist neuer)", got)
-		}
-	})
-
-	t.Run("faellt ohne jegliche Daten auf das echte aktuelle Jahr zurueck", func(t *testing.T) {
-		got := anzeigeJahr(nil, nil)
-		if got != time.Now().Year() {
-			t.Errorf("anzeigeJahr(nil, nil) = %d, want %d", got, time.Now().Year())
-		}
-	})
 }
 
 // TestMonatInput verifies Issue #86's code-review fix: monatInput bundles
@@ -1790,7 +1772,7 @@ func TestLoadDashboardData_ExcludesTeilstand(t *testing.T) {
 		t.Fatalf("CreatePeriod (Teilstand): %v", err)
 	}
 
-	dd, _, _, err := loadDashboardData(db)
+	dd, _, _, err := loadDashboardData(db, wunsch{}, 2026)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
@@ -1819,7 +1801,7 @@ func TestLoadDashboardData_NurTeilstand_HasAnyDataFalse(t *testing.T) {
 		t.Fatalf("CreatePeriod (Teilstand): %v", err)
 	}
 
-	dd, _, _, err := loadDashboardData(db)
+	dd, _, _, err := loadDashboardData(db, wunsch{}, 2026)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}

@@ -50,7 +50,7 @@ func wallboxPVAblesungen(t *testing.T, db *sql.DB, pvSchalter bool) {
 func TestJahreskarte_WallboxBlockBeiBeidenWohnungen(t *testing.T) {
 	db := openTestDB(t)
 	wallboxPVAblesungen(t, db, false)
-	dd, _, _, err := loadDashboardData(db)
+	dd, _, _, err := loadDashboardData(db, wunsch{}, 2026)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestJahreskarte_WallboxOhneZuordnungKeinBlock(t *testing.T) {
 	db := openTestDB(t)
 	// Without Einzelzähler and switch the Wallbox costs stay informative.
 	wallboxAblesungen(t, db, nil, nil, false)
-	dd, _, _, err := loadDashboardData(db)
+	dd, _, _, err := loadDashboardData(db, wunsch{}, 2026)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
@@ -113,7 +113,7 @@ func TestJahreskarte_WallboxOhneZuordnungKeinBlock(t *testing.T) {
 func TestMonatsverlauf_WallboxKWhAlsZugeordneterNetzbezug(t *testing.T) {
 	db := openTestDB(t)
 	wallboxPVAblesungen(t, db, false)
-	dd, _, _, err := loadDashboardData(db)
+	dd, _, _, err := loadDashboardData(db, wunsch{}, 2026)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestPVGutschrift_NegativeZeileBeiWohnung1(t *testing.T) {
 	for _, schalter := range []bool{true, false} {
 		db := openTestDB(t)
 		wallboxPVAblesungen(t, db, schalter)
-		dd, _, _, err := loadDashboardData(db)
+		dd, _, _, err := loadDashboardData(db, wunsch{}, 2026)
 		if err != nil {
 			t.Fatalf("loadDashboardData: %v", err)
 		}
@@ -255,7 +255,7 @@ func TestDashboardHTML_OhneSchalterGutschriftNurMitNull(t *testing.T) {
 func TestMonatsverlauf_Waermepumpe(t *testing.T) {
 	db := openTestDB(t)
 	wallboxPVAblesungen(t, db, false)
-	dd, _, _, err := loadDashboardData(db)
+	dd, _, _, err := loadDashboardData(db, wunsch{}, 2026)
 	if err != nil {
 		t.Fatalf("loadDashboardData: %v", err)
 	}

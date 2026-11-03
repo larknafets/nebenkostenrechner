@@ -12,7 +12,7 @@ import (
 func TestSichtbareAnsicht_HausReihenfolge(t *testing.T) {
 	dd := dashboardData{
 		HasAnyData:             true,
-		Jahr:                   2026,
+		monatsauswahl:          monatsauswahl{Jahr: 2026},
 		WallboxWeiterberechnen: true,
 		Apartments: []store.Apartment{
 			{ID: 1, Name: "Wohnung 1", Status: store.StatusVermietet},

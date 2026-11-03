@@ -69,12 +69,15 @@ func TestDashboard_JahressummenBisMonat(t *testing.T) {
 }
 
 func TestDashboard_SaldoImVorjahr(t *testing.T) {
-	dd, _, offen, err := loadDashboardData(demoDB(t))
+	dd, _, offen, err := loadDashboardData(demoDB(t), wunsch{}, 2026)
 	if err != nil {
 		t.Fatal(err)
 	}
 	neu, _ := buildEntityView(dd, offen, 2)
-	dd.waehleJahr(2025)
+	dd, _, offen, err = loadDashboardData(demoDB(t), wunsch{jahr: 2025}, 2026)
+	if err != nil {
+		t.Fatal(err)
+	}
 	alt, _ := buildEntityView(dd, offen, 2)
 	if neu.Saldo == nil || alt.Saldo == nil {
 		t.Fatalf("Saldo fehlt: neu=%v alt=%v", neu.Saldo, alt.Saldo)
@@ -118,5 +121,26 @@ func TestDashboard_Jahreswahl(t *testing.T) {
 	// A year without data keeps the newest year.
 	if got := dashboardBody(t, db, "?jahr=1999"); got != standard {
 		t.Error("?jahr=1999 weicht von der Standardseite ab")
+	}
+}
+
+// An Ablesung of 2 January for the Abrechnungsmonat December: the Anzeigejahr
+// follows the Abrechnungsmonat (GLOSSARY.md), so it is the year of December,
+// not the year of the Ablesedatum (#433).
+func TestDashboard_AnzeigejahrFolgtDemAbrechnungsmonat(t *testing.T) {
+	db := openTestDB(t)
+	for i, p := range []struct{ datum, monat string }{{"2026-11-01", "2026-11-01"}, {"2027-01-02", "2026-12-01"}} {
+		in := seedPeriodInputAt(p.datum)
+		in.Monat = p.monat
+		in.Readings["strom_gesamt"] = float64(100 * i)
+		if _, err := createPeriod(db, in); err != nil {
+			t.Fatalf("createPeriod %s: %v", p.monat, err)
+		}
+	}
+	if dd := mustLoadDashboard(t, db); dd.Jahr != 2026 || dd.NeuesJahr != 2026 {
+		t.Errorf("Jahr %d, NeuesJahr %d, want 2026", dd.Jahr, dd.NeuesJahr)
+	}
+	if body := dashboardBody(t, db, ""); !strings.Contains(body, "Jahressummen 2026") {
+		t.Error("Dashboard ohne Jahressummen 2026")
 	}
 }

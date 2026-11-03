@@ -2,6 +2,7 @@ package web
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -19,7 +20,7 @@ type sonderkostenImportRow struct {
 // handleSonderkostenImport takes over Sonderkosten from a CSV in the export
 // format (#409), only while none exist. All or nothing, the first bad row
 // aborts with its line number. Each row goes through the same
-// store.ValidiereSonderkosten as the entry form.
+// store.PruefeSonderkosten as the entry form.
 func handleSonderkostenImport() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
@@ -40,7 +41,12 @@ func handleSonderkostenImport() http.HandlerFunc {
 				for i, row := range rows {
 					eintraege[i] = row.s
 				}
-				return store.ImportSonderkosten(db, eintraege)
+				ids, err := store.ImportSonderkosten(db, eintraege)
+				var fehler *store.SonderkostenFehler
+				if errors.As(err, &fehler) { // race after the per-row pre-check
+					return nil, &importEingabeFehler{msg: strings.Join(fehler.Meldungen, " ")}
+				}
+				return ids, err
 			},
 		}
 		if _, _, ok := RunCSVImport(w, r, db, cfg); !ok {
@@ -77,11 +83,11 @@ func parseSonderkostenImportRow(db *sql.DB, record []string, colIdx map[string]i
 	if s.Betrag, err = parseDecimalDE(cell("betrag")); err != nil {
 		return fehler(fmt.Sprintf("Der Betrag ist ungültig: %q", cell("betrag")))
 	}
-	hatEingabe, err := store.MonatHatFixkosteneingabe(db, s.Monat)
+	msgs, err := store.PruefeSonderkosten(db, s)
 	if err != nil {
 		return sonderkostenImportRow{}, err
 	}
-	if msgs := store.ValidiereSonderkosten(s, hatEingabe); len(msgs) > 0 {
+	if len(msgs) > 0 {
 		return fehler(strings.Join(msgs, " "))
 	}
 	return sonderkostenImportRow{s: s, line: line}, nil

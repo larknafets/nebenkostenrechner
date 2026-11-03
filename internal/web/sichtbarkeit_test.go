@@ -17,7 +17,7 @@ import (
 func TestSichtbareAnsicht_JeRolle(t *testing.T) {
 	dd := dashboardData{
 		HasAnyData:             true,
-		Jahr:                   2026,
+		monatsauswahl:          monatsauswahl{Jahr: 2026},
 		WallboxWeiterberechnen: true,
 		Apartments: []store.Apartment{
 			{ID: 1, Name: "Wohnung 1", Status: store.StatusVermietet},
@@ -89,7 +89,7 @@ func TestSichtbareAnsicht_WallboxKarteNachWohnungsstatus(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			dd := dashboardData{
 				HasAnyData:             true,
-				Jahr:                   2026,
+				monatsauswahl:          monatsauswahl{Jahr: 2026},
 				WallboxWeiterberechnen: tt.flag,
 				Apartments: []store.Apartment{
 					{ID: 1, Name: "Wohnung 1", Status: tt.w1},
@@ -123,7 +123,7 @@ func TestLoadDashboardData_LiefertMieteProjektion(t *testing.T) {
 		t.Fatalf("import status %d (%s)", w.Code, w.Body.String())
 	}
 
-	_, miete, _, err := loadDashboardData(db)
+	_, miete, _, err := loadDashboardData(db, wunsch{}, 2026)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +137,7 @@ func TestLoadDashboardData_LiefertMieteProjektion(t *testing.T) {
 func TestVerlaufAuswahl(t *testing.T) {
 	dd := dashboardData{
 		HasAnyData:             true,
-		Jahr:                   2026,
+		monatsauswahl:          monatsauswahl{Jahr: 2026},
 		WallboxWeiterberechnen: true,
 		Apartments: []store.Apartment{
 			{ID: 1, Name: "Wohnung 1", Status: store.StatusVermietet},

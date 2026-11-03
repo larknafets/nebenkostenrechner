@@ -1,34 +1,9 @@
 package web
 
 import (
-	"time"
-
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
-
-// anzeigeJahr is the Dashboard's auto-following display year (Issue #60
-// Story 22) - the year of whichever is chronologically newest across both
-// readings and fixed-costs entries, purely data-driven (not wall-clock
-// time). Falls back to the real current year only when neither series has
-// any data yet (fresh install).
-func anzeigeJahr(allPeriods []store.PeriodSummary, fixkostenEingaben []store.FixkostenEingabeSummary) int {
-	var jahr int
-	if len(allPeriods) > 0 {
-		if y, ok := store.Abrechnungsmonat(allPeriods[0].ReadingDate).Jahr(); ok {
-			jahr = y
-		}
-	}
-	if len(fixkostenEingaben) > 0 {
-		if y, ok := store.Abrechnungsmonat(fixkostenEingaben[0].Monat).Jahr(); ok && y > jahr {
-			jahr = y
-		}
-	}
-	if jahr == 0 {
-		jahr = time.Now().Year()
-	}
-	return jahr
-}
 
 // dashboardJahresCard is one apartment's yearly-totals card (Issue #60
 // Story 21) - fixed costs first, then Strom/Heizung/Wasser (electricity/
