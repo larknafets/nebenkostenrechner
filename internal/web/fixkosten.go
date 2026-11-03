@@ -513,11 +513,12 @@ type fixkostenListItem struct {
 func handleFixkostenListe(z *Zugang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
-		reihe, err := calc.LoadFixkostenreihe(db)
+		ds, err := store.LadeDatenstand(db)
 		if err != nil {
-			http.Error(w, "fixkosten: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "datenstand: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+		reihe := calc.FixkostenreiheAus(ds)
 
 		neueste := reihe.Neueste()
 		items := make([]fixkostenListItem, 0, len(neueste))
@@ -532,12 +533,7 @@ func handleFixkostenListe(z *Zugang) http.HandlerFunc {
 
 		var hinweise []fixkostenHinweis
 		if len(r.URL.Query()[paramGeloescht]) > 0 {
-			v, err := calc.Load(db)
-			if err != nil {
-				http.Error(w, "hinweis: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if h := fehlenHinweisAusQuery(v, r.URL.Query(), paramGeloescht); h != nil {
+			if h := fehlenHinweisAusQuery(ds, calc.KostenAus(ds), r.URL.Query(), paramGeloescht); h != nil {
 				hinweise = append(hinweise, *h)
 			}
 		}
@@ -591,11 +587,12 @@ func handleFixkostenDetail(z *Zugang) http.HandlerFunc {
 			return
 		}
 
-		reihe, err := calc.LoadFixkostenreihe(db)
+		ds, err := store.LadeDatenstand(db)
 		if err != nil {
-			http.Error(w, "fixkosten: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "datenstand: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+		reihe := calc.FixkostenreiheAus(ds)
 		fixkosten, ok := reihe.Eingabe(eingabeID)
 		if !ok {
 			http.NotFound(w, r)
@@ -603,11 +600,7 @@ func handleFixkostenDetail(z *Zugang) http.HandlerFunc {
 		}
 		eingabe, erg := fixkosten.Eingabe, fixkosten.Ergebnis
 
-		apartments, err := store.Apartments(db)
-		if err != nil {
-			http.Error(w, "apartments: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
+		apartments := ds.Apartments
 
 		neueste := reihe.Neueste()
 		allItems := make([]fixkostenListItem, len(neueste))
@@ -637,15 +630,12 @@ func handleFixkostenDetail(z *Zugang) http.HandlerFunc {
 			wohnungen = append(wohnungen, w)
 		}
 
-		v, err := calc.Load(db)
-		if err != nil {
-			http.Error(w, "verbrauchskosten: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		hinweise := fixkostenHinweiseNachAenderung(v, r.URL.Query(), eingabe.Monat)
+		v := calc.KostenAus(ds)
+		hinweise := fixkostenHinweiseNachAenderung(ds, v, r.URL.Query(), eingabe.Monat)
+		wirkung := fixkostenWirkungVon(ds, v, eingabe.Monat)
 		var betroffene []calc.Ablesung // only a complete Eingabe makes them berechenbar
-		if v.MonatVollstaendig(eingabe.Monat) {
-			betroffene = v.BetroffeneAblesungen(eingabe.Monat)
+		if wirkung.Vollstaendig {
+			betroffene = wirkung.Ablesungen
 		}
 
 		data := struct {
@@ -666,7 +656,7 @@ func handleFixkostenDetail(z *Zugang) http.HandlerFunc {
 			navData:       z.NavData(r),
 			Aktuell:       "fixkosten-detail",
 			Hinweise:      hinweise,
-			LoeschenFrage: strings.TrimSpace(fixkostenLoeschenFrage(eingabe.Monat, betroffene) + " " + sonderkostenLoeschenFrage(db, eingabe.Monat)),
+			LoeschenFrage: strings.TrimSpace(fixkostenLoeschenFrage(eingabe.Monat, betroffene) + " " + sonderkostenLoeschenText(wirkung.Sonderkosten, eingabe.Monat)),
 			Eingabe:       eingabe,
 			MonatLabel:    store.MonatLabel(eingabe.Monat),
 			AllEingaben:   allItems,
