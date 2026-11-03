@@ -37,3 +37,45 @@ func TestZaehlerstaende_UntermonatigeAblesungenEigeneZeilenTeilstandFehlt(t *tes
 		t.Errorf("Ablesedatum = %v, want %v", datum, want)
 	}
 }
+
+func TestAblesungenMitVorperiode(t *testing.T) {
+	ablesung := func(id int64, datum, monat string, vollstaendig bool) *store.LatestPeriod {
+		p := &store.LatestPeriod{ID: id, ReadingDate: datum, Monat: monat, Readings: map[string]float64{}}
+		for _, key := range store.MeterKeys {
+			p.Readings[key] = float64(id)
+		}
+		if !vollstaendig {
+			delete(p.Readings, "strom_gesamt")
+		}
+		return p
+	}
+	periods := []*store.LatestPeriod{ // newest first, as the store returns them
+		ablesung(5, "2026-04-01", "2026-04-01", false), // Teilstand
+		ablesung(4, "2026-03-20", "2026-03-01", true),
+		ablesung(3, "2026-03-10", "2026-03-01", true),
+		ablesung(2, "2026-02-10", "2026-02-01", true),
+		ablesung(1, "2026-01-10", "2026-01-01", true),
+	}
+	tests := []struct {
+		name       string
+		imZeitraum map[string]bool
+		want       []int64
+	}{
+		{"erstes Erfassungsjahr: erste Ablesung ist Ausgangsstand", map[string]bool{"2026-01-01": true, "2026-02-01": true}, []int64{1, 2}},
+		{"Zeitraum mit Vorperiode", map[string]bool{"2026-02-01": true}, []int64{1, 2}},
+		{"mehrere Ablesungen im Monat", map[string]bool{"2026-03-01": true}, []int64{2, 3, 4}},
+		{"Teilstand ausgeschlossen", map[string]bool{"2026-03-01": true, "2026-04-01": true}, []int64{2, 3, 4}},
+		{"kein Treffer", map[string]bool{"2025-01-01": true}, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got []int64
+			for _, p := range ablesungenMitVorperiode(periods, tt.imZeitraum) {
+				got = append(got, p.ID)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("IDs = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

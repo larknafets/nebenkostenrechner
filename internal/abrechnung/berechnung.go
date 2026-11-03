@@ -661,10 +661,13 @@ func heizungSchluessel(gewichtung float64) string {
 	return fmt.Sprintf("%d %% Wärmeverbrauch, %d %% Wohnfläche", waerme, 100-waerme)
 }
 
-// ablesungenImZeitraum returns the complete Ablesungen (no Teilstände) oldest
-// first and the index range [first, last] of those whose Abrechnungsmonat is
-// in the period, first == -1 if there is none.
-func ablesungenImZeitraum(periods []*store.LatestPeriod, imZeitraum map[string]bool) (complete []*store.LatestPeriod, first, last int) {
+// ablesungenMitVorperiode returns the complete Ablesungen (no Teilstände)
+// oldest first from the start of the period to its last one: the Ablesung
+// before the period's first one, or in the first Erfassungsjahr that first
+// Ablesung itself (the Ausgangsstand). rows[0] is that start, the last row
+// the end. nil if no Ablesung is in the period.
+func ablesungenMitVorperiode(periods []*store.LatestPeriod, imZeitraum map[string]bool) []*store.LatestPeriod {
+	var complete []*store.LatestPeriod
 	for _, p := range periods {
 		if !p.Teilstand().IstTeilstand {
 			complete = append(complete, p)
@@ -672,7 +675,7 @@ func ablesungenImZeitraum(periods []*store.LatestPeriod, imZeitraum map[string]b
 	}
 	sort.SliceStable(complete, func(i, j int) bool { return complete[i].ReadingDate < complete[j].ReadingDate })
 
-	first, last = -1, -1
+	first, last := -1, -1
 	for i, p := range complete {
 		if imZeitraum[p.Monat] {
 			if first == -1 {
@@ -681,7 +684,13 @@ func ablesungenImZeitraum(periods []*store.LatestPeriod, imZeitraum map[string]b
 			last = i
 		}
 	}
-	return complete, first, last
+	if first == -1 {
+		return nil
+	}
+	if first > 0 {
+		first--
+	}
+	return complete[first : last+1]
 }
 
 // zaehlerstaende lists the Zählerstände of every complete Ablesung of the
@@ -691,16 +700,12 @@ func ablesungenImZeitraum(periods []*store.LatestPeriod, imZeitraum map[string]b
 // start the Verbrauchsübersicht uses. Several Ablesungen of one month are
 // separate rows.
 func zaehlerstaende(periods []*store.LatestPeriod, meters []store.Meter, imZeitraum map[string]bool, apartmentID int64) Zaehlerstaende {
-	complete, first, last := ablesungenImZeitraum(periods, imZeitraum)
-	if first == -1 {
+	rows := ablesungenMitVorperiode(periods, imZeitraum)
+	if rows == nil {
 		return Zaehlerstaende{}
 	}
-	von := first
-	if first > 0 {
-		von = first - 1
-	}
 	var z Zaehlerstaende
-	meters = mitEinzelzaehlern(meters, complete[von:last+1])
+	meters = mitEinzelzaehlern(meters, rows)
 	for _, m := range meters {
 		unit := m.Unit
 		if unit == "m3" {
@@ -708,9 +713,8 @@ func zaehlerstaende(periods []*store.LatestPeriod, meters []store.Meter, imZeitr
 		}
 		z.Spalten = append(z.Spalten, ZaehlerSpalte{Zaehler: zaehlerKurzname(m), Einheit: unit, Eigen: m.ApartmentID == apartmentID})
 	}
-	for i := von; i <= last; i++ {
-		p := complete[i]
-		zeile := ZaehlerstandZeile{Ablesedatum: p.ReadingDate, Monat: p.Monat, Ausgangsstand: i == von}
+	for i, p := range rows {
+		zeile := ZaehlerstandZeile{Ablesedatum: p.ReadingDate, Monat: p.Monat, Ausgangsstand: i == 0}
 		for _, m := range meters {
 			wert, vorhanden := p.Readings[m.Key]
 			zeile.Staende = append(zeile.Staende, Zaehlerstand{Wert: wert, Eigen: m.ApartmentID == apartmentID, Fehlt: !vorhanden && m.Optional})
@@ -766,21 +770,12 @@ func zaehlerKurzname(m store.Meter) string {
 // first Ablesung itself (the Ausgangsstand). The end is the stand of the
 // period's last Ablesung. Teilstände are ignored.
 func verbrauchUebersicht(periods []*store.LatestPeriod, meters []store.Meter, imZeitraum map[string]bool, apartmentID int64) []VerbrauchZeile {
-	complete, first, last := ablesungenImZeitraum(periods, imZeitraum)
-	if first == -1 {
+	rows := ablesungenMitVorperiode(periods, imZeitraum)
+	if rows == nil {
 		return nil
 	}
-	beginn := complete[first]
-	if first > 0 {
-		beginn = complete[first-1]
-	}
-	ende := complete[last]
-
-	von := first
-	if first > 0 {
-		von = first - 1
-	}
-	meters = mitEinzelzaehlern(meters, complete[von:last+1])
+	beginn, ende := rows[0], rows[len(rows)-1]
+	meters = mitEinzelzaehlern(meters, rows)
 	out := make([]VerbrauchZeile, 0, len(meters))
 	for _, m := range meters {
 		b, okB := beginn.Readings[m.Key]
