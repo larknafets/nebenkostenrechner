@@ -106,6 +106,29 @@ func TestPeriods_SchreiberLehnenUngueltigesAb(t *testing.T) {
 	}
 }
 
+// The order check reads through the transaction it is given: a neighbor
+// moved but not yet committed counts (#438).
+func TestCheckReadingOrder_SiehtUncommitteteAenderungInDerTransaktion(t *testing.T) {
+	db := openTestDB(t)
+	a := mustCreatePeriod(t, db, "2026-06-01", baseReadings(nil))
+	b := mustCreatePeriod(t, db, "2026-07-01", baseReadings(nil))
+	in := completePeriodInput("2026-06-15", baseReadings(nil))
+
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`UPDATE periods SET reading_date = '2026-06-10' WHERE id = ?`, b); err != nil {
+		t.Fatal(err)
+	}
+
+	var spaet *PeriodDateTooLateError
+	if err := checkReadingOrder(tx, a, in); !errors.As(err, &spaet) {
+		t.Fatalf("checkReadingOrder(tx) = %v, want *PeriodDateTooLateError", err)
+	}
+}
+
 func TestImportPeriods_ReiheFehlerTraegtIndex(t *testing.T) {
 	db := openTestDB(t)
 	_, err := ImportPeriods(db, []PeriodInput{
