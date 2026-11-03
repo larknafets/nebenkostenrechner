@@ -594,3 +594,27 @@ func TestMoveKostenposition(t *testing.T) {
 		t.Errorf("Reihenfolge nach Neustart = %v, want %v", got, want)
 	}
 }
+
+// TestUpdateFixkostenEingabe_LaesstAbschlagAusserhalbDesInputsStehen: the
+// form parser skips Abschlag and Miete of an Eigennutzung apartment and relies
+// on the update not touching what the input does not name.
+func TestUpdateFixkostenEingabe_LaesstAbschlagAusserhalbDesInputsStehen(t *testing.T) {
+	db := openTestDB(t)
+	in := FixkostenInput{Monat: "2026-09-01", Personen: map[int64]float64{1: 1, 2: 1}, Werte: mieteTestWerte(),
+		Abschlag: map[int64]float64{1: 90, 2: 100}}
+	id, err := CreateFixkostenEingabe(db, in)
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	in.Abschlag = map[int64]float64{2: 120}
+	if err := UpdateFixkostenEingabe(db, id, in); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+	d, err := GetFixkostenEingabeDetails(db, id)
+	if err != nil || d == nil {
+		t.Fatalf("Details: %v %v", d, err)
+	}
+	if d.Abschlag[1] != 90 || d.Abschlag[2] != 120 {
+		t.Errorf("Abschlag = %v, want 1:90 (untouched) 2:120", d.Abschlag)
+	}
+}
