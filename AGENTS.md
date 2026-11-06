@@ -17,6 +17,7 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 - **Language**: German for GitHub issues, commit messages and user docs, English for code comments and `AGENTS.md`/`docs/agents/`.
 - **PR or main**: product changes (`feat`, `fix`, `refactor`, `perf`) go through a PR, ask before opening one. Developer changes (`docs`, `chore`, `ci`, `test`, `style`, `build`) go straight to `main`, no PR, no release. A release only when the user asks.
 - **Changelog**: a `feat` or `fix`, or anything an operator must know when updating, adds one German line to `.changelog/unreleased.md` in the same commit (never as a separate `docs` commit, so a revert takes the line with it). Only the release itself touches `CHANGELOG.md`.
+- **Signing**: every commit and tag is SSH-signed (`commit.gpgsign`, `tag.gpgsign`, `gpg.format=ssh`). Never use `--no-gpg-sign`, create tags with `git tag -s` (no lightweight tags). The pre-push hook rejects unsigned commits and tags.
 - **Checks**: run `scripts/check` before every commit. The pre-push hook (`git config core.hooksPath .githooks`) runs it too.
 
 ## Read when needed

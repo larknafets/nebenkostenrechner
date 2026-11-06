@@ -141,8 +141,8 @@ printf '\n## Vor dem Update\n\n## Neue Funktionen\n\n## Verbesserungen\n\n## Feh
 cp "$new_unreleased" "$UNRELEASED"
 
 git add "$CHANGELOG" "$UNRELEASED"
-git commit -q -m "docs: Changelog für $tag"
-git tag -a "$tag" -m "$tag"
+git commit -q -S -m "docs: Changelog für $tag"
+git tag -s "$tag" -m "$tag"
 
 echo
 echo "Fertig: Commit und Tag $tag liegen lokal, nichts ist gepusht. Nächste Schritte:"
