@@ -52,11 +52,26 @@ jobs:
 
       - name: Push
         env:
+          GH_TOKEN: ${{ secrets.HASSIO_DEPLOY_TOKEN }}
           RELEASE_TAG: ${{ steps.tag.outputs.name }}
         run: |
+          set -euo pipefail
           cd ./hassio
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add nebenkostenrechner/config.yaml nebenkostenrechner/CHANGELOG.md
-          git commit -m "Mirror nebenkostenrechner release ${RELEASE_TAG}"
-          git push
+          [ -z "$(git status --porcelain)" ] && exit 0
+          # GitHub creates and signs the commit (Verified); a commit made on the
+          # runner would be unsigned. expectedHeadOid fails if main moved meanwhile.
+          out=$(jq -n \
+            --arg oid "$(git rev-parse HEAD)" \
+            --arg headline "Mirror nebenkostenrechner release ${RELEASE_TAG}" \
+            --arg config "$(base64 -w0 nebenkostenrechner/config.yaml)" \
+            --arg changelog "$(base64 -w0 nebenkostenrechner/CHANGELOG.md)" \
+            '{query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { url } } }",
+              variables: {input: {
+                branch: {repositoryNameWithOwner: "larknafets/ha-addons", branchName: "main"},
+                expectedHeadOid: $oid,
+                message: {headline: $headline},
+                fileChanges: {additions: [
+                  {path: "nebenkostenrechner/config.yaml", contents: $config},
+                  {path: "nebenkostenrechner/CHANGELOG.md", contents: $changelog}]}}}}' \
+            | gh api graphql --input -)
+          echo "$out" | jq -e -r '.data.createCommitOnBranch.commit.url'
