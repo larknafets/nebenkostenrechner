@@ -130,16 +130,26 @@ jobs:
 
       - name: Push
         env:
+          GH_TOKEN: ${{ secrets.HASSIO_DEPLOY_TOKEN }}
           VERSION: ${{ needs.check.outputs.version }}
         run: |
           set -euo pipefail
           cd ./hassio
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add nebenkostenrechner-nightly/config.yaml
-          git diff --cached --quiet && exit 0
-          git commit -m "Mirror nebenkostenrechner nightly ${VERSION}"
-          git push
+          git diff --quiet && exit 0
+          # GitHub creates and signs the commit (Verified); a commit made on the
+          # runner would be unsigned. expectedHeadOid fails if main moved meanwhile.
+          out=$(jq -n \
+            --arg oid "$(git rev-parse HEAD)" \
+            --arg headline "Mirror nebenkostenrechner nightly ${VERSION}" \
+            --arg contents "$(base64 -w0 nebenkostenrechner-nightly/config.yaml)" \
+            '{query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { url } } }",
+              variables: {input: {
+                branch: {repositoryNameWithOwner: "larknafets/ha-addons", branchName: "main"},
+                expectedHeadOid: $oid,
+                message: {headline: $headline},
+                fileChanges: {additions: [{path: "nebenkostenrechner-nightly/config.yaml", contents: $contents}]}}}}' \
+            | gh api graphql --input -)
+          echo "$out" | jq -e -r '.data.createCommitOnBranch.commit.url'
 
   cleanup:
     name: Keep the newest 7 nightly images
