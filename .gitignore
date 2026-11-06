@@ -1,18 +1,20 @@
 /dist/
 
-# Claude Code project settings/state - local to this machine, never shared
-/.claude/
-.mcp.json
-
 # local dev artifacts
 *.db
 *.log
 .env
+.env.local
 .DS_Store
 
-# graft's local graph cache for this project, never shared
+# Trail-Code - local to this machine, never shared
+/.trail/
 /graft/
 .ignore
+
+# Claude Code project settings/state - local to this machine, never shared
+.mcp.json
+/.claude/
 
 # built binary (matches module name, e.g. from `go build ./cmd/nebenkostenrechner`)
 /nebenkostenrechner
