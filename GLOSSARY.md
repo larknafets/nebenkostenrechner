@@ -197,6 +197,7 @@ _Avoid_: Umsetzung (heißt jetzt **Objekt**), Sonderposten, Einmalkosten, Sonder
 
 **Zuordnung (Sonderkosten)**:
 Wer einen Sonderkosten-Eintrag trägt: die Vermieter:in (nicht umlegbar), Wohnung 1, Wohnung 2 oder beide Wohnungen nach der **Berechnungslogik** des Eintrags (Objekt Haus, umlegbar). Zur Zuordnung gehört, ob der Eintrag **berechenbar** ist, ein nicht berechenbarer Eintrag zählt nirgends. Die Zuordnung sagt, wer zahlt, das **Objekt** sagt, worauf sich die Rechnung bezieht.
+Im Code bestimmt `calc.SonderkostenMonate` je Wohnung, welche Einträge zählen und unter welchem Schlüssel. Seine Liste aus `MonatsSonderkosten` (samt dem Eintrag) lesen Dashboard und Anlage 8, es gibt keine zweite Herleitung.
 _Avoid_: Umsetzung, Träger, Verteilung
 
 **Typ (jährlich/monatlich)**:
