@@ -25,7 +25,8 @@ import (
 // period_occupancy. The save .vor-schema-4-<time> is made before that. Version 6: table
 // sonderkosten (#403), created by schema.sql like mieten, so no step either.
 // Version 7: sonderkosten.umsetzung is renamed to objekt (#453).
-const schemaVersion = 7
+// Version 8: sonderkosten.rechnungsdatum (#454).
+const schemaVersion = 8
 
 // sicherungenBehalten is how many saves made before a migration are kept.
 const sicherungenBehalten = 3
@@ -66,6 +67,7 @@ var migrationen = []migration{
 	{"ensureHausDetailsColumns", ensureHausDetailsColumns},
 	{"ensureHausWallboxWeiterberechnenColumn", ensureHausWallboxWeiterberechnenColumn},
 	{"renameSonderkostenUmsetzungToObjekt", renameSonderkostenUmsetzungToObjekt},
+	{"ensureSonderkostenRechnungsdatumColumn", ensureSonderkostenRechnungsdatumColumn},
 	{"seed", seed},
 	{"migrateHeizungGewichtungToHaus", migrateHeizungGewichtungToHaus},
 	{"ensureFixkostenWerteLogikTypColumns", ensureFixkostenWerteLogikTypColumns},

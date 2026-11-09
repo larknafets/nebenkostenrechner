@@ -11,10 +11,14 @@ import (
 // sonderkostenCsvHeader is the column order of the Sonderkosten CSV, shared by
 // the export (#408) and the import (#409). art and objekt carry the German
 // label, logik the technical key like the Fixkosten CSV.
-var sonderkostenCsvHeader = []string{
+// rechnungsdatum comes last and is optional on import (#454), so the import
+// requires only sonderkostenCsvImportHeader.
+var sonderkostenCsvImportHeader = []string{
 	"monat", "betreff", "beschreibung", "art", "firma", "rechnungsnummer",
 	"betrag", "objekt", "umlegbar", "logik",
 }
+
+var sonderkostenCsvHeader = append(slices.Clone(sonderkostenCsvImportHeader), "rechnungsdatum")
 
 // auswahlLabel returns the German label of key, the key itself when unknown.
 func auswahlLabel(liste []store.Auswahl, key string) string {
@@ -74,7 +78,7 @@ func formatSonderkostenCSVRow(s store.Sonderkosten) []string {
 	}
 	return []string{
 		s.Monat, csvText(s.Betreff), csvText(s.Beschreibung), sonderkostenArtLabel(s.Art), csvText(s.Firma), csvText(s.Rechnungsnummer),
-		formatDecimalDE(s.Betrag), sonderkostenObjektLabel(s.Objekt), umlegbar, s.Logik,
+		formatDecimalDE(s.Betrag), sonderkostenObjektLabel(s.Objekt), umlegbar, s.Logik, s.Rechnungsdatum,
 	}
 }
 

@@ -23,11 +23,11 @@ func TestSonderkostenExport_AlleEintraegeNachMonat(t *testing.T) {
 	}
 	lines := strings.Split(strings.TrimSpace(strings.TrimPrefix(w.Body.String(), "\uFEFF")), "\n")
 	want := []string{
-		"monat;betreff;beschreibung;art;firma;rechnungsnummer;betrag;objekt;umlegbar;logik",
-		"2025-03-01;Wasserhahn;;Reparatur;Sanitär Lehmann;;184,3;Wohnung 1;0;",
-		"2026-09-01;Spülmaschine;;Neuanschaffung;Elektro Schmitt;;649;Wohnung 2;1;",
-		"2026-10-01;Heizungspumpe;Pumpe Heizkreis 2;Reparatur;Meier GmbH;RE-412;1.000;Haus;1;wohneinheit",
-		"2026-10-01;Rauchmelder;;Wartung;Brandschutz Nord;;96;Haus;0;",
+		"monat;betreff;beschreibung;art;firma;rechnungsnummer;betrag;objekt;umlegbar;logik;rechnungsdatum",
+		"2025-03-01;Wasserhahn;;Reparatur;Sanitär Lehmann;;184,3;Wohnung 1;0;;",
+		"2026-09-01;Spülmaschine;;Neuanschaffung;Elektro Schmitt;;649;Wohnung 2;1;;",
+		"2026-10-01;Heizungspumpe;Pumpe Heizkreis 2;Reparatur;Meier GmbH;RE-412;1.000;Haus;1;wohneinheit;2026-10-05",
+		"2026-10-01;Rauchmelder;;Wartung;Brandschutz Nord;;96;Haus;0;;",
 	}
 	if len(lines) != len(want) {
 		t.Fatalf("%d Zeilen, want %d:\n%s", len(lines), len(want), w.Body.String())

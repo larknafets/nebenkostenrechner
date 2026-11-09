@@ -15,8 +15,10 @@ import (
 type sonderkostenKarte struct {
 	ID                                                 int64
 	Betreff, Beschreibung, Art, Firma, Rechnungsnummer string
-	Betrag                                             float64
-	Umlegbar                                           bool
+	// Rechnungsdatum is "YYYY-MM-DD" or empty, the template formats it.
+	Rechnungsdatum string
+	Betrag         float64
+	Umlegbar       bool
 	// Zuordnung says who carries the bill (GLOSSARY.md, Sonderkosten).
 	Zuordnung string
 	// Maske is the prefilled form for Korrigieren.
@@ -101,7 +103,8 @@ func sonderkostenAusForm(w http.ResponseWriter, r *http.Request) (store.Sonderko
 	s := store.Sonderkosten{
 		Betreff: strings.TrimSpace(f.Get("betreff")), Beschreibung: strings.TrimSpace(f.Get("beschreibung")),
 		Art: f.Get("art"), Firma: strings.TrimSpace(f.Get("firma")), Rechnungsnummer: strings.TrimSpace(f.Get("rechnungsnummer")),
-		Objekt: f.Get("objekt"), Umlegbar: f.Get("umlegbar") != "", Logik: f.Get("logik"),
+		Rechnungsdatum: strings.TrimSpace(f.Get("rechnungsdatum")),
+		Objekt:         f.Get("objekt"), Umlegbar: f.Get("umlegbar") != "", Logik: f.Get("logik"),
 	}
 	// An unparsable month or amount stays empty/0, the validation reports it.
 	s.Monat, _ = parseFixkostenMonat(f.Get("monat"))

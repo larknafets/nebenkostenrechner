@@ -41,6 +41,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
+- Sonderkosten haben ein optionales Rechnungsdatum: Es lässt sich beim Anlegen und Korrigieren eintragen oder löschen, steht auf der Karte in der Zeile mit Firma und Rechnungsnummer (TT.MM.JJJJ) und im CSV-Export als letzte Spalte `rechnungsdatum`. Beim Import ist die Spalte optional. Abrechnungsmonat, Reihenfolge, Summen und die Anlage der Jahresabrechnung bleiben unverändert (#454)
+
 ## Verbesserungen
 
 ## Fehlerkorrekturen

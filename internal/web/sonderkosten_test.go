@@ -38,7 +38,7 @@ func sonderkostenRoh(t *testing.T, db *sql.DB, s store.Sonderkosten) {
 }
 
 var beispielSonderkosten = []store.Sonderkosten{
-	{Monat: "2026-10-01", Betreff: "Heizungspumpe", Beschreibung: "Pumpe Heizkreis 2", Art: store.ArtReparatur, Firma: "Meier GmbH", Rechnungsnummer: "RE-412", Betrag: 1000, Objekt: store.ObjektHaus, Umlegbar: true, Logik: store.LogikWohneinheit},
+	{Monat: "2026-10-01", Betreff: "Heizungspumpe", Beschreibung: "Pumpe Heizkreis 2", Art: store.ArtReparatur, Firma: "Meier GmbH", Rechnungsnummer: "RE-412", Rechnungsdatum: "2026-10-05", Betrag: 1000, Objekt: store.ObjektHaus, Umlegbar: true, Logik: store.LogikWohneinheit},
 	{Monat: "2026-10-01", Betreff: "Rauchmelder", Art: store.ArtWartung, Firma: "Brandschutz Nord", Betrag: 96, Objekt: store.ObjektHaus},
 	{Monat: "2026-09-01", Betreff: "Spülmaschine", Art: store.ArtNeuanschaffung, Firma: "Elektro Schmitt", Betrag: 649, Objekt: store.ObjektWohnung2, Umlegbar: true},
 	{Monat: "2025-03-01", Betreff: "Wasserhahn", Art: store.ArtReparatur, Firma: "Sanitär Lehmann", Betrag: 184.3, Objekt: store.ObjektWohnung1},
