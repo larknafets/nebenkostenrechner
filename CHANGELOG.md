@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.25.0 - 2026-11-09
+
+> **Vor dem Update:** Beim ersten Start baut die App die Datenbank um (bei den Sonderkosten heißt die Spalte `umsetzung` danach `objekt`, dazu kommt `rechnungsdatum`). Eine ältere Version der App kann diese Datenbank danach nicht mehr lesen, der Weg zurück führt nur über die Sicherung, die die App vor dem Umbau anlegt.
+
+### Neue Funktionen
+
+- Die Seite Sonderkosten lässt sich jetzt nach Objekt (Haus, Wohnung 1, Wohnung 2) filtern, zeigt die Summenkarten und eine Tabelle der Rechnungsbeträge nach Art und Objekt in einem Block "Summen", der zuerst eingeklappt ist, zeigt auf jeder Karte oben Objekt und Art und nimmt ein optionales Rechnungsdatum auf (#453, #454, #455, #456, #457). Der Filter wirkt auf Karten, Monatsüberschriften, Summenkarten und Tabelle. Die Jahresabrechnung bleibt unberührt, nur die Spalte "Objekt" in der Anlage 8 heißt jetzt so (vorher "Umsetzung")
+- Auf der Seite Sonderkosten gibt es neben Jahr und Art einen Filter "Objekt" (Alle Objekte, Haus, Wohnung 1, Wohnung 2). Er wirkt auf die Karten, die Monatsüberschriften und die drei Summenkarten (#455)
+- Sonderkosten haben ein optionales Rechnungsdatum: Es lässt sich beim Anlegen und Korrigieren eintragen oder löschen, steht auf der Karte in der Zeile mit Firma und Rechnungsnummer (TT.MM.JJJJ) und im CSV-Export als letzte Spalte `rechnungsdatum`. Beim Import ist die Spalte optional. Abrechnungsmonat, Reihenfolge, Summen und die Anlage der Jahresabrechnung bleiben unverändert (#454)
+- Auf der Seite Sonderkosten steht unter den drei Summenkarten eine Tabelle der Rechnungsbeträge nach Art und Objekt (Haus, Wohnung 1, Wohnung 2), bei "Alle Jahre" ein Block je Jahr mit Zwischensumme. Sie folgt dem Filter und zeigt nur Arten mit Einträgen. Summenkarten und Tabelle stehen in einem Block "Summen", der zuerst eingeklappt ist (#456)
+
+### Verbesserungen
+
+- Auf den Sonderkosten-Karten stehen über dem Betreff Objekt und Art als Markierungen, in der Betreff-Zeile bleiben nur Betreff und Betrag (#457)
+
+### Fehlerkorrekturen
+
+- Der CSV-Import der Sonderkosten legt keine Einträge doppelt an, wenn zwei Importe oder ein Import und ein neuer Eintrag gleichzeitig ankommen. Vorher gingen beide durch, weil "noch keine Sonderkosten" und das Speichern getrennte Schritte waren
+
+### Wartung
+
+- Bei den Sonderkosten heißt "Umsetzung" jetzt "Objekt" (Haus, Wohnung 1, Wohnung 2), auch in der Anlage der Jahresabrechnung. Das Update benennt die Spalte `umsetzung` der Datenbank in `objekt` um (Schema-Version 7, vorher entsteht eine Sicherung) und der CSV-Export schreibt die Kopfzeile `objekt`. Der Import nimmt weiter auch alte Dateien mit `umsetzung` an, eigene Auswertungen auf die Datenbank oder den Export brauchen den neuen Namen (#453)
+- Interne Aufräumarbeiten am Code ohne sichtbare Änderung
+- Aktualisierung der Abhängigkeiten
+
+Alle Änderungen im Vergleich: [v0.24.0...v0.25.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.24.0...v0.25.0)
+
 ## v0.24.0 - 2026-11-03
 
 ### Neue Funktionen
