@@ -108,12 +108,11 @@ type aufstellungBlock struct {
 }
 
 // aufstellungZeile holds the amounts per Objekt in the order of
-// store.SonderkostenObjekte, and their sum.
+// store.SonderkostenObjekte.
 type aufstellungZeile struct {
 	Art     string // label
 	n       int    // entries counted
 	Objekte []float64
-	Summe   float64
 }
 
 // baueSonderkostenAufstellung sums the invoice amounts of the entries passing f
@@ -144,7 +143,6 @@ func baueSonderkostenAufstellung(alle []store.Sonderkosten, f sonderkostenFilter
 		o := slices.IndexFunc(store.SonderkostenObjekte, func(x store.Auswahl) bool { return x.Wert == s.Objekt })
 		for _, r := range []*aufstellungZeile{&b.Zeilen[ai], &b.Summe} {
 			r.Objekte[o] += s.Betrag
-			r.Summe += s.Betrag
 			r.n++
 		}
 	}

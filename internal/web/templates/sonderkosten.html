@@ -54,24 +54,35 @@
     </select>
   </div>
 </form>
-<div class="grid grid-3">
+<details id="sk-summen">
+<summary><strong>Summen</strong></summary>
+<div class="grid grid-3" style="margin-top:.5rem">
   <div class="panel stat-card"><div class="muted">Gesamt</div><div class="stat-value">{{deEUR .Gesamt}}&nbsp;€</div></div>
   <div class="panel stat-card"><div class="muted">davon umlegbar</div><div class="stat-value">{{deEUR .Umlegbar}}&nbsp;€</div></div>
   <div class="panel stat-card"><div class="muted">trägt Vermieter:in</div><div class="stat-value">{{deEUR .VermieterTraegt}}&nbsp;€</div></div>
 </div>
-{{if not .Monate}}<p class="muted">Keine Sonderkosten für diese Auswahl.</p>{{end}}
 {{range .Aufstellung.Bloecke}}
 <div class="panel sk-aufstellung" style="margin-top:1rem;overflow-x:auto">
   {{if .Jahr}}<strong>{{.Jahr}}</strong>{{end}}
   <table class="letzte">
-    <thead><tr><th>Art</th>{{range $.Objekte}}<th style="text-align:right">{{.Label}}</th>{{end}}<th style="text-align:right">Summe</th></tr></thead>
+    <thead><tr><th>Art</th>{{range $.Objekte}}<th style="text-align:right">{{.Label}}</th>{{end}}</tr></thead>
     <tbody>
-      {{range .Zeilen}}<tr><td>{{.Art}}</td>{{range .Objekte}}<td style="text-align:right">{{deEUR .}}&nbsp;€</td>{{end}}<td style="text-align:right">{{deEUR .Summe}}&nbsp;€</td></tr>{{end}}
-      <tr><th>{{if .Jahr}}Zwischensumme{{else}}Summe{{end}}</th>{{range .Summe.Objekte}}<th style="text-align:right">{{deEUR .}}&nbsp;€</th>{{end}}<th style="text-align:right">{{deEUR .Summe.Summe}}&nbsp;€</th></tr>
+      {{range .Zeilen}}<tr><td>{{.Art}}</td>{{range .Objekte}}<td style="text-align:right">{{deEUR .}}&nbsp;€</td>{{end}}</tr>{{end}}
+      <tr><th>{{if .Jahr}}Zwischensumme{{else}}Summe{{end}}</th>{{range .Summe.Objekte}}<th style="text-align:right">{{deEUR .}}&nbsp;€</th>{{end}}</tr>
     </tbody>
   </table>
 </div>
 {{end}}
+</details>
+<script>
+// The Summen block starts closed and stays as the user left it while the filters reload the page.
+(function () {
+  var d = document.getElementById("sk-summen"), k = "sk-summen-offen";
+  try { if (sessionStorage.getItem(k) === "1") d.open = true; } catch (e) {}
+  d.addEventListener("toggle", function () { try { sessionStorage.setItem(k, d.open ? "1" : "0"); } catch (e) {} });
+})();
+</script>
+{{if not .Monate}}<p class="muted">Keine Sonderkosten für diese Auswahl.</p>{{end}}
 {{range .Monate}}
 <div class="sk-monat"><strong>{{.Label}}</strong><span class="muted">umlegbar {{deEUR .Umlegbar}}&nbsp;€</span></div>
 {{range .Karten}}

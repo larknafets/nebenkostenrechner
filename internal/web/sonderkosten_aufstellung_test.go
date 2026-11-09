@@ -14,7 +14,7 @@ func aufstellung(body string) string {
 	if i < 0 {
 		return ""
 	}
-	j := strings.Index(body[i:], `class="sk-monat"`)
+	j := strings.Index(body[i:], `</details>`)
 	if j < 0 {
 		return body[i:]
 	}
@@ -25,8 +25,8 @@ func TestSonderkosten_AufstellungEinJahr(t *testing.T) {
 	mux, _ := sonderkostenMux(t, beispielSonderkosten...)
 	c := loginCookies(t, mux, "vermieter", "geheim")
 	a := aufstellung(getMitCookies(t, mux, "/sonderkosten", c).Body.String())
-	// 2026: Reparatur 1000 Haus, Wartung 96 Haus, Neuanschaffung 649 Wohnung 2; Summe 1745.
-	for _, want := range []string{"Reparatur", "Wartung", "Neuanschaffung", "1.000,00", "649,00", "1.745,00", "Summe"} {
+	// 2026: Reparatur 1000 Haus, Wartung 96 Haus, Neuanschaffung 649 Wohnung 2; Summenzeile Haus 1096.
+	for _, want := range []string{"Reparatur", "Wartung", "Neuanschaffung", "1.000,00", "649,00", "1.096,00", ">Summe<"} {
 		if !strings.Contains(a, want) {
 			t.Errorf("Aufstellung enthält %q nicht: %s", want, a)
 		}
@@ -38,6 +38,27 @@ func TestSonderkosten_AufstellungEinJahr(t *testing.T) {
 	}
 	if strings.Count(a, "<table") != 1 {
 		t.Error("ein Jahr: genau eine Tabelle")
+	}
+	// 3 Arten x 3 Objekte, keine Summenspalte (Smartphone).
+	if n := strings.Count(a, `<td style="text-align:right">`); n != 9 {
+		t.Errorf("Betragszellen = %d, want 9 ohne Summenspalte", n)
+	}
+}
+
+// The Summen block (cards and table) starts closed.
+func TestSonderkosten_SummenBlockStartetEingeklappt(t *testing.T) {
+	mux, _ := sonderkostenMux(t, beispielSonderkosten...)
+	c := loginCookies(t, mux, "vermieter", "geheim")
+	body := getMitCookies(t, mux, "/sonderkosten", c).Body.String()
+	i := strings.Index(body, `<details id="sk-summen">`)
+	if i < 0 {
+		t.Fatal("kein einklappbarer Summen-Block, oder er ist offen")
+	}
+	block := body[i : i+strings.Index(body[i:], "</details>")]
+	for _, want := range []string{"<summary><strong>Summen</strong></summary>", "Gesamt", "davon umlegbar", "trägt Vermieter:in", "sk-aufstellung"} {
+		if !strings.Contains(block, want) {
+			t.Errorf("Summen-Block enthält %q nicht", want)
+		}
 	}
 }
 
@@ -62,7 +83,7 @@ func TestSonderkosten_AufstellungObjektfilterBehaeltSpalten(t *testing.T) {
 	mux, _ := sonderkostenMux(t, beispielSonderkosten...)
 	c := loginCookies(t, mux, "vermieter", "geheim")
 	a := aufstellung(getMitCookies(t, mux, "/sonderkosten?jahr=alle&objekt=wohnung2", c).Body.String())
-	for _, want := range []string{">Haus<", ">Wohnung 1<", ">Wohnung 2<", ">Summe<", "0,00", "649,00", "Neuanschaffung"} {
+	for _, want := range []string{">Haus<", ">Wohnung 1<", ">Wohnung 2<", ">Zwischensumme<", "0,00", "649,00", "Neuanschaffung"} {
 		if !strings.Contains(a, want) {
 			t.Errorf("Aufstellung enthält %q nicht: %s", want, a)
 		}
