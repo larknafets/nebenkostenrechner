@@ -80,15 +80,27 @@ func TestOpen_FrischeDatenbankHatObjektSpalte(t *testing.T) {
 	}
 }
 
-// A second process that opens the same version 6 database at the same time may
-// find the column already renamed after its own check: that is no failed start.
+// A second process that opens the same version 6 database at the same time
+// passes its "umsetzung exists" check, and its RENAME then runs after the other
+// process renamed: objekt is there, umsetzung is gone. That is no failed start.
 func TestMigration_UmbenennenToleriertDenParallelenStart(t *testing.T) {
-	db := openTestDB(t) // has objekt, like the database after the other process's rename
-	if _, err := db.Exec(`ALTER TABLE sonderkosten ADD COLUMN umsetzung TEXT`); err != nil {
-		t.Fatal(err) // makes this process still see the old column, so its RENAME fails
+	db := openTestDB(t) // has objekt and no umsetzung, like the database after the other process's rename
+	err := alterSonderkosten(db, `ALTER TABLE sonderkosten RENAME COLUMN umsetzung TO objekt`, "objekt", "umsetzung")
+	if err != nil {
+		t.Errorf("alterSonderkosten = %v, want nil: the other process was first", err)
 	}
-	if err := renameSonderkostenUmsetzungToObjekt(db); err != nil {
-		t.Errorf("renameSonderkostenUmsetzungToObjekt = %v, want nil: objekt exists, the other process was first", err)
+}
+
+// With both columns the rename is not done: the old values in umsetzung would
+// be left behind, so the error stays.
+func TestMigration_UmbenennenMitBeidenSpaltenBleibtFehler(t *testing.T) {
+	db := openTestDB(t)
+	if _, err := db.Exec(`ALTER TABLE sonderkosten ADD COLUMN umsetzung TEXT`); err != nil {
+		t.Fatal(err)
+	}
+	err := alterSonderkosten(db, `ALTER TABLE sonderkosten RENAME COLUMN umsetzung TO objekt`, "objekt", "umsetzung")
+	if err == nil {
+		t.Error("alterSonderkosten = nil, want the RENAME error: umsetzung still holds values")
 	}
 }
 
