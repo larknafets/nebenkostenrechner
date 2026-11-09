@@ -116,3 +116,18 @@ func TestSonderkosten_AufstellungZaehltNichtBerechenbare(t *testing.T) {
 		t.Error("nicht berechenbarer Eintrag soll mit dem Rechnungsbetrag in der Tabelle stehen")
 	}
 }
+
+// A row with an Objekt or Art the lists do not know (only a hand-edited
+// database can have one) is left out of the table and does not crash the page.
+func TestBaueSonderkostenAufstellung_UnbekanntesObjektUndArtWerdenUebersprungen(t *testing.T) {
+	f := sonderkostenFilter{Jahr: 2026}
+	alle := []store.Sonderkosten{
+		{Monat: "2026-02-01", Art: store.ArtReparatur, Betrag: 10, Objekt: "garage"},
+		{Monat: "2026-02-01", Art: "zaun", Betrag: 20, Objekt: store.ObjektHaus},
+		{Monat: "2026-02-01", Art: store.ArtReparatur, Betrag: 30, Objekt: store.ObjektHaus},
+	}
+	a := baueSonderkostenAufstellung(alle, f)
+	if len(a.Bloecke) != 1 || len(a.Bloecke[0].Zeilen) != 1 || a.Bloecke[0].Summe.Objekte[0] != 30 {
+		t.Errorf("Aufstellung = %+v, want ein Block mit nur dem gültigen Eintrag (30 beim Haus)", a)
+	}
+}

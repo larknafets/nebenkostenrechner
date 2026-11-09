@@ -124,8 +124,9 @@ func baueSonderkostenAufstellung(alle []store.Sonderkosten, f sonderkostenFilter
 			continue
 		}
 		ai := slices.IndexFunc(store.SonderkostenArten, func(x store.Auswahl) bool { return x.Wert == s.Art })
-		if ai < 0 {
-			continue // shortcut: an unknown Art (no DB check) is left out of the table, list it when one occurs
+		o := slices.IndexFunc(store.SonderkostenObjekte, func(x store.Auswahl) bool { return x.Wert == s.Objekt })
+		if ai < 0 || o < 0 {
+			continue // shortcut: an unknown Art or Objekt (only a hand-edited database has one) is left out of the table, list it when one occurs
 		}
 		jahr := 0
 		if f.AlleJahre {
@@ -140,7 +141,6 @@ func baueSonderkostenAufstellung(alle []store.Sonderkosten, f sonderkostenFilter
 			a.Bloecke = append(a.Bloecke, neu)
 		}
 		b := &a.Bloecke[len(a.Bloecke)-1]
-		o := slices.IndexFunc(store.SonderkostenObjekte, func(x store.Auswahl) bool { return x.Wert == s.Objekt })
 		for _, r := range []*aufstellungZeile{&b.Zeilen[ai], &b.Summe} {
 			r.Objekte[o] += s.Betrag
 			r.n++
