@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS berechtigungen (
 );
 
 -- Sonderkosten: invoices outside the Kostenpositionen. monat is the
--- Abrechnungsmonat (YYYY-MM-01), logik only set for Umsetzung haus + umlegbar.
+-- Abrechnungsmonat (YYYY-MM-01), logik only set for Objekt haus + umlegbar.
 CREATE TABLE IF NOT EXISTS sonderkosten (
     id              INTEGER PRIMARY KEY,
     monat           TEXT NOT NULL,
@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS sonderkosten (
     firma           TEXT NOT NULL,
     rechnungsnummer TEXT NOT NULL DEFAULT '',
     betrag          REAL NOT NULL CHECK (betrag > 0),
-    umsetzung       TEXT NOT NULL CHECK (umsetzung IN ('haus', 'wohnung1', 'wohnung2')),
+    objekt       TEXT NOT NULL CHECK (objekt IN ('haus', 'wohnung1', 'wohnung2')),
     umlegbar        INTEGER NOT NULL CHECK (umlegbar IN (0, 1)),
     logik           TEXT NOT NULL DEFAULT ''
 );

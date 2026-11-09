@@ -85,12 +85,12 @@ function skAktualisiere(f) {
   var logik = f.elements.logik, personen = logik.querySelector('option[value="personen"]');
   personen.disabled = skFixMonate.indexOf(f.elements.monat.value) < 0;
   if (personen.disabled && logik.value === "personen") logik.selectedIndex = 0;
-  f.querySelector(".sk-logik-feld").hidden = !(ul && f.elements.umsetzung.value === "haus");
+  f.querySelector(".sk-logik-feld").hidden = !(ul && f.elements.objekt.value === "haus");
   f.querySelectorAll(".sk-hinweis").forEach(function (p) { p.hidden = !(ul && p.dataset.art === art); });
 }
 document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll("form.sk-maske").forEach(function (f) {
-    ["monat", "art", "umlegbar", "umsetzung"].forEach(function (n) { f.elements[n].addEventListener("change", function () { skAktualisiere(f); }); });
+    ["monat", "art", "umlegbar", "objekt"].forEach(function (n) { f.elements[n].addEventListener("change", function () { skAktualisiere(f); }); });
     skAktualisiere(f);
   });
   document.querySelectorAll("[data-sk-korrigieren]").forEach(function (b) {
@@ -124,7 +124,7 @@ document.addEventListener("DOMContentLoaded", function () {
   </div>
   <div class="grid grid-2">
     <div class="field"><label for="{{.P}}-betrag">Betrag brutto (EUR)</label><input id="{{.P}}-betrag" type="text" inputmode="decimal" name="betrag" value="{{.Betrag}}" required></div>
-    <div class="field"><label for="{{.P}}-umsetzung">Umsetzung in</label><select id="{{.P}}-umsetzung" name="umsetzung">{{range .Umsetzungen}}<option value="{{.Wert}}"{{if eq .Wert $.S.Umsetzung}} selected{{end}}>{{.Label}}</option>{{end}}</select></div>
+    <div class="field"><label for="{{.P}}-objekt">Objekt</label><select id="{{.P}}-objekt" name="objekt">{{range .Objekte}}<option value="{{.Wert}}"{{if eq .Wert $.S.Objekt}} selected{{end}}>{{.Label}}</option>{{end}}</select></div>
   </div>
   <div class="field"><label><input type="checkbox" id="{{.P}}-umlegbar" name="umlegbar" value="1"{{if .S.Umlegbar}} checked{{end}}> Umlegbar (auf die Betriebskostenabrechnung)</label></div>
   {{range .Hinweise}}<p class="muted sk-hinweis" data-art="{{.Wert}}" hidden>{{.Label}}</p>{{end}}

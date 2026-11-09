@@ -26,6 +26,8 @@ func handleSonderkostenImport() http.HandlerFunc {
 		db := dbFromContext(r.Context())
 		cfg := ImportConfig[sonderkostenImportRow]{
 			Header: sonderkostenCsvHeader,
+			// exports before the rename (#453) call the column umsetzung
+			OldNames: map[string]string{"objekt": "umsetzung"},
 			CheckExisting: func(db *sql.DB) (bool, error) {
 				alle, err := store.AllSonderkosten(db)
 				return len(alle) > 0, err
@@ -69,8 +71,8 @@ func parseSonderkostenImportRow(db *sql.DB, record []string, colIdx map[string]i
 	if s.Art, ok = sonderkostenArtSchluessel(cell("art")); !ok {
 		return fehler(fmt.Sprintf("Die Art ist ungültig: %q", cell("art")))
 	}
-	if s.Umsetzung, ok = sonderkostenUmsetzungSchluessel(cell("umsetzung")); !ok {
-		return fehler(fmt.Sprintf("Die Umsetzung ist ungültig: %q", cell("umsetzung")))
+	if s.Objekt, ok = sonderkostenObjektSchluessel(cell("objekt")); !ok {
+		return fehler(fmt.Sprintf("Das Objekt ist ungültig: %q", cell("objekt")))
 	}
 	switch cell("umlegbar") {
 	case "1":

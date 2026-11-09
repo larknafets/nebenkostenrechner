@@ -21,8 +21,8 @@ func TestAbrechnungSeite_Sonderkosten(t *testing.T) {
 	mustNotContain(t, ohne, "Nach Eintrag", "Anlage 8")
 
 	for _, s := range []store.Sonderkosten{
-		{Monat: "2025-06-01", Betreff: "Pumpe", Beschreibung: "nur intern", Art: store.ArtReparatur, Firma: "Fa. Müller", Rechnungsnummer: "R-17", Betrag: 100, Umsetzung: store.UmsetzungHaus, Umlegbar: true, Logik: store.LogikWohneinheit},
-		{Monat: "2025-07-01", Betreff: "Privat", Art: store.ArtSonstiges, Betrag: 55, Umsetzung: store.UmsetzungWohnung2},
+		{Monat: "2025-06-01", Betreff: "Pumpe", Beschreibung: "nur intern", Art: store.ArtReparatur, Firma: "Fa. Müller", Rechnungsnummer: "R-17", Betrag: 100, Objekt: store.ObjektHaus, Umlegbar: true, Logik: store.LogikWohneinheit},
+		{Monat: "2025-07-01", Betreff: "Privat", Art: store.ArtSonstiges, Betrag: 55, Objekt: store.ObjektWohnung2},
 	} {
 		if _, err := store.CreateSonderkosten(db, s); err != nil {
 			t.Fatal(err)

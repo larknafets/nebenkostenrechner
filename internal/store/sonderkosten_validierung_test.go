@@ -10,7 +10,7 @@ import (
 func gueltigeSonderkosten() Sonderkosten {
 	return Sonderkosten{
 		Monat: "2026-10-01", Betreff: "Pumpe", Art: ArtReparatur, Betrag: 100,
-		Umsetzung: UmsetzungHaus, Umlegbar: true, Logik: LogikWohneinheit,
+		Objekt: ObjektHaus, Umlegbar: true, Logik: LogikWohneinheit,
 	}
 }
 
@@ -30,12 +30,12 @@ func TestValidiereSonderkosten(t *testing.T) {
 		{"Betreff leer", func(s *Sonderkosten) { s.Betreff = " " }, false, "Betreff"},
 		{"Monat kein Monatserster", func(s *Sonderkosten) { s.Monat = "2026-10-15" }, false, "Abrechnungsmonat"},
 		{"Art unbekannt", func(s *Sonderkosten) { s.Art = "luxus" }, false, "Art"},
-		{"Umsetzung unbekannt", func(s *Sonderkosten) { s.Umsetzung, s.Logik = "garage", "" }, false, "Umsetzung"},
+		{"Objekt unbekannt", func(s *Sonderkosten) { s.Objekt, s.Logik = "garage", "" }, false, "Objekt"},
 		{"Haus umlegbar ohne Logik", func(s *Sonderkosten) { s.Logik = "" }, false, "Berechnungslogik"},
 		{"Logik unbekannt", func(s *Sonderkosten) { s.Logik = "wohnung1" }, false, "Berechnungslogik"},
-		{"Logik bei Wohnung 1", func(s *Sonderkosten) { s.Umsetzung = UmsetzungWohnung1 }, false, "Berechnungslogik"},
+		{"Logik bei Wohnung 1", func(s *Sonderkosten) { s.Objekt = ObjektWohnung1 }, false, "Berechnungslogik"},
 		{"Logik bei nicht umlegbar", func(s *Sonderkosten) { s.Umlegbar = false }, false, "Berechnungslogik"},
-		{"Wohnung 1 ohne Logik", func(s *Sonderkosten) { s.Umsetzung, s.Logik = UmsetzungWohnung1, "" }, false, ""},
+		{"Wohnung 1 ohne Logik", func(s *Sonderkosten) { s.Objekt, s.Logik = ObjektWohnung1, "" }, false, ""},
 		{"Personen ohne Fixkosteneingabe", func(s *Sonderkosten) { s.Logik = LogikPersonen }, false, "Fixkosteneingabe"},
 		{"Personen mit Fixkosteneingabe", func(s *Sonderkosten) { s.Logik = LogikPersonen }, true, ""},
 	} {
@@ -78,7 +78,7 @@ func TestSonderkosten_StoreLehntUngueltigesAb(t *testing.T) {
 	t.Run("Update prüft neue Werte, Altdaten bleiben lesbar", func(t *testing.T) {
 		db := openTestDB(t)
 		// Altlast per rohem INSERT, Personen-Logik ohne Fixkosteneingabe.
-		if _, err := db.Exec(`INSERT INTO sonderkosten (id, monat, betreff, beschreibung, art, firma, rechnungsnummer, betrag, umsetzung, umlegbar, logik) VALUES (1, '2026-10-01', 'Alt', '', 'reparatur', '', '', 100, 'haus', 1, 'personen')`); err != nil {
+		if _, err := db.Exec(`INSERT INTO sonderkosten (id, monat, betreff, beschreibung, art, firma, rechnungsnummer, betrag, objekt, umlegbar, logik) VALUES (1, '2026-10-01', 'Alt', '', 'reparatur', '', '', 100, 'haus', 1, 'personen')`); err != nil {
 			t.Fatal(err)
 		}
 		if alle, err := AllSonderkosten(db); err != nil || len(alle) != 1 {

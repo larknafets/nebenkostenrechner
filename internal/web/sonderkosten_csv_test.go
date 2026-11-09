@@ -23,7 +23,7 @@ func TestSonderkostenExport_AlleEintraegeNachMonat(t *testing.T) {
 	}
 	lines := strings.Split(strings.TrimSpace(strings.TrimPrefix(w.Body.String(), "\uFEFF")), "\n")
 	want := []string{
-		"monat;betreff;beschreibung;art;firma;rechnungsnummer;betrag;umsetzung;umlegbar;logik",
+		"monat;betreff;beschreibung;art;firma;rechnungsnummer;betrag;objekt;umlegbar;logik",
 		"2025-03-01;Wasserhahn;;Reparatur;Sanitär Lehmann;;184,3;Wohnung 1;0;",
 		"2026-09-01;Spülmaschine;;Neuanschaffung;Elektro Schmitt;;649;Wohnung 2;1;",
 		"2026-10-01;Heizungspumpe;Pumpe Heizkreis 2;Reparatur;Meier GmbH;RE-412;1.000;Haus;1;wohneinheit",
@@ -60,9 +60,9 @@ func TestSonderkostenCsv_BezeichnungenRoundtrip(t *testing.T) {
 			t.Errorf("Art %q: %q, %v", a.Wert, got, ok)
 		}
 	}
-	for _, u := range store.SonderkostenUmsetzungen {
-		if got, ok := sonderkostenUmsetzungSchluessel(sonderkostenUmsetzungLabel(u.Wert)); !ok || got != u.Wert {
-			t.Errorf("Umsetzung %q: %q, %v", u.Wert, got, ok)
+	for _, u := range store.SonderkostenObjekte {
+		if got, ok := sonderkostenObjektSchluessel(sonderkostenObjektLabel(u.Wert)); !ok || got != u.Wert {
+			t.Errorf("Objekt %q: %q, %v", u.Wert, got, ok)
 		}
 	}
 	if _, ok := sonderkostenArtSchluessel("Unbekannt"); ok {
@@ -74,7 +74,7 @@ func TestSonderkostenCsv_BezeichnungenRoundtrip(t *testing.T) {
 // export, the import takes it off again.
 func TestSonderkostenCsv_FormelTextWirdEntschaerft(t *testing.T) {
 	for _, text := range []string{"=HYPERLINK(\"http://x\")", "+1", "-1", "@SUM(A1)"} {
-		row := formatSonderkostenCSVRow(store.Sonderkosten{Betreff: text, Art: store.ArtReparatur, Umsetzung: store.UmsetzungHaus, Betrag: 1})
+		row := formatSonderkostenCSVRow(store.Sonderkosten{Betreff: text, Art: store.ArtReparatur, Objekt: store.ObjektHaus, Betrag: 1})
 		if row[1] != "'"+text {
 			t.Errorf("Betreff %q wird als %q exportiert", text, row[1])
 		}

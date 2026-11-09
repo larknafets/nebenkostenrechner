@@ -46,3 +46,5 @@ Keep every section, an empty one included. Do not change the headings.
 ## Fehlerkorrekturen
 
 ## Wartung
+
+- Bei den Sonderkosten heißt "Umsetzung" jetzt "Objekt" (Haus, Wohnung 1, Wohnung 2), auch in der Anlage der Jahresabrechnung. Das Update benennt die Spalte `umsetzung` der Datenbank in `objekt` um (Schema-Version 7, vorher entsteht eine Sicherung) und der CSV-Export schreibt die Kopfzeile `objekt`. Der Import nimmt weiter auch alte Dateien mit `umsetzung` an, eigene Auswertungen auf die Datenbank oder den Export brauchen den neuen Namen (#453)

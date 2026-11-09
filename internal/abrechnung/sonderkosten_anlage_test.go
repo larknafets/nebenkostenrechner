@@ -12,11 +12,11 @@ import (
 // the line's Betrag is the Sonderkosten part of the Betriebskosten (#407).
 func TestBerechne_SonderkostenZeileUndAnlage(t *testing.T) {
 	list := []store.Sonderkosten{
-		{Monat: "2027-03-01", Betreff: "Pumpe", Art: store.ArtReparatur, Firma: "Fa. Müller", Rechnungsnummer: "R-1", Betrag: 100.01, Umsetzung: store.UmsetzungHaus, Umlegbar: true, Logik: store.LogikQM, Beschreibung: "geheim"},
-		{Monat: "2027-04-01", Betreff: "Spüle", Art: store.ArtNeuanschaffung, Betrag: 40, Umsetzung: store.UmsetzungWohnung2, Umlegbar: true},
-		{Monat: "2027-05-01", Betreff: "Nur W1", Betrag: 500, Umsetzung: store.UmsetzungWohnung1, Umlegbar: true},
-		{Monat: "2027-06-01", Betreff: "Nicht umlegbar", Betrag: 999, Umsetzung: store.UmsetzungHaus, Logik: store.LogikQM},
-		{Monat: "2026-12-01", Betreff: "Vorjahr", Betrag: 77, Umsetzung: store.UmsetzungWohnung2, Umlegbar: true},
+		{Monat: "2027-03-01", Betreff: "Pumpe", Art: store.ArtReparatur, Firma: "Fa. Müller", Rechnungsnummer: "R-1", Betrag: 100.01, Objekt: store.ObjektHaus, Umlegbar: true, Logik: store.LogikQM, Beschreibung: "geheim"},
+		{Monat: "2027-04-01", Betreff: "Spüle", Art: store.ArtNeuanschaffung, Betrag: 40, Objekt: store.ObjektWohnung2, Umlegbar: true},
+		{Monat: "2027-05-01", Betreff: "Nur W1", Betrag: 500, Objekt: store.ObjektWohnung1, Umlegbar: true},
+		{Monat: "2027-06-01", Betreff: "Nicht umlegbar", Betrag: 999, Objekt: store.ObjektHaus, Logik: store.LogikQM},
+		{Monat: "2026-12-01", Betreff: "Vorjahr", Betrag: 77, Objekt: store.ObjektWohnung2, Umlegbar: true},
 	}
 	ab := berechneSonderkosten(t, list, store.StatusVermietet, 2)
 
@@ -33,8 +33,8 @@ func TestBerechne_SonderkostenZeileUndAnlage(t *testing.T) {
 	}
 
 	want := []SonderkostenEintrag{
-		{Monat: "2027-03-01", Betreff: "Pumpe", Art: store.ArtReparatur, Firma: "Fa. Müller", Rechnungsnummer: "R-1", Umsetzung: store.UmsetzungHaus, Rechnungsbetrag: 100.01, Schluessel: "Je anteilige Wohnungsgröße", Anteil: 32.31},
-		{Monat: "2027-04-01", Betreff: "Spüle", Art: store.ArtNeuanschaffung, Umsetzung: store.UmsetzungWohnung2, Rechnungsbetrag: 40, Schluessel: "Wohnung 2", Anteil: 40},
+		{Monat: "2027-03-01", Betreff: "Pumpe", Art: store.ArtReparatur, Firma: "Fa. Müller", Rechnungsnummer: "R-1", Objekt: store.ObjektHaus, Rechnungsbetrag: 100.01, Schluessel: "Je anteilige Wohnungsgröße", Anteil: 32.31},
+		{Monat: "2027-04-01", Betreff: "Spüle", Art: store.ArtNeuanschaffung, Objekt: store.ObjektWohnung2, Rechnungsbetrag: 40, Schluessel: "Wohnung 2", Anteil: 40},
 	}
 	if !reflect.DeepEqual(ab.SonderkostenAnlage, want) {
 		t.Errorf("Anlage = %+v, want %+v", ab.SonderkostenAnlage, want)

@@ -18,11 +18,11 @@ const (
 	ArtSonstiges      = "sonstiges"
 )
 
-// Umsetzung values for sonderkosten.umsetzung: who carries the bill.
+// Objekt values for sonderkosten.objekt: what the invoice refers to.
 const (
-	UmsetzungHaus     = "haus"
-	UmsetzungWohnung1 = "wohnung1"
-	UmsetzungWohnung2 = "wohnung2"
+	ObjektHaus     = "haus"
+	ObjektWohnung1 = "wohnung1"
+	ObjektWohnung2 = "wohnung2"
 )
 
 // Auswahl is one choice of a fixed list: the stored key and its German label.
@@ -37,16 +37,16 @@ var SonderkostenArten = []Auswahl{
 	{ArtSonstiges, "Sonstiges"},
 }
 
-// SonderkostenUmsetzungen lists the Umsetzungen in display order.
-var SonderkostenUmsetzungen = []Auswahl{
-	{UmsetzungHaus, "Haus"},
-	{UmsetzungWohnung1, "Wohnung 1"},
-	{UmsetzungWohnung2, "Wohnung 2"},
+// SonderkostenObjekte lists the Objekte in display order.
+var SonderkostenObjekte = []Auswahl{
+	{ObjektHaus, "Haus"},
+	{ObjektWohnung1, "Wohnung 1"},
+	{ObjektWohnung2, "Wohnung 2"},
 }
 
 // Sonderkosten is one invoice outside the Kostenpositionen (GLOSSARY.md).
 // Monat is the Abrechnungsmonat ("YYYY-MM-01"), Betrag the gross amount.
-// Logik is set only for Umsetzung Haus and Umlegbar, empty otherwise.
+// Logik is set only for Objekt Haus and Umlegbar, empty otherwise.
 type Sonderkosten struct {
 	ID              int64
 	Monat           string
@@ -56,7 +56,7 @@ type Sonderkosten struct {
 	Firma           string
 	Rechnungsnummer string
 	Betrag          float64
-	Umsetzung       string
+	Objekt          string
 	Umlegbar        bool
 	Logik           string
 }
@@ -65,7 +65,7 @@ type Sonderkosten struct {
 // umlegbar, assigned to the Haus and split by Je Anzahl Personen needs the
 // Fixkosteneingabe of its Abrechnungsmonat, without it it counts nowhere.
 func (s Sonderkosten) BrauchtFixkosteneingabe() bool {
-	return s.Umlegbar && s.Umsetzung == UmsetzungHaus && s.Logik == LogikPersonen
+	return s.Umlegbar && s.Objekt == ObjektHaus && s.Logik == LogikPersonen
 }
 
 // SonderkostenFehler is the error of a write that failed validation, one
@@ -106,9 +106,9 @@ func insertSonderkosten(e sonderkostenDB, s Sonderkosten) (int64, error) {
 		return 0, err
 	}
 	res, err := e.Exec(
-		`INSERT INTO sonderkosten (monat, betreff, beschreibung, art, firma, rechnungsnummer, betrag, umsetzung, umlegbar, logik)
+		`INSERT INTO sonderkosten (monat, betreff, beschreibung, art, firma, rechnungsnummer, betrag, objekt, umlegbar, logik)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		s.Monat, s.Betreff, s.Beschreibung, s.Art, s.Firma, s.Rechnungsnummer, s.Betrag, s.Umsetzung, s.Umlegbar, s.Logik,
+		s.Monat, s.Betreff, s.Beschreibung, s.Art, s.Firma, s.Rechnungsnummer, s.Betrag, s.Objekt, s.Umlegbar, s.Logik,
 	)
 	if err != nil {
 		return 0, fmt.Errorf("insert sonderkosten: %w", err)
@@ -139,8 +139,8 @@ func UpdateSonderkosten(db *sql.DB, s Sonderkosten) error {
 		return err
 	}
 	res, err := db.Exec(
-		`UPDATE sonderkosten SET monat=?, betreff=?, beschreibung=?, art=?, firma=?, rechnungsnummer=?, betrag=?, umsetzung=?, umlegbar=?, logik=? WHERE id=?`,
-		s.Monat, s.Betreff, s.Beschreibung, s.Art, s.Firma, s.Rechnungsnummer, s.Betrag, s.Umsetzung, s.Umlegbar, s.Logik, s.ID,
+		`UPDATE sonderkosten SET monat=?, betreff=?, beschreibung=?, art=?, firma=?, rechnungsnummer=?, betrag=?, objekt=?, umlegbar=?, logik=? WHERE id=?`,
+		s.Monat, s.Betreff, s.Beschreibung, s.Art, s.Firma, s.Rechnungsnummer, s.Betrag, s.Objekt, s.Umlegbar, s.Logik, s.ID,
 	)
 	return sonderkostenGeaendert(res, err, "update")
 }
@@ -179,8 +179,8 @@ func validiereSonderkosten(s Sonderkosten, hatFixkosteneingabe bool) []string {
 	if !slices.ContainsFunc(SonderkostenArten, func(a Auswahl) bool { return a.Wert == s.Art }) {
 		fehler = append(fehler, "Die Art ist ungültig.")
 	}
-	if !slices.ContainsFunc(SonderkostenUmsetzungen, func(a Auswahl) bool { return a.Wert == s.Umsetzung }) {
-		fehler = append(fehler, "Die Umsetzung ist ungültig.")
+	if !slices.ContainsFunc(SonderkostenObjekte, func(a Auswahl) bool { return a.Wert == s.Objekt }) {
+		fehler = append(fehler, "Das Objekt ist ungültig.")
 	}
 	// Finite and whole cents: Inf passes "> 0", and a fraction of a cent breaks
 	// the exact split of the Betrag onto both apartments.
@@ -188,7 +188,7 @@ func validiereSonderkosten(s Sonderkosten, hatFixkosteneingabe bool) []string {
 		fehler = append(fehler, "Der Betrag muss größer als 0 sein und höchstens zwei Nachkommastellen haben.")
 	}
 	switch {
-	case s.Umsetzung == UmsetzungHaus && s.Umlegbar:
+	case s.Objekt == ObjektHaus && s.Umlegbar:
 		switch {
 		case !slices.Contains(logikenHaus, s.Logik):
 			fehler = append(fehler, "Die Berechnungslogik fehlt oder ist ungültig.")
@@ -196,7 +196,7 @@ func validiereSonderkosten(s Sonderkosten, hatFixkosteneingabe bool) []string {
 			fehler = append(fehler, "Je Anzahl Personen geht nur, wenn der Abrechnungsmonat eine Fixkosteneingabe hat.")
 		}
 	case s.Logik != "":
-		fehler = append(fehler, "Die Berechnungslogik gibt es nur bei Umsetzung Haus und umlegbar.")
+		fehler = append(fehler, "Die Berechnungslogik gibt es nur beim Objekt Haus und umlegbar.")
 	}
 	return fehler
 }
@@ -204,7 +204,7 @@ func validiereSonderkosten(s Sonderkosten, hatFixkosteneingabe bool) []string {
 // AllSonderkosten reads every entry, oldest Abrechnungsmonat first, then id.
 func AllSonderkosten(db *sql.DB) ([]Sonderkosten, error) {
 	rows, err := db.Query(
-		`SELECT id, monat, betreff, beschreibung, art, firma, rechnungsnummer, betrag, umsetzung, umlegbar, logik
+		`SELECT id, monat, betreff, beschreibung, art, firma, rechnungsnummer, betrag, objekt, umlegbar, logik
 		 FROM sonderkosten ORDER BY monat, id`)
 	if err != nil {
 		return nil, fmt.Errorf("query sonderkosten: %w", err)
@@ -213,7 +213,7 @@ func AllSonderkosten(db *sql.DB) ([]Sonderkosten, error) {
 	var out []Sonderkosten
 	for rows.Next() {
 		var s Sonderkosten
-		if err := rows.Scan(&s.ID, &s.Monat, &s.Betreff, &s.Beschreibung, &s.Art, &s.Firma, &s.Rechnungsnummer, &s.Betrag, &s.Umsetzung, &s.Umlegbar, &s.Logik); err != nil {
+		if err := rows.Scan(&s.ID, &s.Monat, &s.Betreff, &s.Beschreibung, &s.Art, &s.Firma, &s.Rechnungsnummer, &s.Betrag, &s.Objekt, &s.Umlegbar, &s.Logik); err != nil {
 			return nil, fmt.Errorf("scan sonderkosten: %w", err)
 		}
 		out = append(out, s)

@@ -28,10 +28,10 @@ func SonderkostenAnteile(s store.Sonderkosten, apartments []store.Apartment, fix
 	if !s.Umlegbar {
 		return SonderkostenAnteil{Berechenbar: true}
 	}
-	switch s.Umsetzung {
-	case store.UmsetzungWohnung1:
+	switch s.Objekt {
+	case store.ObjektWohnung1:
 		return SonderkostenAnteil{W1: Round2(s.Betrag), Berechenbar: true}
-	case store.UmsetzungWohnung2:
+	case store.ObjektWohnung2:
 		return SonderkostenAnteil{W2: Round2(s.Betrag), Berechenbar: true}
 	}
 	var personenW1, personenW2 float64
@@ -72,10 +72,10 @@ func SonderkostenMonate(list []store.Sonderkosten, apartments []store.Apartment,
 			continue
 		}
 		logik := s.Logik
-		switch s.Umsetzung {
-		case store.UmsetzungWohnung1:
+		switch s.Objekt {
+		case store.ObjektWohnung1:
 			logik = store.LogikWohnung1
-		case store.UmsetzungWohnung2:
+		case store.ObjektWohnung2:
 			logik = store.LogikWohnung2
 		}
 		if logik == "" {

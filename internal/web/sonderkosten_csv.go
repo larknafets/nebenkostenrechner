@@ -9,11 +9,11 @@ import (
 )
 
 // sonderkostenCsvHeader is the column order of the Sonderkosten CSV, shared by
-// the export (#408) and the import (#409). art and umsetzung carry the German
+// the export (#408) and the import (#409). art and objekt carry the German
 // label, logik the technical key like the Fixkosten CSV.
 var sonderkostenCsvHeader = []string{
 	"monat", "betreff", "beschreibung", "art", "firma", "rechnungsnummer",
-	"betrag", "umsetzung", "umlegbar", "logik",
+	"betrag", "objekt", "umlegbar", "logik",
 }
 
 // auswahlLabel returns the German label of key, the key itself when unknown.
@@ -39,12 +39,12 @@ func sonderkostenArtSchluessel(label string) (string, bool) {
 	return auswahlSchluessel(store.SonderkostenArten, label)
 }
 
-func sonderkostenUmsetzungLabel(key string) string {
-	return auswahlLabel(store.SonderkostenUmsetzungen, key)
+func sonderkostenObjektLabel(key string) string {
+	return auswahlLabel(store.SonderkostenObjekte, key)
 }
 
-func sonderkostenUmsetzungSchluessel(label string) (string, bool) {
-	return auswahlSchluessel(store.SonderkostenUmsetzungen, label)
+func sonderkostenObjektSchluessel(label string) (string, bool) {
+	return auswahlSchluessel(store.SonderkostenObjekte, label)
 }
 
 // csvText defuses a free text for spreadsheets: a text that starts with = + - @
@@ -74,7 +74,7 @@ func formatSonderkostenCSVRow(s store.Sonderkosten) []string {
 	}
 	return []string{
 		s.Monat, csvText(s.Betreff), csvText(s.Beschreibung), sonderkostenArtLabel(s.Art), csvText(s.Firma), csvText(s.Rechnungsnummer),
-		formatDecimalDE(s.Betrag), sonderkostenUmsetzungLabel(s.Umsetzung), umlegbar, s.Logik,
+		formatDecimalDE(s.Betrag), sonderkostenObjektLabel(s.Objekt), umlegbar, s.Logik,
 	}
 }
 

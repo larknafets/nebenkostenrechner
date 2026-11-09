@@ -820,3 +820,17 @@ func backfillFixkostenWerteLogikTyp(db *sql.DB) error {
 
 	return tx.Commit()
 }
+
+// renameSonderkostenUmsetzungToObjekt renames sonderkosten.umsetzung to objekt
+// (#453). SQLite rewrites the CHECK constraint with the column. A fresh
+// database already has objekt from schema.sql, so there is nothing to do.
+func renameSonderkostenUmsetzungToObjekt(db *sql.DB) error {
+	alt, err := hasColumn(db, "sonderkosten", "umsetzung")
+	if err != nil || !alt {
+		return err
+	}
+	if _, err := db.Exec(`ALTER TABLE sonderkosten RENAME COLUMN umsetzung TO objekt`); err != nil {
+		return fmt.Errorf("rename sonderkosten column: %w", err)
+	}
+	return nil
+}

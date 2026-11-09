@@ -31,17 +31,17 @@ type sonderkostenKarte struct {
 // sonderkostenMaske is the data of the shared form fields ("sk-felder"):
 // P prefixes the element ids, the rest prefills the fields.
 type sonderkostenMaske struct {
-	P                  string
-	ID                 int64
-	Monat, Betrag      string
-	S                  store.Sonderkosten
-	Arten, Umsetzungen []store.Auswahl
-	Logiken, Hinweise  []store.Auswahl
+	P                 string
+	ID                int64
+	Monat, Betrag     string
+	S                 store.Sonderkosten
+	Arten, Objekte    []store.Auswahl
+	Logiken, Hinweise []store.Auswahl
 }
 
 func neueMaske(p string, s store.Sonderkosten, monat, betrag string) sonderkostenMaske {
 	return sonderkostenMaske{P: p, ID: s.ID, Monat: monat, Betrag: betrag, S: s, Arten: store.SonderkostenArten,
-		Umsetzungen: store.SonderkostenUmsetzungen, Logiken: sonderkostenLogiken, Hinweise: sonderkostenHinweise}
+		Objekte: store.SonderkostenObjekte, Logiken: sonderkostenLogiken, Hinweise: sonderkostenHinweise}
 }
 
 // sonderkostenMonat is the group of one Abrechnungsmonat.
@@ -58,9 +58,9 @@ func sonderkostenZuordnung(s store.Sonderkosten) string {
 	switch {
 	case !s.Umlegbar:
 		return "trägt Vermieter:in"
-	case s.Umsetzung == store.UmsetzungWohnung1:
+	case s.Objekt == store.ObjektWohnung1:
 		return "trägt Wohnung 1"
-	case s.Umsetzung == store.UmsetzungWohnung2:
+	case s.Objekt == store.ObjektWohnung2:
 		return "trägt Wohnung 2"
 	}
 	return calc.LogikLabels[s.Logik]
@@ -101,12 +101,12 @@ func sonderkostenAusForm(w http.ResponseWriter, r *http.Request) (store.Sonderko
 	s := store.Sonderkosten{
 		Betreff: strings.TrimSpace(f.Get("betreff")), Beschreibung: strings.TrimSpace(f.Get("beschreibung")),
 		Art: f.Get("art"), Firma: strings.TrimSpace(f.Get("firma")), Rechnungsnummer: strings.TrimSpace(f.Get("rechnungsnummer")),
-		Umsetzung: f.Get("umsetzung"), Umlegbar: f.Get("umlegbar") != "", Logik: f.Get("logik"),
+		Objekt: f.Get("objekt"), Umlegbar: f.Get("umlegbar") != "", Logik: f.Get("logik"),
 	}
 	// An unparsable month or amount stays empty/0, the validation reports it.
 	s.Monat, _ = parseFixkostenMonat(f.Get("monat"))
 	s.Betrag, _ = parseDecimalDE(f.Get("betrag"))
-	if s.Umsetzung != store.UmsetzungHaus || !s.Umlegbar {
+	if s.Objekt != store.ObjektHaus || !s.Umlegbar {
 		s.Logik = ""
 	}
 	fehler, err := store.PruefeSonderkosten(db, s)
@@ -248,7 +248,7 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 			Jahr: filter.Jahr, AlleJahre: filter.AlleJahre, Jahre: jahre,
 			Arten: store.SonderkostenArten, Art: filter.Art, HatEintraege: len(alle) > 0,
 			NeuMonat: heute.Format("2006-01"), FixMonate: fixMonate,
-			NeuMaske: neueMaske("sk", store.Sonderkosten{Art: store.ArtReparatur, Umsetzung: store.UmsetzungHaus}, heute.Format("2006-01"), ""),
+			NeuMaske: neueMaske("sk", store.Sonderkosten{Art: store.ArtReparatur, Objekt: store.ObjektHaus}, heute.Format("2006-01"), ""),
 		}
 		if err := sonderkostenTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -61,9 +61,42 @@ func TestSonderkostenImport_UebernimmtGueltigeCSV(t *testing.T) {
 		t.Fatalf("%d Einträge, want 3", len(got))
 	}
 	p := got[2] // sorted by monat: 2025-03, 2026-09, 2026-10
-	if p.Betreff != "Heizungspumpe" || p.Betrag != 1000.5 || p.Art != store.ArtReparatur || p.Umsetzung != store.UmsetzungHaus || !p.Umlegbar || p.Logik != store.LogikPersonen || p.Rechnungsnummer != "RE-412" {
+	if p.Betreff != "Heizungspumpe" || p.Betrag != 1000.5 || p.Art != store.ArtReparatur || p.Objekt != store.ObjektHaus || !p.Umlegbar || p.Logik != store.LogikPersonen || p.Rechnungsnummer != "RE-412" {
 		t.Errorf("Eintrag = %+v", p)
 	}
+}
+
+// Exports from before the rename (#453) call the column umsetzung, the Header
+// of an export now says objekt: both import, with the same result.
+func TestSonderkostenImport_AlteUndNeueKopfzeile(t *testing.T) {
+	neu := skKopf
+	alt := strings.Replace(skKopf, "objekt", "umsetzung", 1)
+	if alt == neu {
+		t.Fatal("Kopfzeile enthält objekt nicht")
+	}
+	for name, kopf := range map[string]string{"objekt": neu, "umsetzung": alt} {
+		t.Run(name, func(t *testing.T) {
+			mux, c, alle := skImportMux(t)
+			w := postSonderkostenImport(t, mux, c, kopf+"\n2026-09-01;Spülmaschine;;Neuanschaffung;;;649;Wohnung 2;1;\n")
+			if w.Code != http.StatusFound {
+				t.Fatalf("status %d, body %s", w.Code, w.Body)
+			}
+			if got := alle(); len(got) != 1 || got[0].Objekt != store.ObjektWohnung2 {
+				t.Errorf("Einträge = %+v, want einer mit Objekt wohnung2", got)
+			}
+		})
+	}
+	t.Run("keine von beiden", func(t *testing.T) {
+		mux, c, alle := skImportMux(t)
+		kopf := strings.Replace(skKopf, "objekt", "bereich", 1)
+		w := postSonderkostenImport(t, mux, c, kopf+"\n2026-09-01;Spülmaschine;;Neuanschaffung;;;649;Wohnung 2;1;\n")
+		if w.Code != http.StatusBadRequest || !strings.Contains(w.Body.String(), `"objekt"`) {
+			t.Errorf("status %d, body %q, want 400 mit Hinweis auf die Spalte objekt", w.Code, w.Body)
+		}
+		if n := len(alle()); n != 0 {
+			t.Errorf("%d Einträge gespeichert, want 0", n)
+		}
+	})
 }
 
 func TestSonderkostenImport_FehlerBrichtAbWennNichtsGespeichert(t *testing.T) {
@@ -72,7 +105,7 @@ func TestSonderkostenImport_FehlerBrichtAbWennNichtsGespeichert(t *testing.T) {
 		"Betrag 0":                      "2026-10-01;X;;Reparatur;;;0;Haus;0;\n",
 		"Betrag unlesbar":               "2026-10-01;X;;Reparatur;;;abc;Haus;0;\n",
 		"Art unbekannt":                 "2026-10-01;X;;Basteln;;;5;Haus;0;\n",
-		"Umsetzung unbekannt":           "2026-10-01;X;;Reparatur;;;5;Keller;0;\n",
+		"Objekt unbekannt":              "2026-10-01;X;;Reparatur;;;5;Keller;0;\n",
 		"Monat ungültig":                "2026-13-01;X;;Reparatur;;;5;Haus;0;\n",
 		"Betreff fehlt":                 "2026-10-01;;;Reparatur;;;5;Haus;0;\n",
 		"Umlegbar unlesbar":             "2026-10-01;X;;Reparatur;;;5;Haus;ja;\n",

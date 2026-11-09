@@ -29,19 +29,19 @@ func sonderkostenMux(t *testing.T, eintraege ...store.Sonderkosten) (*http.Serve
 func sonderkostenRoh(t *testing.T, db *sql.DB, s store.Sonderkosten) {
 	t.Helper()
 	if _, err := db.Exec(
-		`INSERT INTO sonderkosten (monat, betreff, beschreibung, art, firma, rechnungsnummer, betrag, umsetzung, umlegbar, logik)
+		`INSERT INTO sonderkosten (monat, betreff, beschreibung, art, firma, rechnungsnummer, betrag, objekt, umlegbar, logik)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		s.Monat, s.Betreff, s.Beschreibung, s.Art, s.Firma, s.Rechnungsnummer, s.Betrag, s.Umsetzung, s.Umlegbar, s.Logik,
+		s.Monat, s.Betreff, s.Beschreibung, s.Art, s.Firma, s.Rechnungsnummer, s.Betrag, s.Objekt, s.Umlegbar, s.Logik,
 	); err != nil {
 		t.Fatalf("raw insert sonderkosten: %v", err)
 	}
 }
 
 var beispielSonderkosten = []store.Sonderkosten{
-	{Monat: "2026-10-01", Betreff: "Heizungspumpe", Beschreibung: "Pumpe Heizkreis 2", Art: store.ArtReparatur, Firma: "Meier GmbH", Rechnungsnummer: "RE-412", Betrag: 1000, Umsetzung: store.UmsetzungHaus, Umlegbar: true, Logik: store.LogikWohneinheit},
-	{Monat: "2026-10-01", Betreff: "Rauchmelder", Art: store.ArtWartung, Firma: "Brandschutz Nord", Betrag: 96, Umsetzung: store.UmsetzungHaus},
-	{Monat: "2026-09-01", Betreff: "Spülmaschine", Art: store.ArtNeuanschaffung, Firma: "Elektro Schmitt", Betrag: 649, Umsetzung: store.UmsetzungWohnung2, Umlegbar: true},
-	{Monat: "2025-03-01", Betreff: "Wasserhahn", Art: store.ArtReparatur, Firma: "Sanitär Lehmann", Betrag: 184.3, Umsetzung: store.UmsetzungWohnung1},
+	{Monat: "2026-10-01", Betreff: "Heizungspumpe", Beschreibung: "Pumpe Heizkreis 2", Art: store.ArtReparatur, Firma: "Meier GmbH", Rechnungsnummer: "RE-412", Betrag: 1000, Objekt: store.ObjektHaus, Umlegbar: true, Logik: store.LogikWohneinheit},
+	{Monat: "2026-10-01", Betreff: "Rauchmelder", Art: store.ArtWartung, Firma: "Brandschutz Nord", Betrag: 96, Objekt: store.ObjektHaus},
+	{Monat: "2026-09-01", Betreff: "Spülmaschine", Art: store.ArtNeuanschaffung, Firma: "Elektro Schmitt", Betrag: 649, Objekt: store.ObjektWohnung2, Umlegbar: true},
+	{Monat: "2025-03-01", Betreff: "Wasserhahn", Art: store.ArtReparatur, Firma: "Sanitär Lehmann", Betrag: 184.3, Objekt: store.ObjektWohnung1},
 }
 
 func TestSonderkosten_SeiteZeigtKopfSummenUndKarten(t *testing.T) {

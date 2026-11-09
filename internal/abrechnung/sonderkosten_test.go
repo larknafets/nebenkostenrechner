@@ -16,7 +16,7 @@ const (
 )
 
 func hausSonderkosten(monat string, betrag float64, umlegbar bool, logik string) store.Sonderkosten {
-	return store.Sonderkosten{Monat: monat, Betreff: "Rechnung", Art: store.ArtReparatur, Betrag: betrag, Umsetzung: store.UmsetzungHaus, Umlegbar: umlegbar, Logik: logik}
+	return store.Sonderkosten{Monat: monat, Betreff: "Rechnung", Art: store.ArtReparatur, Betrag: betrag, Objekt: store.ObjektHaus, Umlegbar: umlegbar, Logik: logik}
 }
 
 func berechneSonderkosten(t *testing.T, list []store.Sonderkosten, status string, apartmentID int64) *Jahresabrechnung {
@@ -68,16 +68,16 @@ func TestBerechne_Sonderkosten(t *testing.T) {
 
 	t.Run("Wohnung 1 oder 2 trägt 100 Prozent", func(t *testing.T) {
 		s := hausSonderkosten("2027-03-01", 80, true, "")
-		s.Umsetzung = store.UmsetzungWohnung1
+		s.Objekt = store.ObjektWohnung1
 		if ab := berechneSonderkosten(t, []store.Sonderkosten{s}, store.StatusVermietet, 2); ab.Betriebskosten != 1200 {
-			t.Errorf("Wohnung 2 bei Umsetzung Wohnung 1 = %v, want 1200", ab.Betriebskosten)
+			t.Errorf("Wohnung 2 bei Objekt Wohnung 1 = %v, want 1200", ab.Betriebskosten)
 		}
 		if ab := berechneSonderkosten(t, []store.Sonderkosten{s}, store.StatusEigennutzung, 1); ab.Betriebskosten != 80 {
-			t.Errorf("Wohnung 1 bei Umsetzung Wohnung 1 = %v, want 80", ab.Betriebskosten)
+			t.Errorf("Wohnung 1 bei Objekt Wohnung 1 = %v, want 80", ab.Betriebskosten)
 		}
-		s.Umsetzung = store.UmsetzungWohnung2
+		s.Objekt = store.ObjektWohnung2
 		if ab := berechneSonderkosten(t, []store.Sonderkosten{s}, store.StatusVermietet, 2); ab.Betriebskosten != 1280 {
-			t.Errorf("Wohnung 2 bei Umsetzung Wohnung 2 = %v, want 1280", ab.Betriebskosten)
+			t.Errorf("Wohnung 2 bei Objekt Wohnung 2 = %v, want 1280", ab.Betriebskosten)
 		}
 	})
 
@@ -92,7 +92,7 @@ func TestBerechne_Sonderkosten(t *testing.T) {
 	t.Run("nicht umlegbar ändert nirgends etwas", func(t *testing.T) {
 		list := []store.Sonderkosten{
 			hausSonderkosten("2027-03-01", 100, false, ""),
-			{Monat: "2026-12-01", Betrag: 55, Umsetzung: store.UmsetzungWohnung2},
+			{Monat: "2026-12-01", Betrag: 55, Objekt: store.ObjektWohnung2},
 		}
 		ab := berechneSonderkosten(t, list, store.StatusVermietet, 2)
 		if ab.Betriebskosten != 1200 || ab.Saldo.Wert() != sonderkostenJahressaldo || ab.Monatsverlauf.Endsaldo != sonderkostenUebertrag+sonderkostenJahressaldo || ab.Monatsverlauf.Uebertrag.Betrag != sonderkostenUebertrag {
@@ -104,7 +104,7 @@ func TestBerechne_Sonderkosten(t *testing.T) {
 		// 2026-10 is the month of the first Ablesung (Ausgangsstand): no Eingabe,
 		// no consumption, and still no "Fixkosten fehlen".
 		list := []store.Sonderkosten{
-			{Monat: "2026-10-01", Betrag: 40, Umsetzung: store.UmsetzungWohnung2, Umlegbar: true},
+			{Monat: "2026-10-01", Betrag: 40, Objekt: store.ObjektWohnung2, Umlegbar: true},
 			hausSonderkosten("2026-10-01", 70, true, store.LogikPersonen), // no Eingabe in the month: not berechenbar
 		}
 		ab := berechneSonderkosten(t, list, store.StatusVermietet, 2)

@@ -43,7 +43,7 @@ func TestBaueSonderkostenListe(t *testing.T) {
 		{ID: 1, Monat: "2025-12-01", Betrag: 10, Art: store.ArtReparatur, Umlegbar: true},
 		{ID: 2, Monat: "2026-01-01", Betrag: 20, Art: store.ArtReparatur},
 		{ID: 3, Monat: "2026-01-01", Betrag: 5, Art: store.ArtReparatur, Umlegbar: true},
-		{ID: 4, Monat: "2026-02-01", Betrag: 7, Art: store.ArtReparatur, Umlegbar: true, Umsetzung: store.UmsetzungHaus, Logik: store.LogikPersonen},
+		{ID: 4, Monat: "2026-02-01", Betrag: 7, Art: store.ArtReparatur, Umlegbar: true, Objekt: store.ObjektHaus, Logik: store.LogikPersonen},
 	}
 	l := baueSonderkostenListe(alle, nil, sonderkostenFilter{Jahr: 2026})
 	if l.Gesamt != 32 || l.Umlegbar != 12 || l.VermieterTraegt() != 20 {

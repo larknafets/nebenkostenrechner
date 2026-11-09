@@ -48,10 +48,10 @@ func TestDashboard_SonderkostenInDenSummen(t *testing.T) {
 	// Ablesung and Fixkosteneingabe). The entry that is not umlegbar and the one
 	// of Wohnung 1 change nothing for Wohnung 2.
 	cardNachher, verlaufNachher, body := sonderkostenDashboardDB(t,
-		store.Sonderkosten{Monat: "2026-11-01", Betreff: "Pumpe", Art: store.ArtReparatur, Betrag: 100.01, Umsetzung: store.UmsetzungHaus, Umlegbar: true, Logik: store.LogikWohneinheit},
-		store.Sonderkosten{Monat: "2026-12-01", Betreff: "Spülmaschine", Art: store.ArtNeuanschaffung, Betrag: 40, Umsetzung: store.UmsetzungWohnung2, Umlegbar: true},
-		store.Sonderkosten{Monat: "2026-11-01", Betreff: "Eigene Ausgabe", Art: store.ArtSonstiges, Betrag: 999, Umsetzung: store.UmsetzungWohnung2},
-		store.Sonderkosten{Monat: "2026-11-01", Betreff: "Wohnung 1", Art: store.ArtReparatur, Betrag: 500, Umsetzung: store.UmsetzungWohnung1, Umlegbar: true},
+		store.Sonderkosten{Monat: "2026-11-01", Betreff: "Pumpe", Art: store.ArtReparatur, Betrag: 100.01, Objekt: store.ObjektHaus, Umlegbar: true, Logik: store.LogikWohneinheit},
+		store.Sonderkosten{Monat: "2026-12-01", Betreff: "Spülmaschine", Art: store.ArtNeuanschaffung, Betrag: 40, Objekt: store.ObjektWohnung2, Umlegbar: true},
+		store.Sonderkosten{Monat: "2026-11-01", Betreff: "Eigene Ausgabe", Art: store.ArtSonstiges, Betrag: 999, Objekt: store.ObjektWohnung2},
+		store.Sonderkosten{Monat: "2026-11-01", Betreff: "Wohnung 1", Art: store.ArtReparatur, Betrag: 500, Objekt: store.ObjektWohnung1, Umlegbar: true},
 	)
 
 	if got, want := cardNachher.FixkostenEUR, calc.Round2(cardVorher.FixkostenEUR+50+40); got != want {
@@ -85,7 +85,7 @@ func TestDashboard_SonderkostenInDenSummen(t *testing.T) {
 func TestDashboard_SonderkostenPersonenOhneEingabeWirktNirgends(t *testing.T) {
 	cardVorher, _, _ := sonderkostenDashboardDB(t)
 	cardNachher, verlauf, _ := sonderkostenDashboardDB(t,
-		store.Sonderkosten{Monat: "2026-12-01", Betreff: "Personen", Art: store.ArtSonstiges, Betrag: 300, Umsetzung: store.UmsetzungHaus, Umlegbar: true, Logik: store.LogikPersonen},
+		store.Sonderkosten{Monat: "2026-12-01", Betreff: "Personen", Art: store.ArtSonstiges, Betrag: 300, Objekt: store.ObjektHaus, Umlegbar: true, Logik: store.LogikPersonen},
 	)
 	if cardNachher.FixkostenEUR != cardVorher.FixkostenEUR || cardNachher.Saldo.Wert() != cardVorher.Saldo.Wert() {
 		t.Errorf("Jahreskarte ändert sich: Fixkosten %v -> %v", cardVorher.FixkostenEUR, cardNachher.FixkostenEUR)
@@ -110,9 +110,9 @@ func TestDashboard_NurSonderkostenMonatIstErreichbar(t *testing.T) {
 		}
 	}
 	for _, s := range []store.Sonderkosten{
-		{Monat: "2027-02-01", Betreff: "Dach", Art: store.ArtReparatur, Betrag: 40, Umsetzung: store.UmsetzungWohnung2, Umlegbar: true},
-		{Monat: "2027-03-01", Betreff: "Eigene", Art: store.ArtSonstiges, Betrag: 40, Umsetzung: store.UmsetzungWohnung2},
-		{Monat: "2027-04-01", Betreff: "Personen", Art: store.ArtSonstiges, Betrag: 40, Umsetzung: store.UmsetzungHaus, Umlegbar: true, Logik: store.LogikPersonen},
+		{Monat: "2027-02-01", Betreff: "Dach", Art: store.ArtReparatur, Betrag: 40, Objekt: store.ObjektWohnung2, Umlegbar: true},
+		{Monat: "2027-03-01", Betreff: "Eigene", Art: store.ArtSonstiges, Betrag: 40, Objekt: store.ObjektWohnung2},
+		{Monat: "2027-04-01", Betreff: "Personen", Art: store.ArtSonstiges, Betrag: 40, Objekt: store.ObjektHaus, Umlegbar: true, Logik: store.LogikPersonen},
 	} {
 		sonderkostenRoh(t, db, s) // the Personen entry is an old invalid one
 	}
@@ -129,7 +129,7 @@ func TestDashboard_NurSonderkostenMonatIstErreichbar(t *testing.T) {
 // umlegbare Sonderkosten (#413).
 func TestDashboard_NurSonderkostenOhneAblesungUndFixkosten(t *testing.T) {
 	db := openTestDB(t)
-	if _, err := store.CreateSonderkosten(db, store.Sonderkosten{Monat: "2026-05-01", Betreff: "Dach", Art: store.ArtReparatur, Betrag: 123, Umsetzung: store.UmsetzungWohnung2, Umlegbar: true}); err != nil {
+	if _, err := store.CreateSonderkosten(db, store.Sonderkosten{Monat: "2026-05-01", Betreff: "Dach", Art: store.ArtReparatur, Betrag: 123, Objekt: store.ObjektWohnung2, Umlegbar: true}); err != nil {
 		t.Fatalf("CreateSonderkosten: %v", err)
 	}
 	card, verlauf := buildEntityView(mustLoadDashboard(t, db), nil, 2)
