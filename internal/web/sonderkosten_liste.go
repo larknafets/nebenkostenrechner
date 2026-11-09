@@ -120,43 +120,37 @@ type aufstellungZeile struct {
 // by Art and Objekt. Only Arten with entries appear, no entries give no block.
 func baueSonderkostenAufstellung(alle []store.Sonderkosten, f sonderkostenFilter) sonderkostenAufstellung {
 	var a sonderkostenAufstellung
-	blockFuer := map[int]*aufstellungBlock{}
-	var jahre []int
 	for _, s := range alle {
 		if !f.passt(s) {
 			continue
 		}
-		if !slices.ContainsFunc(store.SonderkostenArten, func(x store.Auswahl) bool { return x.Wert == s.Art }) {
+		ai := slices.IndexFunc(store.SonderkostenArten, func(x store.Auswahl) bool { return x.Wert == s.Art })
+		if ai < 0 {
 			continue // shortcut: an unknown Art (no DB check) is left out of the table, list it when one occurs
 		}
 		jahr := 0
 		if f.AlleJahre {
 			jahr, _ = store.Abrechnungsmonat(s.Monat).Jahr()
 		}
-		b := blockFuer[jahr]
-		if b == nil {
-			b = &aufstellungBlock{Jahr: jahr, Summe: aufstellungZeile{Objekte: make([]float64, len(store.SonderkostenObjekte))}}
+		// alle is oldest month first, so the entries of one year are contiguous.
+		if n := len(a.Bloecke); n == 0 || a.Bloecke[n-1].Jahr != jahr {
+			neu := aufstellungBlock{Jahr: jahr, Summe: aufstellungZeile{Objekte: make([]float64, len(store.SonderkostenObjekte))}}
 			for _, art := range store.SonderkostenArten {
-				b.Zeilen = append(b.Zeilen, aufstellungZeile{Art: art.Label, Objekte: make([]float64, len(store.SonderkostenObjekte))})
+				neu.Zeilen = append(neu.Zeilen, aufstellungZeile{Art: art.Label, Objekte: make([]float64, len(store.SonderkostenObjekte))})
 			}
-			blockFuer[jahr] = b
-			jahre = append(jahre, jahr)
+			a.Bloecke = append(a.Bloecke, neu)
 		}
+		b := &a.Bloecke[len(a.Bloecke)-1]
 		o := slices.IndexFunc(store.SonderkostenObjekte, func(x store.Auswahl) bool { return x.Wert == s.Objekt })
-		ai := slices.IndexFunc(store.SonderkostenArten, func(x store.Auswahl) bool { return x.Wert == s.Art })
-		z := &b.Zeilen[ai]
-		for _, r := range []*aufstellungZeile{z, &b.Summe} {
+		for _, r := range []*aufstellungZeile{&b.Zeilen[ai], &b.Summe} {
 			r.Objekte[o] += s.Betrag
 			r.Summe += s.Betrag
 			r.n++
 		}
 	}
-	slices.Sort(jahre)
-	slices.Reverse(jahre)
-	for _, j := range jahre {
-		b := blockFuer[j]
-		b.Zeilen = slices.DeleteFunc(b.Zeilen, func(z aufstellungZeile) bool { return z.n == 0 })
-		a.Bloecke = append(a.Bloecke, *b)
+	for i := range a.Bloecke {
+		a.Bloecke[i].Zeilen = slices.DeleteFunc(a.Bloecke[i].Zeilen, func(z aufstellungZeile) bool { return z.n == 0 })
 	}
+	slices.Reverse(a.Bloecke) // newest year first
 	return a
 }
