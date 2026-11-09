@@ -41,6 +41,7 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
+- Die Seite Sonderkosten lässt sich jetzt nach Objekt (Haus, Wohnung 1, Wohnung 2) filtern, zeigt unter den Summenkarten eine Tabelle der Rechnungsbeträge nach Art und Objekt, trägt auf jeder Karte eine Badge-Zeile mit Objekt und Art und nimmt ein optionales Rechnungsdatum auf (#453, #454, #455, #456, #457). Der Filter wirkt auf Karten, Monatsüberschriften, Summenkarten und Tabelle, die Anlage 8 und die Jahresabrechnung bleiben unberührt
 - Auf der Seite Sonderkosten gibt es neben Jahr und Art einen Filter "Objekt" (Alle Objekte, Haus, Wohnung 1, Wohnung 2). Er wirkt auf die Karten, die Monatsüberschriften und die drei Summenkarten (#455)
 - Sonderkosten haben ein optionales Rechnungsdatum: Es lässt sich beim Anlegen und Korrigieren eintragen oder löschen, steht auf der Karte in der Zeile mit Firma und Rechnungsnummer (TT.MM.JJJJ) und im CSV-Export als letzte Spalte `rechnungsdatum`. Beim Import ist die Spalte optional. Abrechnungsmonat, Reihenfolge, Summen und die Anlage der Jahresabrechnung bleiben unverändert (#454)
 - Auf der Seite Sonderkosten steht unter den drei Summenkarten eine Tabelle der Rechnungsbeträge nach Art und Objekt (Haus, Wohnung 1, Wohnung 2, Summe), bei "Alle Jahre" ein Block je Jahr mit Zwischensumme. Sie folgt dem Filter und zeigt nur Arten mit Einträgen (#456)
