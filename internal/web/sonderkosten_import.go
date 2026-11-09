@@ -32,7 +32,7 @@ func handleSonderkostenImport() http.HandlerFunc {
 				alle, err := store.AllSonderkosten(db)
 				return len(alle) > 0, err
 			},
-			ExistingErrMsg: "Import nur möglich, solange noch keine Sonderkosten existieren",
+			ExistingErrMsg: store.SonderkostenImportNurLeer,
 			ParseRow: func(record []string, colIdx map[string]int, line int) (sonderkostenImportRow, error) {
 				return parseSonderkostenImportRow(db, record, colIdx, line)
 			},
