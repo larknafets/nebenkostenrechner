@@ -39,6 +39,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Vor dem Update
 
+**Vor dem Update:** Beim ersten Start baut die App die Datenbank um (bei den Sonderkosten heißt die Spalte `umsetzung` danach `objekt`, dazu kommt `rechnungsdatum`). Eine ältere Version der App kann diese Datenbank danach nicht mehr lesen, der Weg zurück führt nur über die Sicherung, die die App vor dem Umbau anlegt.
+
 ## Neue Funktionen
 
 - Die Seite Sonderkosten lässt sich jetzt nach Objekt (Haus, Wohnung 1, Wohnung 2) filtern, zeigt die Summenkarten und eine Tabelle der Rechnungsbeträge nach Art und Objekt in einem Block "Summen", der zuerst eingeklappt ist, zeigt auf jeder Karte oben Objekt und Art und nimmt ein optionales Rechnungsdatum auf (#453, #454, #455, #456, #457). Der Filter wirkt auf Karten, Monatsüberschriften, Summenkarten und Tabelle. Die Jahresabrechnung bleibt unberührt, nur die Spalte "Objekt" in der Anlage 8 heißt jetzt so (vorher "Umsetzung")
