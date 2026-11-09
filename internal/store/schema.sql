@@ -121,8 +121,9 @@ CREATE TABLE IF NOT EXISTS sonderkosten (
     art             TEXT NOT NULL,
     firma           TEXT NOT NULL,
     rechnungsnummer TEXT NOT NULL DEFAULT '',
+    rechnungsdatum  TEXT NOT NULL DEFAULT '',
     betrag          REAL NOT NULL CHECK (betrag > 0),
-    objekt       TEXT NOT NULL CHECK (objekt IN ('haus', 'wohnung1', 'wohnung2')),
+    objekt          TEXT NOT NULL CHECK (objekt IN ('haus', 'wohnung1', 'wohnung2')),
     umlegbar        INTEGER NOT NULL CHECK (umlegbar IN (0, 1)),
     logik           TEXT NOT NULL DEFAULT ''
 );

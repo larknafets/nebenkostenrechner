@@ -81,7 +81,7 @@ func baueSonderkostenListe(alle []store.Sonderkosten, fixMonate []string, f sond
 		m := &l.Monate[len(l.Monate)-1]
 		k := sonderkostenKarte{
 			Betreff: s.Betreff, Beschreibung: s.Beschreibung, Art: sonderkostenArtLabel(s.Art), Firma: s.Firma,
-			Rechnungsnummer: s.Rechnungsnummer, Betrag: s.Betrag, Umlegbar: s.Umlegbar, Zuordnung: sonderkostenZuordnung(s),
+			Rechnungsnummer: s.Rechnungsnummer, Rechnungsdatum: s.Rechnungsdatum, Betrag: s.Betrag, Umlegbar: s.Umlegbar, Zuordnung: sonderkostenZuordnung(s),
 			NichtBerechenbar: s.BrauchtFixkosteneingabe() && !slices.Contains(fixMonate, s.Monat[:7]),
 			ID:               s.ID, Maske: neueMaske("sk-"+strconv.FormatInt(s.ID, 10), s, s.Monat[:7], formatDecimalDE2(s.Betrag)),
 		}

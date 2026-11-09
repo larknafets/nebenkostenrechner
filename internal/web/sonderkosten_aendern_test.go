@@ -110,3 +110,40 @@ func TestSonderkostenKorrigierenLoeschen_NurVermieter(t *testing.T) {
 		t.Error("Mieter sieht Korrigieren/Löschen")
 	}
 }
+
+func TestSonderkostenRechnungsdatum_ErfassenKorrigierenAnzeigen(t *testing.T) {
+	mux, db := sonderkostenMux(t)
+	c := loginCookies(t, mux, "vermieter", "geheim")
+	f := gueltigesSonderkostenForm()
+	f.Set("rechnungsdatum", "2026-03-12") // not in the Abrechnungsmonat 2026-10
+	if w := postSonderkosten(t, mux, c, f); w.Code != http.StatusFound {
+		t.Fatalf("status %d: %s", w.Code, w.Body)
+	}
+	alle, _ := store.AllSonderkosten(db)
+	if alle[0].Rechnungsdatum != "2026-03-12" || alle[0].Monat != "2026-10-01" {
+		t.Fatalf("gespeichert: %+v", alle[0])
+	}
+	body := getMitCookies(t, mux, "/sonderkosten", c).Body.String()
+	for _, want := range []string{"Meier GmbH · Nr. RE-412 · 12.03.2026", `name="rechnungsdatum" value="2026-03-12"`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("Seite ohne %q", want)
+		}
+	}
+
+	pfad := "/sonderkosten/" + strconv.FormatInt(alle[0].ID, 10)
+	f.Set("rechnungsdatum", "2026-02-30")
+	if w := postPfad(t, mux, c, pfad, f); w.Code != http.StatusBadRequest || !strings.Contains(w.Body.String(), "Rechnungsdatum") {
+		t.Errorf("ungültig: status %d, body %q, want 400 mit Meldung", w.Code, w.Body)
+	}
+	f.Set("rechnungsdatum", "") // delete it
+	if w := postPfad(t, mux, c, pfad, f); w.Code != http.StatusFound {
+		t.Fatalf("leeren: status %d: %s", w.Code, w.Body)
+	}
+	alle, _ = store.AllSonderkosten(db)
+	if alle[0].Rechnungsdatum != "" {
+		t.Errorf("Rechnungsdatum = %q, want leer", alle[0].Rechnungsdatum)
+	}
+	if body := getMitCookies(t, mux, "/sonderkosten", c).Body.String(); !strings.Contains(body, "Meier GmbH · Nr. RE-412<") {
+		t.Error("Karte zeigt ohne Datum mehr als Firma und Nummer")
+	}
+}

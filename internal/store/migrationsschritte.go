@@ -834,3 +834,16 @@ func renameSonderkostenUmsetzungToObjekt(db *sql.DB) error {
 	}
 	return nil
 }
+
+// ensureSonderkostenRechnungsdatumColumn adds sonderkosten.rechnungsdatum (#454),
+// "YYYY-MM-DD" or empty. A fresh database has it from schema.sql.
+func ensureSonderkostenRechnungsdatumColumn(db *sql.DB) error {
+	da, err := hasColumn(db, "sonderkosten", "rechnungsdatum")
+	if err != nil || da {
+		return err
+	}
+	if _, err := db.Exec(`ALTER TABLE sonderkosten ADD COLUMN rechnungsdatum TEXT NOT NULL DEFAULT ''`); err != nil {
+		return fmt.Errorf("add sonderkosten.rechnungsdatum: %w", err)
+	}
+	return nil
+}

@@ -45,8 +45,8 @@ func TestOpen_Schema6BenenntUmsetzungInObjektUm(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Open %d: %v", lauf, err)
 		}
-		if v := userVersion(t, db); v != schemaVersion || schemaVersion != 7 {
-			t.Errorf("Lauf %d: user_version = %d, want %d (7)", lauf, v, schemaVersion)
+		if v := userVersion(t, db); v != schemaVersion || schemaVersion < 7 {
+			t.Errorf("Lauf %d: user_version = %d, want %d (>= 7)", lauf, v, schemaVersion)
 		}
 		if has, err := hasColumn(db, "sonderkosten", "umsetzung"); err != nil || has {
 			t.Errorf("Lauf %d: umsetzung vorhanden = %v, %v, want umbenannt", lauf, has, err)
@@ -77,5 +77,47 @@ func TestOpen_FrischeDatenbankHatObjektSpalte(t *testing.T) {
 		if has, err := hasColumn(db, "sonderkosten", spalte); err != nil || has != want {
 			t.Errorf("sonderkosten.%s vorhanden = %v, %v, want %v", spalte, has, err, want)
 		}
+	}
+}
+
+func TestOpen_Schema7LegtRechnungsdatumAn(t *testing.T) {
+	path := datenbankImSchema6(t)
+	db, err := Open(path) // 6 -> 8 in one start
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Back to the state of version 7: objekt exists, rechnungsdatum does not.
+	for _, stmt := range []string{`ALTER TABLE sonderkosten DROP COLUMN rechnungsdatum`, `PRAGMA user_version = 7`} {
+		if _, err := db.Exec(stmt); err != nil {
+			t.Fatalf("%s: %v", stmt, err)
+		}
+	}
+	db.Close()
+
+	for lauf := 1; lauf <= 2; lauf++ { // the second start changes nothing
+		db, err := Open(path)
+		if err != nil {
+			t.Fatalf("Open %d: %v", lauf, err)
+		}
+		if v := userVersion(t, db); v != schemaVersion || schemaVersion != 8 {
+			t.Errorf("Lauf %d: user_version = %d, want %d (8)", lauf, v, schemaVersion)
+		}
+		alle, err := AllSonderkosten(db)
+		if err != nil || len(alle) != 2 {
+			t.Fatalf("Lauf %d: %d Einträge, %v, want 2", lauf, len(alle), err)
+		}
+		for _, s := range alle {
+			if s.Rechnungsdatum != "" {
+				t.Errorf("Lauf %d: %s hat Rechnungsdatum %q, want leer", lauf, s.Betreff, s.Rechnungsdatum)
+			}
+		}
+		db.Close()
+	}
+}
+
+func TestOpen_FrischeDatenbankHatRechnungsdatumSpalte(t *testing.T) {
+	db := openTestDB(t)
+	if has, err := hasColumn(db, "sonderkosten", "rechnungsdatum"); err != nil || !has {
+		t.Errorf("sonderkosten.rechnungsdatum vorhanden = %v, %v, want true", has, err)
 	}
 }

@@ -22,6 +22,10 @@ func TestValidiereSonderkosten(t *testing.T) {
 		want         string // part of the one expected message, "" = valid
 	}{
 		{"gültig", func(*Sonderkosten) {}, false, ""},
+		{"Rechnungsdatum gültig", func(s *Sonderkosten) { s.Rechnungsdatum = "2026-03-12" }, false, ""},
+		{"Rechnungsdatum nicht im Abrechnungsmonat", func(s *Sonderkosten) { s.Rechnungsdatum = "2025-12-31" }, false, ""},
+		{"Rechnungsdatum kein Datum", func(s *Sonderkosten) { s.Rechnungsdatum = "2026-02-30" }, false, "Rechnungsdatum"},
+		{"Rechnungsdatum falsches Format", func(s *Sonderkosten) { s.Rechnungsdatum = "12.03.2026" }, false, "Rechnungsdatum"},
 		{"Betrag 0", func(s *Sonderkosten) { s.Betrag = 0 }, false, "Betrag"},
 		{"Betrag negativ", func(s *Sonderkosten) { s.Betrag = -5 }, false, "Betrag"},
 		{"Betrag unendlich", func(s *Sonderkosten) { s.Betrag = math.Inf(1) }, false, "Betrag"},

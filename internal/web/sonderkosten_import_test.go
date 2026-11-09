@@ -12,7 +12,7 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-var skKopf = strings.Join(sonderkostenCsvHeader, ";")
+var skKopf = strings.Join(sonderkostenCsvImportHeader, ";")
 
 func postSonderkostenImport(t *testing.T, mux *http.ServeMux, cookies []*http.Cookie, csvText string) *httptest.ResponseRecorder {
 	t.Helper()
@@ -158,4 +158,39 @@ func TestSonderkostenImport_FormularNurFuerVermieterBeiLeererListe(t *testing.T)
 	if w := postSonderkostenImport(t, mux, m, skKopf+"\n"); w.Code == http.StatusFound || w.Code == http.StatusBadRequest {
 		t.Errorf("Mieter:in erreicht den Import (status %d)", w.Code)
 	}
+}
+
+// rechnungsdatum is optional on import (#454): missing column or empty cell
+// means no date, a filled cell must be a real date.
+func TestSonderkostenImport_Rechnungsdatum(t *testing.T) {
+	zeile := "2026-09-01;Spülmaschine;;Neuanschaffung;;;649;Wohnung 2;1;"
+	t.Run("ohne Spalte", func(t *testing.T) {
+		mux, c, alle := skImportMux(t)
+		if w := postSonderkostenImport(t, mux, c, skKopf+"\n"+zeile+"\n"); w.Code != http.StatusFound {
+			t.Fatalf("status %d, body %s", w.Code, w.Body)
+		}
+		if got := alle(); len(got) != 1 || got[0].Rechnungsdatum != "" {
+			t.Errorf("Einträge = %+v", got)
+		}
+	})
+	t.Run("mit Spalte, leer und gefüllt", func(t *testing.T) {
+		mux, c, alle := skImportMux(t)
+		w := postSonderkostenImport(t, mux, c, skKopf+";rechnungsdatum\n"+zeile+";2026-08-30\n"+zeile+";\n")
+		if w.Code != http.StatusFound {
+			t.Fatalf("status %d, body %s", w.Code, w.Body)
+		}
+		if got := alle(); len(got) != 2 || got[0].Rechnungsdatum != "2026-08-30" || got[1].Rechnungsdatum != "" {
+			t.Errorf("Einträge = %+v", got)
+		}
+	})
+	t.Run("ungültig bricht ab", func(t *testing.T) {
+		mux, c, alle := skImportMux(t)
+		w := postSonderkostenImport(t, mux, c, skKopf+";rechnungsdatum\n"+zeile+";2026-08-30\n"+zeile+";30.08.2026\n")
+		if w.Code != http.StatusBadRequest || !strings.Contains(w.Body.String(), "Zeile 3") {
+			t.Errorf("status %d, body %q, want 400 mit Zeile 3", w.Code, w.Body)
+		}
+		if n := len(alle()); n != 0 {
+			t.Errorf("%d Einträge gespeichert, want 0", n)
+		}
+	})
 }

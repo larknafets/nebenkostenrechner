@@ -25,7 +25,7 @@ func handleSonderkostenImport() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db := dbFromContext(r.Context())
 		cfg := ImportConfig[sonderkostenImportRow]{
-			Header: sonderkostenCsvHeader,
+			Header: sonderkostenCsvImportHeader,
 			// exports before the rename (#453) call the column umsetzung
 			OldNames: map[string]string{"objekt": "umsetzung"},
 			CheckExisting: func(db *sql.DB) (bool, error) {
@@ -66,6 +66,9 @@ func parseSonderkostenImportRow(db *sql.DB, record []string, colIdx map[string]i
 	s := store.Sonderkosten{
 		Monat: cell("monat"), Betreff: csvTextLesen(cell("betreff")), Beschreibung: csvTextLesen(cell("beschreibung")),
 		Firma: csvTextLesen(cell("firma")), Rechnungsnummer: csvTextLesen(cell("rechnungsnummer")), Logik: cell("logik"),
+	}
+	if i, ok := colIdx["rechnungsdatum"]; ok && i < len(record) { // optional column
+		s.Rechnungsdatum = strings.TrimSpace(record[i])
 	}
 	var ok bool
 	if s.Art, ok = sonderkostenArtSchluessel(cell("art")); !ok {
