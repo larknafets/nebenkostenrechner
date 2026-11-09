@@ -1,6 +1,15 @@
 package store
 
-import "database/sql"
+import (
+	"database/sql"
+	"sync"
+)
+
+// sonderkostenImportMu serializes the imports of this process: two deferred
+// SQLite transactions that both read "empty" cannot both upgrade to a write,
+// the loser would fail with a database error instead of SonderkostenImportNurLeer.
+// shortcut: one process per database, a second app process would not be covered.
+var sonderkostenImportMu sync.Mutex
 
 // SonderkostenImportNurLeer is the message when the table already has entries.
 const SonderkostenImportNurLeer = "Import nur möglich, solange noch keine Sonderkosten existieren"
@@ -12,6 +21,8 @@ const SonderkostenImportNurLeer = "Import nur möglich, solange noch keine Sonde
 // the insert are two steps, a second import or an entry created in between
 // would otherwise be doubled.
 func ImportSonderkosten(db *sql.DB, eintraege []Sonderkosten) (ids []int64, err error) {
+	sonderkostenImportMu.Lock()
+	defer sonderkostenImportMu.Unlock()
 	err = inTx(db, func(tx *sql.Tx) error {
 		var vorhanden int
 		if err := tx.QueryRow(`SELECT COUNT(*) FROM sonderkosten`).Scan(&vorhanden); err != nil {
