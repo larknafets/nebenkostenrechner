@@ -829,10 +829,25 @@ func renameSonderkostenUmsetzungToObjekt(db *sql.DB) error {
 	if err != nil || !alt {
 		return err
 	}
-	if _, err := db.Exec(`ALTER TABLE sonderkosten RENAME COLUMN umsetzung TO objekt`); err != nil {
+	if err := alterSonderkosten(db, `ALTER TABLE sonderkosten RENAME COLUMN umsetzung TO objekt`, "objekt"); err != nil {
 		return fmt.Errorf("rename sonderkosten column: %w", err)
 	}
 	return nil
+}
+
+// alterSonderkosten runs a column change of sonderkosten. Two processes that
+// open the same old database at the same time both pass the "column is missing"
+// check; when the second change then fails but spalte exists, the other
+// process was first and the step is done.
+func alterSonderkosten(db *sql.DB, stmt, spalte string) error {
+	_, err := db.Exec(stmt)
+	if err == nil {
+		return nil
+	}
+	if da, e := hasColumn(db, "sonderkosten", spalte); e == nil && da {
+		return nil
+	}
+	return err
 }
 
 // ensureSonderkostenRechnungsdatumColumn adds sonderkosten.rechnungsdatum (#454),
@@ -842,7 +857,7 @@ func ensureSonderkostenRechnungsdatumColumn(db *sql.DB) error {
 	if err != nil || da {
 		return err
 	}
-	if _, err := db.Exec(`ALTER TABLE sonderkosten ADD COLUMN rechnungsdatum TEXT NOT NULL DEFAULT ''`); err != nil {
+	if err := alterSonderkosten(db, `ALTER TABLE sonderkosten ADD COLUMN rechnungsdatum TEXT NOT NULL DEFAULT ''`, "rechnungsdatum"); err != nil {
 		return fmt.Errorf("add sonderkosten.rechnungsdatum: %w", err)
 	}
 	return nil

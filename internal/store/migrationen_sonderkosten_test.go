@@ -80,6 +80,18 @@ func TestOpen_FrischeDatenbankHatObjektSpalte(t *testing.T) {
 	}
 }
 
+// A second process that opens the same version 6 database at the same time may
+// find the column already renamed after its own check: that is no failed start.
+func TestMigration_UmbenennenToleriertDenParallelenStart(t *testing.T) {
+	db := openTestDB(t) // has objekt, like the database after the other process's rename
+	if _, err := db.Exec(`ALTER TABLE sonderkosten ADD COLUMN umsetzung TEXT`); err != nil {
+		t.Fatal(err) // makes this process still see the old column, so its RENAME fails
+	}
+	if err := renameSonderkostenUmsetzungToObjekt(db); err != nil {
+		t.Errorf("renameSonderkostenUmsetzungToObjekt = %v, want nil: objekt exists, the other process was first", err)
+	}
+}
+
 func TestOpen_Schema7LegtRechnungsdatumAn(t *testing.T) {
 	path := datenbankImSchema6(t)
 	db, err := Open(path) // 6 -> 8 in one start
