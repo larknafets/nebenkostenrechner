@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Checks a finished ticket branch before scripts/merge-ticket (docs/agents/agents.md):
+# commits with their signature, diffstat, golden files, removed test lines, em dashes.
+#   scripts/review-ticket ticket/453 [base]    base defaults to the current branch
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+branch=${1:?usage: scripts/review-ticket <branch> [base]}
+base=${2:-$(git branch --show-current)}
+mb=$(git merge-base "$base" "$branch")
+
+echo "== commits (G = signed)"
+git log --format='%h %G? %s' "$mb..$branch"
+echo "== diffstat"
+git diff --stat "$mb" "$branch" | tail -40
+echo "== golden files changed (must be 0 unless the ticket says so)"
+git diff --name-only "$mb" "$branch" -- internal/web/testdata | wc -l | tr -d ' '
+echo "== removed test lines (each one a rename or a helper call, never an expectation)"
+git diff -U0 "$mb" "$branch" -- '*_test.go' | grep '^-[^-]' || echo "none"
+echo "== em dashes in added lines (must be 0)"
+git diff "$mb" "$branch" -- . ':!*.webp' | grep '^+' | grep -c $'\xe2\x80\x94' || true
