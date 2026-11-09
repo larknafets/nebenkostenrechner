@@ -47,6 +47,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Verbesserungen
 
+- Auf den Sonderkosten-Karten steht über dem Betreff eine Badge-Zeile mit Objekt und Art, in der Betreff-Zeile bleiben nur Betreff und Betrag (#457)
+
 ## Fehlerkorrekturen
 
 ## Wartung

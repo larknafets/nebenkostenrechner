@@ -13,8 +13,8 @@ import (
 
 // sonderkostenKarte is one entry of the list, ready for the template.
 type sonderkostenKarte struct {
-	ID                                                 int64
-	Betreff, Beschreibung, Art, Firma, Rechnungsnummer string
+	ID                                                         int64
+	Betreff, Beschreibung, Art, Objekt, Firma, Rechnungsnummer string
 	// Rechnungsdatum is "YYYY-MM-DD" or empty, the template formats it.
 	Rechnungsdatum string
 	Betrag         float64
