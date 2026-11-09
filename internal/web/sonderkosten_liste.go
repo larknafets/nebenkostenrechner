@@ -32,6 +32,12 @@ func sonderkostenFilterAus(jahrQ, artQ, objektQ string, jahre []int, heute int) 
 	return f
 }
 
+// passt reports whether s passes the Jahr, Art and Objekt filter.
+func (f sonderkostenFilter) passt(s store.Sonderkosten) bool {
+	y, _ := store.Abrechnungsmonat(s.Monat).Jahr()
+	return (f.AlleJahre || y == f.Jahr) && (f.Art == "" || s.Art == f.Art) && (f.Objekt == "" || s.Objekt == f.Objekt)
+}
+
 // sonderkostenJahre lists every year with entries and always the current one,
 // newest first.
 func sonderkostenJahre(alle []store.Sonderkosten, heute int) []int {
@@ -62,13 +68,7 @@ func (l sonderkostenListe) VermieterTraegt() float64 { return l.Gesamt - l.Umleg
 func baueSonderkostenListe(alle []store.Sonderkosten, fixMonate []string, f sonderkostenFilter) sonderkostenListe {
 	var l sonderkostenListe
 	for _, s := range alle {
-		if y, _ := store.Abrechnungsmonat(s.Monat).Jahr(); !f.AlleJahre && y != f.Jahr {
-			continue
-		}
-		if f.Art != "" && s.Art != f.Art {
-			continue
-		}
-		if f.Objekt != "" && s.Objekt != f.Objekt {
+		if !f.passt(s) {
 			continue
 		}
 		l.Gesamt += s.Betrag
@@ -94,4 +94,69 @@ func baueSonderkostenListe(alle []store.Sonderkosten, fixMonate []string, f sond
 	// Newest month first, like the Dashboard.
 	slices.Reverse(l.Monate)
 	return l
+}
+
+// sonderkostenAufstellung is the table of invoice amounts by Art and Objekt
+// under the sum cards: one block per year ("Alle Jahre", newest first), else
+// a single block without a year.
+type sonderkostenAufstellung struct{ Bloecke []aufstellungBlock }
+
+type aufstellungBlock struct {
+	Jahr   int // 0: no year heading
+	Zeilen []aufstellungZeile
+	Summe  aufstellungZeile
+}
+
+// aufstellungZeile holds the amounts per Objekt in the order of
+// store.SonderkostenObjekte, and their sum.
+type aufstellungZeile struct {
+	Art     string // label
+	n       int    // entries counted
+	Objekte []float64
+	Summe   float64
+}
+
+// baueSonderkostenAufstellung sums the invoice amounts of the entries passing f
+// by Art and Objekt. Only Arten with entries appear, no entries give no block.
+func baueSonderkostenAufstellung(alle []store.Sonderkosten, f sonderkostenFilter) sonderkostenAufstellung {
+	var a sonderkostenAufstellung
+	blockFuer := map[int]*aufstellungBlock{}
+	var jahre []int
+	for _, s := range alle {
+		if !f.passt(s) {
+			continue
+		}
+		if !slices.ContainsFunc(store.SonderkostenArten, func(x store.Auswahl) bool { return x.Wert == s.Art }) {
+			continue // shortcut: an unknown Art (no DB check) is left out of the table, list it when one occurs
+		}
+		jahr := 0
+		if f.AlleJahre {
+			jahr, _ = store.Abrechnungsmonat(s.Monat).Jahr()
+		}
+		b := blockFuer[jahr]
+		if b == nil {
+			b = &aufstellungBlock{Jahr: jahr, Summe: aufstellungZeile{Objekte: make([]float64, len(store.SonderkostenObjekte))}}
+			for _, art := range store.SonderkostenArten {
+				b.Zeilen = append(b.Zeilen, aufstellungZeile{Art: art.Label, Objekte: make([]float64, len(store.SonderkostenObjekte))})
+			}
+			blockFuer[jahr] = b
+			jahre = append(jahre, jahr)
+		}
+		o := slices.IndexFunc(store.SonderkostenObjekte, func(x store.Auswahl) bool { return x.Wert == s.Objekt })
+		ai := slices.IndexFunc(store.SonderkostenArten, func(x store.Auswahl) bool { return x.Wert == s.Art })
+		z := &b.Zeilen[ai]
+		for _, r := range []*aufstellungZeile{z, &b.Summe} {
+			r.Objekte[o] += s.Betrag
+			r.Summe += s.Betrag
+			r.n++
+		}
+	}
+	slices.Sort(jahre)
+	slices.Reverse(jahre)
+	for _, j := range jahre {
+		b := blockFuer[j]
+		b.Zeilen = slices.DeleteFunc(b.Zeilen, func(z aufstellungZeile) bool { return z.n == 0 })
+		a.Bloecke = append(a.Bloecke, *b)
+	}
+	return a
 }
