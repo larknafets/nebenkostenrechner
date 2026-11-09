@@ -45,7 +45,7 @@ Conventional Commits, in German, terse and exact. Why over what. The release not
 - Let the diff say what: no "Dieser Commit ...", "wir", "jetzt", "aktuell", "Auf Wunsch von ...".
 - No AI attribution ("Generated with Claude Code"), no emoji.
 - Leave the file name out when the scope already names it.
-- The guard hook blocks the literal text of a blocked git command (`agents.md`) anywhere in the command line. Write the message to a file with the Write tool and phrase it differently.
+- The guard hook blocks the literal text of a blocked git command (`agents.md`) anywhere in the command line. A message without such text goes in with `git commit -m "..."` (a body is a second `-m`). Only a message that needs the blocked text is written to a file with the Write tool, phrased differently.
 
 ## Examples
 
