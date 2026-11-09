@@ -96,6 +96,20 @@ func TestSonderkosten_JahrwahlUndArtfilter(t *testing.T) {
 	}
 }
 
+func TestSonderkosten_Objektfilter(t *testing.T) {
+	mux, _ := sonderkostenMux(t, beispielSonderkosten...)
+	c := loginCookies(t, mux, "vermieter", "geheim")
+
+	w2 := getMitCookies(t, mux, "/sonderkosten?jahr=alle&objekt=wohnung2", c).Body.String()
+	if !strings.Contains(w2, `<option value="wohnung2" selected>`) || !strings.Contains(w2, "Spülmaschine") || strings.Contains(w2, "Heizungspumpe") || strings.Contains(w2, "Rauchmelder") || strings.Contains(w2, "Wasserhahn") {
+		t.Error("?objekt=wohnung2 zeigt nicht nur Einträge der Wohnung 2")
+	}
+	alle := getMitCookies(t, mux, "/sonderkosten?jahr=alle&objekt=nix", c).Body.String()
+	if !strings.Contains(alle, "Rauchmelder") || !strings.Contains(alle, "Wasserhahn") || !strings.Contains(alle, "Heizungspumpe") {
+		t.Error("unbekanntes Objekt soll wie Alle Objekte wirken")
+	}
+}
+
 func TestSonderkosten_Rechte(t *testing.T) {
 	mux, db := sonderkostenMux(t, beispielSonderkosten...)
 	mieter := loginCookies(t, mux, "mieter", "mieter")

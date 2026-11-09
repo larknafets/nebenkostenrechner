@@ -41,6 +41,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
+- Auf der Seite Sonderkosten gibt es neben Jahr und Art einen Filter "Objekt" (Alle Objekte, Haus, Wohnung 1, Wohnung 2). Er wirkt auf die Karten, die Monatsüberschriften und die drei Summenkarten (#455)
+
 ## Verbesserungen
 
 ## Fehlerkorrekturen

@@ -206,7 +206,7 @@ func handleSonderkostenLoeschen() http.HandlerFunc {
 
 // handleSonderkostenListe shows the Sonderkosten of one year (?jahr=, the
 // current year by default, "alle" for every year), grouped by
-// Abrechnungsmonat. ?jahr= and ?art= filter the list and the three sums alike.
+// Abrechnungsmonat. ?jahr=, ?art= and ?objekt= filter the list and the three sums alike.
 func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		alle, err := store.AllSonderkosten(dbFromContext(r.Context()))
@@ -227,7 +227,7 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 
 		heute := time.Now()
 		jahre := sonderkostenJahre(alle, heute.Year())
-		filter := sonderkostenFilterAus(r.URL.Query().Get("jahr"), r.URL.Query().Get("art"), jahre, heute.Year())
+		filter := sonderkostenFilterAus(r.URL.Query().Get("jahr"), r.URL.Query().Get("art"), r.URL.Query().Get("objekt"), jahre, heute.Year())
 		liste := baueSonderkostenListe(alle, fixMonate, filter)
 
 		data := struct {
@@ -239,6 +239,8 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 			Jahre        []int // years for the Jahr filter, newest first
 			Arten        []store.Auswahl
 			Art          string
+			Objekte      []store.Auswahl
+			Objekt       string
 			HatEintraege bool
 			NeuMonat     string
 			NeuMaske     sonderkostenMaske
@@ -246,7 +248,7 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 		}{
 			navData: z.NavData(r), Aktuell: "sonderkosten", sonderkostenListe: liste,
 			Jahr: filter.Jahr, AlleJahre: filter.AlleJahre, Jahre: jahre,
-			Arten: store.SonderkostenArten, Art: filter.Art, HatEintraege: len(alle) > 0,
+			Arten: store.SonderkostenArten, Art: filter.Art, Objekte: store.SonderkostenObjekte, Objekt: filter.Objekt, HatEintraege: len(alle) > 0,
 			NeuMonat: heute.Format("2006-01"), FixMonate: fixMonate,
 			NeuMaske: neueMaske("sk", store.Sonderkosten{Art: store.ArtReparatur, Objekt: store.ObjektHaus}, heute.Format("2006-01"), ""),
 		}

@@ -46,6 +46,13 @@
       {{range .Arten}}<option value="{{.Wert}}"{{if eq .Wert $.Art}} selected{{end}}>{{.Label}}</option>{{end}}
     </select>
   </div>
+  <div class="field" style="min-width:10rem">
+    <label for="objekt">Objekt</label>
+    <select id="objekt" name="objekt" onchange="this.form.submit()">
+      <option value="">Alle Objekte</option>
+      {{range .Objekte}}<option value="{{.Wert}}"{{if eq .Wert $.Objekt}} selected{{end}}>{{.Label}}</option>{{end}}
+    </select>
+  </div>
 </form>
 <div class="grid grid-3">
   <div class="panel stat-card"><div class="muted">Gesamt</div><div class="stat-value">{{deEUR .Gesamt}}&nbsp;€</div></div>

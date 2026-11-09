@@ -10,19 +10,21 @@ import (
 func TestSonderkostenFilterAus(t *testing.T) {
 	jahre := []int{2026, 2025}
 	tests := []struct {
-		name, jahr, art string
-		want            sonderkostenFilter
+		name, jahr, art, objekt string
+		want                    sonderkostenFilter
 	}{
-		{"leer", "", "", sonderkostenFilter{Jahr: 2026}},
-		{"gueltiges Jahr", "2025", "", sonderkostenFilter{Jahr: 2025}},
-		{"unbekanntes Jahr", "2020", "", sonderkostenFilter{Jahr: 2026}},
-		{"kein Jahr", "x", "", sonderkostenFilter{Jahr: 2026}},
-		{"alle Jahre", "alle", "", sonderkostenFilter{Jahr: 2026, AlleJahre: true}},
-		{"gueltige Art", "", store.ArtReparatur, sonderkostenFilter{Jahr: 2026, Art: store.ArtReparatur}},
-		{"ungueltige Art", "", "nix", sonderkostenFilter{Jahr: 2026}},
+		{"leer", "", "", "", sonderkostenFilter{Jahr: 2026}},
+		{"gueltiges Jahr", "2025", "", "", sonderkostenFilter{Jahr: 2025}},
+		{"unbekanntes Jahr", "2020", "", "", sonderkostenFilter{Jahr: 2026}},
+		{"kein Jahr", "x", "", "", sonderkostenFilter{Jahr: 2026}},
+		{"alle Jahre", "alle", "", "", sonderkostenFilter{Jahr: 2026, AlleJahre: true}},
+		{"gueltige Art", "", store.ArtReparatur, "", sonderkostenFilter{Jahr: 2026, Art: store.ArtReparatur}},
+		{"ungueltige Art", "", "nix", "", sonderkostenFilter{Jahr: 2026}},
+		{"gueltiges Objekt", "", "", store.ObjektWohnung1, sonderkostenFilter{Jahr: 2026, Objekt: store.ObjektWohnung1}},
+		{"unbekanntes Objekt", "", "", "nix", sonderkostenFilter{Jahr: 2026}},
 	}
 	for _, tt := range tests {
-		if got := sonderkostenFilterAus(tt.jahr, tt.art, jahre, 2026); got != tt.want {
+		if got := sonderkostenFilterAus(tt.jahr, tt.art, tt.objekt, jahre, 2026); got != tt.want {
 			t.Errorf("%s: got %+v, want %+v", tt.name, got, tt.want)
 		}
 	}
@@ -69,5 +71,8 @@ func TestBaueSonderkostenListe(t *testing.T) {
 	}
 	if l := baueSonderkostenListe(alle, nil, sonderkostenFilter{Jahr: 2026, Art: store.ArtReparatur}); l.Gesamt != 32 {
 		t.Errorf("Art filter match: %+v", l)
+	}
+	if l := baueSonderkostenListe(alle, nil, sonderkostenFilter{AlleJahre: true, Objekt: store.ObjektHaus}); l.Gesamt != 7 || len(l.Monate) != 1 {
+		t.Errorf("Objekt filter: %+v", l)
 	}
 }
