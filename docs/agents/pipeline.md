@@ -20,6 +20,7 @@ The standard order for a larger change: `/wayfinder` (map and decision tickets),
 - A claim that something stays unchanged ("golden file unchanged", "tests untouched") needs proof at spec time, by reading the data or running it. Otherwise write "check first, name every change". Once the demo data held two truths and the golden file had to change.
 - Write relative changes ("raise `schemaVersion` by one"), not absolute ones ("2 to 3") that later tickets move.
 - After writing the tickets, reread spec and tickets until every helper and name agrees.
+- A ticket that asks for a changelog line follows `changelog.md`: for a feature over several tickets the last ticket writes the one line for the whole feature, the others name only their own part. Read `changelog.md` before writing the spec, not after the review.
 - Two tickets of the same frontier that edit one package reserve their new names in the ticket text, or run one after the other. Parallel implementers pick the same name otherwise (`fixkostenHinweis` twice).
 
 ## Last step before the PR
