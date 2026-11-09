@@ -309,11 +309,13 @@ func seedDemoFixkosten(db *sql.DB, now time.Time) error {
 // each demo month has a Fixkosteneingabe, so every Logik is calculable.
 func seedDemoSonderkosten(db *sql.DB, now time.Time) error {
 	monat := func(i int) string { return demoMonth(now, i).Format("2006-01") + "-01" }
+	// A Rechnungsdatum inside the Abrechnungsmonat, only on some entries so the page shows both cases.
+	datum := func(i, tag int) string { return demoMonth(now, i).Format("2006-01") + fmt.Sprintf("-%02d", tag) }
 	for _, s := range []Sonderkosten{
-		{Monat: monat(37), Betreff: "Heizungspumpe getauscht", Beschreibung: "Umwälzpumpe Heizkreis 2 defekt, Austausch inkl. Anfahrt.", Art: ArtReparatur, Firma: "Haustechnik Meier GmbH", Rechnungsnummer: "RE-2026-0412", Betrag: 1428.50, Objekt: ObjektHaus, Umlegbar: true, Logik: LogikWohneinheit},
+		{Monat: monat(37), Betreff: "Heizungspumpe getauscht", Beschreibung: "Umwälzpumpe Heizkreis 2 defekt, Austausch inkl. Anfahrt.", Art: ArtReparatur, Firma: "Haustechnik Meier GmbH", Rechnungsnummer: "RE-2026-0412", Rechnungsdatum: datum(37, 14), Betrag: 1428.50, Objekt: ObjektHaus, Umlegbar: true, Logik: LogikWohneinheit},
 		{Monat: monat(37), Betreff: "Rauchmelder Wartung", Beschreibung: "Jährliche Wartung aller Rauchmelder.", Art: ArtWartung, Firma: "Brandschutz Nord", Rechnungsnummer: "2026/889", Betrag: 96, Objekt: ObjektHaus, Umlegbar: true, Logik: LogikQM},
 		{Monat: monat(36), Betreff: "Neue Spülmaschine", Beschreibung: "Einbaugerät Küche Wohnung 2.", Art: ArtNeuanschaffung, Firma: "Elektro Schmitt", Betrag: 649, Objekt: ObjektWohnung2},
-		{Monat: monat(30), Betreff: "Wasserhahn Bad", Beschreibung: "Dichtung und Kartusche.", Art: ArtReparatur, Firma: "Sanitär Lehmann", Rechnungsnummer: "L-77", Betrag: 184.30, Objekt: ObjektWohnung1, Umlegbar: true},
+		{Monat: monat(30), Betreff: "Wasserhahn Bad", Beschreibung: "Dichtung und Kartusche.", Art: ArtReparatur, Firma: "Sanitär Lehmann", Rechnungsnummer: "L-77", Rechnungsdatum: datum(30, 9), Betrag: 184.30, Objekt: ObjektWohnung1, Umlegbar: true},
 	} {
 		if _, err := CreateSonderkosten(db, s); err != nil {
 			return fmt.Errorf("sonderkosten %s: %w", s.Betreff, err)
