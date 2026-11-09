@@ -31,8 +31,9 @@ func TestAbrechnungSeite_Sonderkosten(t *testing.T) {
 	_, body := getAbrechnung(t, mux, "?jahr=2025&wohnung=2", nil)
 	mustContain(t, body,
 		"Nach Eintrag", "<h3>Anlage 8: Sonderkosten</h3>", `<li value="8">Sonderkosten</li>`,
-		"Pumpe", "Reparatur", "Fa. Müller", "R-17", "Haus", "Je Wohneinheit", `data-l="Rechnungsbetrag"`, `data-l="Anteil"`)
-	mustNotContain(t, body, "nur intern", "Privat")
+		"Pumpe", "Reparatur", "Fa. Müller", "R-17", "Haus", "Je Wohneinheit", `data-l="Rechnungsbetrag"`, `data-l="Anteil"`,
+		"<th>Objekt</th>", `data-l="Objekt"`)
+	mustNotContain(t, body, "nur intern", "Privat", "Umsetzung")
 	if strings.Index(body, "Anlage 7: Zählerstände") > strings.Index(body, "Anlage 8: Sonderkosten") {
 		t.Error("Anlage 8 steht nicht hinter Anlage 7")
 	}
