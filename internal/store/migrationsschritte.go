@@ -829,7 +829,7 @@ func renameSonderkostenUmsetzungToObjekt(db *sql.DB) error {
 	if err != nil || !alt {
 		return err
 	}
-	if err := alterSonderkosten(db, `ALTER TABLE sonderkosten RENAME COLUMN umsetzung TO objekt`, "objekt"); err != nil {
+	if err := alterSonderkosten(db, `ALTER TABLE sonderkosten RENAME COLUMN umsetzung TO objekt`, "objekt", "umsetzung"); err != nil {
 		return fmt.Errorf("rename sonderkosten column: %w", err)
 	}
 	return nil
@@ -837,17 +837,24 @@ func renameSonderkostenUmsetzungToObjekt(db *sql.DB) error {
 
 // alterSonderkosten runs a column change of sonderkosten. Two processes that
 // open the same old database at the same time both pass the "column is missing"
-// check; when the second change then fails but spalte exists, the other
-// process was first and the step is done.
-func alterSonderkosten(db *sql.DB, stmt, spalte string) error {
+// check; when the second change then fails but the work is visibly done (ziel
+// exists and quelle, the column it replaces, is gone), the other process was
+// first and the step is done. A database with both columns is no such case and
+// keeps the error, its old values would be left behind.
+func alterSonderkosten(db *sql.DB, stmt, ziel, quelle string) error {
 	_, err := db.Exec(stmt)
 	if err == nil {
 		return nil
 	}
-	if da, e := hasColumn(db, "sonderkosten", spalte); e == nil && da {
-		return nil
+	if da, e := hasColumn(db, "sonderkosten", ziel); e != nil || !da {
+		return err
 	}
-	return err
+	if quelle != "" {
+		if noch, e := hasColumn(db, "sonderkosten", quelle); e != nil || noch {
+			return err
+		}
+	}
+	return nil
 }
 
 // ensureSonderkostenRechnungsdatumColumn adds sonderkosten.rechnungsdatum (#454),
@@ -857,7 +864,7 @@ func ensureSonderkostenRechnungsdatumColumn(db *sql.DB) error {
 	if err != nil || da {
 		return err
 	}
-	if err := alterSonderkosten(db, `ALTER TABLE sonderkosten ADD COLUMN rechnungsdatum TEXT NOT NULL DEFAULT ''`, "rechnungsdatum"); err != nil {
+	if err := alterSonderkosten(db, `ALTER TABLE sonderkosten ADD COLUMN rechnungsdatum TEXT NOT NULL DEFAULT ''`, "rechnungsdatum", ""); err != nil {
 		return fmt.Errorf("add sonderkosten.rechnungsdatum: %w", err)
 	}
 	return nil
