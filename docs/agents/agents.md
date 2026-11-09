@@ -39,6 +39,7 @@ A reviewer subagent (read-only) gets the diff command and these sources, so the 
 
 - Exclude generated golden files from the diff (`git diff <base>...HEAD -- . ':!internal/web/testdata'`): they are large and carry no review signal. Run `scripts/check` for the rest instead of reading what tooling enforces.
 - A spec that says "tests and golden file unchanged" needs proof, not the implementer's word: name `git diff --stat <base>...HEAD -- internal/web/testdata` (must be empty) and `git diff -U0 <base>...HEAD -- '*_test.go' | grep '^-[^-]'` (every removed test line must be a helper call, never an expectation).
+- Done when every changed file of the diff (generated golden files and images excepted) is read. Name each file you did not read under "Not read" in the report, never skip one silently.
 - Standards axis: a violation cites its rule. Spec axis: a finding quotes the spec line.
 
 ## Guard hook
