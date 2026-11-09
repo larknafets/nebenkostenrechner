@@ -24,7 +24,7 @@ func aufstellung(body string) string {
 func TestSonderkosten_AufstellungEinJahr(t *testing.T) {
 	mux, _ := sonderkostenMux(t, beispielSonderkosten...)
 	c := loginCookies(t, mux, "vermieter", "geheim")
-	a := aufstellung(getMitCookies(t, mux, "/sonderkosten", c).Body.String())
+	a := aufstellung(getMitCookies(t, mux, "/sonderkosten?jahr=2026", c).Body.String())
 	// 2026: Reparatur 1000 Haus, Wartung 96 Haus, Neuanschaffung 649 Wohnung 2; Summenzeile Haus 1096.
 	for _, want := range []string{"Reparatur", "Wartung", "Neuanschaffung", "1.000,00", "649,00", "1.096,00", ">Summe<"} {
 		if !strings.Contains(a, want) {
@@ -49,7 +49,7 @@ func TestSonderkosten_AufstellungEinJahr(t *testing.T) {
 func TestSonderkosten_SummenBlockStartetEingeklappt(t *testing.T) {
 	mux, _ := sonderkostenMux(t, beispielSonderkosten...)
 	c := loginCookies(t, mux, "vermieter", "geheim")
-	body := getMitCookies(t, mux, "/sonderkosten", c).Body.String()
+	body := getMitCookies(t, mux, "/sonderkosten?jahr=2026", c).Body.String()
 	i := strings.Index(body, `<details id="sk-summen">`)
 	if i < 0 {
 		t.Fatal("kein einklappbarer Summen-Block, oder er ist offen")
