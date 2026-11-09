@@ -65,7 +65,7 @@ func TestSonderkostenMonate(t *testing.T) {
 		{Monat: "2026-04-01", Betrag: 80, Objekt: store.ObjektHaus, Umlegbar: true, Logik: store.LogikPersonen},
 	}
 	got := SonderkostenMonate(list, sonderkostenWohnungen(), sonderkostenReihe(), 1)
-	want := MonatsSonderkosten{Monat: "2026-03-01", Logik: store.LogikQM, Betrag: 66.67}
+	want := MonatsSonderkosten{Monat: "2026-03-01", Logik: store.LogikQM, Betrag: 66.67, Eintrag: list[0]}
 	if len(got) != 1 || got[0] != want {
 		t.Errorf("Wohnung 1 = %+v, want [%+v]", got, want)
 	}

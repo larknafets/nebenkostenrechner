@@ -45,34 +45,20 @@ type SonderkostenEintrag struct {
 	Anteil                                              float64
 }
 
-// sonderkostenAnlage returns the Zeile and the Anlage rows of the entries in
-// the range that count for apartmentID, the same filter as
-// calc.SonderkostenMonate (umlegbar, berechenbar, share above 0).
-func sonderkostenAnlage(d BerechnungsDaten, imBereich map[string]bool, apartmentID int64) (*Zeile, []SonderkostenEintrag) {
+// sonderkostenAnlage returns the Zeile and the Anlage rows of the entries that
+// count for the settled apartment: the list of calc.SonderkostenMonate
+// (umlegbar, berechenbar, share above 0) already cut to the range.
+func sonderkostenAnlage(sonderkosten []calc.MonatsSonderkosten) (*Zeile, []SonderkostenEintrag) {
 	var rows []SonderkostenEintrag
 	z := Zeile{Position: "Sonderkosten", Schluessel: "Nach Eintrag"}
-	for _, s := range d.Sonderkosten {
-		a := calc.SonderkostenAnteile(s, d.Pruef.Apartments, d.Fixkosten)
-		anteil := a.For(apartmentID)
-		if !imBereich[s.Monat] || !a.Berechenbar || anteil == 0 {
-			continue
-		}
-		logik := s.Logik
-		switch s.Objekt {
-		case store.ObjektWohnung1:
-			logik = store.LogikWohnung1
-		case store.ObjektWohnung2:
-			logik = store.LogikWohnung2
-		}
-		if logik == "" {
-			logik = store.LogikWohneinheit
-		}
+	for _, sk := range sonderkosten {
+		e := sk.Eintrag
 		rows = append(rows, SonderkostenEintrag{
-			Monat: s.Monat, Betreff: s.Betreff, Art: s.Art, Firma: s.Firma, Rechnungsnummer: s.Rechnungsnummer,
-			Objekt: s.Objekt, Rechnungsbetrag: s.Betrag, Schluessel: calc.LogikLabels[logik], Anteil: anteil,
+			Monat: e.Monat, Betreff: e.Betreff, Art: e.Art, Firma: e.Firma, Rechnungsnummer: e.Rechnungsnummer,
+			Objekt: e.Objekt, Rechnungsbetrag: e.Betrag, Schluessel: calc.LogikLabels[sk.Logik], Anteil: sk.Betrag,
 		})
-		z.Gesamt += s.Betrag
-		z.Betrag += anteil
+		z.Gesamt += e.Betrag
+		z.Betrag += sk.Betrag
 	}
 	if len(rows) == 0 {
 		return nil, nil
@@ -406,7 +392,7 @@ func Berechne(d BerechnungsDaten, jahr int, bereich Monatsbereich, apartmentID i
 	for _, z := range ab.Fixkosten {
 		ab.Betriebskosten += z.Betrag
 	}
-	ab.Sonderkosten, ab.SonderkostenAnlage = sonderkostenAnlage(d, f.imBereich, apartmentID)
+	ab.Sonderkosten, ab.SonderkostenAnlage = sonderkostenAnlage(f.sonderkosten)
 	for _, sk := range f.sonderkosten {
 		ab.Betriebskosten += sk.Betrag
 	}
