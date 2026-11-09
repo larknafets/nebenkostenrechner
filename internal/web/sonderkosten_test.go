@@ -110,6 +110,24 @@ func TestSonderkosten_Objektfilter(t *testing.T) {
 	}
 }
 
+func TestSonderkosten_KarteBadgeZeile(t *testing.T) {
+	mux, _ := sonderkostenMux(t, beispielSonderkosten...)
+	c := loginCookies(t, mux, "vermieter", "geheim")
+
+	// Objekt first, then Art, above the Betreff; the Betreff line has no badge.
+	body := getMitCookies(t, mux, "/sonderkosten?jahr=2025", c).Body.String()
+	for _, want := range []string{
+		`<div class="sk-badges"><span class="badge">Wohnung 1</span><span class="badge">Reparatur</span></div>` + "\n" +
+			`  <div class="sk-zeile1"><strong>Wasserhahn</strong><span class="sk-betrag">`,
+		// The badge shows the Objekt, not who pays.
+		"nicht umlegbar · trägt Vermieter:in",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("Seite enthält %q nicht", want)
+		}
+	}
+}
+
 func TestSonderkosten_Rechte(t *testing.T) {
 	mux, db := sonderkostenMux(t, beispielSonderkosten...)
 	mieter := loginCookies(t, mux, "mieter", "mieter")

@@ -65,7 +65,8 @@
 {{range .Karten}}
 <div class="panel sk-karte">
   <div class="sk-ansicht">
-  <div class="sk-zeile1"><strong>{{.Betreff}}</strong><span class="badge">{{.Art}}</span><span class="sk-betrag">{{deEUR .Betrag}}&nbsp;€</span></div>
+  <div class="sk-badges"><span class="badge">{{.Objekt}}</span><span class="badge">{{.Art}}</span></div>
+  <div class="sk-zeile1"><strong>{{.Betreff}}</strong><span class="sk-betrag">{{deEUR .Betrag}}&nbsp;€</span></div>
   <div class="muted">{{.Firma}}{{if .Rechnungsnummer}} · Nr. {{.Rechnungsnummer}}{{end}}{{if .Rechnungsdatum}} · {{deDatum .Rechnungsdatum}}{{end}}</div>
   <div class="muted">{{if .Umlegbar}}umlegbar{{else}}nicht umlegbar{{end}} · {{.Zuordnung}}{{if .NichtBerechenbar}} <span class="badge badge-warning">nicht berechenbar, Fixkosteneingabe fehlt</span>{{end}}</div>
   {{if .Beschreibung}}<details><summary class="muted">Beschreibung</summary><div class="muted" style="white-space:pre-line">{{.Beschreibung}}</div></details>{{end}}
