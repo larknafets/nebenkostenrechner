@@ -16,7 +16,7 @@
 
 ## Branches
 
-- Branch from `main`, keep branches short-lived (merge within 1-3 days). GitHub deletes the head branch of a merged PR by itself (`delete_branch_on_merge`). After the merge the agent cleans up: `git checkout main`, `git pull --ff-only origin main`, then `git branch -D <branch>` once `gh pr list --head <branch> --state all` shows MERGED (a squash or rebase merge leaves the local tip unmerged for `-d`), then `git fetch --prune`. Then close the Wayfinder map the spec came from (`gh issue close <map> --comment` naming spec and PR), unless the PR body already says `closes #<map>`. `prototype/*` and `research/*` stay.
+- Branch from `origin/main` after `git fetch`, not from the local `main` (it may be behind a merged PR or a Dependabot bump). Keep branches short-lived (merge within 1-3 days). GitHub deletes the head branch of a merged PR by itself (`delete_branch_on_merge`). After the merge the agent cleans up: `git checkout main`, `git pull --ff-only origin main`, then `git branch -D <branch>` once `gh pr list --head <branch> --state all` shows MERGED (a squash or rebase merge leaves the local tip unmerged for `-d`), then `git fetch --prune`. Then close the Wayfinder map the spec came from (`gh issue close <map> --comment` naming spec and PR), unless the PR body already says `closes #<map>`. `prototype/*` and `research/*` stay.
 - Prefer feature flags over long-lived branches for incomplete features.
 - Name: `<type>/<description>`, the type is the commit type of the change.
 
