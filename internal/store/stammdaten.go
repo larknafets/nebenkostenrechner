@@ -265,13 +265,13 @@ func (in StammdatenSave) validate() error {
 	return nil
 }
 
-// validAbrechnungsmonat reports whether s is an Abrechnungsmonat ("YYYY-MM-01").
 // validDatum reports whether s is a real date written "YYYY-MM-DD".
 func validDatum(s string) bool {
 	t, err := time.Parse("2006-01-02", s)
 	return err == nil && len(s) == 10 && t.Format("2006-01-02") == s
 }
 
+// validAbrechnungsmonat reports whether s is an Abrechnungsmonat ("YYYY-MM-01").
 func validAbrechnungsmonat(s string) bool {
 	t, err := time.Parse("2006-01-02", s)
 	return err == nil && t.Day() == 1 && len(s) == 10
