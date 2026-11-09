@@ -14377,23 +14377,88 @@ Dashboard:
         Monat: "2026-02-01"
         Logik: "wohnung1"
         Betrag: 184.30
+        Eintrag:
+          ID: 4
+          Monat: "2026-02-01"
+          Betreff: "Wasserhahn Bad"
+          Beschreibung: "Dichtung und Kartusche."
+          Art: "reparatur"
+          Firma: "Sanitär Lehmann"
+          Rechnungsnummer: "L-77"
+          Rechnungsdatum: "2026-02-09"
+          Betrag: 184.30
+          Objekt: "wohnung1"
+          Umlegbar: true
+          Logik: ""
       [1]:
         Monat: "2026-09-01"
         Logik: "wohneinheit"
         Betrag: 714.25
+        Eintrag:
+          ID: 1
+          Monat: "2026-09-01"
+          Betreff: "Heizungspumpe getauscht"
+          Beschreibung: "Umwälzpumpe Heizkreis 2 defekt, Austausch inkl. Anfahrt."
+          Art: "reparatur"
+          Firma: "Haustechnik Meier GmbH"
+          Rechnungsnummer: "RE-2026-0412"
+          Rechnungsdatum: "2026-09-14"
+          Betrag: 1428.50
+          Objekt: "haus"
+          Umlegbar: true
+          Logik: "wohneinheit"
       [2]:
         Monat: "2026-09-01"
         Logik: "qm"
         Betrag: 55.18
+        Eintrag:
+          ID: 2
+          Monat: "2026-09-01"
+          Betreff: "Rauchmelder Wartung"
+          Beschreibung: "Jährliche Wartung aller Rauchmelder."
+          Art: "wartung"
+          Firma: "Brandschutz Nord"
+          Rechnungsnummer: "2026/889"
+          Rechnungsdatum: ""
+          Betrag: 96.00
+          Objekt: "haus"
+          Umlegbar: true
+          Logik: "qm"
     2: [2]
       [0]:
         Monat: "2026-09-01"
         Logik: "wohneinheit"
         Betrag: 714.25
+        Eintrag:
+          ID: 1
+          Monat: "2026-09-01"
+          Betreff: "Heizungspumpe getauscht"
+          Beschreibung: "Umwälzpumpe Heizkreis 2 defekt, Austausch inkl. Anfahrt."
+          Art: "reparatur"
+          Firma: "Haustechnik Meier GmbH"
+          Rechnungsnummer: "RE-2026-0412"
+          Rechnungsdatum: "2026-09-14"
+          Betrag: 1428.50
+          Objekt: "haus"
+          Umlegbar: true
+          Logik: "wohneinheit"
       [1]:
         Monat: "2026-09-01"
         Logik: "qm"
         Betrag: 40.82
+        Eintrag:
+          ID: 2
+          Monat: "2026-09-01"
+          Betreff: "Rauchmelder Wartung"
+          Beschreibung: "Jährliche Wartung aller Rauchmelder."
+          Art: "wartung"
+          Firma: "Brandschutz Nord"
+          Rechnungsnummer: "2026/889"
+          Rechnungsdatum: ""
+          Betrag: 96.00
+          Objekt: "haus"
+          Umlegbar: true
+          Logik: "qm"
   Jahr: 2026
   Monate: [39]
     [0]: "2026-10-01"

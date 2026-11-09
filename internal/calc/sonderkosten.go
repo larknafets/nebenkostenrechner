@@ -55,9 +55,11 @@ func SonderkostenAnteile(s store.Sonderkosten, apartments []store.Apartment, fix
 // MonatsSonderkosten is one entry's amount for one apartment in its
 // Abrechnungsmonat. Logik is the key the amount is shown under: the entry's
 // Logik, or "wohnung1"/"wohnung2" for an entry assigned to one apartment.
+// Eintrag is the entry the amount comes from, for readers that show its fields.
 type MonatsSonderkosten struct {
 	Monat, Logik string
 	Betrag       float64
+	Eintrag      store.Sonderkosten
 }
 
 // SonderkostenMonate returns the entries that count for apartmentID: umlegbar,
@@ -81,7 +83,7 @@ func SonderkostenMonate(list []store.Sonderkosten, apartments []store.Apartment,
 		if logik == "" {
 			logik = store.LogikWohneinheit
 		}
-		out = append(out, MonatsSonderkosten{Monat: s.Monat, Logik: logik, Betrag: betrag})
+		out = append(out, MonatsSonderkosten{Monat: s.Monat, Logik: logik, Betrag: betrag, Eintrag: s})
 	}
 	return out
 }
