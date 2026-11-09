@@ -234,6 +234,7 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 			navData
 			Aktuell string
 			sonderkostenListe
+			Aufstellung  sonderkostenAufstellung
 			Jahr         int
 			AlleJahre    bool  // the Jahr filter is "Alle Jahre"
 			Jahre        []int // years for the Jahr filter, newest first
@@ -247,7 +248,8 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 			FixMonate    []string // months ("YYYY-MM") with a Fixkosteneingabe, for the Personen option
 		}{
 			navData: z.NavData(r), Aktuell: "sonderkosten", sonderkostenListe: liste,
-			Jahr: filter.Jahr, AlleJahre: filter.AlleJahre, Jahre: jahre,
+			Aufstellung: baueSonderkostenAufstellung(alle, filter),
+			Jahr:        filter.Jahr, AlleJahre: filter.AlleJahre, Jahre: jahre,
 			Arten: store.SonderkostenArten, Art: filter.Art, Objekte: store.SonderkostenObjekte, Objekt: filter.Objekt, HatEintraege: len(alle) > 0,
 			NeuMonat: heute.Format("2006-01"), FixMonate: fixMonate,
 			NeuMaske: neueMaske("sk", store.Sonderkosten{Art: store.ArtReparatur, Objekt: store.ObjektHaus}, heute.Format("2006-01"), ""),
