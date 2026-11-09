@@ -195,6 +195,10 @@ In der Jahresabrechnung steht eine Zeile "Sonderkosten" in der Kostenübersicht 
 Zugriff über die zwei **Rechte** "Sonderkosten ansehen" und "Sonderkosten erfassen" (neu anlegen), beide standardmäßig aus. Korrigieren, Löschen und der CSV-Export und -Import (Import nur, solange noch keine Sonderkosten existieren) sind den Vermieter:innen fest vorbehalten.
 _Avoid_: Umsetzung (heißt jetzt **Objekt**), Sonderposten, Einmalkosten, Sonder-Kostenposition (Sonderkosten sind keine **Kostenposition**: keine feste Struktur, kein Typ, kein Jahreswert, kein Umlagefähig-Flag in den Stammdaten)
 
+**Zuordnung (Sonderkosten)**:
+Wer einen Sonderkosten-Eintrag trägt: die Vermieter:in (nicht umlegbar), Wohnung 1, Wohnung 2 oder beide Wohnungen nach der **Berechnungslogik** des Eintrags (Objekt Haus, umlegbar). Zur Zuordnung gehört, ob der Eintrag **berechenbar** ist, ein nicht berechenbarer Eintrag zählt nirgends. Die Zuordnung sagt, wer zahlt, das **Objekt** sagt, worauf sich die Rechnung bezieht.
+_Avoid_: Umsetzung, Träger, Verteilung
+
 **Typ (jährlich/monatlich)**:
 Ob eine Kostenposition in dieser Eingabe einen Jahreswert hat, der für die Monatsanzeige automatisch durch 12 geteilt wird ("jährlich"), oder ob ihr Wert direkt der Monatsbetrag ist ("monatlich").
 
