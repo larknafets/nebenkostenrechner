@@ -436,7 +436,7 @@
     <section class="anlage" id="anlage-sonderkosten">
       <h3>{{anlage "sonderkosten"}}</h3>
       <table>
-        <thead><tr><th>Abrechnungsmonat</th><th>Betreff</th><th>Art</th><th>Firma</th><th>Rechnungsnummer</th><th>Umsetzung</th><th class="r">Rechnungsbetrag</th><th>Schlüssel</th><th class="r">Anteil Wohnung {{$.ApartmentID}}</th></tr></thead>
+        <thead><tr><th>Abrechnungsmonat</th><th>Betreff</th><th>Art</th><th>Firma</th><th>Rechnungsnummer</th><th>Objekt</th><th class="r">Rechnungsbetrag</th><th>Schlüssel</th><th class="r">Anteil Wohnung {{$.ApartmentID}}</th></tr></thead>
         <tbody>
           {{range $ab.SonderkostenAnlage}}
           <tr>
@@ -445,7 +445,7 @@
             <td data-l="Art">{{sonderkostenArt .Art}}</td>
             <td data-l="Firma">{{.Firma}}</td>
             <td data-l="Rechnungsnummer">{{.Rechnungsnummer}}</td>
-            <td data-l="Umsetzung">{{sonderkostenUmsetzung .Umsetzung}}</td>
+            <td data-l="Objekt">{{sonderkostenObjekt .Objekt}}</td>
             <td class="r" data-l="Rechnungsbetrag">{{deEUR .Rechnungsbetrag}}&nbsp;€</td>
             <td data-l="Schlüssel">{{.Schluessel}}</td>
             <td class="r b" data-l="Anteil">{{deEUR .Anteil}}&nbsp;€</td>

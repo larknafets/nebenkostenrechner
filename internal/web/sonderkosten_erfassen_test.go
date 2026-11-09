@@ -25,7 +25,7 @@ func gueltigesSonderkostenForm() url.Values {
 	return url.Values{
 		"monat": {"2026-10"}, "art": {"reparatur"}, "betreff": {"Heizungspumpe"},
 		"beschreibung": {"Pumpe\nHeizkreis 2"}, "firma": {"Meier GmbH"}, "rechnungsnummer": {"RE-412"},
-		"betrag": {"1.234,50"}, "umsetzung": {"haus"}, "umlegbar": {"1"}, "logik": {"wohneinheit"},
+		"betrag": {"1.234,50"}, "objekt": {"haus"}, "umlegbar": {"1"}, "logik": {"wohneinheit"},
 	}
 }
 
@@ -53,7 +53,7 @@ func TestSonderkostenErfassen_LogikVerschwindetBeiWohnungOderNichtUmlegbar(t *te
 	mux, db := sonderkostenMux(t)
 	c := loginCookies(t, mux, "vermieter", "geheim")
 	f := gueltigesSonderkostenForm()
-	f.Set("umsetzung", "wohnung2") // das versteckte Logik-Feld wird mitgeschickt
+	f.Set("objekt", "wohnung2") // das versteckte Logik-Feld wird mitgeschickt
 	if w := postSonderkosten(t, mux, c, f); w.Code != http.StatusFound {
 		t.Fatalf("status %d: %s", w.Code, w.Body.String())
 	}
@@ -197,7 +197,7 @@ func TestSonderkosten_PersonenOhneFixkosteneingabeIstMarkiert(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.CreateSonderkosten(db, store.Sonderkosten{Monat: "2026-10-01", Betreff: "Pumpe", Art: store.ArtReparatur, Betrag: 100, Umsetzung: store.UmsetzungHaus, Umlegbar: true, Logik: store.LogikPersonen}); err != nil {
+	if _, err := store.CreateSonderkosten(db, store.Sonderkosten{Monat: "2026-10-01", Betreff: "Pumpe", Art: store.ArtReparatur, Betrag: 100, Objekt: store.ObjektHaus, Umlegbar: true, Logik: store.LogikPersonen}); err != nil {
 		t.Fatal(err)
 	}
 	c := loginCookies(t, mux, "vermieter", "geheim")

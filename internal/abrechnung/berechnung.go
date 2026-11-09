@@ -35,14 +35,14 @@ type Zeile struct {
 }
 
 // SonderkostenEintrag is one row of the Sonderkosten-Anlage: an umlegbar entry
-// with a share above 0 for the settled apartment. Art and Umsetzung are the
+// with a share above 0 for the settled apartment. Art and Objekt are the
 // stored keys, the page turns them into labels. Anteil is the apartment's
 // share, rounded like the one in the Betriebskosten.
 type SonderkostenEintrag struct {
-	Monat, Betreff, Art, Firma, Rechnungsnummer, Umsetzung string
-	Rechnungsbetrag                                        float64
-	Schluessel                                             string
-	Anteil                                                 float64
+	Monat, Betreff, Art, Firma, Rechnungsnummer, Objekt string
+	Rechnungsbetrag                                     float64
+	Schluessel                                          string
+	Anteil                                              float64
 }
 
 // sonderkostenAnlage returns the Zeile and the Anlage rows of the entries in
@@ -58,10 +58,10 @@ func sonderkostenAnlage(d BerechnungsDaten, imBereich map[string]bool, apartment
 			continue
 		}
 		logik := s.Logik
-		switch s.Umsetzung {
-		case store.UmsetzungWohnung1:
+		switch s.Objekt {
+		case store.ObjektWohnung1:
 			logik = store.LogikWohnung1
-		case store.UmsetzungWohnung2:
+		case store.ObjektWohnung2:
 			logik = store.LogikWohnung2
 		}
 		if logik == "" {
@@ -69,7 +69,7 @@ func sonderkostenAnlage(d BerechnungsDaten, imBereich map[string]bool, apartment
 		}
 		rows = append(rows, SonderkostenEintrag{
 			Monat: s.Monat, Betreff: s.Betreff, Art: s.Art, Firma: s.Firma, Rechnungsnummer: s.Rechnungsnummer,
-			Umsetzung: s.Umsetzung, Rechnungsbetrag: s.Betrag, Schluessel: calc.LogikLabels[logik], Anteil: anteil,
+			Objekt: s.Objekt, Rechnungsbetrag: s.Betrag, Schluessel: calc.LogikLabels[logik], Anteil: anteil,
 		})
 		z.Gesamt += s.Betrag
 		z.Betrag += anteil

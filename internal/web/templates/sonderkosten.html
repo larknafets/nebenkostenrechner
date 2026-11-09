@@ -46,20 +46,51 @@
       {{range .Arten}}<option value="{{.Wert}}"{{if eq .Wert $.Art}} selected{{end}}>{{.Label}}</option>{{end}}
     </select>
   </div>
+  <div class="field" style="min-width:10rem">
+    <label for="objekt">Objekt</label>
+    <select id="objekt" name="objekt" onchange="this.form.submit()">
+      <option value="">Alle Objekte</option>
+      {{range .Objekte}}<option value="{{.Wert}}"{{if eq .Wert $.Objekt}} selected{{end}}>{{.Label}}</option>{{end}}
+    </select>
+  </div>
 </form>
-<div class="grid grid-3">
+<details id="sk-summen">
+<summary><strong>Summen</strong></summary>
+<div class="grid grid-3" style="margin-top:.5rem">
   <div class="panel stat-card"><div class="muted">Gesamt</div><div class="stat-value">{{deEUR .Gesamt}}&nbsp;€</div></div>
   <div class="panel stat-card"><div class="muted">davon umlegbar</div><div class="stat-value">{{deEUR .Umlegbar}}&nbsp;€</div></div>
   <div class="panel stat-card"><div class="muted">trägt Vermieter:in</div><div class="stat-value">{{deEUR .VermieterTraegt}}&nbsp;€</div></div>
 </div>
+{{range .Aufstellung.Bloecke}}
+<div class="panel sk-aufstellung" style="margin-top:1rem;overflow-x:auto">
+  {{if .Jahr}}<strong>{{.Jahr}}</strong>{{end}}
+  <table class="letzte">
+    <thead><tr><th>Art</th>{{range $.Objekte}}<th style="text-align:right">{{.Label}}</th>{{end}}</tr></thead>
+    <tbody>
+      {{range .Zeilen}}<tr><td>{{.Art}}</td>{{range .Objekte}}<td style="text-align:right">{{deEUR .}}&nbsp;€</td>{{end}}</tr>{{end}}
+      <tr><th>{{if .Jahr}}Zwischensumme{{else}}Summe{{end}}</th>{{range .Summe.Objekte}}<th style="text-align:right">{{deEUR .}}&nbsp;€</th>{{end}}</tr>
+    </tbody>
+  </table>
+</div>
+{{end}}
+</details>
+<script>
+// The Summen block starts closed and stays as the user left it while the filters reload the page.
+(function () {
+  var d = document.getElementById("sk-summen"), k = "sk-summen-offen";
+  try { if (sessionStorage.getItem(k) === "1") d.open = true; } catch (e) {}
+  d.addEventListener("toggle", function () { try { sessionStorage.setItem(k, d.open ? "1" : "0"); } catch (e) {} });
+})();
+</script>
 {{if not .Monate}}<p class="muted">Keine Sonderkosten für diese Auswahl.</p>{{end}}
 {{range .Monate}}
 <div class="sk-monat"><strong>{{.Label}}</strong><span class="muted">umlegbar {{deEUR .Umlegbar}}&nbsp;€</span></div>
 {{range .Karten}}
 <div class="panel sk-karte">
   <div class="sk-ansicht">
-  <div class="sk-zeile1"><strong>{{.Betreff}}</strong><span class="badge">{{.Art}}</span><span class="sk-betrag">{{deEUR .Betrag}}&nbsp;€</span></div>
-  <div class="muted">{{.Firma}}{{if .Rechnungsnummer}} · Nr. {{.Rechnungsnummer}}{{end}}</div>
+  <div class="sk-badges"><span class="badge">{{.Objekt}}</span><span class="badge">{{.Art}}</span></div>
+  <div class="sk-zeile1"><strong>{{.Betreff}}</strong><span class="sk-betrag">{{deEUR .Betrag}}&nbsp;€</span></div>
+  <div class="muted">{{.Firma}}{{if .Rechnungsnummer}} · Nr. {{.Rechnungsnummer}}{{end}}{{if .Rechnungsdatum}} · {{deDatum .Rechnungsdatum}}{{end}}</div>
   <div class="muted">{{if .Umlegbar}}umlegbar{{else}}nicht umlegbar{{end}} · {{.Zuordnung}}{{if .NichtBerechenbar}} <span class="badge badge-warning">nicht berechenbar, Fixkosteneingabe fehlt</span>{{end}}</div>
   {{if .Beschreibung}}<details><summary class="muted">Beschreibung</summary><div class="muted" style="white-space:pre-line">{{.Beschreibung}}</div></details>{{end}}
   {{if $.Vermieter}}<div class="btn-row" style="justify-content:flex-start">
@@ -85,12 +116,12 @@ function skAktualisiere(f) {
   var logik = f.elements.logik, personen = logik.querySelector('option[value="personen"]');
   personen.disabled = skFixMonate.indexOf(f.elements.monat.value) < 0;
   if (personen.disabled && logik.value === "personen") logik.selectedIndex = 0;
-  f.querySelector(".sk-logik-feld").hidden = !(ul && f.elements.umsetzung.value === "haus");
+  f.querySelector(".sk-logik-feld").hidden = !(ul && f.elements.objekt.value === "haus");
   f.querySelectorAll(".sk-hinweis").forEach(function (p) { p.hidden = !(ul && p.dataset.art === art); });
 }
 document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll("form.sk-maske").forEach(function (f) {
-    ["monat", "art", "umlegbar", "umsetzung"].forEach(function (n) { f.elements[n].addEventListener("change", function () { skAktualisiere(f); }); });
+    ["monat", "art", "umlegbar", "objekt"].forEach(function (n) { f.elements[n].addEventListener("change", function () { skAktualisiere(f); }); });
     skAktualisiere(f);
   });
   document.querySelectorAll("[data-sk-korrigieren]").forEach(function (b) {
@@ -120,11 +151,12 @@ document.addEventListener("DOMContentLoaded", function () {
     <div>
       <div class="field"><label for="{{.P}}-firma">Firma</label><input id="{{.P}}-firma" type="text" name="firma" value="{{.S.Firma}}"></div>
       <div class="field"><label for="{{.P}}-nr">Rechnungsnummer <span class="badge">optional</span></label><input id="{{.P}}-nr" type="text" name="rechnungsnummer" value="{{.S.Rechnungsnummer}}"></div>
+      <div class="field"><label for="{{.P}}-rechnungsdatum">Rechnungsdatum <span class="badge">optional</span></label><input id="{{.P}}-rechnungsdatum" type="date" name="rechnungsdatum" value="{{.S.Rechnungsdatum}}"></div>
     </div>
   </div>
   <div class="grid grid-2">
     <div class="field"><label for="{{.P}}-betrag">Betrag brutto (EUR)</label><input id="{{.P}}-betrag" type="text" inputmode="decimal" name="betrag" value="{{.Betrag}}" required></div>
-    <div class="field"><label for="{{.P}}-umsetzung">Umsetzung in</label><select id="{{.P}}-umsetzung" name="umsetzung">{{range .Umsetzungen}}<option value="{{.Wert}}"{{if eq .Wert $.S.Umsetzung}} selected{{end}}>{{.Label}}</option>{{end}}</select></div>
+    <div class="field"><label for="{{.P}}-objekt">Objekt</label><select id="{{.P}}-objekt" name="objekt">{{range .Objekte}}<option value="{{.Wert}}"{{if eq .Wert $.S.Objekt}} selected{{end}}>{{.Label}}</option>{{end}}</select></div>
   </div>
   <div class="field"><label><input type="checkbox" id="{{.P}}-umlegbar" name="umlegbar" value="1"{{if .S.Umlegbar}} checked{{end}}> Umlegbar (auf die Betriebskostenabrechnung)</label></div>
   {{range .Hinweise}}<p class="muted sk-hinweis" data-art="{{.Wert}}" hidden>{{.Label}}</p>{{end}}

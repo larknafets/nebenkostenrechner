@@ -23,6 +23,9 @@ const csvImportMaxBytes = 2 << 20 // 2 MiB
 // RunCSVImport's return.
 type ImportConfig[T any] struct {
 	Header []string
+	// OldNames maps a column of Header to the name an older export used. A file
+	// with only the old name is read as if it had the new one.
+	OldNames map[string]string
 
 	// CheckExisting reports whether an import must be rejected because data
 	// already exists, plus the message to show when it does.
@@ -130,6 +133,10 @@ func parseImportCSVRows[T any](file io.Reader, cfg ImportConfig[T]) ([]T, error)
 	}
 	for _, want := range cfg.Header {
 		if _, ok := colIdx[want]; !ok {
+			if i, old := colIdx[cfg.OldNames[want]]; old && cfg.OldNames[want] != "" {
+				colIdx[want] = i
+				continue
+			}
 			return nil, fmt.Errorf("CSV: Spalte %q fehlt", want)
 		}
 	}

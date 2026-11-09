@@ -4,10 +4,10 @@ import "testing"
 
 func TestSonderkosten_AnlegenLesenImDatenstand(t *testing.T) {
 	db := openTestDB(t)
-	spaet := Sonderkosten{Monat: "2026-09-01", Betreff: "Zaun", Art: ArtNeuanschaffung, Firma: "Zaunbau", Betrag: 900, Umsetzung: UmsetzungWohnung2, Umlegbar: true}
+	spaet := Sonderkosten{Monat: "2026-09-01", Betreff: "Zaun", Art: ArtNeuanschaffung, Firma: "Zaunbau", Betrag: 900, Objekt: ObjektWohnung2, Umlegbar: true}
 	frueh := Sonderkosten{
 		Monat: "2026-03-01", Betreff: "Pumpe", Beschreibung: "Umwälzpumpe\ntauschen", Art: ArtReparatur,
-		Firma: "Heizung GmbH", Rechnungsnummer: "R-17", Betrag: 412.5, Umsetzung: UmsetzungHaus, Umlegbar: true, Logik: LogikQM,
+		Firma: "Heizung GmbH", Rechnungsnummer: "R-17", Betrag: 412.5, Objekt: ObjektHaus, Umlegbar: true, Logik: LogikQM,
 	}
 	for _, s := range []Sonderkosten{spaet, frueh} {
 		if _, err := CreateSonderkosten(db, s); err != nil {

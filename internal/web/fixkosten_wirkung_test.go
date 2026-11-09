@@ -29,13 +29,13 @@ func TestFixkostenWirkungVon(t *testing.T) {
 		}
 		return e
 	}
-	personen := store.Sonderkosten{Monat: "2026-10-01", Umlegbar: true, Umsetzung: store.UmsetzungHaus, Logik: store.LogikPersonen}
+	personen := store.Sonderkosten{Monat: "2026-10-01", Umlegbar: true, Objekt: store.ObjektHaus, Logik: store.LogikPersonen}
 	nichtUmlegbar := personen
 	nichtUmlegbar.Umlegbar = false
 	anderer := personen
 	anderer.Monat = "2026-09-01"
 	altdaten := personen
-	altdaten.Umsetzung = store.UmsetzungWohnung1
+	altdaten.Objekt = store.ObjektWohnung1
 
 	basis := []*store.LatestPeriod{periode(1, "2026-09-10", "2026-09-01", false), periode(2, "2026-10-10", "2026-10-01", false)}
 	mehrere := []*store.LatestPeriod{basis[0], basis[1], periode(3, "2026-10-20", "2026-10-01", false)}

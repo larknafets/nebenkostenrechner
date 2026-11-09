@@ -20,7 +20,7 @@ func sonderkostenWohnungen() []store.Apartment {
 
 func TestSonderkostenAnteile(t *testing.T) {
 	haus := func(logik string, betrag float64, umlegbar bool) store.Sonderkosten {
-		return store.Sonderkosten{Monat: "2026-03-01", Betrag: betrag, Umsetzung: store.UmsetzungHaus, Umlegbar: umlegbar, Logik: logik}
+		return store.Sonderkosten{Monat: "2026-03-01", Betrag: betrag, Objekt: store.ObjektHaus, Umlegbar: umlegbar, Logik: logik}
 	}
 	tests := []struct {
 		name   string
@@ -32,11 +32,11 @@ func TestSonderkostenAnteile(t *testing.T) {
 		{"Wohnungsgröße 2:1", haus(store.LogikQM, 100, true), 66.67, 33.33, true},
 		{"Flurstück 3:1", haus(store.LogikFlurstueck, 10, true), 7.5, 2.5, true},
 		{"Personen 3:1 mit Eingabe", haus(store.LogikPersonen, 80, true), 60, 20, true},
-		{"Personen ohne Eingabe im Monat nicht berechenbar", store.Sonderkosten{Monat: "2026-04-01", Betrag: 80, Umsetzung: store.UmsetzungHaus, Umlegbar: true, Logik: store.LogikPersonen}, 0, 0, false},
-		{"Wohnung 1 trägt alles", store.Sonderkosten{Monat: "2026-03-01", Betrag: 184.3, Umsetzung: store.UmsetzungWohnung1, Umlegbar: true}, 184.3, 0, true},
-		{"Wohnung 2 trägt alles", store.Sonderkosten{Monat: "2026-03-01", Betrag: 649, Umsetzung: store.UmsetzungWohnung2, Umlegbar: true}, 0, 649, true},
+		{"Personen ohne Eingabe im Monat nicht berechenbar", store.Sonderkosten{Monat: "2026-04-01", Betrag: 80, Objekt: store.ObjektHaus, Umlegbar: true, Logik: store.LogikPersonen}, 0, 0, false},
+		{"Wohnung 1 trägt alles", store.Sonderkosten{Monat: "2026-03-01", Betrag: 184.3, Objekt: store.ObjektWohnung1, Umlegbar: true}, 184.3, 0, true},
+		{"Wohnung 2 trägt alles", store.Sonderkosten{Monat: "2026-03-01", Betrag: 649, Objekt: store.ObjektWohnung2, Umlegbar: true}, 0, 649, true},
 		{"nicht umlegbar wirkt nirgends", haus(store.LogikQM, 100, false), 0, 0, true},
-		{"nicht umlegbar, Wohnung 2", store.Sonderkosten{Monat: "2026-03-01", Betrag: 5, Umsetzung: store.UmsetzungWohnung2}, 0, 0, true},
+		{"nicht umlegbar, Wohnung 2", store.Sonderkosten{Monat: "2026-03-01", Betrag: 5, Objekt: store.ObjektWohnung2}, 0, 0, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -59,10 +59,10 @@ func TestSonderkostenAnteile(t *testing.T) {
 
 func TestSonderkostenMonate(t *testing.T) {
 	list := []store.Sonderkosten{
-		{Monat: "2026-03-01", Betrag: 100, Umsetzung: store.UmsetzungHaus, Umlegbar: true, Logik: store.LogikQM},
-		{Monat: "2026-03-01", Betrag: 50, Umsetzung: store.UmsetzungWohnung2, Umlegbar: true},
-		{Monat: "2026-03-01", Betrag: 70, Umsetzung: store.UmsetzungHaus, Umlegbar: false},
-		{Monat: "2026-04-01", Betrag: 80, Umsetzung: store.UmsetzungHaus, Umlegbar: true, Logik: store.LogikPersonen},
+		{Monat: "2026-03-01", Betrag: 100, Objekt: store.ObjektHaus, Umlegbar: true, Logik: store.LogikQM},
+		{Monat: "2026-03-01", Betrag: 50, Objekt: store.ObjektWohnung2, Umlegbar: true},
+		{Monat: "2026-03-01", Betrag: 70, Objekt: store.ObjektHaus, Umlegbar: false},
+		{Monat: "2026-04-01", Betrag: 80, Objekt: store.ObjektHaus, Umlegbar: true, Logik: store.LogikPersonen},
 	}
 	got := SonderkostenMonate(list, sonderkostenWohnungen(), sonderkostenReihe(), 1)
 	want := MonatsSonderkosten{Monat: "2026-03-01", Logik: store.LogikQM, Betrag: 66.67}

@@ -29,19 +29,19 @@ func sonderkostenMux(t *testing.T, eintraege ...store.Sonderkosten) (*http.Serve
 func sonderkostenRoh(t *testing.T, db *sql.DB, s store.Sonderkosten) {
 	t.Helper()
 	if _, err := db.Exec(
-		`INSERT INTO sonderkosten (monat, betreff, beschreibung, art, firma, rechnungsnummer, betrag, umsetzung, umlegbar, logik)
+		`INSERT INTO sonderkosten (monat, betreff, beschreibung, art, firma, rechnungsnummer, betrag, objekt, umlegbar, logik)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		s.Monat, s.Betreff, s.Beschreibung, s.Art, s.Firma, s.Rechnungsnummer, s.Betrag, s.Umsetzung, s.Umlegbar, s.Logik,
+		s.Monat, s.Betreff, s.Beschreibung, s.Art, s.Firma, s.Rechnungsnummer, s.Betrag, s.Objekt, s.Umlegbar, s.Logik,
 	); err != nil {
 		t.Fatalf("raw insert sonderkosten: %v", err)
 	}
 }
 
 var beispielSonderkosten = []store.Sonderkosten{
-	{Monat: "2026-10-01", Betreff: "Heizungspumpe", Beschreibung: "Pumpe Heizkreis 2", Art: store.ArtReparatur, Firma: "Meier GmbH", Rechnungsnummer: "RE-412", Betrag: 1000, Umsetzung: store.UmsetzungHaus, Umlegbar: true, Logik: store.LogikWohneinheit},
-	{Monat: "2026-10-01", Betreff: "Rauchmelder", Art: store.ArtWartung, Firma: "Brandschutz Nord", Betrag: 96, Umsetzung: store.UmsetzungHaus},
-	{Monat: "2026-09-01", Betreff: "Spülmaschine", Art: store.ArtNeuanschaffung, Firma: "Elektro Schmitt", Betrag: 649, Umsetzung: store.UmsetzungWohnung2, Umlegbar: true},
-	{Monat: "2025-03-01", Betreff: "Wasserhahn", Art: store.ArtReparatur, Firma: "Sanitär Lehmann", Betrag: 184.3, Umsetzung: store.UmsetzungWohnung1},
+	{Monat: "2026-10-01", Betreff: "Heizungspumpe", Beschreibung: "Pumpe Heizkreis 2", Art: store.ArtReparatur, Firma: "Meier GmbH", Rechnungsnummer: "RE-412", Rechnungsdatum: "2026-10-05", Betrag: 1000, Objekt: store.ObjektHaus, Umlegbar: true, Logik: store.LogikWohneinheit},
+	{Monat: "2026-10-01", Betreff: "Rauchmelder", Art: store.ArtWartung, Firma: "Brandschutz Nord", Betrag: 96, Objekt: store.ObjektHaus},
+	{Monat: "2026-09-01", Betreff: "Spülmaschine", Art: store.ArtNeuanschaffung, Firma: "Elektro Schmitt", Betrag: 649, Objekt: store.ObjektWohnung2, Umlegbar: true},
+	{Monat: "2025-03-01", Betreff: "Wasserhahn", Art: store.ArtReparatur, Firma: "Sanitär Lehmann", Betrag: 184.3, Objekt: store.ObjektWohnung1},
 }
 
 func TestSonderkosten_SeiteZeigtKopfSummenUndKarten(t *testing.T) {
@@ -93,6 +93,38 @@ func TestSonderkosten_JahrwahlUndArtfilter(t *testing.T) {
 	// The sums follow the filters (Jahr and Art): only the Wartung of 2026.
 	if strings.Contains(gefiltert, "1.745,00") || !strings.Contains(gefiltert, "96,00") {
 		t.Error("die Summen sollen dem Artfilter folgen")
+	}
+}
+
+func TestSonderkosten_Objektfilter(t *testing.T) {
+	mux, _ := sonderkostenMux(t, beispielSonderkosten...)
+	c := loginCookies(t, mux, "vermieter", "geheim")
+
+	w2 := getMitCookies(t, mux, "/sonderkosten?jahr=alle&objekt=wohnung2", c).Body.String()
+	if !strings.Contains(w2, `<option value="wohnung2" selected>`) || !strings.Contains(w2, "Spülmaschine") || strings.Contains(w2, "Heizungspumpe") || strings.Contains(w2, "Rauchmelder") || strings.Contains(w2, "Wasserhahn") {
+		t.Error("?objekt=wohnung2 zeigt nicht nur Einträge der Wohnung 2")
+	}
+	alle := getMitCookies(t, mux, "/sonderkosten?jahr=alle&objekt=nix", c).Body.String()
+	if !strings.Contains(alle, "Rauchmelder") || !strings.Contains(alle, "Wasserhahn") || !strings.Contains(alle, "Heizungspumpe") {
+		t.Error("unbekanntes Objekt soll wie Alle Objekte wirken")
+	}
+}
+
+func TestSonderkosten_KarteBadgeZeile(t *testing.T) {
+	mux, _ := sonderkostenMux(t, beispielSonderkosten...)
+	c := loginCookies(t, mux, "vermieter", "geheim")
+
+	// Objekt first, then Art, above the Betreff; the Betreff line has no badge.
+	body := getMitCookies(t, mux, "/sonderkosten?jahr=2025", c).Body.String()
+	for _, want := range []string{
+		`<div class="sk-badges"><span class="badge">Wohnung 1</span><span class="badge">Reparatur</span></div>` + "\n" +
+			`  <div class="sk-zeile1"><strong>Wasserhahn</strong><span class="sk-betrag">`,
+		// The badge shows the Objekt, not who pays.
+		"nicht umlegbar · trägt Vermieter:in",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("Seite enthält %q nicht", want)
+		}
 	}
 }
 

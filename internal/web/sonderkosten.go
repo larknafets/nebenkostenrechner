@@ -13,10 +13,12 @@ import (
 
 // sonderkostenKarte is one entry of the list, ready for the template.
 type sonderkostenKarte struct {
-	ID                                                 int64
-	Betreff, Beschreibung, Art, Firma, Rechnungsnummer string
-	Betrag                                             float64
-	Umlegbar                                           bool
+	ID                                                         int64
+	Betreff, Beschreibung, Art, Objekt, Firma, Rechnungsnummer string
+	// Rechnungsdatum is "YYYY-MM-DD" or empty, the template formats it.
+	Rechnungsdatum string
+	Betrag         float64
+	Umlegbar       bool
 	// Zuordnung says who carries the bill (GLOSSARY.md, Sonderkosten).
 	Zuordnung string
 	// Maske is the prefilled form for Korrigieren.
@@ -31,17 +33,17 @@ type sonderkostenKarte struct {
 // sonderkostenMaske is the data of the shared form fields ("sk-felder"):
 // P prefixes the element ids, the rest prefills the fields.
 type sonderkostenMaske struct {
-	P                  string
-	ID                 int64
-	Monat, Betrag      string
-	S                  store.Sonderkosten
-	Arten, Umsetzungen []store.Auswahl
-	Logiken, Hinweise  []store.Auswahl
+	P                 string
+	ID                int64
+	Monat, Betrag     string
+	S                 store.Sonderkosten
+	Arten, Objekte    []store.Auswahl
+	Logiken, Hinweise []store.Auswahl
 }
 
 func neueMaske(p string, s store.Sonderkosten, monat, betrag string) sonderkostenMaske {
 	return sonderkostenMaske{P: p, ID: s.ID, Monat: monat, Betrag: betrag, S: s, Arten: store.SonderkostenArten,
-		Umsetzungen: store.SonderkostenUmsetzungen, Logiken: sonderkostenLogiken, Hinweise: sonderkostenHinweise}
+		Objekte: store.SonderkostenObjekte, Logiken: sonderkostenLogiken, Hinweise: sonderkostenHinweise}
 }
 
 // sonderkostenMonat is the group of one Abrechnungsmonat.
@@ -58,9 +60,9 @@ func sonderkostenZuordnung(s store.Sonderkosten) string {
 	switch {
 	case !s.Umlegbar:
 		return "trägt Vermieter:in"
-	case s.Umsetzung == store.UmsetzungWohnung1:
+	case s.Objekt == store.ObjektWohnung1:
 		return "trägt Wohnung 1"
-	case s.Umsetzung == store.UmsetzungWohnung2:
+	case s.Objekt == store.ObjektWohnung2:
 		return "trägt Wohnung 2"
 	}
 	return calc.LogikLabels[s.Logik]
@@ -101,12 +103,13 @@ func sonderkostenAusForm(w http.ResponseWriter, r *http.Request) (store.Sonderko
 	s := store.Sonderkosten{
 		Betreff: strings.TrimSpace(f.Get("betreff")), Beschreibung: strings.TrimSpace(f.Get("beschreibung")),
 		Art: f.Get("art"), Firma: strings.TrimSpace(f.Get("firma")), Rechnungsnummer: strings.TrimSpace(f.Get("rechnungsnummer")),
-		Umsetzung: f.Get("umsetzung"), Umlegbar: f.Get("umlegbar") != "", Logik: f.Get("logik"),
+		Rechnungsdatum: strings.TrimSpace(f.Get("rechnungsdatum")),
+		Objekt:         f.Get("objekt"), Umlegbar: f.Get("umlegbar") != "", Logik: f.Get("logik"),
 	}
 	// An unparsable month or amount stays empty/0, the validation reports it.
 	s.Monat, _ = parseFixkostenMonat(f.Get("monat"))
 	s.Betrag, _ = parseDecimalDE(f.Get("betrag"))
-	if s.Umsetzung != store.UmsetzungHaus || !s.Umlegbar {
+	if s.Objekt != store.ObjektHaus || !s.Umlegbar {
 		s.Logik = ""
 	}
 	fehler, err := store.PruefeSonderkosten(db, s)
@@ -206,7 +209,7 @@ func handleSonderkostenLoeschen() http.HandlerFunc {
 
 // handleSonderkostenListe shows the Sonderkosten of one year (?jahr=, the
 // current year by default, "alle" for every year), grouped by
-// Abrechnungsmonat. ?jahr= and ?art= filter the list and the three sums alike.
+// Abrechnungsmonat. ?jahr=, ?art= and ?objekt= filter the list and the three sums alike.
 func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		alle, err := store.AllSonderkosten(dbFromContext(r.Context()))
@@ -227,28 +230,32 @@ func handleSonderkostenListe(z *Zugang) http.HandlerFunc {
 
 		heute := time.Now()
 		jahre := sonderkostenJahre(alle, heute.Year())
-		filter := sonderkostenFilterAus(r.URL.Query().Get("jahr"), r.URL.Query().Get("art"), jahre, heute.Year())
+		filter := sonderkostenFilterAus(r.URL.Query().Get("jahr"), r.URL.Query().Get("art"), r.URL.Query().Get("objekt"), jahre, heute.Year())
 		liste := baueSonderkostenListe(alle, fixMonate, filter)
 
 		data := struct {
 			navData
 			Aktuell string
 			sonderkostenListe
+			Aufstellung  sonderkostenAufstellung
 			Jahr         int
 			AlleJahre    bool  // the Jahr filter is "Alle Jahre"
 			Jahre        []int // years for the Jahr filter, newest first
 			Arten        []store.Auswahl
 			Art          string
+			Objekte      []store.Auswahl
+			Objekt       string
 			HatEintraege bool
 			NeuMonat     string
 			NeuMaske     sonderkostenMaske
 			FixMonate    []string // months ("YYYY-MM") with a Fixkosteneingabe, for the Personen option
 		}{
 			navData: z.NavData(r), Aktuell: "sonderkosten", sonderkostenListe: liste,
-			Jahr: filter.Jahr, AlleJahre: filter.AlleJahre, Jahre: jahre,
-			Arten: store.SonderkostenArten, Art: filter.Art, HatEintraege: len(alle) > 0,
+			Aufstellung: baueSonderkostenAufstellung(alle, filter),
+			Jahr:        filter.Jahr, AlleJahre: filter.AlleJahre, Jahre: jahre,
+			Arten: store.SonderkostenArten, Art: filter.Art, Objekte: store.SonderkostenObjekte, Objekt: filter.Objekt, HatEintraege: len(alle) > 0,
 			NeuMonat: heute.Format("2006-01"), FixMonate: fixMonate,
-			NeuMaske: neueMaske("sk", store.Sonderkosten{Art: store.ArtReparatur, Umsetzung: store.UmsetzungHaus}, heute.Format("2006-01"), ""),
+			NeuMaske: neueMaske("sk", store.Sonderkosten{Art: store.ArtReparatur, Objekt: store.ObjektHaus}, heute.Format("2006-01"), ""),
 		}
 		if err := sonderkostenTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -8,10 +8,10 @@ func TestBrauchtFixkosteneingabe(t *testing.T) {
 		s    Sonderkosten
 		want bool
 	}{
-		{"umlegbar, Haus, Personen", Sonderkosten{Umlegbar: true, Umsetzung: UmsetzungHaus, Logik: LogikPersonen}, true},
-		{"nicht umlegbar", Sonderkosten{Umsetzung: UmsetzungHaus, Logik: LogikPersonen}, false},
-		{"Umsetzung Wohnung 1 (Altdaten)", Sonderkosten{Umlegbar: true, Umsetzung: UmsetzungWohnung1, Logik: LogikPersonen}, false},
-		{"andere Logik", Sonderkosten{Umlegbar: true, Umsetzung: UmsetzungHaus, Logik: LogikQM}, false},
+		{"umlegbar, Haus, Personen", Sonderkosten{Umlegbar: true, Objekt: ObjektHaus, Logik: LogikPersonen}, true},
+		{"nicht umlegbar", Sonderkosten{Objekt: ObjektHaus, Logik: LogikPersonen}, false},
+		{"Objekt Wohnung 1 (Altdaten)", Sonderkosten{Umlegbar: true, Objekt: ObjektWohnung1, Logik: LogikPersonen}, false},
+		{"andere Logik", Sonderkosten{Umlegbar: true, Objekt: ObjektHaus, Logik: LogikQM}, false},
 	}
 	for _, tt := range tests {
 		if got := tt.s.BrauchtFixkosteneingabe(); got != tt.want {
