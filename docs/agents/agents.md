@@ -31,7 +31,7 @@ A prompt for an implementer subagent (one ticket, own worktree) points here inst
 - Changelog line in the same commit as a `feat` or `fix` (`changelog.md`), none for a `refactor`.
 - `scripts/check` green before every commit and again after the final merge of the integration branch into the ticket branch.
 - Do not push, open a PR or close an issue. The main agent merges the ticket branch into the integration branch.
-- Report: branch, commits, what stayed open, every deviation from the ticket.
+- Report: branch, commits, what stayed open, every deviation from the ticket, and the test that failed before the change with its failure message.
 
 ## Reviewer brief
 
