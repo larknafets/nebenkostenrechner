@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.25.1 - 2026-11-12
+
+### Wartung
+
+- Sicherheitsupdate: Die App wird mit Go 1.27.4 gebaut. Es schließt eine Lücke in der Standardbibliothek (`net/http`, GO-2026-6859), die der CSV-Import erreicht
+
+Alle Änderungen im Vergleich: [v0.25.0...v0.25.1](https://github.com/larknafets/nebenkostenrechner/compare/v0.25.0...v0.25.1)
+
 ## v0.25.0 - 2026-11-09
 
 > **Vor dem Update:** Beim ersten Start baut die App die Datenbank um (bei den Sonderkosten heißt die Spalte `umsetzung` danach `objekt`, dazu kommt `rechnungsdatum`). Eine ältere Version der App kann diese Datenbank danach nicht mehr lesen, der Weg zurück führt nur über die Sicherung, die die App vor dem Umbau anlegt.
