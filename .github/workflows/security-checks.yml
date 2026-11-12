@@ -19,6 +19,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The write token must not stay in the git config while the scanner runs.
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
@@ -45,11 +48,18 @@ jobs:
       # Nothing is merged here. If the fix needs a new minor version, no PR is
       # opened and the red run is the only signal.
       - name: Open a PR for the Go patch release
-        if: steps.vuln.outcome == 'failure'
+        if: steps.vuln.outcome == 'failure' && github.ref == 'refs/heads/main'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Only a finding in the standard library is fixed by a newer Go.
+          # A module finding or a scan error without a finding gets no PR.
+          if ! grep -q '^Vulnerability #' vuln.txt || grep -qE '^ +Module: ' vuln.txt; then
+            echo "::notice::No pure standard library finding, no PR opened."
+            exit 0
+          fi
+          fixed=$(grep -oE 'Fixed in: [^@ ]+@go[0-9.]+' vuln.txt | sed -E 's/.*@go//' | sort -V | tail -n1)
           current=$(awk '/^go /{print $2}' go.mod)
           minor=${current%.*}
           latest=$(curl -fsS "https://go.dev/dl/?mode=json" \
@@ -59,10 +69,15 @@ jobs:
             echo "::notice::No newer Go ${minor}.x than ${current}, no PR opened."
             exit 0
           fi
+          # The newest patch release must contain every fix.
+          if [ -z "$fixed" ] || [ "$(printf '%s\n%s\n' "$fixed" "$latest" | sort -V | tail -n1)" != "$latest" ]; then
+            echo "::notice::Go ${latest} does not contain the fix (${fixed:-unknown}), no PR opened."
+            exit 0
+          fi
           branch="fix/go-${latest}"
-          if [ -n "$(gh pr list --head "$branch" --state all --json number --jq '.[].number')" ] \
-            || gh api "repos/${GITHUB_REPOSITORY}/branches/${branch}" >/dev/null 2>&1; then
-            echo "::notice::Branch or PR for ${branch} already exists."
+          if [ -n "$(gh pr list --state open --json headRefName --jq '.[] | select(.headRefName | startswith("fix/go-")) | .headRefName')" ] \
+            || [ -n "$(gh pr list --head "$branch" --state all --json number --jq '.[].number')" ]; then
+            echo "::notice::A Go update PR is open or ${branch} already had one."
             exit 0
           fi
           ids=$(grep -oE 'GO-[0-9]+-[0-9]+' vuln.txt | sort -u | paste -sd, - | sed 's/,/, /g')
@@ -80,19 +95,22 @@ jobs:
           open(p, "w").write(s)
           EOF
 
-          oid=$(git rev-parse HEAD)
-          gh api "repos/${GITHUB_REPOSITORY}/git/refs" -f "ref=refs/heads/${branch}" -f "sha=${oid}" >/dev/null
-          jq -n --arg repo "$GITHUB_REPOSITORY" --arg branch "$branch" --arg oid "$oid" --arg headline "$title" \
-            --arg gomod "$(base64 -w0 go.mod)" --arg log "$(base64 -w0 .changelog/unreleased.md)" \
-            '{query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { url } } }",
-              variables: {input: {
-                branch: {repositoryNameWithOwner: $repo, branchName: $branch},
-                expectedHeadOid: $oid,
-                message: {headline: $headline},
-                fileChanges: {additions: [
-                  {path: "go.mod", contents: $gomod},
-                  {path: ".changelog/unreleased.md", contents: $log}]}}}}' \
-            | gh api graphql --input - | jq -e -r '.data.createCommitOnBranch.commit.url'
+          # A branch without a PR (an earlier run failed) is reused, only the PR is retried.
+          if ! gh api "repos/${GITHUB_REPOSITORY}/branches/${branch}" >/dev/null 2>&1; then
+            oid=$(git rev-parse HEAD)
+            gh api "repos/${GITHUB_REPOSITORY}/git/refs" -f "ref=refs/heads/${branch}" -f "sha=${oid}" >/dev/null
+            jq -n --arg repo "$GITHUB_REPOSITORY" --arg branch "$branch" --arg oid "$oid" --arg headline "$title" \
+              --arg gomod "$(base64 -w0 go.mod)" --arg log "$(base64 -w0 .changelog/unreleased.md)" \
+              '{query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { url } } }",
+                variables: {input: {
+                  branch: {repositoryNameWithOwner: $repo, branchName: $branch},
+                  expectedHeadOid: $oid,
+                  message: {headline: $headline},
+                  fileChanges: {additions: [
+                    {path: "go.mod", contents: $gomod},
+                    {path: ".changelog/unreleased.md", contents: $log}]}}}}' \
+              | gh api graphql --input - | jq -e -r '.data.createCommitOnBranch.commit.url'
+          fi
 
           cat > body.md <<EOF
           Automatisch vom nächtlichen Lauf geöffnet: govulncheck meldet ${ids} in der Go-Standardbibliothek, behoben in Go ${latest} (Lauf: ${run_url}).
