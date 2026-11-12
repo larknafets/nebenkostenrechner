@@ -12,6 +12,10 @@ jobs:
   govulncheck:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # write is only for the step "Open a PR for the Go patch release" below.
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -25,4 +29,80 @@ jobs:
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
       - name: Run govulncheck
-        run: govulncheck ./...
+        id: vuln
+        continue-on-error: true
+        shell: bash
+        run: |
+          govulncheck ./... > vuln.txt 2>&1 && code=0 || code=$?
+          cat vuln.txt
+          exit "$code"
+
+      # A finding in the standard library is usually fixed by the next patch
+      # release of the same Go minor version. Then the job opens a PR that
+      # raises the go line. The commit is made through the API so that GitHub
+      # signs it (like the mirror commit in nightly.yml). A PR opened with
+      # GITHUB_TOKEN starts no CI: close and reopen it to run the "test" check.
+      # Nothing is merged here. If the fix needs a new minor version, no PR is
+      # opened and the red run is the only signal.
+      - name: Open a PR for the Go patch release
+        if: steps.vuln.outcome == 'failure'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          current=$(awk '/^go /{print $2}' go.mod)
+          minor=${current%.*}
+          latest=$(curl -fsS "https://go.dev/dl/?mode=json" \
+            | jq -r --arg m "go${minor}." '[.[].version | select(startswith($m)) | ltrimstr("go")] | .[]' \
+            | sort -V | tail -n1)
+          if [ -z "$latest" ] || [ "$(printf '%s\n%s\n' "$current" "$latest" | sort -V | tail -n1)" = "$current" ]; then
+            echo "::notice::No newer Go ${minor}.x than ${current}, no PR opened."
+            exit 0
+          fi
+          branch="fix/go-${latest}"
+          if [ -n "$(gh pr list --head "$branch" --state all --json number --jq '.[].number')" ] \
+            || gh api "repos/${GITHUB_REPOSITORY}/branches/${branch}" >/dev/null 2>&1; then
+            echo "::notice::Branch or PR for ${branch} already exists."
+            exit 0
+          fi
+          ids=$(grep -oE 'GO-[0-9]+-[0-9]+' vuln.txt | sort -u | paste -sd, - | sed 's/,/, /g')
+          title="build(go): Go ${latest} gegen ${ids}"
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+          sed -i -E "s/^go [0-9.]+\$/go ${latest}/" go.mod
+          python3 - "$latest" "$ids" <<'EOF'
+          import sys
+          latest, ids = sys.argv[1], sys.argv[2]
+          p = ".changelog/unreleased.md"
+          s = open(p).read().rstrip()
+          s += "\n\n" if s.endswith("## Wartung") else "\n"
+          s += f"- Sicherheitsupdate: Die App wird mit Go {latest} gebaut. Es schließt eine Lücke in der Standardbibliothek ({ids})\n"
+          open(p, "w").write(s)
+          EOF
+
+          oid=$(git rev-parse HEAD)
+          gh api "repos/${GITHUB_REPOSITORY}/git/refs" -f "ref=refs/heads/${branch}" -f "sha=${oid}" >/dev/null
+          jq -n --arg repo "$GITHUB_REPOSITORY" --arg branch "$branch" --arg oid "$oid" --arg headline "$title" \
+            --arg gomod "$(base64 -w0 go.mod)" --arg log "$(base64 -w0 .changelog/unreleased.md)" \
+            '{query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { url } } }",
+              variables: {input: {
+                branch: {repositoryNameWithOwner: $repo, branchName: $branch},
+                expectedHeadOid: $oid,
+                message: {headline: $headline},
+                fileChanges: {additions: [
+                  {path: "go.mod", contents: $gomod},
+                  {path: ".changelog/unreleased.md", contents: $log}]}}}}' \
+            | gh api graphql --input - | jq -e -r '.data.createCommitOnBranch.commit.url'
+
+          cat > body.md <<EOF
+          Automatisch vom nächtlichen Lauf geöffnet: govulncheck meldet ${ids} in der Go-Standardbibliothek, behoben in Go ${latest} (Lauf: ${run_url}).
+
+          - Geändert: die \`go\`-Zeile in \`go.mod\` (${current} nach ${latest}) und eine Wartungszeile im Changelog.
+          - CI läuft für diesen PR nicht von selbst (ein Bot-PR startet keine Workflows). Zum Starten den PR schließen und wieder öffnen.
+          - Nicht automatisch: Merge und Release. Der Linter-Pin in \`ci.yml\` bleibt, die Minor-Version ist dieselbe.
+          EOF
+          gh pr create --base main --head "$branch" --title "$title" --body-file body.md
+
+      - name: Fail on findings
+        if: steps.vuln.outcome == 'failure'
+        run: exit 1
