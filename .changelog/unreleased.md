@@ -46,3 +46,5 @@ Keep every section, an empty one included. Do not change the headings.
 ## Fehlerkorrekturen
 
 ## Wartung
+
+- Sicherheitsupdate: Die App wird mit Go 1.27.4 gebaut. Es schließt eine Lücke in der Standardbibliothek (`net/http`, GO-2026-6859), die der CSV-Import erreicht
