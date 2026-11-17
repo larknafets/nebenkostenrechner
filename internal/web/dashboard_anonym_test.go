@@ -32,7 +32,7 @@ func TestDashboard_AnonymNurWohnung2(t *testing.T) {
 		t.Error("Wärmepumpe fehlt für Anonyme")
 	}
 	// The Wärmepumpe has a tab and a Monatsverlauf panel, too (#305).
-	for _, s := range []string{`<option value="waermepumpe">Wärmepumpe</option>`, `<div class="wohnung-panel" data-wohnung="waermepumpe">`} {
+	for _, s := range []string{`data-wohnung-btn="waermepumpe">Wärmepumpe</button>`, `<div class="wohnung-panel" data-wohnung="waermepumpe">`} {
 		if !strings.Contains(anon, s) {
 			t.Errorf("%q fehlt für Anonyme", s)
 		}
@@ -40,7 +40,7 @@ func TestDashboard_AnonymNurWohnung2(t *testing.T) {
 	// The bare text "Wohnung 1" also occurs in the static Fixkosten legend,
 	// so the check targets the card and the tab of Wohnung 1.
 	for _, s := range []string{
-		"<strong>Wohnung 1</strong>", `data-wohnung="1"`, `<option value="1">`,
+		"<strong>Wohnung 1</strong>", `data-wohnung="1"`, `data-wohnung-btn="1"`,
 		"Wallboxen", "PV-Anlage", labelMiete, "712,34",
 	} {
 		if strings.Contains(anon, s) {
@@ -54,9 +54,9 @@ func TestDashboard_EingeloggtZeigtAlles(t *testing.T) {
 
 	for _, s := range []string{
 		"<strong>Wohnung 1</strong>", "<strong>Wohnung 2</strong>",
-		`data-wohnung="1"`, `<option value="1">Wohnung 1</option>`,
+		`data-wohnung="1"`, `data-wohnung-btn="1">Wohnung 1</button>`,
 		"<strong>Wallboxen</strong>", "<strong>Wärmepumpe</strong>", "<strong>PV-Anlage</strong>",
-		`<option value="waermepumpe">Wärmepumpe</option>`, `data-wohnung="waermepumpe"`,
+		`data-wohnung-btn="waermepumpe">Wärmepumpe</button>`, `data-wohnung="waermepumpe"`,
 		labelMiete, "712,34",
 	} {
 		if !strings.Contains(voll, s) {

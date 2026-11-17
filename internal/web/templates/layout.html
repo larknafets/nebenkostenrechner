@@ -406,7 +406,19 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   .grid-2 { grid-template-columns: 1fr 1fr; }
   .grid-3 { grid-template-columns: repeat(3, 1fr); }
   .grid-4 { grid-template-columns: repeat(4, 1fr); }
-  .jahressummen-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  /* Dashboard: Wohnungen als große Karten, Hauskarten darunter kompakter. */
+  .dash-wohnungen { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+  .dash-haus { grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); margin-top: 1rem; }
+  .dash-kompakt { padding: .8rem 1rem; }
+  .dash-kompakt .stat-value { font-size: 1.2rem; }
+  .wohnung-auswahl { flex-wrap: wrap; }
+  .dash-tabs { width: auto; margin: 0; flex-wrap: wrap; gap: .3rem; }
+  .dash-tabs button { margin: 0; padding: .3rem .8rem; }
+  /* Zeitleiste am Handy: Beschriftung nur jeder dritte Monat und der gewählte, die Punkte bleiben alle antippbar. */
+  @media (max-width: 480px) {
+    .zeit .zeit-p b { display: none; }
+    .zeit .zeit-p:nth-child(3n+1) b, .zeit .zeit-p.on b { display: block; }
+  }
   /* Buttons zeichnet Pico. Die Varianten sind kleine Klassen über Pico-Variablen
      (.secondary kommt von Pico selbst). */
   button.success, a.button.success { --pico-background-color: var(--success); --pico-border-color: var(--success); --pico-color: #fff; }

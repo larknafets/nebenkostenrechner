@@ -67,8 +67,8 @@ async function shot(name, path, { js, theme = 'light', maxHeight } = {}) {
   console.log(`${name}: ${WIDTH}x${h}`);
 }
 
-// The Monatsübersicht is a dropdown (#wohnung-select), picked by its option text.
-const pick = (text) => `(() => { const s = document.getElementById('wohnung-select'); s.value = [...s.options].find(o => o.textContent.trim() === ${JSON.stringify(text)}).value; s.dispatchEvent(new Event('change')); })()`;
+// The Monatsübersicht has tab buttons ([data-wohnung-btn]), picked by their text.
+const pick = (text) => `(() => { [...document.querySelectorAll('[data-wohnung-btn]')].find(b => b.textContent.trim() === ${JSON.stringify(text)}).click(); })()`;
 const click = (sel, text) => `(() => { const el = [...document.querySelectorAll('${sel}')].find(e => !${JSON.stringify(text)} || e.textContent.trim() === ${JSON.stringify(text)}); el.click(); })()`;
 
 // Demo login: the cookie lands on the origin, every later page is the demo database.
