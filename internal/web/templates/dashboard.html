@@ -98,10 +98,10 @@
 
 {{if gt (len .VerlaufAuswahl) 1}}
 <div class="wohnung-auswahl">
-  <span class="muted" id="dash-tabs-label">Monatsübersicht</span>
-  <div role="group" class="dash-tabs" aria-labelledby="dash-tabs-label">
-    {{range .VerlaufAuswahl}}<button type="button" class="outline" data-wohnung-btn="{{.ID}}">{{.Name}}</button>{{end}}
-  </div>
+  <label for="wohnung-select" class="muted">Monatsübersicht</label>
+  <select id="wohnung-select">
+    {{range .VerlaufAuswahl}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+  </select>
 </div>
 {{end}}
 
@@ -155,21 +155,16 @@
     });
   })();
 
-  // Monatsübersicht selection (Ticket #60 Story 23, tabs instead of dropdown): all
-  // series are rendered server-side, JS only shows the chosen one.
-  // With a single choice there are no tabs, the first panel stays active.
+  // Monatsübersicht selection (Ticket #60 Story 23): all series are rendered
+  // server-side, JS only shows the chosen one.
+  // With a single choice there is no dropdown, the first panel stays active.
   (function () {
     var STORAGE_KEY = "dashboardWohnung";
-    var tabs = document.querySelectorAll("[data-wohnung-btn]");
+    var select = document.getElementById("wohnung-select");
     var panels = document.querySelectorAll(".wohnung-panel");
     if (!panels.length) return;
 
     function applyWohnung(id) {
-      tabs.forEach(function (b) {
-        var on = b.getAttribute("data-wohnung-btn") === id;
-        b.classList.toggle("outline", !on);
-        b.setAttribute("aria-pressed", on);
-      });
       panels.forEach(function (p) { p.classList.toggle("active", p.getAttribute("data-wohnung") === id); });
       fitVerlaufBarText();
     }
@@ -179,14 +174,13 @@
       var saved = localStorage.getItem(STORAGE_KEY);
       if (saved && document.querySelector('.wohnung-panel[data-wohnung="' + saved + '"]')) id = saved;
     } catch (e) {}
+    if (select) select.value = id;
     applyWohnung(id);
 
-    tabs.forEach(function (b) {
-      b.addEventListener("click", function () {
-        id = b.getAttribute("data-wohnung-btn");
-        applyWohnung(id);
-        try { localStorage.setItem(STORAGE_KEY, id); } catch (e) {}
-      });
+    if (select) select.addEventListener("change", function () {
+      id = select.value;
+      applyWohnung(id);
+      try { localStorage.setItem(STORAGE_KEY, id); } catch (e) {}
     });
   })();
 
@@ -212,9 +206,8 @@
     document.querySelectorAll("[data-modus-btn]").forEach(function (btn) {
       btn.addEventListener("click", pingUpdateCheck);
     });
-    document.querySelectorAll("[data-wohnung-btn]").forEach(function (btn) {
-      btn.addEventListener("click", pingUpdateCheck);
-    });
+    var auswahl = document.getElementById("wohnung-select");
+    if (auswahl) auswahl.addEventListener("change", pingUpdateCheck);
   })();
 </script>
 {{end}}

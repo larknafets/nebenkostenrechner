@@ -36,12 +36,12 @@ func TestDashboard_ReihenUndReiter(t *testing.T) {
 		}
 	}
 
-	if !strings.Contains(body, `<div role="group" class="dash-tabs"`) || strings.Contains(body, `id="wohnung-select"`) {
-		t.Error("Monatsübersicht braucht eine Reiter-Gruppe und kein Auswahlfeld")
+	if !strings.Contains(body, `id="wohnung-select"`) || strings.Contains(body, "dash-tabs") {
+		t.Error("Monatsübersicht braucht das Auswahlfeld und keine Reiter")
 	}
 	for _, id := range []string{"1", "2", "waermepumpe"} {
-		if !strings.Contains(body, `data-wohnung-btn="`+id+`"`) {
-			t.Errorf("Reiter %q fehlt", id)
+		if !strings.Contains(body, `<option value="`+id+`">`) {
+			t.Errorf("Auswahl %q fehlt", id)
 		}
 	}
 }

@@ -228,7 +228,7 @@
 <nav>
 <ul><li><strong>Nebenkostenrechner</strong></li></ul>
 <ul class="nav-wide">{{template "navEintraege" .}}{{if .ShowLogoutEntry}}<li><a href="#" class="logout-link" id="logout-link">Abmelden</a></li>{{end}}{{if .ShowLoginEntry}}<li><a href="#" class="login-open" id="login-open">Anmelden</a></li>{{end}}</ul>
-<ul class="nav-narrow"><li><details class="dropdown"><summary>Menü</summary><ul dir="rtl">{{template "navEintraege" .}}{{if .ShowLogoutEntry}}<li><a href="#" class="logout-link">Abmelden</a></li>{{end}}{{if .ShowLoginEntry}}<li><a href="#" class="login-open">Anmelden</a></li>{{end}}</ul></details></li></ul>
+<ul class="nav-narrow"><li><details class="dropdown"><summary>Menü</summary><ul>{{template "navEintraege" .}}{{if .ShowLogoutEntry}}<li class="nav-konto"><a href="#" class="logout-link">Abmelden</a></li>{{end}}{{if .ShowLoginEntry}}<li class="nav-konto"><a href="#" class="login-open">Anmelden</a></li>{{end}}</ul></details></li></ul>
 <ul><li><button type="button" id="theme-toggle-btn" class="theme-btn"></button></li></ul>
 </nav>
 {{if .ShowLogoutEntry}}
@@ -415,8 +415,6 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   .dash-kompakt { padding: .8rem 1rem; }
   .dash-kompakt .stat-value { font-size: 1.2rem; }
   .wohnung-auswahl { flex-wrap: wrap; }
-  .dash-tabs { width: auto; margin: 0; flex-wrap: wrap; gap: .3rem; }
-  .dash-tabs button { margin: 0; padding: .3rem .8rem; }
   /* Timeline on a phone: label only every third month and the selected one, all dots stay tappable. */
   @media (max-width: 480px) {
     .zeit .zeit-p b { display: none; }
@@ -591,6 +589,11 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   }
   header nav [aria-current="page"] { font-weight: 700; }
   header nav details.dropdown { margin-bottom: 0; }
+  /* Open the menu to the left, so it stays inside the window (no dir="rtl", it moves the "?" of "Wie wird gerechnet?"). */
+  header nav details.dropdown ul { left: auto; right: 0; }
+  /* Login/logout entry set apart at the end of the menu: divider above, muted text. */
+  header nav details.dropdown li.nav-konto { border-top: 1px solid var(--border); margin-top: .3rem; padding-top: .3rem; }
+  header nav details.dropdown li.nav-konto a { color: var(--muted); }
   .theme-btn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; margin: 0; border: none; background: transparent; border-radius: 6px; color: var(--muted); cursor: pointer; }
   .theme-btn:hover { background: var(--bg); }
   .theme-btn svg { width: 16px; height: 16px; }
