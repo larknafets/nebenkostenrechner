@@ -1,6 +1,6 @@
 {{define "content"}}
+<div class="liste-schmal">
 <h1>{{if .IsEdit}}Ablesung korrigieren{{else}}Ablesung erfassen{{end}}</h1>
-{{template "nav" .}}
 
 {{if .NoPeriods}}
 <form method="post" action="{{.Base}}/ablesungen/import" enctype="multipart/form-data" data-fehler-overlay class="panel" style="margin-bottom:1rem">
@@ -13,7 +13,7 @@
 {{end}}
 
 <form method="post" action="{{.FormAction}}" class="panel" data-fehler-overlay>
-  <div style="display:flex; gap:1rem;">
+  <div class="form-zeile">
     <div class="field" style="max-width:220px">
       <label>Ablesedatum</label>
       <input type="date" name="reading_date" id="reading_date" value="{{.ReadingDate}}" required {{if .HasPrevious}}data-prev-date="{{.PreviousReadingDate}}"{{end}}>
@@ -226,4 +226,5 @@
     updateProgress();
   })();
 </script>
+</div>
 {{end}}

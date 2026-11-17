@@ -18,13 +18,14 @@
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nebenkostenrechner</title>
+<link rel="stylesheet" href="{{.Base}}{{picoPfad}}">
 <style>{{template "styles"}}</style>
 </head>
 <body>
-<div class="theme-toggle no-print">
-  <button type="button" id="theme-toggle-btn" class="theme-btn"></button>
-</div>
-<div class="app">
+<header class="no-print"><div class="container">
+{{template "nav" .}}
+</div></header>
+<div class="app container">
   {{template "content" .}}
 </div>
 <script>
@@ -216,14 +217,28 @@
      crumbBack, where every page showed the same 4 links regardless of
      where you were). .Aktuell is one of "dashboard"/"ablesungen"/
      "fixkosten"/"stammdaten"/"berechnungslogik", set by each handler. */}}
+{{define "navEintraege"}}<li><a href="{{.Base}}/dashboard"{{if eq .Aktuell "dashboard"}} aria-current="page"{{end}}>Dashboard</a></li>
+{{if .KannAblesungenAnsehen}}<li><a href="{{.Base}}/ablesungen"{{if or (eq .Aktuell "ablesungen") (eq .Aktuell "ablesungen-detail")}} aria-current="page"{{end}}>Ablesungen</a></li>{{end}}
+{{if .KannFixkostenAnsehen}}<li><a href="{{.Base}}/fixkosten"{{if or (eq .Aktuell "fixkosten") (eq .Aktuell "fixkosten-detail")}} aria-current="page"{{end}}>Fixkosten</a></li>{{end}}
+{{if .KannSonderkostenAnsehen}}<li><a href="{{.Base}}/sonderkosten"{{if eq .Aktuell "sonderkosten"}} aria-current="page"{{end}}>Sonderkosten</a></li>{{end}}
+{{if .KannStammdatenAnsehen}}<li><a href="{{.Base}}/stammdaten"{{if eq .Aktuell "stammdaten"}} aria-current="page"{{end}}>Stammdaten</a></li>{{end}}
+{{if .Vermieter}}<li><a href="{{.Base}}/abrechnung"{{if eq .Aktuell "abrechnung"}} aria-current="page"{{end}}>Abrechnung</a></li>{{end}}
+<li><a href="{{.Base}}/berechnungslogik"{{if eq .Aktuell "berechnungslogik"}} aria-current="page"{{end}}>Wie wird gerechnet?</a></li>{{end}}
 {{define "nav"}}{{if .IsDemoSession}}<div class="demo-banner no-print">Demo-Modus: geteilte Vorführumgebung mit Testdaten - Änderungen wirken sich nie auf echte Daten aus.</div>{{end}}
-<p class="muted no-print">{{if eq .Aktuell "dashboard"}}<strong>Dashboard</strong>{{else}}<a href="{{.Base}}/dashboard">Dashboard</a>{{end}} · {{if .KannAblesungenAnsehen}}{{if eq .Aktuell "ablesungen"}}<strong>Ablesungen</strong>{{else if eq .Aktuell "ablesungen-detail"}}<a href="{{.Base}}/ablesungen"><strong>Ablesungen</strong></a>{{else}}<a href="{{.Base}}/ablesungen">Ablesungen</a>{{end}} · {{end}}{{if .KannFixkostenAnsehen}}{{if eq .Aktuell "fixkosten"}}<strong>Fixkosten</strong>{{else if eq .Aktuell "fixkosten-detail"}}<a href="{{.Base}}/fixkosten"><strong>Fixkosten</strong></a>{{else}}<a href="{{.Base}}/fixkosten">Fixkosten</a>{{end}} · {{end}}{{if .KannSonderkostenAnsehen}}{{if eq .Aktuell "sonderkosten"}}<strong>Sonderkosten</strong>{{else}}<a href="{{.Base}}/sonderkosten">Sonderkosten</a>{{end}} · {{end}}{{if .KannStammdatenAnsehen}}{{if eq .Aktuell "stammdaten"}}<strong>Stammdaten</strong>{{else}}<a href="{{.Base}}/stammdaten">Stammdaten</a>{{end}} · {{end}}{{if .Vermieter}}{{if eq .Aktuell "abrechnung"}}<strong>Abrechnung</strong>{{else}}<a href="{{.Base}}/abrechnung">Abrechnung</a>{{end}} · {{end}}{{if eq .Aktuell "berechnungslogik"}}<strong>Wie wird gerechnet?</strong>{{else}}<a href="{{.Base}}/berechnungslogik">Wie wird gerechnet?</a>{{end}} · {{if .ShowLogoutEntry}}<a href="#" id="logout-link">Abmelden</a>{{end}}{{if .ShowLoginEntry}}{{if .ShowLogoutEntry}} · {{end}}<a href="#" id="login-open">Anmelden</a>{{end}}</p>
+<nav>
+<ul><li><strong>Nebenkostenrechner</strong></li></ul>
+<ul class="nav-wide">{{template "navEintraege" .}}{{if .ShowLogoutEntry}}<li><a href="#" class="logout-link" id="logout-link">Abmelden</a></li>{{end}}{{if .ShowLoginEntry}}<li><a href="#" class="login-open" id="login-open">Anmelden</a></li>{{end}}</ul>
+<ul class="nav-narrow"><li><details class="dropdown"><summary>Menü</summary><ul>{{template "navEintraege" .}}{{if .ShowLogoutEntry}}<li class="nav-konto"><a href="#" class="logout-link"><svg class="nav-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2.5H3.5a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1H6M10.5 11l3-3-3-3M13.5 8H6.5"/></svg> Abmelden</a></li>{{end}}{{if .ShowLoginEntry}}<li class="nav-konto"><a href="#" class="login-open"><svg class="nav-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.5h2.5a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H10M5.5 11l-3-3 3-3M2.5 8h7"/></svg> Anmelden</a></li>{{end}}</ul></details></li></ul>
+<ul><li><button type="button" id="theme-toggle-btn" class="theme-btn"></button></li></ul>
+</nav>
 {{if .ShowLogoutEntry}}
 <form method="post" action="{{.Base}}/logout" id="logout-form" hidden></form>
 <script>
-document.getElementById("logout-link").addEventListener("click", function (e) {
-  e.preventDefault();
-  document.getElementById("logout-form").submit();
+document.querySelectorAll(".logout-link").forEach(function (a) {
+  a.addEventListener("click", function (e) {
+    e.preventDefault();
+    document.getElementById("logout-form").submit();
+  });
 });
 </script>
 {{end}}
@@ -248,7 +263,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
 <script>
 (function () {
   var overlay = document.getElementById("login-overlay");
-  var openLink = document.getElementById("login-open");
+  var openLinks = document.querySelectorAll(".login-open");
   var cancelBtn = document.getElementById("login-cancel");
   var errorBox = document.getElementById("login-error");
   var nextField = document.getElementById("login-next");
@@ -289,7 +304,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
     overlay.hidden = true;
   }
 
-  openLink.addEventListener("click", function (e) { e.preventDefault(); open(); });
+  openLinks.forEach(function (a) { a.addEventListener("click", function (e) { e.preventDefault(); open(); }); });
   cancelBtn.addEventListener("click", close);
   overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !overlay.hidden) close(); });
@@ -310,10 +325,29 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
 {{/* styles is the full shared CSS (badges, Kategorie-/Legend-Farben,
      stat-card layout, ...), split out of "layout". */}}
 {{define "styles"}}
+  /* Pico (loaded before) provides elements, colours and light/dark via data-theme.
+     Our names are aliases for the Pico variables. */
+  :root {
+    --bg: var(--pico-background-color); --panel: var(--pico-card-background-color);
+    --border: var(--pico-muted-border-color); --text: var(--pico-color);
+    --muted: var(--pico-muted-color); --accent: var(--pico-primary);
+    --accent-soft: var(--pico-primary-focus);
+  }
+  /* Compact set: Pico would otherwise scale the font up to 125 %. */
+  :root {
+    --pico-font-size: 100%; --pico-line-height: 1.4; --pico-spacing: .7rem;
+    --pico-form-element-spacing-vertical: .4rem; --pico-form-element-spacing-horizontal: .7rem;
+    --pico-border-radius: .35rem;
+  }
+  @media (min-width: 768px) { :root { --pico-font-size: 87.5%; } }
+  @media print { :root { --pico-font-size: 100%; } }
+  h1 { font-size: 1.6rem; }
+  h2 { font-size: 1.3rem; }
+  h3 { font-size: 1.1rem; }
+  button, [role=button], input:not([type=checkbox], [type=radio]), select, textarea { font-size: 1rem; }
   :root {
     color-scheme: light;
-    --bg: #f4f5f7; --panel: #ffffff; --border: #e0e2e7; --text: #1c1e21;
-    --muted: #6b7280; --accent: #2563eb; --accent-soft: #eef2ff; --success: #16a34a;
+    --success: #16a34a;
     --danger: #b91c1c; --warning: #b45309;
     --cat-wallbox: #14b8a6; --cat-strom: #f59e0b; --cat-heizung: #ef4444; --cat-wasser: #3b82f6; --cat-fix: #8b5cf6;
     --logik-wohneinheit: #8b5cf6; --logik-flurstueck: #22c55e; --logik-qm: #ec4899; --logik-personen: #06b6d4;
@@ -324,8 +358,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       color-scheme: dark;
-      --bg: #14161a; --panel: #1c1f26; --border: #2e323c; --text: #e8eaed;
-      --muted: #9aa1ac; --accent: #5b9bf5; --accent-soft: #1e2a3f; --success: #16a34a;
+      --success: #16a34a;
       --danger: #f87171; --warning: #fbbf24;
       --cat-wallbox: #2dd4bf; --cat-strom: #fbbf24; --cat-heizung: #f87171; --cat-wasser: #60a5fa; --cat-fix: #a78bfa;
       --logik-wohneinheit: #a78bfa; --logik-flurstueck: #4ade80; --logik-qm: #f472b6; --logik-personen: #22d3ee;
@@ -335,38 +368,37 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
-    --bg: #14161a; --panel: #1c1f26; --border: #2e323c; --text: #e8eaed;
-    --muted: #9aa1ac; --accent: #5b9bf5; --accent-soft: #1e2a3f; --success: #16a34a;
+    --success: #16a34a;
     --danger: #f87171; --warning: #fbbf24;
     --cat-wallbox: #2dd4bf; --cat-strom: #fbbf24; --cat-heizung: #f87171; --cat-wasser: #60a5fa; --cat-fix: #a78bfa;
     --logik-wohneinheit: #a78bfa; --logik-flurstueck: #4ade80; --logik-qm: #f472b6; --logik-personen: #22d3ee;
     --logik-wohnung1: #fbbf24; --logik-wohnung2: #818cf8; --logik-sonderkosten: #9ca3af;
     --tooltip-bg: #e8eaed; --tooltip-text: #14161a;
   }
-  * { box-sizing: border-box; }
-  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
-  a { color: var(--accent); }
-  h1, h2, h3 { margin: 0 0 .5rem; }
-  .app { max-width: 700px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
+  /* Column width comes from Pico .container, only the vertical padding is set here. */
+  .app { padding-block: 1.5rem 3rem; }
+  /* Narrow column for lists, forms, wizard, Stammdaten and text pages; wide tables scroll inside their frame. */
+  .liste-schmal { max-width: 720px; margin-inline: auto; }
+  .liste-schmal .panel:has(table) { overflow-x: auto; }
   /* Screen-only controls and notes: hidden in print and PDF. */
   @media print { .no-print { display: none !important; } }
-  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; box-shadow: var(--pico-card-box-shadow); }
   .muted { color: var(--muted); font-size: .85rem; }
-  label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: .25rem; }
-  input[type=number], input[type=date], input[type=password], select { width: 100%; padding: .5rem .6rem; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
-  input:disabled { opacity: .6; cursor: not-allowed; }
   .demo-banner { background: var(--warning); color: #1a1200; font-size: .85rem; font-weight: 600; text-align: center; padding: .5rem 1rem; margin-bottom: 1rem; border-radius: 8px; }
-  .login-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .login-backdrop { position: fixed; inset: 0; background: var(--pico-modal-overlay-background-color); display: flex; align-items: center; justify-content: center; z-index: 100; }
   .login-backdrop[hidden] { display: none; }
-  .login-modal { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; width: 320px; max-width: 90vw; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
-  .login-error { color: var(--danger); font-size: .8rem; margin-top: .3rem; }
-  .fehler-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 200; }
+  .login-modal { background: var(--panel); border: 1px solid var(--border); border-radius: var(--pico-border-radius); padding: 1.5rem; width: 320px; max-width: 90vw; box-shadow: var(--pico-dropdown-box-shadow); }
+  .login-error { color: var(--danger); font-size: .8rem; margin: .3rem 0 .6rem; }
+  .fehler-backdrop { position: fixed; inset: 0; background: var(--pico-modal-overlay-background-color); display: flex; align-items: center; justify-content: center; z-index: 200; }
   .fehler-backdrop[hidden] { display: none; }
-  .fehler-modal { background: var(--panel); border: 1px solid var(--border); border-top: 4px solid var(--danger); border-radius: 10px; padding: 1.25rem 1.5rem; width: 420px; max-width: 92vw; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+  .fehler-modal { background: var(--panel); border: 1px solid var(--border); border-top: 4px solid var(--danger); border-radius: var(--pico-border-radius); padding: 1.25rem 1.5rem; width: 420px; max-width: 92vw; box-shadow: var(--pico-dropdown-box-shadow); }
   .fehler-modal h3 { margin: 0 0 .6rem; color: var(--danger); }
   .fehler-modal ul { margin: 0 0 0 1.1rem; padding: 0; }
-  .fehler-feld { border-color: var(--danger) !important; outline: 2px solid var(--danger); }
+  /* The overlay sets aria-invalid together with the class, Pico draws that
+     border: no second border (outline) on top of it. */
+  .fehler-feld { border-color: var(--danger) !important; }
   .field { margin-bottom: var(--feld-abstand); }
+  .field input, .field select, .field textarea { margin-bottom: 0; }
   .select-row { display: flex; justify-content: space-between; align-items: flex-end; gap: .75rem; flex-wrap: wrap; }
   .select-row .button { margin-bottom: var(--feld-abstand); }
   .radio-options { display: flex; gap: 1.25rem; flex-wrap: wrap; }
@@ -377,9 +409,28 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   .grid-2 { grid-template-columns: 1fr 1fr; }
   .grid-3 { grid-template-columns: repeat(3, 1fr); }
   .grid-4 { grid-template-columns: repeat(4, 1fr); }
-  .jahressummen-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-  button, a.button { display: inline-block; border-radius: 6px; padding: .6rem 1.1rem; font-size: .9rem; cursor: pointer; text-decoration: none; line-height: 1.2; }
-  button:disabled { opacity: .4; cursor: not-allowed; }
+  /* Dashboard: Wohnungen as large cards, house cards below, more compact. */
+  .dash-wohnungen { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+  .dash-haus { grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); margin-top: 1rem; }
+  .dash-kompakt { padding: .8rem 1rem; }
+  .dash-kompakt .stat-value { font-size: 1.2rem; }
+  .wohnung-auswahl { flex-wrap: wrap; }
+  /* Timeline on a phone: label only every third month and the selected one, all dots stay tappable. */
+  @media (max-width: 480px) {
+    .zeit .zeit-p b { display: none; }
+    .zeit .zeit-p:nth-child(3n+1) b, .zeit .zeit-p.on b { display: block; }
+  }
+  /* Pico draws the buttons. The variants are small classes over Pico variables
+     (.secondary comes from Pico itself). */
+  /* The hover/focus/active selectors keep the colour: Pico would otherwise paint them blue. */
+  button.success, a.button.success, .success:is(:hover, :focus, :active) { --pico-background-color: var(--success); --pico-border-color: var(--success); --pico-color: #fff; }
+  button.danger, a.button.danger, .danger:is(:hover, :focus, :active) { --pico-background-color: transparent; --pico-border-color: var(--danger); --pico-color: var(--danger); }
+  .success:is(:hover, :focus, :active) { filter: brightness(.9); }
+  .danger:is(:hover, :focus, :active) { box-shadow: inset 0 0 0 1px var(--danger); }
+  .form-zeile { display: flex; flex-wrap: wrap; gap: 0 1rem; }
+  .form-zeile > .field { flex: 1 1 10rem; }
+  .btn-row button, .wizard-actions button, .select-row button { width: auto; margin-bottom: 0; }
+  .icon-btn, .theme-btn, .mode-toggle button { margin-bottom: 0; }
   /* Quadratischer Symbolbutton (z. B. Pfeile der Positionsreihenfolge). */
   .icon-btn { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--accent); }
   .icon-btn:hover:not(:disabled) { background: var(--accent-soft); }
@@ -393,10 +444,6 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   .reihenfolge-nr { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: .75rem; font-weight: 700; }
   .reihenfolge-label { flex: 1; min-width: 0; }
   .reihenfolge-aktionen { display: flex; gap: .35rem; margin: 0; }
-  button.primary, a.button.primary { background: var(--accent); color: white; border: none; }
-  button.secondary, a.button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
-  button.success, a.button.success { background: var(--success); color: white; border: none; }
-  button.danger, a.button.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
   .btn-row { display: flex; gap: .75rem; justify-content: center; align-items: center; flex-wrap: wrap; margin-top: 1.25rem; }
   .wizard-actions { display: flex; justify-content: space-between; margin-top: 1.25rem; }
   .c-steps { display: flex; gap: .5rem; margin-bottom: 1.25rem; }
@@ -405,8 +452,6 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   .c-pane { display: none; }
   .c-pane.active { display: block; }
   .formula { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: .75rem 1rem; font-size: .85rem; overflow-x: auto; white-space: pre; }
-  table.letzte { width: 100%; border-collapse: collapse; font-size: .9rem; }
-  table.letzte th, table.letzte td { padding: .4rem .5rem; text-align: left; border-bottom: 1px solid var(--border); }
   .badge { display: inline-block; background: var(--accent-soft); color: var(--accent); font-size: .75rem; padding: .15rem .5rem; border-radius: 999px; }
   .badge-icon { display: inline-flex; align-items: center; gap: .25rem; }
   .badge-icon svg { width: 12px; height: 12px; fill: currentColor; flex-shrink: 0; }
@@ -434,8 +479,7 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   .logik-sonderkosten { background: var(--logik-sonderkosten); }
   .stat-kategorien { margin-top: .4rem; display: flex; flex-wrap: wrap; gap: .1rem .75rem; }
   .stat-kategorien span { font-weight: normal; }
-  .berechtigungen { width: 100%; border-collapse: collapse; margin: .5rem 0; }
-  .berechtigungen th, .berechtigungen td { padding: .35rem .5rem; border-bottom: 1px solid var(--border); text-align: center; font-size: .9rem; }
+  .berechtigungen th, .berechtigungen td { text-align: center; font-size: .9rem; }
   .berechtigungen th:first-child, .berechtigungen td:first-child { text-align: left; }
   .stat-wallbox { margin-top: .7rem; padding-top: .7rem; border-top: 1px solid var(--border); }
 
@@ -525,22 +569,37 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
   .value-label.nachzahlung { color: var(--danger); }
   .value-label.ausgeglichen { color: var(--muted); font-weight: normal; }
 
-  .footer-version { position: fixed; bottom: .85rem; right: 1rem; display: flex; align-items: center; gap: .4rem; color: var(--muted); font-size: .78rem; z-index: 40; }
-  .footer-version a { color: var(--muted); display: flex; align-items: center; }
+  /* Footer in the flow. The links have no display, so Pico's [hidden] hides the update dot. */
+  .footer-version { display: flex; justify-content: flex-end; align-items: center; gap: .4rem; margin-top: 2rem; color: var(--muted); font-size: .78rem; }
+  .footer-version a { color: var(--muted); }
   .footer-version a:hover { color: var(--text); }
+  .footer-version svg { vertical-align: middle; }
   .footer-version span { cursor: default; border-bottom: 1px dotted var(--border); }
   .footer-version a.update-dot { color: var(--success); text-decoration: none; font-size: .7rem; line-height: 1; }
-  /* The generic ".footer-version a { display: flex }" above would otherwise
-     override the hidden attribute and show the dot without an update. */
-  .footer-version a.update-dot[hidden] { display: none; }
 
-  .theme-toggle { position: fixed; top: .75rem; right: 1rem; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: .25rem; z-index: 40; }
-  .theme-btn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: none; background: transparent; border-radius: 6px; color: var(--muted); cursor: pointer; }
+  /* Header: brand left, menu and switch right. Below 1280 px (the Pico column is narrower than all entries there) the menu collapses (details, no JavaScript). */
+  header nav { align-items: center; }
+  header nav ul:first-of-type { margin-right: auto; }
+  header .nav-wide { flex-wrap: wrap; justify-content: flex-end; }
+  header .nav-narrow { display: block; }
+  header .nav-wide { display: none; }
+  @media (min-width: 1280px) {
+    header .nav-wide { display: flex; }
+    header .nav-narrow { display: none; }
+  }
+  header nav [aria-current="page"] { font-weight: 700; }
+  header nav details.dropdown { margin-bottom: 0; }
+  /* Open the menu to the left, so it stays inside the window (no dir="rtl", it moves the "?" of "Wie wird gerechnet?"). */
+  header nav details.dropdown ul { left: auto; right: 0; }
+  /* Login/logout entry set apart at the end of the menu: divider above, muted text. */
+  header nav details.dropdown li.nav-konto { border-top: 1px solid var(--border); margin-top: .3rem; padding-top: .3rem; }
+  header nav details.dropdown li.nav-konto a { color: var(--muted); }
+  .nav-icon { vertical-align: -.15em; margin-right: .25rem; }
+  .theme-btn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; margin: 0; border: none; background: transparent; border-radius: 6px; color: var(--muted); cursor: pointer; }
   .theme-btn:hover { background: var(--bg); }
   .theme-btn svg { width: 16px; height: 16px; }
 
   @media (max-width: 480px) {
-    .app { padding: 1rem 1rem 3rem; }
     .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
     .c-steps { flex-wrap: wrap; }
     .c-step-dot { flex: 1 1 45%; font-size: .75rem; }
@@ -552,7 +611,6 @@ document.getElementById("logout-link").addEventListener("click", function (e) {
     .verbrauch-liste { order: 3; flex-basis: 100%; }
     .hide-mobil { display: none; }
     .badge-umbruch { display: block; width: fit-content; margin-top: .2rem; }
-    table.letzte th, table.letzte td { padding: .4rem .3rem; }
   }
   .nur-mobil { display: none; }
   @media (max-width: 480px) { .nur-mobil { display: block; font-size: .75rem; color: var(--muted); } }

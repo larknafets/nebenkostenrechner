@@ -1,11 +1,9 @@
 {{define "content"}}
+<div class="liste-schmal">
 <h1>Stammdaten</h1>
-{{template "nav" .}}
 
 <style>
-  .stammdaten-form { display: grid; gap: 1rem; }
-  .stammdaten-form input[type=text], .stammdaten-form textarea { width: 100%; padding: .5rem .6rem; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; font-family: inherit; }
-</style>
+  .stammdaten-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }</style>
 <form method="post" action="{{.Base}}/stammdaten" class="dirty-form stammdaten-form" data-fehler-overlay>
   <div class="grid grid-2">
     {{range .Apartments}}
@@ -130,6 +128,7 @@
     });
   });
 </script>
+</div>
 {{end}}
 
 {{define "pfeil-hoch"}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>{{end}}

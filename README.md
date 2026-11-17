@@ -65,6 +65,9 @@ Die Zählerverschachtelung und die PV-Verrechnung zeigt [docs/pv-verrechnung.md]
 
 Go, SQLite (`modernc.org/sqlite`, `database/sql`) und serverseitig gerenderte `html/template` mit etwas Vanilla-JS.
 Multi-Arch-Docker-Image (`linux/amd64`, `linux/arm64`, `linux/arm/v7`), die Datenbank liegt unter `/data`.
+Das Aussehen kommt von [Pico CSS](https://picocss.com) 2.1.1, eingebettet im Binary (kein CDN, kein Build-Schritt).
+
+**Browser:** Chrome und Edge ab 105, Safari ab 15.4, Firefox ab 121 (Pico nutzt `:has()`).
 
 ## Installation
 

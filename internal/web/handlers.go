@@ -67,6 +67,7 @@ func kategorieIcon(label string) template.HTML {
 }
 
 var templateFuncs = template.FuncMap{
+	"picoPfad":           func() string { return picoPath },
 	"updateURL":          updateURL,
 	"de":                 formatDecimalDE,
 	"de0":                formatDecimalDE0,

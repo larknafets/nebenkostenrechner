@@ -43,6 +43,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Verbesserungen
 
+- Neuer Look auf Pico CSS: Kopfnavigation mit Menü am Handy, Hell/Dunkel-Umschalter als Symbol, Versionsnummer im Seitenfuß, Dashboard mit zwei Kartenreihen, kompaktere Formulare, Listen und Wizard, Abrechnung und Druck unverändert (#485, #486, #487, #488, #489, #490, #491)
+
 ## Fehlerkorrekturen
 
 ## Wartung

@@ -1,6 +1,6 @@
 {{define "content"}}
+<div class="liste-schmal">
 <h1>{{if .IsEdit}}Fixkosteneingabe korrigieren{{else}}Fixkosteneingabe erfassen{{end}}</h1>
-{{template "nav" .}}
 
 {{if .NoEingaben}}
 <form method="post" action="{{.Base}}/fixkosten/import" enctype="multipart/form-data" data-fehler-overlay class="panel" style="margin-bottom:1rem">
@@ -77,7 +77,8 @@
 
   <div class="btn-row">
     <button type="submit" class="primary">Speichern</button>
-    <a href="{{.Base}}/fixkosten" class="button secondary">Abbrechen</a>
+    <a href="{{.Base}}/fixkosten" role="button" class="button secondary">Abbrechen</a>
   </div>
 </form>
+</div>
 {{end}}
