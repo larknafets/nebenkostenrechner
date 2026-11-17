@@ -1,8 +1,9 @@
 {{define "content"}}
+<div class="form-schmal">
 <h1>Stammdaten</h1>
 
 <style>
-  .stammdaten-form { display: grid; gap: 1rem; }</style>
+  .stammdaten-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }</style>
 <form method="post" action="{{.Base}}/stammdaten" class="dirty-form stammdaten-form" data-fehler-overlay>
   <div class="grid grid-2">
     {{range .Apartments}}
@@ -127,6 +128,7 @@
     });
   });
 </script>
+</div>
 {{end}}
 
 {{define "pfeil-hoch"}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>{{end}}

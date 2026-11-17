@@ -12,7 +12,7 @@
     {{end}}
   </select>
 </div>
-{{if .Vermieter}}<a href="{{.Base}}/fixkosten/{{.Eingabe.ID}}/bearbeiten" class="button secondary">Eingabe korrigieren</a>{{end}}
+{{if .Vermieter}}<a href="{{.Base}}/fixkosten/{{.Eingabe.ID}}/bearbeiten" role="button" class="button secondary">Eingabe korrigieren</a>{{end}}
 </div>
 
 <div class="panel">
@@ -50,7 +50,7 @@
 
 {{if .Vermieter}}
 <div class="btn-row">
-  <a href="{{.Base}}/fixkosten/neu" class="button success">Neue Fixkosteneingabe</a>
+  <a href="{{.Base}}/fixkosten/neu" role="button" class="button success">Neue Fixkosteneingabe</a>
   <form method="post" action="{{.Base}}/fixkosten/{{.Eingabe.ID}}/loeschen" data-bestaetigen-titel="Fixkosteneingabe löschen?" data-bestaetigen="Fixkosteneingabe {{.MonatLabel}} wirklich löschen?"{{if .LoeschenFrage}} data-bestaetigen-zusatz="{{.LoeschenFrage}}"{{end}}>
     <button type="submit" class="danger">Fixkosteneingabe löschen</button>
   </form>
