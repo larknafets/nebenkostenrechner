@@ -8,7 +8,7 @@ import { join } from 'node:path';
 
 const BASE = process.env.BASE || 'http://localhost:18095';
 const OUT = process.env.OUT;
-const WIDTH = 760;
+const WIDTH = 1280;
 const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 mkdirSync(OUT, { recursive: true });
 
