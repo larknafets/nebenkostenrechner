@@ -377,6 +377,9 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   }
   /* Breite der Spalte: Pico .container, hier nur der Abstand nach oben/unten. */
   .app { padding-block: 1.5rem 3rem; }
+  /* Narrow column for lists, Stammdaten and text pages; wide tables scroll inside their frame. */
+  .liste-schmal { max-width: 720px; margin-inline: auto; }
+  .liste-schmal .panel:has(table) { overflow-x: auto; }
   /* Screen-only controls and notes: hidden in print and PDF. */
   @media print { .no-print { display: none !important; } }
   .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; box-shadow: var(--pico-card-box-shadow); }
@@ -416,7 +419,6 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   .danger:is(:hover, :focus, :active) { --pico-background-color: transparent; --pico-border-color: var(--danger); --pico-color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); }
   /* Schmale Seite für Formulare, Wizard und Stammdaten. */
   .form-schmal { max-width: 720px; margin-inline: auto; }
-  .form-schmal .grid > * { min-width: 0; }
   .form-zeile { display: flex; flex-wrap: wrap; gap: 0 1rem; }
   .form-zeile > .field { flex: 1 1 10rem; }
   .btn-row button, .wizard-actions button, .select-row button { width: auto; margin-bottom: 0; }
