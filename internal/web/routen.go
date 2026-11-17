@@ -21,9 +21,9 @@ type route struct {
 func routen(z *Zugang, version, buildDate string) []route {
 	return []route{
 		{http.MethodGet, "/", Offen, handleIndex()},
-		// Offen: logging in and out is for the visitor who has no role yet.
 		// Offen: the stylesheet is needed before anyone has logged in.
 		{http.MethodGet, picoPath, Offen, handlePicoCSS()},
+		// Offen: logging in and out is for the visitor who has no role yet.
 		{http.MethodPost, "/login", Offen, z.login.HandleLogin()},
 		{http.MethodPost, "/logout", Offen, z.login.HandleLogout()},
 

@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// Listen, Stammdaten and Textseiten sit in the narrow column (Ticket #489).
+// Lists, Stammdaten and text pages sit in the narrow column (Ticket #489).
 func TestListenseiten_SchmaleSpalte(t *testing.T) {
 	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
 	cookies := demoLoginCookies(t, mux)

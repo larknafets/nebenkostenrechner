@@ -8,8 +8,8 @@ import (
 	"github.com/larknafets/nebenkostenrechner/internal/store"
 )
 
-// Wohnungskarten und Hauskarten stehen in getrennten Reihen, die Monatsübersicht
-// wechselt per Reiter (Buttons in einer Gruppe) statt per Auswahlfeld.
+// Wohnung cards and house cards sit in separate rows, the Monatsübersicht
+// switches by tabs (buttons in a group) instead of a select box.
 func TestDashboard_ReihenUndReiter(t *testing.T) {
 	db := openTestDB(t)
 	if err := store.SeedDemoData(db, time.Date(2026, time.October, 15, 0, 0, 0, 0, time.UTC)); err != nil {
@@ -17,12 +17,12 @@ func TestDashboard_ReihenUndReiter(t *testing.T) {
 	}
 	body := dashboardHTML(t, db)
 
-	wohnungen, rest, ok := strings.Cut(body, `class="grid dash-reihe dash-haus"`)
+	wohnungen, rest, ok := strings.Cut(body, `class="grid dash-haus"`)
 	if !ok {
 		t.Fatal("Reihe der Hauskarten fehlt")
 	}
 	haus, _, _ := strings.Cut(rest, `class="btn-row"`)
-	if !strings.Contains(wohnungen, `class="grid dash-reihe dash-wohnungen"`) {
+	if !strings.Contains(wohnungen, `class="grid dash-wohnungen"`) {
 		t.Error("Reihe der Wohnungskarten fehlt vor den Hauskarten")
 	}
 	for _, s := range []string{"<strong>Wohnung 1</strong>", "<strong>Wohnung 2</strong>"} {

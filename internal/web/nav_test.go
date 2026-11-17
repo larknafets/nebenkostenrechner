@@ -132,7 +132,7 @@ func TestFooterVersion_UpdateDotHidden(t *testing.T) {
 	if !strings.Contains(tag, "hidden") {
 		t.Errorf("Update-Punkt ohne hidden, obwohl kein Update bekannt ist: %s", tag)
 	}
-	// Pico's [hidden] rule keeps the dot away, as long as no rule of ours sets display on the footer links.
+	// Pico's [hidden] rule hides the dot, as long as none of our rules sets display on the footer links.
 	if strings.Contains(body, ".footer-version a { display") || strings.Contains(body, ".footer-version a { color: var(--muted); display") {
 		t.Error("das Stylesheet setzt display auf Links im Seitenfuß, hidden würde überschrieben")
 	}

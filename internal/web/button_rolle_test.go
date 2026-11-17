@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// Pico stylt einen Link nur als Button, wenn er role="button" trägt.
+// Pico only styles a link as a button when it carries role="button".
 var linkImButtonLook = regexp.MustCompile(`<a [^>]*class="button[^"]*"[^>]*>`)
 
 func TestLinksImButtonLookTragenRoleButton(t *testing.T) {

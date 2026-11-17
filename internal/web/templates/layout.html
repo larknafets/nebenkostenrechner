@@ -325,15 +325,15 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
 {{/* styles is the full shared CSS (badges, Kategorie-/Legend-Farben,
      stat-card layout, ...), split out of "layout". */}}
 {{define "styles"}}
-  /* Pico (davor geladen) liefert Elemente, Farben und Hell/Dunkel über data-theme.
-     Unsere Namen sind Aliasse auf die Pico-Variablen. */
+  /* Pico (loaded before) provides elements, colours and light/dark via data-theme.
+     Our names are aliases for the Pico variables. */
   :root {
     --bg: var(--pico-background-color); --panel: var(--pico-card-background-color);
     --border: var(--pico-muted-border-color); --text: var(--pico-color);
     --muted: var(--pico-muted-color); --accent: var(--pico-primary);
     --accent-soft: var(--pico-primary-focus);
   }
-  /* Kompakt-Set: Pico skaliert die Schrift sonst bis 125 %. */
+  /* Compact set: Pico would otherwise scale the font up to 125 %. */
   :root {
     --pico-font-size: 100%; --pico-line-height: 1.4; --pico-spacing: .7rem;
     --pico-form-element-spacing-vertical: .4rem; --pico-form-element-spacing-horizontal: .7rem;
@@ -375,7 +375,7 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
     --logik-wohnung1: #fbbf24; --logik-wohnung2: #818cf8; --logik-sonderkosten: #9ca3af;
     --tooltip-bg: #e8eaed; --tooltip-text: #14161a;
   }
-  /* Breite der Spalte: Pico .container, hier nur der Abstand nach oben/unten. */
+  /* Column width comes from Pico .container, only the vertical padding is set here. */
   .app { padding-block: 1.5rem 3rem; }
   /* Narrow column for lists, forms, wizard, Stammdaten and text pages; wide tables scroll inside their frame. */
   .liste-schmal { max-width: 720px; margin-inline: auto; }
@@ -394,8 +394,8 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   .fehler-modal { background: var(--panel); border: 1px solid var(--border); border-top: 4px solid var(--danger); border-radius: var(--pico-border-radius); padding: 1.25rem 1.5rem; width: 420px; max-width: 92vw; box-shadow: var(--pico-dropdown-box-shadow); }
   .fehler-modal h3 { margin: 0 0 .6rem; color: var(--danger); }
   .fehler-modal ul { margin: 0 0 0 1.1rem; padding: 0; }
-  /* Das Overlay setzt zusammen mit der Klasse aria-invalid, dessen Rahmen
-     zeichnet Pico: kein zweiter Rand (Outline) darüber. */
+  /* The overlay sets aria-invalid together with the class, Pico draws that
+     border: no second border (outline) on top of it. */
   .fehler-feld { border-color: var(--danger) !important; }
   .field { margin-bottom: var(--feld-abstand); }
   .field input, .field select, .field textarea { margin-bottom: 0; }
@@ -409,7 +409,7 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   .grid-2 { grid-template-columns: 1fr 1fr; }
   .grid-3 { grid-template-columns: repeat(3, 1fr); }
   .grid-4 { grid-template-columns: repeat(4, 1fr); }
-  /* Dashboard: Wohnungen als große Karten, Hauskarten darunter kompakter. */
+  /* Dashboard: Wohnungen as large cards, house cards below, more compact. */
   .dash-wohnungen { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
   .dash-haus { grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); margin-top: 1rem; }
   .dash-kompakt { padding: .8rem 1rem; }
@@ -417,18 +417,18 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   .wohnung-auswahl { flex-wrap: wrap; }
   .dash-tabs { width: auto; margin: 0; flex-wrap: wrap; gap: .3rem; }
   .dash-tabs button { margin: 0; padding: .3rem .8rem; }
-  /* Zeitleiste am Handy: Beschriftung nur jeder dritte Monat und der gewählte, die Punkte bleiben alle antippbar. */
+  /* Timeline on a phone: label only every third month and the selected one, all dots stay tappable. */
   @media (max-width: 480px) {
     .zeit .zeit-p b { display: none; }
     .zeit .zeit-p:nth-child(3n+1) b, .zeit .zeit-p.on b { display: block; }
   }
-  /* Buttons zeichnet Pico. Die Varianten sind kleine Klassen über Pico-Variablen
-     (.secondary kommt von Pico selbst). */
-  button.success, a.button.success { --pico-background-color: var(--success); --pico-border-color: var(--success); --pico-color: #fff; }
-  button.danger, a.button.danger { --pico-background-color: transparent; --pico-border-color: var(--danger); --pico-color: var(--danger); }
-  /* Pico färbt Hover und Fokus sonst blau: die Varianten behalten ihre Farbe. */
-  .success:is(:hover, :focus, :active) { --pico-background-color: var(--success); --pico-border-color: var(--success); --pico-color: #fff; filter: brightness(.9); }
-  .danger:is(:hover, :focus, :active) { --pico-background-color: transparent; --pico-border-color: var(--danger); --pico-color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); }
+  /* Pico draws the buttons. The variants are small classes over Pico variables
+     (.secondary comes from Pico itself). */
+  /* The hover/focus/active selectors keep the colour: Pico would otherwise paint them blue. */
+  button.success, a.button.success, .success:is(:hover, :focus, :active) { --pico-background-color: var(--success); --pico-border-color: var(--success); --pico-color: #fff; }
+  button.danger, a.button.danger, .danger:is(:hover, :focus, :active) { --pico-background-color: transparent; --pico-border-color: var(--danger); --pico-color: var(--danger); }
+  .success:is(:hover, :focus, :active) { filter: brightness(.9); }
+  .danger:is(:hover, :focus, :active) { box-shadow: inset 0 0 0 1px var(--danger); }
   .form-zeile { display: flex; flex-wrap: wrap; gap: 0 1rem; }
   .form-zeile > .field { flex: 1 1 10rem; }
   .btn-row button, .wizard-actions button, .select-row button { width: auto; margin-bottom: 0; }
@@ -571,7 +571,7 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   .value-label.nachzahlung { color: var(--danger); }
   .value-label.ausgeglichen { color: var(--muted); font-weight: normal; }
 
-  /* Seitenfuß im Fluss. Auf den Links steht kein display, damit Picos [hidden] den Update-Punkt verbirgt. */
+  /* Footer in the flow. The links have no display, so Pico's [hidden] hides the update dot. */
   .footer-version { display: flex; justify-content: flex-end; align-items: center; gap: .4rem; margin-top: 2rem; color: var(--muted); font-size: .78rem; }
   .footer-version a { color: var(--muted); }
   .footer-version a:hover { color: var(--text); }
@@ -579,7 +579,7 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   .footer-version span { cursor: default; border-bottom: 1px dotted var(--border); }
   .footer-version a.update-dot { color: var(--success); text-decoration: none; font-size: .7rem; line-height: 1; }
 
-  /* Kopf: Marke links, Menü und Umschalter rechts. Unter 1280 px (dort ist die Pico-Spalte schmaler als alle Einträge) klappt das Menü ein (details, ohne JavaScript). */
+  /* Header: brand left, menu and switch right. Below 1280 px (the Pico column is narrower than all entries there) the menu collapses (details, no JavaScript). */
   header nav { align-items: center; }
   header nav ul:first-of-type { margin-right: auto; }
   header .nav-wide { flex-wrap: wrap; justify-content: flex-end; }

@@ -4,8 +4,8 @@
      Hauptteil mit Seitenleiste, Anhang auf eigener Seite. Am Bildschirm folgt
      es dem Theme der App, gedruckt wird immer hell auf DIN A4. */
   .app { max-width: 960px; }
-  /* Pico setzt Zeilenhöhe 1,4, Überschriftenfarben und Zellenhintergründe: das
-     Dokument behält seine eigenen Werte (Zeilenhöhe "normal" wie vor Pico). */
+  /* Pico sets line height 1.4, heading colours and cell backgrounds: the
+     document keeps its own values (line height "normal" as before Pico). */
   .abrechnung { line-height: normal; }
   .abrechnung h2, .abrechnung h3 { line-height: normal; color: inherit; }
   .abrechnung li { display: list-item; margin: 0; padding: 0; }
@@ -52,7 +52,7 @@
     :root, :root[data-theme="dark"], :root[data-theme="light"] {
       --bg: #fff !important; --panel: #fff !important; --border: #cfd3da !important; --text: #000 !important;
       --muted: #555 !important; --danger: #b91c1c !important; --success: #15803d !important;
-      /* Pico liest im Dunkelmodus weiter seine eigenen Variablen: auch sie hell. */
+      /* Pico keeps reading its own variables in dark mode: reset them to light too. */
       --pico-background-color: #fff !important; --pico-card-background-color: #fff !important;
       --pico-color: #000 !important; --pico-muted-color: #555 !important; --pico-muted-border-color: #cfd3da !important;
     }

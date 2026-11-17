@@ -28,7 +28,7 @@
   </div>
 </nav>
 {{end}}
-<div class="grid dash-reihe dash-wohnungen">
+<div class="grid dash-wohnungen">
   {{range .Cards}}
   <div class="panel stat-card">
     <div class="muted"><strong>{{.ApartmentName}}</strong>
@@ -71,7 +71,7 @@
   </div>
   {{end}}
 </div>
-{{if .Haus}}<div class="grid dash-reihe dash-haus">
+{{if .Haus}}<div class="grid dash-haus">
   {{range .Haus}}
   <div class="panel stat-card dash-kompakt">
     <div class="muted"><strong>{{.Card.Name}}</strong></div>
@@ -155,9 +155,9 @@
     });
   })();
 
-  // Monatsübersicht-Auswahl (Ticket #60 Story 23, Reiter statt Dropdown) - alle
-  // Verläufe sind serverseitig gerendert, JS blendet nur den gewählten ein.
-  // Mit nur einer Auswahl gibt es keine Reiter, das erste Panel bleibt aktiv.
+  // Monatsübersicht selection (Ticket #60 Story 23, tabs instead of dropdown): all
+  // series are rendered server-side, JS only shows the chosen one.
+  // With a single choice there are no tabs, the first panel stays active.
   (function () {
     var STORAGE_KEY = "dashboardWohnung";
     var tabs = document.querySelectorAll("[data-wohnung-btn]");
