@@ -28,4 +28,3 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 | Before a commit or PR: `scripts/check`, hooks, `scripts/dev-server`, `scripts/smoke` | `docs/agents/checks.md` |
 | Starting an implementer or reviewer subagent, Haiku, merging ticket branches | `docs/agents/agents.md` |
 | Writing any text: which language | `docs/agents/language-convention.md` |
-| Pipeline order (`/wayfinder`, `/to-spec`, `/to-tickets`, `/implement-spec`, `/ponytail-review`), writing a spec or tickets | `docs/agents/pipeline.md` |
