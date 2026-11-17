@@ -377,6 +377,9 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   }
   /* Breite der Spalte: Pico .container, hier nur der Abstand nach oben/unten. */
   .app { padding-block: 1.5rem 3rem; }
+  /* Narrow column for lists, Stammdaten and text pages; wide tables scroll inside their frame. */
+  .liste-schmal { max-width: 720px; margin-inline: auto; }
+  .liste-schmal .panel:has(table) { overflow-x: auto; }
   /* Screen-only controls and notes: hidden in print and PDF. */
   @media print { .no-print { display: none !important; } }
   .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; box-shadow: var(--pico-card-box-shadow); }
