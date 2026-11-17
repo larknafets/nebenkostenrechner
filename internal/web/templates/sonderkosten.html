@@ -1,4 +1,5 @@
 {{define "content"}}
+<div class="liste-schmal">
 <h1>Sonderkosten</h1>
 
 {{if .KannSonderkostenErfassen}}
@@ -105,7 +106,7 @@
 {{end}}
 {{end}}
 {{end}}
-{{if .Vermieter}}<div class="btn-row"><a href="{{.Base}}/sonderkosten/export.csv" class="button secondary">CSV Export</a></div>{{end}}
+{{if .Vermieter}}<div class="btn-row"><a href="{{.Base}}/sonderkosten/export.csv" role="button" class="button secondary">CSV Export</a></div>{{end}}
 <script>
 // Shows the Logik select and the Hinweis of a Sonderkosten form as its fields demand.
 var skFixMonate = {{.FixMonate}};
@@ -136,6 +137,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 </script>
+</div>
 {{end}}
 {{define "sk-felder"}}
   <div class="grid grid-2">

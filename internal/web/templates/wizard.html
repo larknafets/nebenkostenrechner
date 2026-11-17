@@ -1,4 +1,5 @@
 {{define "content"}}
+<div class="form-schmal">
 <h1>{{if .IsEdit}}Ablesung korrigieren{{else}}Ablesung erfassen{{end}}</h1>
 
 {{if .NoPeriods}}
@@ -12,7 +13,7 @@
 {{end}}
 
 <form method="post" action="{{.FormAction}}" class="panel" data-fehler-overlay>
-  <div style="display:flex; gap:1rem;">
+  <div class="form-zeile">
     <div class="field" style="max-width:220px">
       <label>Ablesedatum</label>
       <input type="date" name="reading_date" id="reading_date" value="{{.ReadingDate}}" required {{if .HasPrevious}}data-prev-date="{{.PreviousReadingDate}}"{{end}}>
@@ -225,4 +226,5 @@
     updateProgress();
   })();
 </script>
+</div>
 {{end}}

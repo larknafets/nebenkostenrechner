@@ -1,4 +1,5 @@
 {{define "content"}}
+<div class="liste-schmal">
 <h1>Ablesung {{deDatum .Period.ReadingDate}}{{if or .IstTeilstand .FixkostenHinweis}} <span class="badge badge-warning">unvollständig{{if .FixkostenHinweis}} · Fixkosten fehlen{{end}}</span>{{end}}</h1>
 
 {{if .FixkostenBanner}}
@@ -14,7 +15,7 @@
     {{end}}
   </select>
 </div>
-{{if .KannKorrigieren}}<a href="{{.Base}}/ablesungen/{{.Period.ID}}/bearbeiten" class="button secondary">{{if .IstTeilstand}}Ablesung vervollständigen{{else}}Eingabe korrigieren{{end}}</a>{{end}}
+{{if .KannKorrigieren}}<a href="{{.Base}}/ablesungen/{{.Period.ID}}/bearbeiten" role="button" class="button secondary">{{if .IstTeilstand}}Ablesung vervollständigen{{else}}Eingabe korrigieren{{end}}</a>{{end}}
 </div>
 
 <div class="panel">
@@ -143,7 +144,7 @@
 
 {{if .KannKorrigieren}}
 <div class="btn-row">
-  {{if .KannAblesungAnlegen}}<a href="{{.Base}}/ablesungen/neu" class="button success">Neue Ablesung</a>{{end}}
+  {{if .KannAblesungAnlegen}}<a href="{{.Base}}/ablesungen/neu" role="button" class="button success">Neue Ablesung</a>{{end}}
   {{if .Vermieter}}
   <form method="post" action="{{.Base}}/ablesungen/{{.Period.ID}}/loeschen" data-bestaetigen-titel="Ablesung löschen?" data-bestaetigen="Ablesung vom {{deDatum .Period.ReadingDate}} wirklich löschen?">
     <button type="submit" class="danger">Ablesung löschen</button>
@@ -151,4 +152,5 @@
   {{end}}
 </div>
 {{end}}
+</div>
 {{end}}
