@@ -256,7 +256,9 @@ func TestAbrechnungSeite_Layout(t *testing.T) {
 			".anlage { break-inside: avoid; }", "thead { display: table-header-group; }",
 			"--bg: #fff !important", "--text: #000 !important",
 			`<header class="no-print">`,       // brand, navigation and the theme switch
-			`<h1 class="no-print">Abrechnung`) // the page title above the document
+			`<h1 class="no-print">Abrechnung`, // the page title above the document
+			// Pico reads its own variables in dark mode: print resets them too.
+			"--pico-background-color: #fff !important", "--pico-color: #000 !important", "box-shadow: none;")
 	})
 
 	t.Run("Mobil nur am Bildschirm", func(t *testing.T) {
