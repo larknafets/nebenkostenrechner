@@ -28,11 +28,11 @@ func TestPico_RouteOeffentlich(t *testing.T) {
 		if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/css") {
 			t.Errorf("Content-Type %q, want text/css", ct)
 		}
-		if cc := w.Header().Get("Cache-Control"); !strings.Contains(cc, "max-age=") || !strings.Contains(cc, "immutable") {
+		if cc := w.Header().Get("Cache-Control"); !strings.Contains(cc, "max-age=31536000") || !strings.Contains(cc, "immutable") {
 			t.Errorf("Cache-Control %q, want a long immutable cache", cc)
 		}
-		if !strings.Contains(w.Body.String(), "Pico CSS") {
-			t.Errorf("body is not the Pico file")
+		if body := w.Body.String(); !strings.Contains(body, "Pico CSS") || len(body) < 50000 {
+			t.Errorf("body is not the complete Pico file (%d bytes)", len(body))
 		}
 	}
 }
