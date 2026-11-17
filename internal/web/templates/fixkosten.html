@@ -1,9 +1,10 @@
 {{define "content"}}
+<div class="liste-schmal">
 <h1>Fixkosten</h1>
 
 {{if .Vermieter}}
 <div class="btn-row">
-  <a href="{{.Base}}/fixkosten/neu" class="button success">Neue Fixkosteneingabe</a>
+  <a href="{{.Base}}/fixkosten/neu" role="button" class="button success">Neue Fixkosteneingabe</a>
 </div>
 {{end}}
 
@@ -38,8 +39,9 @@
 
 {{if .Vermieter}}
 <div class="btn-row">
-  <a href="{{.Base}}/fixkosten/export.csv" class="button secondary">CSV Export</a>
+  <a href="{{.Base}}/fixkosten/export.csv" role="button" class="button secondary">CSV Export</a>
 </div>
 {{end}}
 {{end}}
+</div>
 {{end}}

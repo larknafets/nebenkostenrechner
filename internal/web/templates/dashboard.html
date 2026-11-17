@@ -28,7 +28,7 @@
   </div>
 </nav>
 {{end}}
-<div class="grid jahressummen-grid">
+<div class="grid dash-reihe dash-wohnungen">
   {{range .Cards}}
   <div class="panel stat-card">
     <div class="muted"><strong>{{.ApartmentName}}</strong>
@@ -70,8 +70,10 @@
     </div>{{end}}
   </div>
   {{end}}
+</div>
+{{if .Haus}}<div class="grid dash-reihe dash-haus">
   {{range .Haus}}
-  <div class="panel stat-card">
+  <div class="panel stat-card dash-kompakt">
     <div class="muted"><strong>{{.Card.Name}}</strong></div>
     <div class="stat-value"{{if .Card.IstErtrag}} style="color:var(--success)"{{end}}>{{if .Card.IstErtrag}}+{{end}}{{deEUR .Card.GesamtEUR}}&nbsp;€</div>
     <div class="stat-bar-track">
@@ -84,11 +86,11 @@
     </div>
   </div>
   {{end}}
-</div>
+</div>{{end}}
 
 <div class="btn-row">
-  {{if .KannAblesungAnlegen}}<a href="{{.Base}}/ablesungen/neu" class="button success">Neue Ablesung</a>{{end}}
-  {{if .Vermieter}}<a href="{{.Base}}/fixkosten/neu" class="button success">Neue Fixkosteneingabe</a>{{end}}
+  {{if .KannAblesungAnlegen}}<a href="{{.Base}}/ablesungen/neu" role="button" class="button success">Neue Ablesung</a>{{end}}
+  {{if .Vermieter}}<a href="{{.Base}}/fixkosten/neu" role="button" class="button success">Neue Fixkosteneingabe</a>{{end}}
 </div>
 {{if not .VerlaufAuswahl}}
 <p class="muted">Für dich ist hier noch nichts freigegeben. Die Vermieter:innen stellen das in den Stammdaten unter "Berechtigungen" ein.</p>
@@ -96,10 +98,10 @@
 
 {{if gt (len .VerlaufAuswahl) 1}}
 <div class="wohnung-auswahl">
-  <label for="wohnung-select" class="muted">Monatsübersicht</label>
-  <select id="wohnung-select">
-    {{range .VerlaufAuswahl}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
-  </select>
+  <span class="muted" id="dash-tabs-label">Monatsübersicht</span>
+  <div role="group" class="dash-tabs" aria-labelledby="dash-tabs-label">
+    {{range .VerlaufAuswahl}}<button type="button" class="outline" data-wohnung-btn="{{.ID}}">{{.Name}}</button>{{end}}
+  </div>
 </div>
 {{end}}
 
@@ -153,17 +155,21 @@
     });
   })();
 
-  // Monatsübersicht-Auswahl (Ticket #60 Story 23, Dropdown seit #306) - alle
+  // Monatsübersicht-Auswahl (Ticket #60 Story 23, Reiter statt Dropdown) - alle
   // Verläufe sind serverseitig gerendert, JS blendet nur den gewählten ein.
-  // Mit nur einer Auswahl gibt es kein Dropdown, das erste Panel bleibt aktiv.
+  // Mit nur einer Auswahl gibt es keine Reiter, das erste Panel bleibt aktiv.
   (function () {
     var STORAGE_KEY = "dashboardWohnung";
-    var select = document.getElementById("wohnung-select");
+    var tabs = document.querySelectorAll("[data-wohnung-btn]");
     var panels = document.querySelectorAll(".wohnung-panel");
     if (!panels.length) return;
 
     function applyWohnung(id) {
-      if (select) select.value = id;
+      tabs.forEach(function (b) {
+        var on = b.getAttribute("data-wohnung-btn") === id;
+        b.classList.toggle("outline", !on);
+        b.setAttribute("aria-pressed", on);
+      });
       panels.forEach(function (p) { p.classList.toggle("active", p.getAttribute("data-wohnung") === id); });
       fitVerlaufBarText();
     }
@@ -175,13 +181,13 @@
     } catch (e) {}
     applyWohnung(id);
 
-    if (select) {
-      select.addEventListener("change", function () {
-        id = select.value;
+    tabs.forEach(function (b) {
+      b.addEventListener("click", function () {
+        id = b.getAttribute("data-wohnung-btn");
         applyWohnung(id);
         try { localStorage.setItem(STORAGE_KEY, id); } catch (e) {}
       });
-    }
+    });
   })();
 
   // Dashboard-Interaktion (Modus-/Wohnung-Wechsel) stoesst zusaetzlich zum
@@ -206,8 +212,9 @@
     document.querySelectorAll("[data-modus-btn]").forEach(function (btn) {
       btn.addEventListener("click", pingUpdateCheck);
     });
-    var auswahl = document.getElementById("wohnung-select");
-    if (auswahl) auswahl.addEventListener("change", pingUpdateCheck);
+    document.querySelectorAll("[data-wohnung-btn]").forEach(function (btn) {
+      btn.addEventListener("click", pingUpdateCheck);
+    });
   })();
 </script>
 {{end}}
