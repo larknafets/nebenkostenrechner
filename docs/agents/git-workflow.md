@@ -1,45 +1,35 @@
-# Git workflow
+# Git workflow: repo specifics
 
-## Product changes: PR. Developer changes: straight to `main`
+The general rules (commit format, types, branches, PR or `main`, bundling, merge, push guard) are not kept in this repo. This file holds only what is specific here and what the hooks enforce.
 
-- **Product changes** (`feat`, `fix`, `refactor`, `perf`) go through a PR so CI runs before the merge. Ask before opening a PR.
-- **Developer changes** (`docs`, `chore`, `ci`, `test`, `style`, `build`) need no PR and no release. Commit on `main` after `scripts/check` is green, push with exactly `git push origin HEAD:main` (the global guard allows only that form on `main`). Branch protection lets the admin push to `main` (`enforce_admins` is off, GitHub prints "Bypassed rule violations"). They get no line in the changelog either, except a `build` change an operator must know about (`changelog.md`).
-- `style` means formatting only (whitespace, indentation, `gofmt`), behavior stays identical. A CSS or layout change users can see is a `fix` or `feat`, a rename without behavior change is a `refactor`. If unsure, do not use `style`.
-- Exception to "`docs` goes straight to `main`": the changelog line of a change is not a separate `docs` commit. It belongs to the commit of the change (`feat`, `fix`, or the `build` commit of a Wartung entry) and travels with its PR. `CHANGELOG.md` itself changes only at a release and when old entries are revised, both as a `docs` commit on `main`.
-- **Docs never ride in a product commit** (the `commit-msg` hook enforces the first two):
-  - Steering docs (`AGENTS.md`, `CLAUDE.md`, `docs/agents/`) are `docs` or `chore` commits straight to `main`. If a product change makes one stale (an environment variable, a command), update it on `main` right after the merge.
-  - A commit that changes only documentation has the type `docs`, never `feat(docs)`.
-  - Product documentation of an epic (`README.md`, `GLOSSARY.md`, ADRs) is its own `docs(<scope>)` commit on the epic branch and merges with the PR, because on `main` it would describe behavior that is not there yet.
-- A change under `.github/workflows/` is a risky developer change: `actionlint` catches syntax, not behavior. If the diff does not show how it behaves, use a PR so CI runs before it lands.
-- The same goes for the Go version in `go.mod` and the `Dockerfile`: CI has the pinned linter and toolchain, a local run does not (Go 1.27.2 went straight to `main` and broke the pinned golangci-lint). Use a PR, and check the linter pin in `ci.yml` in the same change.
-- After a direct push check that `main` is green (`gh run list --branch main`) before tagging a release.
+## Commit messages
 
-## Branches
+- **German**, with proper Umlaute (ä, ö, ü, ß), no ASCII substitutes (ae, oe, ue, ss). The type, the scope and technical names stay as they are (`feat`, `scripts/check`, `GITHUB_REF_NAME`).
+- Verbs in the infinitive or as a noun phrase, not in the past tense: "Zeitraum auf volle Monate eingrenzen", not "Zeitraum eingegrenzt". First word of the summary capitalized.
+- Format `<type>(<scope>): <Summary>`, the component name is the default scope (`abrechnung`, `nav`, `ha-addon`). The `commit-msg` hook rejects a wrong subject, one over 72 characters, a body line over 72, an em dash and common ASCII spellings of an Umlaut (`geaendert`).
+- The release notes are not generated from the subjects: the user-facing text is `.changelog/unreleased.md` (`changelog.md`), the subject is for the developer.
+- Examples: `feat(abrechnung): Zeitraum auf volle Monate eingrenzen für Mieterwechsel`, `fix(dashboard): Update-Punkt nur bei bekanntem Update zeigen`, `docs: Regel PR oder direkt auf main je nach Commit-Typ`.
 
-- Branch from `origin/main` after `git fetch`, not from the local `main` (it may be behind a merged PR or a Dependabot bump). Keep branches short-lived (merge within 1-3 days). GitHub deletes the head branch of a merged PR by itself (`delete_branch_on_merge`). After the merge the agent cleans up: `git checkout main`, `git pull --ff-only origin main`, then `git branch -D <branch>` once `gh pr list --head <branch> --state all` shows MERGED (a squash or rebase merge leaves the local tip unmerged for `-d`), then `git fetch --prune`. Then close the Wayfinder map the spec came from (`gh issue close <map> --comment` naming spec and PR), unless the PR body already says `closes #<map>`. `prototype/*` and `research/*` stay.
-- Prefer feature flags over long-lived branches for incomplete features.
-- Name: `<type>/<description>`, the type is the commit type of the change.
+## Product docs vs. steering docs
 
-| Type | Purpose | Example |
-|---|---|---|
-| `feat/` | New feature | `feat/abrechnung-zeitraum` |
-| `fix/` | Bug fix | `fix/update-punkt` |
-| `refactor/` | Refactoring | `refactor/saldo-bundeln` |
-| `chore/` | Tooling, dependencies | `chore/lokale-checks` |
-| `docs/` | Documentation | `docs/commit-sprache` |
-| `epic/` | Bundle of one Wayfinder map or spec | `epic/nightly-kanal` |
-| `prototype/` | Prototype for a decision, kept | `prototype/login-dashboard` |
-| `research/` | Research result of a Wayfinder ticket, kept | `research/ha-kanal` |
+The `commit-msg` hook matches the type against the staged files:
 
-`dependabot/*` is created by Dependabot. `main` needs no prefix.
+- A `feat`, `fix`, `refactor` or `perf` commit may not touch `AGENTS.md`, `CLAUDE.md` or `docs/agents/`, and may not change only documentation. The scope `docs` needs the type `docs`.
+- Product documentation of an epic (`README.md`, `GLOSSARY.md`, ADRs) is its own `docs(<scope>)` commit on the epic branch and merges with the PR, because on `main` it would describe behavior that is not there yet.
+- The changelog line of a change is not a separate `docs` commit. It belongs to the commit of the change (`feat`, `fix`, or the `build` commit of a Wartung entry) and travels with its PR. `CHANGELOG.md` itself changes only at a release and when old entries are revised, both as a `docs` commit on `main`. A `build` change an operator must know about gets a changelog line too (`changelog.md`).
 
-## Bundling: fewer PRs
+## Only through a PR
 
-- **One Wayfinder map or spec = one `epic/<name>` branch and one PR to `main`.** Tickets and subagents commit onto it. A subagent in its own worktree branch is merged into the epic branch by the main agent and opens no PR.
-- **Small unrelated product tweaks of one session** (labels, order of fields, layout) go onto one branch with one PR at the end of the session.
-- One logical change per commit (`git-commit-messages.md`). The release notes come from `CHANGELOG.md`, not from the commit messages: a PR with a user-visible change carries its line in `.changelog/unreleased.md`.
-- Merge a PR with `gh pr merge --auto --merge`: every commit reaches `main` with its own message and its own signature, GitHub signs the merge commit. Squash-merge (`--squash`, GitHub signs it) only a single-commit PR. Never `--rebase`: GitHub re-creates rebased commits without a signature (PR #461 put five unsigned commits on `main`), and a branch with merge commits (from `scripts/merge-ticket`) cannot be rebased anyway.
-- Read the review bots before switching on auto-merge: `gh pr view <nr> --json reviews,comments` and `gh api repos/<owner>/<repo>/pulls/<nr>/comments` (Sourcery posts both, minutes after the PR opens, `pending` in the check list means it is still writing). Judge every finding against the code, fix it or name why not in the PR, then switch on auto-merge. A merged PR keeps its findings: one auto-merged with 8 unread Sourcery findings, among them a test tied to the year 2026 and a missing "Vor dem Update" notice.
-- After the user agreed to the PR, switch on auto-merge with `--auto` (ask first, a classifier blocks it otherwise), then it merges as soon as the `test` check is green. The branch must be up to date with `main` (strict check): if it falls behind, `gh pr update-branch <nr>` (a merge commit signed by GitHub, never `--rebase` for the reason above).
-- Before pushing to an existing branch, check `gh pr view`: a commit pushed after the merge misses `main`.
-- `gh pr create` can answer `HTTP 504` and still have created the PR. Run `gh pr list --head <branch>` before trying again, or a second PR appears.
+The pre-push hook refuses a push to `main` that changes any of these (`scripts/pr-only-paths`):
+
+- `.github/workflows/`
+- the Go version in `go.mod` and the `Dockerfile`: CI has the pinned linter and toolchain, a local run does not (Go 1.27.2 went straight to `main` and broke the pinned golangci-lint). Check the linter pin in `ci.yml` in the same change.
+
+## Signing and merging
+
+- The pre-push hook rejects unsigned commits and tags.
+- Why `--rebase` is banned: PR #461 put five unsigned commits on `main`, GitHub re-creates rebased commits without a signature. A branch with merge commits (from `scripts/merge-ticket`) cannot be rebased anyway.
+
+## Review bots
+
+Sourcery posts a review minutes after the PR opens (`pending` in the check list means it is still writing). It is not a required check (branch protection requires only `test`), but its findings are read before auto-merge is switched on. A PR was once auto-merged with 8 unread findings, among them a test tied to the year 2026 and a missing "Vor dem Update" notice.

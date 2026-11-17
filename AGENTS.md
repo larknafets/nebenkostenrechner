@@ -15,22 +15,17 @@ Web app for monthly utility cost billing for a two-family house with heat pump a
 ## Rules that always apply
 
 - **Language**: German for GitHub issues, commit messages and user docs, English for code comments and `AGENTS.md`/`docs/agents/`.
-- **PR or main**: product changes (`feat`, `fix`, `refactor`, `perf`) go through a PR, ask before opening one. Developer changes (`docs`, `chore`, `ci`, `test`, `style`, `build`) go straight to `main`, no PR, no release. A release only when the user asks.
+- **Releases**: a release only when the user asks.
 - **Changelog**: a `feat` or `fix`, or anything an operator must know when updating, adds one German line to `.changelog/unreleased.md` in the same commit (never as a separate `docs` commit, so a revert takes the line with it). Only the release itself touches `CHANGELOG.md`.
-- **Signing**: every commit and tag is SSH-signed (`commit.gpgsign`, `tag.gpgsign`, `gpg.format=ssh`). Never use `--no-gpg-sign`, create tags with `git tag -s` (no lightweight tags). The pre-push hook rejects unsigned commits and tags. Merge PRs with `--merge` or `--squash`, never `--rebase` (GitHub re-creates rebased commits unsigned).
-- **Checks**: run `scripts/check` before every commit. The pre-push hook (`git config core.hooksPath .githooks`) runs it too.
 
 ## Read when needed
 
 | When | File |
 |---|---|
-| Creating a branch, choosing PR or `main` (also for the Go version, `Dockerfile`, workflows), bundling, auto-merge, cleaning up after a merge | `docs/agents/git-workflow.md` |
-| Writing a commit message, or a command line containing a push or another blocked git command | `docs/agents/git-commit-messages.md`, `docs/agents/agents.md` |
+| Writing a commit message (German, hook rules), choosing PR or `main` for the Go version, `Dockerfile`, workflows, docs vs. product commits, signing, review bots | `docs/agents/git-workflow.md` |
 | Adding a changelog line, writing release notes | `docs/agents/changelog.md` |
 | Releasing: version, tag, nightly, checklist | `docs/agents/releases.md` |
-| Before a commit or PR: `scripts/check`, hooks, `/ponytail-review`, `/code-review`, `actionlint`, `scripts/dev-server` | `docs/agents/checks.md` |
-| Starting an implementer or reviewer subagent, Haiku, git inside a worktree | `docs/agents/agents.md` |
+| Before a commit or PR: `scripts/check`, hooks, `scripts/dev-server`, `scripts/smoke` | `docs/agents/checks.md` |
+| Starting an implementer or reviewer subagent, Haiku, merging ticket branches | `docs/agents/agents.md` |
 | Writing any text: which language | `docs/agents/language-convention.md` |
-| Working with issues or Wayfinder | `docs/agents/issue-tracker.md` |
 | Pipeline order (`/wayfinder`, `/to-spec`, `/to-tickets`, `/implement-spec`, `/ponytail-review`), writing a spec or tickets | `docs/agents/pipeline.md` |
-| Naming a domain concept, touching an ADR | `docs/agents/domain.md` |

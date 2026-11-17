@@ -4,9 +4,10 @@
 
 - Proper Umlaute (ä, ö, ü, ß), never ae/oe/ue/ss. This holds everywhere German text appears, commit messages included.
 - GitHub issues (titles, bodies, comments, Wayfinder map, tickets, resolution comments, everything on the tracker).
-- Commit messages (format: `git-commit-messages.md`).
+- Commit messages (format: `git-workflow.md`).
 - Markdown meant for the user: `README.md`, `GLOSSARY.md`, `docs/adr/`, `docs/*.md` describing the product or domain.
 - Text in the app (templates, messages).
+- Roles in UI text, `README.md` and `GLOSSARY.md` are gendered with a colon (Mieter:in, Vermieter:in, plural Mieter:innen). Code, environment variables (`VERMIETER_PASSWORD`, `MIETER_PASSWORD`) and URL parameters keep the short form so existing installations keep running.
 
 ## English
 

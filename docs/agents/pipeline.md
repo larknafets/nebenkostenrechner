@@ -1,10 +1,10 @@
 # Pipeline: Wayfinder to epic PR
 
-The standard order for a larger change: `/wayfinder` (map and decision tickets), `/to-spec`, `/to-tickets`, `/implement-spec`, `/ponytail-review`. Branch and PR rules (also where documentation goes: "Docs never ride in a product commit"): `git-workflow.md`, subagent rules: `agents.md`.
+The standard order for a larger change: `/wayfinder` (map and decision tickets), `/to-spec`, `/to-tickets`, `/implement-spec`, `/ponytail-review`. Branch and PR rules (also where documentation goes): `git-workflow.md`, subagent rules: `agents.md`.
 
 ## Who starts what
 
-- `/wayfinder` and `/implement-spec` have `disable-model-invocation`: the agent cannot start them. Give the user the full command with arguments to paste.
+- `/wayfinder` and `/implement-spec` have `disable-model-invocation`: the agent cannot start them.
 - `/grilling`, `/domain-modeling`, `/to-spec`, `/to-tickets`, `/code-review` and `/ponytail-review` the agent starts itself.
 - With a pipeline order from the user, continue straight to the next frontier ticket after a resolved Wayfinder ticket and put its question round. The rule "one ticket per session" limits the work, not the turn, and the user's answers gate the next step anyway.
 
@@ -12,7 +12,6 @@ The standard order for a larger change: `/wayfinder` (map and decision tickets),
 
 - At the end of a phase (map done, spec published, tickets published) tell the user to run `/clear` and give the full command of the next phase. The agent cannot clear the context itself.
 - Before that, every decision of the phase has a place in the map, spec or ticket text (reread the answers in the chat, e.g. "Q1-3: ok"). The state of the pipeline lives on the tracker, so a fresh session loses nothing else.
-- `/clear` costs nothing, `/compact` costs a call with the whole context. A fresh session loads `AGENTS.md`, which points here.
 - Inside a long phase compact at about 250k tokens, not at 600k: every call re-reads the whole context.
 
 ## Writing the spec and the tickets
@@ -25,4 +24,4 @@ The standard order for a larger change: `/wayfinder` (map and decision tickets),
 
 ## Last step before the PR
 
-- `/ponytail-review` follows `/implement-spec` (after `/code-review` on an epic). Its rules (when, once per branch, who fixes) are in `checks.md`.
+- Run `scripts/check`, then one review as the last step before the PR is proposed: `/ponytail-review` for a small change without a spec, `/code-review` for an `epic/` branch with a spec (its Spec axis needs one), then `/ponytail-review` on what is left. One run per branch, for an `epic/` branch once before the epic PR, not after every ticket. Developer changes straight to `main` skip both reviews. The agent fixes nothing from the findings by itself: it shows them numbered and the user names the ones to fix. Fixes land as commits on the branch, then the PR is proposed. Review locally instead of waiting for a review bot on the PR.
