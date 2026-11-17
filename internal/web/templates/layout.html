@@ -377,7 +377,7 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   }
   /* Breite der Spalte: Pico .container, hier nur der Abstand nach oben/unten. */
   .app { padding-block: 1.5rem 3rem; }
-  /* Narrow column for lists, Stammdaten and text pages; wide tables scroll inside their frame. */
+  /* Narrow column for lists, forms, wizard, Stammdaten and text pages; wide tables scroll inside their frame. */
   .liste-schmal { max-width: 720px; margin-inline: auto; }
   .liste-schmal .panel:has(table) { overflow-x: auto; }
   /* Screen-only controls and notes: hidden in print and PDF. */
@@ -388,7 +388,7 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   .login-backdrop { position: fixed; inset: 0; background: var(--pico-modal-overlay-background-color); display: flex; align-items: center; justify-content: center; z-index: 100; }
   .login-backdrop[hidden] { display: none; }
   .login-modal { background: var(--panel); border: 1px solid var(--border); border-radius: var(--pico-border-radius); padding: 1.5rem; width: 320px; max-width: 90vw; box-shadow: var(--pico-dropdown-box-shadow); }
-  .login-error { color: var(--danger); font-size: .8rem; margin-top: .3rem; }
+  .login-error { color: var(--danger); font-size: .8rem; margin: .3rem 0 .6rem; }
   .fehler-backdrop { position: fixed; inset: 0; background: var(--pico-modal-overlay-background-color); display: flex; align-items: center; justify-content: center; z-index: 200; }
   .fehler-backdrop[hidden] { display: none; }
   .fehler-modal { background: var(--panel); border: 1px solid var(--border); border-top: 4px solid var(--danger); border-radius: var(--pico-border-radius); padding: 1.25rem 1.5rem; width: 420px; max-width: 92vw; box-shadow: var(--pico-dropdown-box-shadow); }
@@ -429,8 +429,6 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   /* Pico färbt Hover und Fokus sonst blau: die Varianten behalten ihre Farbe. */
   .success:is(:hover, :focus, :active) { --pico-background-color: var(--success); --pico-border-color: var(--success); --pico-color: #fff; filter: brightness(.9); }
   .danger:is(:hover, :focus, :active) { --pico-background-color: transparent; --pico-border-color: var(--danger); --pico-color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); }
-  /* Schmale Seite für Formulare, Wizard und Stammdaten. */
-  .form-schmal { max-width: 720px; margin-inline: auto; }
   .form-zeile { display: flex; flex-wrap: wrap; gap: 0 1rem; }
   .form-zeile > .field { flex: 1 1 10rem; }
   .btn-row button, .wizard-actions button, .select-row button { width: auto; margin-bottom: 0; }
@@ -581,13 +579,13 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   .footer-version span { cursor: default; border-bottom: 1px dotted var(--border); }
   .footer-version a.update-dot { color: var(--success); text-decoration: none; font-size: .7rem; line-height: 1; }
 
-  /* Kopf: Marke links, Menü und Umschalter rechts. Unter 768 px klappt das Menü ein (details, ohne JavaScript). */
+  /* Kopf: Marke links, Menü und Umschalter rechts. Unter 1280 px (dort ist die Pico-Spalte schmaler als alle Einträge) klappt das Menü ein (details, ohne JavaScript). */
   header nav { align-items: center; }
   header nav ul:first-of-type { margin-right: auto; }
   header .nav-wide { flex-wrap: wrap; justify-content: flex-end; }
   header .nav-narrow { display: block; }
   header .nav-wide { display: none; }
-  @media (min-width: 768px) {
+  @media (min-width: 1280px) {
     header .nav-wide { display: flex; }
     header .nav-narrow { display: none; }
   }

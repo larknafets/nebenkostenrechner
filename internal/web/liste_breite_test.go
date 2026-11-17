@@ -11,7 +11,7 @@ import (
 func TestListenseiten_SchmaleSpalte(t *testing.T) {
 	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
 	cookies := demoLoginCookies(t, mux)
-	for _, pfad := range []string{"/ablesungen", "/fixkosten", "/sonderkosten", "/stammdaten", "/berechnungslogik"} {
+	for _, pfad := range []string{"/ablesungen", "/fixkosten", "/sonderkosten", "/stammdaten", "/berechnungslogik", "/ablesungen/neu", "/fixkosten/neu"} {
 		req := httptest.NewRequest(http.MethodGet, pfad, nil)
 		attachCookies(req, cookies)
 		w := httptest.NewRecorder()
