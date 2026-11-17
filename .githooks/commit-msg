@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Checks the commit message against docs/agents/git-commit-messages.md: subject
+# Checks the commit message against docs/agents/git-workflow.md: subject
 # format, length, body wrap at 72 and no em dash. Enable once per clone:
 #   git config core.hooksPath .githooks
 # Skip in an emergency with the --no-verify flag of the commit.
@@ -18,7 +18,7 @@ esac
 fail() {
   echo "commit-msg: $1" >&2
   echo "  subject: $subject" >&2
-  echo "  rules: docs/agents/git-commit-messages.md" >&2
+  echo "  rules: docs/agents/git-workflow.md" >&2
   exit 1
 }
 
@@ -38,7 +38,7 @@ fi
 
 # Body lines wrap at 72 characters; a line with a URL may run over.
 if long=$(printf '%s\n' "$message" | sed 1d | awk 'length($0) > 72 && $0 !~ /https?:\/\// { print length($0) " characters"; exit }') && [ -n "$long" ]; then
-  fail "a body line has $long, wrap at 72 (git-commit-messages.md)"
+  fail "a body line has $long, wrap at 72 (git-workflow.md)"
 fi
 
 # Umlaute are written as ä, ö, ü, ß, never as ae, oe, ue, ss. A general pattern
