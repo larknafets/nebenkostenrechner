@@ -1,6 +1,5 @@
 {{define "content"}}
 <h1>Ablesung {{deDatum .Period.ReadingDate}}{{if or .IstTeilstand .FixkostenHinweis}} <span class="badge badge-warning">unvollständig{{if .FixkostenHinweis}} · Fixkosten fehlen{{end}}</span>{{end}}</h1>
-{{template "nav" .}}
 
 {{if .FixkostenBanner}}
 <div class="panel" style="border-color:#e6a700">{{.FixkostenBanner.Text}}{{if .Vermieter}} <a href="{{.Base}}{{.FixkostenBanner.Pfad}}">{{.FixkostenBanner.LinkText}}</a>{{end}}</div>

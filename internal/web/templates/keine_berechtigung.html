@@ -1,8 +1,5 @@
 {{define "content"}}
-<h1>Nebenkostenrechner</h1>
-{{template "nav" .}}
-
-<h2>{{.Titel}}</h2>
+<h1>{{.Titel}}</h1>
 <p>{{.Text}}</p>
 <p><a href="{{.Base}}/dashboard?login=1&amp;rolle=vermieter&amp;next={{.Next}}" class="button success">Als Vermieter:in anmelden</a>
 <a href="{{.Base}}/dashboard" class="button secondary">Zum Dashboard</a></p>

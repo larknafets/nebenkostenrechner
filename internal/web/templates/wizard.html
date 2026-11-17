@@ -1,6 +1,5 @@
 {{define "content"}}
 <h1>{{if .IsEdit}}Ablesung korrigieren{{else}}Ablesung erfassen{{end}}</h1>
-{{template "nav" .}}
 
 {{if .NoPeriods}}
 <form method="post" action="{{.Base}}/ablesungen/import" enctype="multipart/form-data" data-fehler-overlay class="panel" style="margin-bottom:1rem">

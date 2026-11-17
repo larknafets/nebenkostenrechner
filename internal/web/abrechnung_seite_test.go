@@ -255,8 +255,7 @@ func TestAbrechnungSeite_Layout(t *testing.T) {
 			"break-before: page",
 			".anlage { break-inside: avoid; }", "thead { display: table-header-group; }",
 			"--bg: #fff !important", "--text: #000 !important",
-			`class="muted no-print"`,          // the navigation
-			`class="theme-toggle no-print"`,   // the theme switch
+			`<header class="no-print">`,       // brand, navigation and the theme switch
 			`<h1 class="no-print">Abrechnung`) // the page title above the document
 	})
 

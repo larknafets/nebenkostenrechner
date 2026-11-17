@@ -1,6 +1,5 @@
 {{define "content"}}
 <h1>{{if .IsEdit}}Fixkosteneingabe korrigieren{{else}}Fixkosteneingabe erfassen{{end}}</h1>
-{{template "nav" .}}
 
 {{if .NoEingaben}}
 <form method="post" action="{{.Base}}/fixkosten/import" enctype="multipart/form-data" data-fehler-overlay class="panel" style="margin-bottom:1rem">

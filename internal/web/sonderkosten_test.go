@@ -72,7 +72,7 @@ func TestSonderkosten_SeiteZeigtKopfSummenUndKarten(t *testing.T) {
 	if strings.Contains(body, "<h2>Sonderkosten") || strings.Contains(body, `class="jahr-nav"`) {
 		t.Error("Überschrift und Jahrespfeile sind durch den Jahresfilter ersetzt")
 	}
-	if !strings.Contains(body, "<strong>Sonderkosten</strong>") || !strings.Contains(getMitCookies(t, mux, "/dashboard", c).Body.String(), `<a href="/sonderkosten">Sonderkosten</a>`) {
+	if !strings.Contains(body, `<a href="/sonderkosten" aria-current="page">Sonderkosten</a>`) || !strings.Contains(getMitCookies(t, mux, "/dashboard", c).Body.String(), `<a href="/sonderkosten">Sonderkosten</a>`) {
 		t.Error("Menüpunkt Sonderkosten fehlt")
 	}
 }

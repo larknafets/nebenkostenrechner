@@ -132,8 +132,57 @@ func TestFooterVersion_UpdateDotHidden(t *testing.T) {
 	if !strings.Contains(tag, "hidden") {
 		t.Errorf("Update-Punkt ohne hidden, obwohl kein Update bekannt ist: %s", tag)
 	}
-	if !strings.Contains(body, ".footer-version a.update-dot[hidden] { display: none; }") {
-		t.Error("das Stylesheet überschreibt hidden nicht ab, der Update-Punkt wäre immer sichtbar")
+	// Pico's [hidden] rule keeps the dot away, as long as no rule of ours sets display on the footer links.
+	if strings.Contains(body, ".footer-version a { display") || strings.Contains(body, ".footer-version a { color: var(--muted); display") {
+		t.Error("das Stylesheet setzt display auf Links im Seitenfuß, hidden würde überschrieben")
+	}
+	if strings.Contains(body, ".footer-version { position: fixed") {
+		t.Error("der Seitenfuß ist wieder fixiert")
+	}
+	if !strings.Contains(body, `<footer class="footer-version no-print">`) {
+		t.Error("Seitenfuß fehlt oder trägt kein no-print")
+	}
+}
+
+// TestNav_Kopf: the header carries the brand once, the menu for wide and
+// narrow screens, marks the current page and prints nothing.
+func TestNav_Kopf(t *testing.T) {
+	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
+	for _, p := range []struct{ pfad, h1 string }{
+		{"/dashboard", "<h1>Dashboard</h1>"},
+		{"/ablesungen", "<h1>Ablesungen</h1>"},
+		{"/berechnungslogik", "<h1>Berechnungslogik</h1>"},
+	} {
+		body := getMitCookies(t, mux, p.pfad, nil).Body.String()
+		for _, s := range []string{`<header class="no-print">`, `<details class="dropdown">`, `<a href="` + p.pfad + `" aria-current="page">`, p.h1} {
+			if !strings.Contains(body, s) {
+				t.Errorf("%s: %q fehlt", p.pfad, s)
+			}
+		}
+		if n := strings.Count(body, ` aria-current="page"`); n != 2 { // wide list and dropdown
+			t.Errorf("%s: aria-current %d-mal, want 2", p.pfad, n)
+		}
+		if n := strings.Count(body, "<strong>Nebenkostenrechner</strong>"); n != 1 {
+			t.Errorf("%s: Marke %d-mal, want 1", p.pfad, n)
+		}
+		if strings.Contains(body, "<h1>Nebenkostenrechner</h1>") {
+			t.Errorf("%s: Überschrift trägt die Marke", p.pfad)
+		}
+	}
+}
+
+// The theme switch stays one button, last in the nav.
+func TestNav_UmschalterAmEnde(t *testing.T) {
+	mux := NewMux(openTestDB(t), openTestDB(t), "", "")
+	body := getDashboard(t, mux, nil)
+	if n := strings.Count(body, `id="theme-toggle-btn"`); n != 1 {
+		t.Fatalf("Umschalter %d-mal, want 1", n)
+	}
+	if strings.Index(body, `id="theme-toggle-btn"`) < strings.Index(body, `id="login-open"`) {
+		t.Error("Umschalter steht vor dem Anmelden-Eintrag, nicht am Ende")
+	}
+	if strings.Contains(body, ".theme-toggle { position: fixed") {
+		t.Error("Umschalter ist noch fixiert")
 	}
 }
 
