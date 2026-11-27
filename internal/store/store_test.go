@@ -6,16 +6,16 @@ import (
 	"errors"
 	"path/filepath"
 	"testing"
+
+	"github.com/larknafets/nebenkostenrechner/internal/store/storetest"
 )
+
+// openStore migrates once per test binary and copies the finished file, see storetest.
+var openStore = storetest.Opener(Open)
 
 func openTestDB(t *testing.T) *sql.DB {
 	t.Helper()
-	db, err := Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("open store: %v", err)
-	}
-	t.Cleanup(func() { db.Close() })
-	return db
+	return openStore(t)
 }
 
 // Pragmas are per connection: every pooled connection needs foreign_keys and

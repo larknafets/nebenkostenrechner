@@ -2,20 +2,19 @@ package calc_test
 
 import (
 	"database/sql"
-	"path/filepath"
 	"testing"
 
 	"github.com/larknafets/nebenkostenrechner/internal/calc"
 	"github.com/larknafets/nebenkostenrechner/internal/store"
+	"github.com/larknafets/nebenkostenrechner/internal/store/storetest"
 )
+
+// openStore migrates once per test binary and copies the finished file, see storetest.
+var openStore = storetest.Opener(store.Open)
 
 func openTestDB(t *testing.T) *sql.DB {
 	t.Helper()
-	db, err := store.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("open store: %v", err)
-	}
-	t.Cleanup(func() { db.Close() })
+	db := openStore(t)
 
 	// Wohnungsgröße lives on apartments now (Issue #61), not the period - set it
 	// once so every calc test that used to pass it per-period (e.g. Heizung's

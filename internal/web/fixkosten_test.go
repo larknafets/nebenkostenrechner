@@ -6,23 +6,21 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/larknafets/nebenkostenrechner/internal/store"
+	"github.com/larknafets/nebenkostenrechner/internal/store/storetest"
 )
+
+// openStore migrates once per test binary and copies the finished file, see storetest.
+var openStore = storetest.Opener(store.Open)
 
 func openTestDB(t *testing.T) *sql.DB {
 	t.Helper()
-	db, err := store.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("open store: %v", err)
-	}
-	t.Cleanup(func() { db.Close() })
-	return db
+	return openStore(t)
 }
 
 func TestParseFixkostenMonat(t *testing.T) {
