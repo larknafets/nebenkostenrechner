@@ -176,7 +176,7 @@ func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 			return
 		}
 		nav := z.NavData(r)
-		latestVersion, updateAvailable := checkForUpdate(version)
+		latestVersion, updateAvailable, upToDate := checkForUpdate(version)
 
 		if !dd.HasAnyData {
 			data := struct {
@@ -186,6 +186,7 @@ func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 				Version         string
 				BuildDate       string
 				UpdateAvailable bool
+				UpToDate        bool
 				LatestVersion   string
 			}{
 				navData:         nav,
@@ -193,6 +194,7 @@ func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 				Version:         version,
 				BuildDate:       buildDate,
 				UpdateAvailable: updateAvailable,
+				UpToDate:        upToDate,
 				LatestVersion:   latestVersion,
 			}
 			if err := dashboardTemplate.ExecuteTemplate(w, "layout", data); err != nil {
@@ -234,6 +236,7 @@ func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 			Version          string
 			BuildDate        string
 			UpdateAvailable  bool
+			UpToDate         bool
 			LatestVersion    string
 		}{
 			navData:          nav,
@@ -253,6 +256,7 @@ func handleDashboard(version, buildDate string, z *Zugang) http.HandlerFunc {
 			Version:          version,
 			BuildDate:        buildDate,
 			UpdateAvailable:  updateAvailable,
+			UpToDate:         upToDate,
 			LatestVersion:    latestVersion,
 		}
 

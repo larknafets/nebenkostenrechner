@@ -121,6 +121,9 @@ func TestNav_DemoSession_ShowsBannerNotEntry(t *testing.T) {
 // known update, and the stylesheet must not override the hidden attribute
 // (".footer-version a { display: flex }" did, so the dot always showed).
 func TestFooterVersion_UpdateDotHidden(t *testing.T) {
+	// Unknown state: no latest version known yet. Sets the shared cache itself
+	// (fresh, so nothing asks GitHub) because a filled cache would make v99 "aktuell".
+	setReleaseCache(t, "")
 	mux := NewMux(openTestDB(t), openTestDB(t), "v99.0.0", "2026-10-01T18:01:25Z")
 	body := getDashboard(t, mux, nil)
 
@@ -141,6 +144,43 @@ func TestFooterVersion_UpdateDotHidden(t *testing.T) {
 	}
 	if !strings.Contains(body, `<footer class="footer-version no-print">`) {
 		t.Error("Seitenfuß fehlt oder trägt kein no-print")
+	}
+}
+
+// TestFooterVersion_UpdateDotStates: the dot is visible in "Update" (red class,
+// tooltip with version) and "aktuell" (no red class), hidden for other channels.
+func TestFooterVersion_UpdateDotStates(t *testing.T) {
+	cases := []struct {
+		name, latest, version string
+		hidden, update        bool
+		title                 string
+	}{
+		{"update", "v100.0.0", "v99.0.0", false, true, "Update verfügbar: v100.0.0"},
+		{"aktuell", "v99.0.0", "v99.0.0", false, false, "Version ist aktuell"},
+		{"unbekannt, anderer Kanal", "nightly.20261019-aaaaaaa", "v99.0.0", true, false, ""},
+		{"unbekannt, gleicher Nightly-Tag", "nightly.20261019-aaaaaaa", "nightly.20261019-bbbbbbb", true, false, ""},
+		{"aktuell, gleicher Nightly", "nightly.20261019-aaaaaaa", "nightly.20261019-aaaaaaa", false, false, "Version ist aktuell"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			setReleaseCache(t, c.latest)
+			mux := NewMux(openTestDB(t), openTestDB(t), c.version, "2026-10-01T18:01:25Z")
+			body := getDashboard(t, mux, nil)
+			i := strings.Index(body, `id="update-dot"`)
+			if i < 0 {
+				t.Fatal("Update-Punkt fehlt")
+			}
+			tag := body[i : i+strings.Index(body[i:], ">")]
+			if got := strings.Contains(tag, "hidden"); got != c.hidden {
+				t.Errorf("hidden = %v, want %v: %s", got, c.hidden, tag)
+			}
+			if got := strings.Contains(tag, "is-update"); got != c.update {
+				t.Errorf("is-update = %v, want %v: %s", got, c.update, tag)
+			}
+			if c.title != "" && !strings.Contains(tag, `title="`+c.title+`"`) {
+				t.Errorf("Tooltip %q fehlt: %s", c.title, tag)
+			}
+		})
 	}
 }
 

@@ -576,6 +576,9 @@ document.querySelectorAll(".logout-link").forEach(function (a) {
   .footer-version svg { vertical-align: middle; }
   .footer-version span { cursor: default; border-bottom: 1px dotted var(--border); }
   .footer-version a.update-dot { color: var(--success); text-decoration: none; font-size: .7rem; line-height: 1; }
+  .footer-version a.update-dot.is-update { color: var(--danger); animation: update-dot-pulse 1.5s ease-in-out infinite; }
+  @keyframes update-dot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+  @media (prefers-reduced-motion: reduce) { .footer-version a.update-dot.is-update { animation: none; } }
 
   /* Header: brand left, menu and switch right. Below 1280 px (the Pico column is narrower than all entries there) the menu collapses (details, no JavaScript). */
   header nav { align-items: center; }
