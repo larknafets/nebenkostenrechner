@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.26.0 - 2026-11-28
+
+### Verbesserungen
+
+- Neuer Look auf Pico CSS: Kopfnavigation mit Menü am Handy, Hell/Dunkel-Umschalter als Symbol, Versionsnummer im Seitenfuß, Dashboard mit zwei Kartenreihen, kompaktere Formulare, Listen und Wizard, Abrechnung und Druck unverändert (#485, #486, #487, #488, #489, #490, #491)
+
+### Wartung
+
+- Interne Aufräumarbeiten am Code ohne sichtbare Änderung
+- Aktualisierung der Abhängigkeiten
+
+Alle Änderungen im Vergleich: [v0.25.1...v0.26.0](https://github.com/larknafets/nebenkostenrechner/compare/v0.25.1...v0.26.0)
+
 ## v0.25.1 - 2026-11-12
 
 ### Wartung
