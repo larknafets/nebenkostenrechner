@@ -14,14 +14,18 @@ import (
 )
 
 const (
+	repoURL            = "https://github.com/larknafets/nebenkostenrechner"
+	releaseCacheTTL    = 6 * time.Hour
+	releaseHTTPTimeout = 3 * time.Second
+)
+
+// Variables only so that TestMain can point them away from the internet.
+var (
 	releaseAPIURL = "https://api.github.com/repos/larknafets/nebenkostenrechner/releases/latest"
 	// nightlyConfigURL is the nightly add-on's config.yaml: nightly.yml writes
 	// the version of every nightly build into it, so its `version:` line is the
 	// latest nightly (the images on ghcr.io need a login to list their tags).
-	nightlyConfigURL   = "https://raw.githubusercontent.com/larknafets/ha-addons/main/nebenkostenrechner-nightly/config.yaml"
-	repoURL            = "https://github.com/larknafets/nebenkostenrechner"
-	releaseCacheTTL    = 6 * time.Hour
-	releaseHTTPTimeout = 3 * time.Second
+	nightlyConfigURL = "https://raw.githubusercontent.com/larknafets/ha-addons/main/nebenkostenrechner-nightly/config.yaml"
 )
 
 type releaseCacheEntry struct {
