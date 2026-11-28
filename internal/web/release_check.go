@@ -37,11 +37,12 @@ var (
 // checkForUpdate reports the latest known version of currentVersion's channel
 // (a GitHub release tag, or the latest nightly for a nightly build) and
 // whether it's newer than currentVersion (available) or certainly not older
-// (upToDate; neither is set when the state is unknown). Never blocks the caller: a stale/empty
-// cache triggers a background refresh and this returns immediately with
-// whatever's cached so far (possibly ""). Silent on any error (offline
-// HA-Add-on, GitHub unreachable, unparsable version) - update-checking is
-// a nice-to-have, never a reason to slow or break the Dashboard.
+// (upToDate; neither is set when the state is unknown). Never blocks the
+// caller: a stale/empty cache triggers a background refresh and this returns
+// immediately with whatever's cached so far (possibly ""). Silent on any
+// error (offline HA-Add-on, GitHub unreachable, unparsable version) -
+// update-checking is a nice-to-have, never a reason to slow or break the
+// Dashboard.
 func checkForUpdate(currentVersion string) (latest string, available, upToDate bool) {
 	releaseCacheMu.Lock()
 	entry := releaseCache
