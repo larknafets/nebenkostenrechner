@@ -161,7 +161,7 @@ jobs:
       # The moving tag "nightly" is excluded and always shares its image with
       # the newest dated tag, so it never counts against the 7.
       - name: Delete older nightly images
-        uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1
+        uses: dataaxiom/ghcr-cleanup-action@ac45a8c04b1eb4b27974ca79a0a74f344c93664b # v1
         with:
           package: nebenkostenrechner
           delete-tags: "nightly.*"
