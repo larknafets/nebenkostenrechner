@@ -1,9 +1,11 @@
 package web
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestParseSemver(t *testing.T) {
@@ -158,6 +160,84 @@ func TestFetchLatestNightlyFrom(t *testing.T) {
 			defer srv.Close()
 			if _, err := fetchLatestNightlyFrom(srv.URL, srv.Client()); err == nil {
 				t.Error("want error, got nil")
+			}
+		})
+	}
+}
+
+func TestIsCurrentVersion(t *testing.T) {
+	cases := []struct {
+		latest, current string
+		want            bool
+	}{
+		{"v0.7.0", "v0.7.0", true},
+		{"v0.7.0", "v0.8.0", true},
+		{"v0.7.0", "v1.0.0", true},
+		{"v0.7.0", "v0.7.1", true},
+		{"v0.8.0", "v0.7.0", false}, // update available
+		{"v0.7.0", "dev", false},
+		{"v0.7.0", "", false},
+		{"", "v0.7.0", false},
+		{"garbage", "v0.7.0", false},
+		{"v0.7.0", "garbage", false},
+		{"v0.7.0", "nightly.20261001-e3c101d", false}, // channels never mix
+		{"nightly.20261019-aaaaaaa", "v0.7.0", false},
+		{"nightly.20261019-aaaaaaa", "dev", false},
+		{"nightly.20261019-aaaaaaa", "nightly.20261019-aaaaaaa", true},  // same build
+		{"nightly.20261019-aaaaaaa", "nightly.20261019-bbbbbbb", false}, // same day, other build
+		{"nightly.20261019-aaaaaaa", "nightly.20261020-bbbbbbb", true},  // running is newer
+		{"nightly.20261020-aaaaaaa", "nightly.20261019-bbbbbbb", false}, // update available
+	}
+	for _, c := range cases {
+		if got := isCurrentVersion(c.latest, c.current); got != c.want {
+			t.Errorf("isCurrentVersion(%q, %q) = %v, want %v", c.latest, c.current, got, c.want)
+		}
+		if c.want && isNewerVersion(c.latest, c.current) {
+			t.Errorf("(%q, %q) is both current and newer", c.latest, c.current)
+		}
+	}
+}
+
+// setReleaseCache fills the shared release cache as fresh, so no test asks GitHub.
+func setReleaseCache(t *testing.T, latest string) {
+	t.Helper()
+	releaseCacheMu.Lock()
+	old := releaseCache
+	releaseCache = releaseCacheEntry{latest: latest, checkedAt: time.Now()}
+	releaseCacheMu.Unlock()
+	t.Cleanup(func() {
+		releaseCacheMu.Lock()
+		releaseCache = old
+		releaseCacheMu.Unlock()
+	})
+}
+
+func TestUpdateCheckHandler_States(t *testing.T) {
+	cases := []struct {
+		name, latest, version string
+		available, upToDate   bool
+	}{
+		{"update", "v0.9.0", "v0.8.0", true, false},
+		{"current", "v0.8.0", "v0.8.0", false, true},
+		{"unknown dev", "v0.8.0", "dev", false, false},
+		{"unknown no cache", "", "v0.8.0", false, false},
+		{"unknown nightly same day", "nightly.20261019-aaaaaaa", "nightly.20261019-bbbbbbb", false, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			setReleaseCache(t, c.latest)
+			rec := httptest.NewRecorder()
+			handleUpdateCheck(c.version)(rec, httptest.NewRequest(http.MethodGet, "/update-check", nil))
+			var got struct {
+				Available bool   `json:"available"`
+				UpToDate  bool   `json:"upToDate"`
+				Latest    string `json:"latest"`
+			}
+			if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+				t.Fatal(err)
+			}
+			if got.Available != c.available || got.UpToDate != c.upToDate || got.Latest != c.latest {
+				t.Errorf("got %+v, want available=%v upToDate=%v latest=%q", got, c.available, c.upToDate, c.latest)
 			}
 		})
 	}

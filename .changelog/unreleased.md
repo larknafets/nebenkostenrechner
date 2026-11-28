@@ -41,6 +41,8 @@ Keep every section, an empty one included. Do not change the headings.
 
 ## Neue Funktionen
 
+- Der Versionspunkt im Seitenfuß zeigt jetzt den Stand der Version: rot und pulsierend bei einem verfügbaren Update (ohne Bewegung bei eingeschalteter Option „Bewegung reduzieren“), grün wenn die Version aktuell ist, kein Punkt wenn der Stand unbekannt ist (#501, #502).
+
 ## Verbesserungen
 
 ## Fehlerkorrekturen

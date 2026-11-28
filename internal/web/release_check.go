@@ -36,12 +36,13 @@ var (
 
 // checkForUpdate reports the latest known version of currentVersion's channel
 // (a GitHub release tag, or the latest nightly for a nightly build) and
-// whether it's newer than currentVersion. Never blocks the caller: a stale/empty
+// whether it's newer than currentVersion (available) or certainly not older
+// (upToDate; neither is set when the state is unknown). Never blocks the caller: a stale/empty
 // cache triggers a background refresh and this returns immediately with
 // whatever's cached so far (possibly ""). Silent on any error (offline
 // HA-Add-on, GitHub unreachable, unparsable version) - update-checking is
 // a nice-to-have, never a reason to slow or break the Dashboard.
-func checkForUpdate(currentVersion string) (latest string, available bool) {
+func checkForUpdate(currentVersion string) (latest string, available, upToDate bool) {
 	releaseCacheMu.Lock()
 	entry := releaseCache
 	stale := time.Since(entry.checkedAt) > releaseCacheTTL
@@ -52,9 +53,9 @@ func checkForUpdate(currentVersion string) (latest string, available bool) {
 	}
 
 	if entry.latest == "" {
-		return "", false
+		return "", false, false
 	}
-	return entry.latest, isNewerVersion(entry.latest, currentVersion)
+	return entry.latest, isNewerVersion(entry.latest, currentVersion), isCurrentVersion(entry.latest, currentVersion)
 }
 
 // handleUpdateCheck serves checkForUpdate over JSON so the Dashboard's
@@ -63,13 +64,14 @@ func checkForUpdate(currentVersion string) (latest string, available bool) {
 // check).
 func handleUpdateCheck(version string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		latest, available := checkForUpdate(version)
+		latest, available, upToDate := checkForUpdate(version)
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(struct {
 			Available bool   `json:"available"`
+			UpToDate  bool   `json:"upToDate"`
 			Latest    string `json:"latest"`
 			URL       string `json:"url"`
-		}{Available: available, Latest: latest, URL: updateURL(latest)})
+		}{Available: available, UpToDate: upToDate, Latest: latest, URL: updateURL(latest)})
 	}
 }
 
@@ -221,4 +223,34 @@ func isNewerVersion(latest, current string) bool {
 		return lMin > cMin
 	}
 	return lPatch > cPatch
+}
+
+// isCurrentVersion reports whether current is certainly up to date against
+// latest: same channel, both parseable, and current equal to or newer than
+// latest (nightly: the same build, or a later build date). Everything else is
+// unknown, not "current": no latest yet, dev builds, unparsable versions,
+// different channels, or another nightly build of the same date.
+func isCurrentVersion(latest, current string) bool {
+	if lDate, lSha, ok := parseNightly(latest); ok {
+		cDate, cSha, ok := parseNightly(current)
+		if !ok {
+			return false
+		}
+		return cDate > lDate || (cDate == lDate && cSha == lSha)
+	}
+	if _, _, ok := parseNightly(current); ok {
+		return false
+	}
+	lMaj, lMin, lPatch, ok1 := parseSemver(latest)
+	cMaj, cMin, cPatch, ok2 := parseSemver(current)
+	if !ok1 || !ok2 {
+		return false
+	}
+	if cMaj != lMaj {
+		return cMaj > lMaj
+	}
+	if cMin != lMin {
+		return cMin > lMin
+	}
+	return cPatch >= lPatch
 }
